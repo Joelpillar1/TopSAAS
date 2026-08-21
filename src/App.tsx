@@ -175,6 +175,9 @@ export default function App() {
   const [userUpvotes, setUserUpvotes] = useState<Set<string>>(new Set());
   const [productsLoaded, setProductsLoaded] = useState(false);
 
+  // Submitter name auto-filled from Google profile
+  const submitterName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || '';
+
   // Sound FX toggle
   const [soundEnabled, setSoundEnabled] = useState<boolean>(() => {
     try {
@@ -439,30 +442,24 @@ export default function App() {
         return next;
       });
 
-      setProducts((prev) => {
-        const updated = prev.map((p) => {
+      setProducts((prev) =>
+        prev.map((p) => {
           if (p.id === product.id) {
-            return {
-              ...p,
-              upvotes: (p.upvotes ?? 0) + (result ? 1 : -1),
-              updatedAt: Date.now(),
-            };
+            return { ...p, upvotes: (p.upvotes ?? 0) + (result ? 1 : -1), updatedAt: Date.now() };
           }
           return p;
-        });
-        return recomputeRanks(updated);
-      });
+        })
+      );
     } else {
       // Not logged in: simple local increment
-      setProducts((prev) => {
-        const updated = prev.map((p) => {
+      setProducts((prev) =>
+        prev.map((p) => {
           if (p.id === product.id) {
             return { ...p, upvotes: (p.upvotes ?? 0) + 1, updatedAt: Date.now() };
           }
           return p;
-        });
-        return recomputeRanks(updated);
-      });
+        })
+      );
     }
   };
 
@@ -492,7 +489,7 @@ export default function App() {
       logoUrl: getWebsiteFavicon(url),
       twitterHandle,
       category,
-      backerName: backerName || 'Creator',
+      backerName: backerName || submitterName || 'Creator',
       backerEmail,
       status: 'under_review',
       submittedAt: Date.now(),
@@ -591,9 +588,9 @@ export default function App() {
       bidHistory: [],
     };
 
-    const updated = [newProd, ...products];
-    const reRanked = recomputeRanks(updated);
-    setProducts(reRanked);
+    // Append new product at the end — do NOT recompute ranks
+    // so admin-assigned positions are preserved
+    setProducts((prev) => [...prev, newProd]);
   };
 
   // Admin Reject Pipeline
@@ -657,10 +654,7 @@ export default function App() {
 
   // Delist a product — removes it from the live directory
   const handleDelistProduct = (productId: string) => {
-    setProducts((prev) => {
-      const updated = prev.filter((p) => p.id !== productId);
-      return recomputeRanks(updated);
-    });
+    setProducts((prev) => prev.filter((p) => p.id !== productId));
   };
 
   // Manually assign a product to a specific rank (1-based)
