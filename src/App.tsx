@@ -18,6 +18,7 @@ import { BorderBeam } from './components/BorderBeam';
 import { AdminAcceptPage } from './components/AdminAcceptPage';
 import { RichFooter } from './components/RichFooter';
 import { Header } from './components/Header';
+import { FeaturedProductSelector } from './components/FeaturedProductSelector';
 import { SignInModal } from './components/SignInModal';
 import { ProfilePage } from './components/ProfilePage';
 import { SaaSIdeas } from './components/SaaSIdeas';
@@ -940,6 +941,15 @@ export default function App() {
         ) : (
         <>
         {selectedCategory === 'All' && !searchQuery.trim() && topProduct ? (
+          <>
+          {/* Admin: Featured Product Selector */}
+          {isAdmin && (
+            <FeaturedProductSelector
+              products={products}
+              featuredId={featuredProductId}
+              onSelect={handleSetFeatured}
+            />
+          )}
           <BorderBeam
             duration={5}
             size={260}
@@ -956,6 +966,7 @@ export default function App() {
               onUpvote={handleUpvote}
             />
           </BorderBeam>
+          </>
         ) : selectedCategory !== 'All' && topThreeProducts.length > 0 ? (
           /* When any category is selected, ALWAYS show Top 3 at the top before showing the category */
           <div className="space-y-2.5">
