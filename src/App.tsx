@@ -546,7 +546,7 @@ export default function App() {
       twitterHandle: sub.twitterHandle,
       category: sub.category,
       totalBid: 0,
-      upvotes: 5,
+      upvotes: 0,
       clicks: 1,
       createdAt: Date.now(),
       updatedAt: Date.now(),
