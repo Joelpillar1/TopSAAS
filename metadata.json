@@ -1,0 +1,6 @@
+{
+  "name": "TopSAAS",
+  "description": "A clean monochrome directory showcasing top websites and web tools with free submissions and community curation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
