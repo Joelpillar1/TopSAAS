@@ -207,18 +207,38 @@ export default function App() {
     } catch {}
   }, [products, soundEnabled, submissions]);
 
-  // Auth: listen for session changes and get initial session
+  // Auth: listen for session changes, get initial session, and save profile
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
+      if (session?.user) saveUserProfile(session.user);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
+      if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION')) {
+        saveUserProfile(session.user);
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Save user profile to Supabase profiles table
+  const saveUserProfile = async (u: User) => {
+    try {
+      const { error } = await supabase.from('profiles').upsert({
+        id: u.id,
+        email: u.email || null,
+        full_name: u.user_metadata?.full_name || u.user_metadata?.name || null,
+        avatar_url: u.user_metadata?.avatar_url || u.user_metadata?.picture || null,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'id' });
+      if (error) console.error('Profile save error:', error.message);
+    } catch (e) {
+      console.error('Profile save failed:', e);
+    }
+  };
 
   // Auth: sign in with Google
   const handleSignIn = async () => {
