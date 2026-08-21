@@ -25,6 +25,58 @@ import { supabase } from './utils/supabase';
 import { getWebsiteFavicon } from './utils/logo';
 import { LayoutGrid, Table as TableIcon, RefreshCw, Trophy, Sparkles, X, Plus, ShieldCheck } from 'lucide-react';
 
+// Map a Supabase DB row to our WebsiteSubmission type
+const mapDbSubmission = (row: Record<string, unknown>): WebsiteSubmission => ({
+  id: row.id as string,
+  name: row.name as string,
+  tagline: row.tagline as string,
+  url: row.url as string,
+  logoUrl: (row.logo_url as string) || undefined,
+  twitterHandle: (row.twitter_handle as string) || undefined,
+  category: row.category as Category,
+  backerName: (row.backer_name as string) || 'Creator',
+  backerEmail: (row.backer_email as string) || undefined,
+  status: row.status as WebsiteSubmission['status'],
+  submittedAt: row.submitted_at as number,
+  reviewedAt: (row.reviewed_at as number) || undefined,
+  rejectionReason: (row.rejection_reason as string) || undefined,
+  targetAudience: (row.target_audience as string) || undefined,
+  pricingModel: (row.pricing_model as string) || undefined,
+});
+
+// Map a WebsiteSubmission to Supabase insert/update format
+const toDbSubmission = (sub: WebsiteSubmission) => ({
+  id: sub.id,
+  name: sub.name,
+  tagline: sub.tagline,
+  url: sub.url,
+  logo_url: sub.logoUrl || null,
+  twitter_handle: sub.twitterHandle || null,
+  category: sub.category,
+  backer_name: sub.backerName,
+  backer_email: sub.backerEmail || null,
+  status: sub.status,
+  submitted_at: sub.submittedAt,
+  reviewed_at: sub.reviewedAt || null,
+  rejection_reason: sub.rejectionReason || null,
+  target_audience: sub.targetAudience || null,
+  pricing_model: sub.pricingModel || null,
+});
+
+// Debounced sync of submissions to Supabase
+let syncTimeout: ReturnType<typeof setTimeout> | null = null;
+const syncSubmissionsToSupabase = (subs: WebsiteSubmission[]) => {
+  if (syncTimeout) clearTimeout(syncTimeout);
+  syncTimeout = setTimeout(async () => {
+    try {
+      await supabase.from('submissions').upsert(
+        subs.map(toDbSubmission),
+        { onConflict: 'id' }
+      );
+    } catch {}
+  }, 1000);
+};
+
 let idCounter = 0;
 const generateUniqueId = (prefix: string = 'id') => {
   idCounter += 1;
@@ -62,18 +114,25 @@ export default function App() {
   });
 
   // Submissions queue (Under Review / Approved / Rejected)
-  const [submissions, setSubmissions] = useState<WebsiteSubmission[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.SUBMISSIONS);
-      if (saved) {
-        const parsed: WebsiteSubmission[] = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+  const [submissions, setSubmissions] = useState<WebsiteSubmission[]>(INITIAL_SUBMISSIONS);
+  const [submissionsLoaded, setSubmissionsLoaded] = useState(false);
+
+  // Load submissions from Supabase on mount
+  useEffect(() => {
+    async function loadSubmissions() {
+      try {
+        const { data, error } = await supabase
+          .from('submissions')
+          .select('*')
+          .order('submitted_at', { ascending: false });
+        if (!error && data && data.length > 0) {
+          setSubmissions(data.map(mapDbSubmission));
         }
-      }
-    } catch {}
-    return INITIAL_SUBMISSIONS;
-  });
+      } catch {}
+      setSubmissionsLoaded(true);
+    }
+    loadSubmissions();
+  }, []);
 
   // Load persisted live products
   const [products, setProducts] = useState<Product[]>(() => {
@@ -198,14 +257,46 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Persist State Changes
+  // Persist State Changes (products + sound to localStorage, submissions to Supabase)
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
       localStorage.setItem(STORAGE_KEYS.SOUND, soundEnabled.toString());
-      localStorage.setItem(STORAGE_KEYS.SUBMISSIONS, JSON.stringify(submissions));
     } catch {}
-  }, [products, soundEnabled, submissions]);
+  }, [products, soundEnabled]);
+
+  // Sync submissions to Supabase when they change (after initial load)
+  useEffect(() => {
+    if (!submissionsLoaded) return;
+    syncSubmissionsToSupabase(submissions);
+  }, [submissions, submissionsLoaded]);
+
+  // Subscribe to realtime changes on submissions table for live admin updates
+  useEffect(() => {
+    if (!submissionsLoaded) return;
+    const channel = supabase
+      .channel('submissions-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'submissions' }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          const newRow = payload.new as Record<string, unknown>;
+          setSubmissions((prev) => {
+            const mapped = mapDbSubmission(newRow);
+            if (prev.some((s) => s.id === mapped.id)) return prev;
+            return [mapped, ...prev];
+          });
+        } else if (payload.eventType === 'UPDATE') {
+          const updated = payload.new as Record<string, unknown>;
+          setSubmissions((prev) =>
+            prev.map((s) => (s.id === updated.id ? mapDbSubmission(updated) : s))
+          );
+        } else if (payload.eventType === 'DELETE') {
+          const deleted = payload.old as Record<string, unknown>;
+          setSubmissions((prev) => prev.filter((s) => s.id !== deleted.id));
+        }
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [submissionsLoaded]);
 
   // Auth: listen for session changes, get initial session, and save profile
   useEffect(() => {
@@ -299,7 +390,7 @@ export default function App() {
   };
 
   // Handle User Submission (Places into "under_review" queue)
-  const handleConfirmSubmit = ({
+  const handleConfirmSubmit = async ({
     name,
     tagline,
     url,
@@ -330,17 +421,28 @@ export default function App() {
       submittedAt: Date.now(),
     };
 
+    // Save to Supabase immediately
+    try {
+      const dbRow = toDbSubmission(newSubmission);
+      (dbRow as Record<string, unknown>).submitted_by = user?.id || null;
+      await supabase.from('submissions').insert(dbRow);
+    } catch {}
+
     setSubmissions((prev) => [newSubmission, ...prev]);
   };
 
   // Admin Acceptance Pipeline: converts a submission into a live Product on the website
-  const handleAcceptSubmission = (sub: WebsiteSubmission) => {
-    // 1. Update status to approved in submissions queue
+  const handleAcceptSubmission = async (sub: WebsiteSubmission) => {
+    // 1. Update status to approved in submissions queue + Supabase
+    const reviewedAt = Date.now();
     setSubmissions((prev) =>
       prev.map((s) =>
-        s.id === sub.id ? { ...s, status: 'approved', reviewedAt: Date.now() } : s
+        s.id === sub.id ? { ...s, status: 'approved', reviewedAt } : s
       )
     );
+    try {
+      await supabase.from('submissions').update({ status: 'approved', reviewed_at: reviewedAt }).eq('id', sub.id);
+    } catch {}
 
     // 2. Add to live products (if not already existing by URL)
     const existingIndex = products.findIndex(
@@ -418,42 +520,55 @@ export default function App() {
   };
 
   // Admin Reject Pipeline
-  const handleRejectSubmission = (submissionId: string, reason?: string) => {
+  const handleRejectSubmission = async (submissionId: string, reason?: string) => {
+    const reviewedAt = Date.now();
+    const rejectionReason = reason || 'Did not meet current directory guidelines';
     setSubmissions((prev) =>
       prev.map((s) =>
-        s.id === submissionId
-          ? {
-              ...s,
-              status: 'rejected',
-              reviewedAt: Date.now(),
-              rejectionReason: reason || 'Did not meet current directory guidelines',
-            }
-          : s
+        s.id === submissionId ? { ...s, status: 'rejected', reviewedAt, rejectionReason } : s
       )
     );
+    try {
+      await supabase.from('submissions').update({ status: 'rejected', reviewed_at: reviewedAt, rejection_reason: rejectionReason }).eq('id', submissionId);
+    } catch {}
   };
 
   // Admin Delete Permanent
-  const handleDeleteSubmission = (submissionId: string) => {
+  const handleDeleteSubmission = async (submissionId: string) => {
     setSubmissions((prev) => prev.filter((s) => s.id !== submissionId));
+    try {
+      await supabase.from('submissions').delete().eq('id', submissionId);
+    } catch {}
   };
 
   // Admin Update Submission Details
-  const handleUpdateSubmission = (updated: WebsiteSubmission) => {
+  const handleUpdateSubmission = async (updated: WebsiteSubmission) => {
     setSubmissions((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
+    try {
+      await supabase.from('submissions').update(toDbSubmission(updated)).eq('id', updated.id);
+    } catch {}
   };
 
   // Admin Restore Submission to Queue
-  const handleRestoreSubmission = (submissionId: string) => {
+  const handleRestoreSubmission = async (submissionId: string) => {
     setSubmissions((prev) =>
       prev.map((s) => (s.id === submissionId ? { ...s, status: 'under_review' } : s))
     );
+    try {
+      await supabase.from('submissions').update({ status: 'under_review', reviewed_at: null }).eq('id', submissionId);
+    } catch {}
   };
 
   // Seed sample submissions for testing
-  const handleSeedSampleSubmissions = () => {
+  const handleSeedSampleSubmissions = async () => {
     setSubmissions(INITIAL_SUBMISSIONS);
     playSound('click', soundEnabled);
+    try {
+      await supabase.from('submissions').upsert(
+        INITIAL_SUBMISSIONS.map(toDbSubmission),
+        { onConflict: 'id' }
+      );
+    } catch {}
   };
 
   // Track click on a website
