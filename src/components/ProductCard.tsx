@@ -11,6 +11,9 @@ interface ProductCardProps {
   onShareProduct: (product: Product) => void;
   onTrackClick: (productId: string, url: string) => void;
   onUpvote?: (product: Product) => void;
+  isAdmin?: boolean;
+  isFeatured?: boolean;
+  onSetFeatured?: (productId: string) => void;
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({
@@ -21,6 +24,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onShareProduct,
   onTrackClick,
   onUpvote,
+  isAdmin,
+  isFeatured,
+  onSetFeatured,
 }) => {
   const prevRank = product.previousRank ?? rank;
   const rankDiff = prevRank - rank;
@@ -162,6 +168,26 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         </div>
 
         <div className="flex items-center gap-1.5">
+          {isAdmin && !isFeatured && onSetFeatured && (
+            <button
+              type="button"
+              onClick={() => {
+                playSound('click', soundEnabled);
+                onSetFeatured(product.id);
+              }}
+              title="Set as featured product"
+              className="inline-flex items-center justify-center gap-1 rounded-lg border border-neutral-200 bg-white px-2 py-1 text-[10px] font-bold text-neutral-500 hover:border-black hover:text-black hover:bg-neutral-50 transition-all cursor-pointer shadow-2xs min-h-[28px]"
+            >
+              <Crown className="h-2.5 w-2.5" />
+              <span>Feature</span>
+            </button>
+          )}
+          {isFeatured && (
+            <span className="inline-flex items-center gap-1 rounded-lg bg-black px-2 py-1 text-[10px] font-bold text-white min-h-[28px]">
+              <Crown className="h-2.5 w-2.5 fill-white stroke-white" />
+              <span>Featured</span>
+            </span>
+          )}
           {onUpvote && (
             <button
               type="button"

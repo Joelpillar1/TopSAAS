@@ -1,22 +1,19 @@
 import React from 'react';
-import { Trophy, Plus, LogOut } from 'lucide-react';
+import { Trophy, Plus } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 
 interface HeaderProps {
   onGoHome?: () => void;
   onOpenSubmit?: () => void;
   onSignIn?: () => void;
-  onSignOut?: () => void;
   onGoToProfile?: () => void;
   user?: User | null;
-  soundEnabled?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   onGoHome,
   onOpenSubmit,
   onSignIn,
-  onSignOut,
   onGoToProfile,
   user,
 }) => {
@@ -74,15 +71,6 @@ export const Header: React.FC<HeaderProps> = ({
                 <span className="hidden sm:inline text-xs font-bold text-black truncate max-w-[120px]">
                   {user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
                 </span>
-              </button>
-              {/* Sign Out */}
-              <button
-                type="button"
-                onClick={onSignOut}
-                className="flex items-center gap-1.5 rounded-lg border border-neutral-300 bg-white px-2.5 py-2 text-xs font-bold text-neutral-600 hover:border-red-300 hover:text-red-600 hover:bg-red-50 transition-all cursor-pointer shadow-2xs"
-                title="Sign out"
-              >
-                <LogOut className="h-3.5 w-3.5" />
               </button>
             </div>
           ) : (

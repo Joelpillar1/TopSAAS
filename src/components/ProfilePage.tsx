@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, ExternalLink, Clock, CheckCircle2, XCircle, Loader2, FileText, Globe, Mail, Calendar, Pencil, Save, X, AlertCircle } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Clock, CheckCircle2, XCircle, Loader2, FileText, Globe, Mail, Calendar, Pencil, Save, X, AlertCircle, LogOut } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '../utils/supabase';
 import { WebsiteSubmission, SubmissionStatus, Category } from '../types';
@@ -7,6 +7,7 @@ import { WebsiteSubmission, SubmissionStatus, Category } from '../types';
 interface ProfilePageProps {
   user: User;
   onBack: () => void;
+  onSignOut?: () => void;
 }
 
 const CATEGORIES: Category[] = [
@@ -50,7 +51,7 @@ const mapDbSubmission = (row: Record<string, unknown>): WebsiteSubmission => ({
   rejectionReason: (row.rejection_reason as string) || undefined,
 });
 
-export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onBack }) => {
+export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onBack, onSignOut }) => {
   const [submissions, setSubmissions] = useState<WebsiteSubmission[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -128,7 +129,17 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onBack }) => {
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
-          <h1 className="text-sm font-black text-black">My Submissions</h1>
+          <h1 className="text-sm font-black text-black flex-1">My Submissions</h1>
+          {onSignOut && (
+            <button
+              type="button"
+              onClick={onSignOut}
+              className="flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-bold text-neutral-500 hover:border-red-300 hover:text-red-600 hover:bg-red-50 transition-all cursor-pointer"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Sign out</span>
+            </button>
+          )}
         </div>
       </div>
 

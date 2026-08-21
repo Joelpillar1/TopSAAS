@@ -176,6 +176,13 @@ export default function App() {
   const [userUpvotes, setUserUpvotes] = useState<Set<string>>(new Set());
   const [productsLoaded, setProductsLoaded] = useState(false);
 
+  // Featured product (admin can set any product as featured)
+  const [featuredProductId, setFeaturedProductId] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem('topsaas_featured_product');
+    } catch { return null; }
+  });
+
   // Submitter name auto-filled from Google profile
   const submitterName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || '';
 
@@ -683,7 +690,14 @@ export default function App() {
     }
   };
 
-  const topProduct = products[0] || INITIAL_PRODUCTS[0];
+  // Admin: set any product as the featured product
+  const handleSetFeatured = (productId: string) => {
+    setFeaturedProductId(productId);
+    try { localStorage.setItem('topsaas_featured_product', productId); } catch {}
+    playSound('click', soundEnabled);
+  };
+
+  const topProduct = (featuredProductId ? products.find((p) => p.id === featuredProductId) : null) || products[0] || INITIAL_PRODUCTS[0];
   // Compute isUserOwned dynamically from submittedBy
   const markOwnership = (p: Product) => ({ ...p, isUserOwned: !!(user && p.submittedBy && p.submittedBy === user.id) });
   const topThreeProducts = products.slice(0, 3).map(markOwnership);
@@ -731,6 +745,7 @@ export default function App() {
       <ProfilePage
         user={user}
         onBack={handleBackToLeaderboard}
+        onSignOut={handleSignOut}
       />
     );
   }
@@ -794,10 +809,8 @@ export default function App() {
           onGoHome={handleBackToLeaderboard}
           onOpenSubmit={handleOpenSubmit}
           onSignIn={handleSignIn}
-          onSignOut={handleSignOut}
           onGoToProfile={handleGoToProfile}
           user={user}
-          soundEnabled={soundEnabled}
         />
         <ProductPage
           product={activeProductPage}
@@ -859,10 +872,8 @@ export default function App() {
         onGoHome={handleBackToLeaderboard}
         onOpenSubmit={handleOpenSubmit}
         onSignIn={handleSignIn}
-        onSignOut={handleSignOut}
         onGoToProfile={handleGoToProfile}
         user={user}
-        soundEnabled={soundEnabled}
       />
       {/* Main Content Area */}
       <main className="mx-auto w-full max-w-5xl px-3.5 sm:px-6 space-y-3 sm:space-y-4 flex-1 pb-24 sm:pb-8 pt-4">
@@ -984,6 +995,9 @@ export default function App() {
                     onShareProduct={(prod) => setShareProduct(prod)}
                     onTrackClick={handleTrackClick}
                     onUpvote={handleUpvote}
+                    isAdmin={isAdmin}
+                    isFeatured={p.id === featuredProductId}
+                    onSetFeatured={handleSetFeatured}
                   />
                 </BorderBeam>
               ))}
@@ -1141,13 +1155,14 @@ export default function App() {
                       key={p.id}
                       product={p}
                       rank={calculatedRank}
-                      maxBid={0}
                       soundEnabled={soundEnabled}
-                      onOutbidProduct={() => handleUpvote(p)}
                       onViewDetails={(prod) => handleOpenProductPage(prod)}
                       onShareProduct={(prod) => setShareProduct(prod)}
                       onTrackClick={handleTrackClick}
                       onUpvote={handleUpvote}
+                      isAdmin={isAdmin}
+                      isFeatured={p.id === featuredProductId}
+                      onSetFeatured={handleSetFeatured}
                     />
                   );
 
