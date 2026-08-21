@@ -341,9 +341,12 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Load products from Supabase on mount
+  // Load products from Supabase on mount (only once, then local state is source of truth)
+  const productsLoadedRef = React.useRef(false);
   useEffect(() => {
     async function load() {
+      if (productsLoadedRef.current) return;
+      productsLoadedRef.current = true;
       const dbProducts = await loadProducts();
       if (dbProducts && dbProducts.length > 0) {
         setProducts(dbProducts);
@@ -519,78 +522,62 @@ export default function App() {
     } catch {}
 
     // 2. Add to live products (if not already existing by URL)
-    const existingIndex = products.findIndex(
-      (p) => p.url.toLowerCase().replace(/\/$/, '') === sub.url.toLowerCase().replace(/\/$/, '')
-    );
+    setProducts((prev) => {
+      const existingIndex = prev.findIndex(
+        (p) => p.url.toLowerCase().replace(/\/$/, '') === sub.url.toLowerCase().replace(/\/$/, '')
+      );
 
-    if (existingIndex >= 0) {
-      // Already exists, just ensure it's verified
-      setProducts((prev) =>
-        prev.map((p, idx) =>
+      if (existingIndex >= 0) {
+        return prev.map((p, idx) =>
           idx === existingIndex
             ? { ...p, name: sub.name, tagline: sub.tagline, category: sub.category, verified: true }
             : p
-        )
-      );
-      return;
-    }
+        );
+      }
 
-    const newProd: Product = {
-      id: generateUniqueId('prod'),
-      rank: products.length + 1,
-      previousRank: products.length + 1,
-      name: sub.name,
-      tagline: sub.tagline,
-      url: sub.url,
-      logoUrl: sub.logoUrl || getWebsiteFavicon(sub.url),
-      twitterHandle: sub.twitterHandle,
-      category: sub.category,
-      totalBid: 0,
-      upvotes: 0,
-      clicks: 1,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-      verified: true,
-      isUserOwned: true,
-      description: `${sub.name} is a high-quality product in the ${sub.category} ecosystem. ${sub.tagline}. Built to provide unmatched performance and productivity, ${sub.name} delivers modern workflows with intuitive usability.`,
-      whatItDoes: [
-        `Core Workflow Acceleration: Streamlines essential ${sub.category.toLowerCase()} tasks with instant response times and automated helpers.`,
-        `Intuitive User Interface: Engineered with clean usability and keyboard-friendly navigation.`,
-        `High Reliability & Speed: Designed for scale with secure cloud infrastructure and constant uptime.`,
-        `Integration Capabilities: Connects directly with your favorite web and developer workflows.`
-      ],
-      features: [
-        {
-          title: 'Modern Web Architecture',
-          description: `Built using cutting-edge technologies tailored for ${sub.category.toLowerCase()} workflows.`,
-          tag: 'Core Superpower'
-        },
-        {
-          title: 'Instant Setup & Onboarding',
-          description: 'Get started in seconds with zero friction and straightforward onboarding.',
-          tag: 'Usability'
-        }
-      ],
-      useCases: [
-        {
-          title: 'Productivity & Flow Optimization',
-          description: `Empowers builders and teams to achieve higher throughput in ${sub.category.toLowerCase()}.`,
-          audience: 'Builders & Teams'
-        }
-      ],
-      targetAudience: 'Makers, software builders, and modern digital teams.',
-      pricingModel: 'Free tier / Flexible plans available',
-      keyHighlights: [
-        { label: 'Category', value: sub.category },
-        { label: 'Submitted By', value: sub.backerName || 'Community Creator' },
-        { label: 'Status', value: 'Live on Directory' }
-      ],
-      bidHistory: [],
-    };
+      const newProd: Product = {
+        id: generateUniqueId('prod'),
+        rank: prev.length + 1,
+        previousRank: prev.length + 1,
+        name: sub.name,
+        tagline: sub.tagline,
+        url: sub.url,
+        logoUrl: sub.logoUrl || getWebsiteFavicon(sub.url),
+        twitterHandle: sub.twitterHandle,
+        category: sub.category,
+        totalBid: 0,
+        upvotes: 0,
+        clicks: 1,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        verified: true,
+        isUserOwned: true,
+        description: `${sub.name} is a high-quality product in the ${sub.category} ecosystem. ${sub.tagline}.`,
+        whatItDoes: [
+          `Core Workflow Acceleration: Streamlines essential ${sub.category.toLowerCase()} tasks.`,
+          `Intuitive User Interface: Clean usability and keyboard-friendly navigation.`,
+          `High Reliability & Speed: Designed for scale with secure cloud infrastructure.`,
+          `Integration Capabilities: Connects with your favorite web and developer workflows.`
+        ],
+        features: [
+          { title: 'Modern Web Architecture', description: `Built with cutting-edge tech for ${sub.category.toLowerCase()} workflows.`, tag: 'Core Superpower' },
+          { title: 'Instant Setup & Onboarding', description: 'Get started in seconds with zero friction.', tag: 'Usability' }
+        ],
+        useCases: [
+          { title: 'Productivity & Flow Optimization', description: `Empowers builders to achieve higher throughput in ${sub.category.toLowerCase()}.`, audience: 'Builders & Teams' }
+        ],
+        targetAudience: 'Makers, software builders, and modern digital teams.',
+        pricingModel: 'Free tier / Flexible plans available',
+        keyHighlights: [
+          { label: 'Category', value: sub.category },
+          { label: 'Submitted By', value: sub.backerName || 'Community Creator' },
+          { label: 'Status', value: 'Live on Directory' }
+        ],
+        bidHistory: [],
+      };
 
-    // Append new product at the end — do NOT recompute ranks
-    // so admin-assigned positions are preserved
-    setProducts((prev) => [...prev, newProd]);
+      return [...prev, newProd];
+    });
   };
 
   // Admin Reject Pipeline
