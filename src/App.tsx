@@ -257,7 +257,7 @@ export default function App() {
     if (!user) {
       setIsSignInModalOpen(true);
     } else {
-      handleOpenSubmit();
+      setIsSubmitModalOpen(true);
     }
   };
 
