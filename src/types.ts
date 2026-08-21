@@ -53,6 +53,7 @@ export interface Product {
   updatedAt: number;
   bidHistory?: BidHistoryEntry[];
   isUserOwned?: boolean;
+  submittedBy?: string; // user ID of who submitted this product
   featuredQuote?: string;
   verified?: boolean;
   description?: string;
@@ -98,4 +99,5 @@ export interface WebsiteSubmission {
   rejectionReason?: string;
   targetAudience?: string;
   pricingModel?: string;
+  submittedBy?: string; // user ID of the submitter
 }

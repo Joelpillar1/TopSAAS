@@ -44,6 +44,7 @@ const mapDbSubmission = (row: Record<string, unknown>): WebsiteSubmission => ({
   rejectionReason: (row.rejection_reason as string) || undefined,
   targetAudience: (row.target_audience as string) || undefined,
   pricingModel: (row.pricing_model as string) || undefined,
+  submittedBy: (row.submitted_by as string) || undefined,
 });
 
 // Map a WebsiteSubmission to Supabase insert/update format
@@ -496,6 +497,7 @@ export default function App() {
       backerEmail,
       status: 'under_review',
       submittedAt: Date.now(),
+      submittedBy: user?.id,
     };
 
     // Save to Supabase immediately
@@ -551,7 +553,8 @@ export default function App() {
         createdAt: Date.now(),
         updatedAt: Date.now(),
         verified: true,
-        isUserOwned: true,
+        isUserOwned: false,
+        submittedBy: sub.submittedBy,
         description: `${sub.name} is a high-quality product in the ${sub.category} ecosystem. ${sub.tagline}.`,
         whatItDoes: [
           `Core Workflow Acceleration: Streamlines essential ${sub.category.toLowerCase()} tasks.`,
@@ -681,8 +684,10 @@ export default function App() {
   };
 
   const topProduct = products[0] || INITIAL_PRODUCTS[0];
-  const topThreeProducts = products.slice(0, 3);
-  const activeProductPage = products.find((p) => p.id === selectedProductId) || null;
+  // Compute isUserOwned dynamically from submittedBy
+  const markOwnership = (p: Product) => ({ ...p, isUserOwned: !!(user && p.submittedBy && p.submittedBy === user.id) });
+  const topThreeProducts = products.slice(0, 3).map(markOwnership);
+  const activeProductPage = products.find((p) => p.id === selectedProductId) ? markOwnership(products.find((p) => p.id === selectedProductId)!) : null;
   const pendingReviewCount = submissions.filter((s) => s.status === 'under_review').length;
 
   // Filter products by category and search query
@@ -696,7 +701,7 @@ export default function App() {
       p.category.toLowerCase().includes(query) ||
       (p.description && p.description.toLowerCase().includes(query));
     return matchesCat && matchesQuery;
-  });
+  }).map(markOwnership);
 
   // Reset page to 1 when filters change
   useEffect(() => {
