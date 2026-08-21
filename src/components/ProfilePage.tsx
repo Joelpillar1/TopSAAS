@@ -61,10 +61,11 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onBack }) => {
 
   useEffect(() => {
     async function fetchSubmissions() {
+      // Fetch by submitted_by OR by matching email (for legacy submissions)
       const { data, error } = await supabase
         .from('submissions')
         .select('*')
-        .eq('submitted_by', user.id)
+        .or(`submitted_by.eq.${user.id},backer_email.eq.${user.email || '__none__'}`)
         .order('submitted_at', { ascending: false });
       if (!error && data) {
         setSubmissions(data.map(mapDbSubmission));
@@ -72,7 +73,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onBack }) => {
       setLoading(false);
     }
     fetchSubmissions();
-  }, [user.id]);
+  }, [user.id, user.email]);
 
   const startEditing = (sub: WebsiteSubmission) => {
     setEditingId(sub.id);
@@ -109,7 +110,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onBack }) => {
     setSaving(false);
   };
 
-  const canEdit = (status: SubmissionStatus) => status === 'under_review' || status === 'rejected';
+  const canEdit = () => true;
 
   const pendingCount = submissions.filter((s) => s.status === 'under_review').length;
   const approvedCount = submissions.filter((s) => s.status === 'approved').length;
@@ -213,7 +214,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onBack }) => {
                       <span className="text-[10px] text-neutral-400 font-mono">
                         {new Date(sub.submittedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                       </span>
-                      {canEdit(sub.status) && !isEditing && (
+                      {canEdit() && !isEditing && (
                         <button
                           type="button"
                           onClick={() => startEditing(sub)}
