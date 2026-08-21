@@ -7,6 +7,7 @@ interface HeaderProps {
   onOpenSubmit?: () => void;
   onSignIn?: () => void;
   onSignOut?: () => void;
+  onGoToProfile?: () => void;
   user?: User | null;
   soundEnabled?: boolean;
 }
@@ -16,6 +17,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenSubmit,
   onSignIn,
   onSignOut,
+  onGoToProfile,
   user,
 }) => {
   return (
@@ -51,8 +53,13 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Auth: Sign in or User Avatar */}
           {user ? (
             <div className="flex items-center gap-2">
-              {/* User Avatar */}
-              <div className="flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 shadow-2xs">
+              {/* User Avatar — click to view profile */}
+              <button
+                type="button"
+                onClick={onGoToProfile}
+                className="flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 shadow-2xs hover:border-neutral-400 hover:bg-neutral-50 transition-all cursor-pointer"
+                title="My submissions"
+              >
                 {user.user_metadata?.avatar_url ? (
                   <img
                     src={user.user_metadata.avatar_url}
@@ -67,7 +74,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <span className="hidden sm:inline text-xs font-bold text-black truncate max-w-[120px]">
                   {user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
                 </span>
-              </div>
+              </button>
               {/* Sign Out */}
               <button
                 type="button"

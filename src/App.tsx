@@ -19,6 +19,7 @@ import { AdminAcceptPage } from './components/AdminAcceptPage';
 import { RichFooter } from './components/RichFooter';
 import { Header } from './components/Header';
 import { SignInModal } from './components/SignInModal';
+import { ProfilePage } from './components/ProfilePage';
 import { SaaSIdeas } from './components/SaaSIdeas';
 import { playSound } from './utils/sound';
 import { supabase } from './utils/supabase';
@@ -213,6 +214,9 @@ export default function App() {
       if (path === '/accept' || hash === '#accept' || hash === '#/accept') {
         setCurrentRoute('/accept');
         setSelectedProductId(null);
+      } else if (path === '/profile' || hash === '#profile' || hash === '#/profile') {
+        setCurrentRoute('/profile');
+        setSelectedProductId(null);
       } else if (hash.startsWith('#product-')) {
         setCurrentRoute('/');
         const hashId = hash.replace('#product-', '');
@@ -257,6 +261,21 @@ export default function App() {
       window.history.pushState({}, 'Admin Moderation', '/accept');
     } catch {
       window.location.hash = 'accept';
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleGoToProfile = () => {
+    if (!user) {
+      setIsSignInModalOpen(true);
+      return;
+    }
+    setSelectedProductId(null);
+    setCurrentRoute('/profile');
+    try {
+      window.history.pushState({}, 'My Profile', '/profile');
+    } catch {
+      window.location.hash = 'profile';
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -715,6 +734,21 @@ export default function App() {
     }
   }, [filteredProducts.length, totalPages, currentPage]);
 
+  // 0. PROFILE PAGE ROUTE (/profile)
+  if (currentRoute === '/profile') {
+    if (!user) {
+      setIsSignInModalOpen(true);
+      setCurrentRoute('/');
+      return null;
+    }
+    return (
+      <ProfilePage
+        user={user}
+        onBack={handleBackToLeaderboard}
+      />
+    );
+  }
+
   // 1. ADMIN ACCEPT PAGE ROUTE (/accept)
   if (currentRoute === '/accept') {
     // Non-admins get redirected to homepage
@@ -775,6 +809,7 @@ export default function App() {
           onOpenSubmit={handleOpenSubmit}
           onSignIn={handleSignIn}
           onSignOut={handleSignOut}
+          onGoToProfile={handleGoToProfile}
           user={user}
           soundEnabled={soundEnabled}
         />
@@ -839,6 +874,7 @@ export default function App() {
         onOpenSubmit={handleOpenSubmit}
         onSignIn={handleSignIn}
         onSignOut={handleSignOut}
+        onGoToProfile={handleGoToProfile}
         user={user}
         soundEnabled={soundEnabled}
       />
