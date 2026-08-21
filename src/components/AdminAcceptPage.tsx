@@ -36,6 +36,7 @@ import { WebsiteSubmission, Category, Product } from '../types';
 import { playSound } from '../utils/sound';
 import { getWebsiteFavicon } from '../utils/logo';
 import { BorderBeam } from './BorderBeam';
+import { FeaturedProductSelector } from './FeaturedProductSelector';
 
 interface AdminAcceptPageProps {
   submissions: WebsiteSubmission[];
@@ -52,6 +53,8 @@ interface AdminAcceptPageProps {
   onSeedSampleSubmissions: () => void;
   soundEnabled: boolean;
   onToggleSound: () => void;
+  featuredProductId: string | null;
+  onSetFeatured: (productId: string) => void;
 }
 
 export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
@@ -68,6 +71,8 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
   onOpenSubmitModal,
   onSeedSampleSubmissions,
   soundEnabled,
+  featuredProductId,
+  onSetFeatured,
 }) => {
   // Active view tab: submissions queue vs products management
   const [activeView, setActiveView] = useState<'submissions' | 'products'>('submissions');
@@ -646,6 +651,13 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                 <p className="text-[11px] text-neutral-500 mt-1">Across all products</p>
               </div>
             </div>
+
+            {/* Featured Product Selector */}
+            <FeaturedProductSelector
+              products={products}
+              featuredId={featuredProductId}
+              onSelect={onSetFeatured}
+            />
 
             {/* Products Search & Filter */}
             <div className="rounded-xl border border-neutral-300 bg-white p-3.5 sm:p-4 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3">

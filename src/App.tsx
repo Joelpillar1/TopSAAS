@@ -18,7 +18,6 @@ import { BorderBeam } from './components/BorderBeam';
 import { AdminAcceptPage } from './components/AdminAcceptPage';
 import { RichFooter } from './components/RichFooter';
 import { Header } from './components/Header';
-import { FeaturedProductSelector } from './components/FeaturedProductSelector';
 import { SignInModal } from './components/SignInModal';
 import { ProfilePage } from './components/ProfilePage';
 import { SaaSIdeas } from './components/SaaSIdeas';
@@ -26,7 +25,7 @@ import { playSound } from './utils/sound';
 import { supabase } from './utils/supabase';
 import { loadProducts, debouncedSyncProducts, toggleUpvote, getUserUpvotes, checkIsAdmin } from './utils/db';
 import { getWebsiteFavicon } from './utils/logo';
-import { LayoutGrid, Table as TableIcon, RefreshCw, Trophy, Sparkles, X, Plus, ShieldCheck } from 'lucide-react';
+import { LayoutGrid, Table as TableIcon, RefreshCw, Trophy, Sparkles, X, Plus, ShieldCheck, Crown } from 'lucide-react';
 
 // Map a Supabase DB row to our WebsiteSubmission type
 const mapDbSubmission = (row: Record<string, unknown>): WebsiteSubmission => ({
@@ -783,6 +782,8 @@ export default function App() {
           onSeedSampleSubmissions={handleSeedSampleSubmissions}
           soundEnabled={soundEnabled}
           onToggleSound={() => setSoundEnabled(!soundEnabled)}
+          featuredProductId={featuredProductId}
+          onSetFeatured={handleSetFeatured}
         />
 
         {/* Submit Website Modal */}
@@ -940,33 +941,37 @@ export default function App() {
           />
         ) : (
         <>
-        {selectedCategory === 'All' && !searchQuery.trim() && topProduct ? (
-          <>
-          {/* Admin: Featured Product Selector */}
-          {isAdmin && (
-            <FeaturedProductSelector
-              products={products}
-              featuredId={featuredProductId}
-              onSelect={handleSetFeatured}
-            />
-          )}
-          <BorderBeam
-            duration={5}
-            size={260}
-            colorFrom="#ffaa40"
-            colorMid="#9c40ff"
-            colorTo="#00d2ff"
-          >
-            <HeroClaimBanner
-              topProduct={topProduct}
-              soundEnabled={soundEnabled}
-              onClaimRankOne={() => handleUpvote(topProduct)}
-              onViewDetails={(p) => handleOpenProductPage(p)}
-              onTrackClick={handleTrackClick}
-              onUpvote={handleUpvote}
-            />
-          </BorderBeam>
-          </>
+        {selectedCategory === 'All' && !searchQuery.trim() ? (
+          featuredProductId && topProduct ? (
+            <BorderBeam
+              duration={5}
+              size={260}
+              colorFrom="#ffaa40"
+              colorMid="#9c40ff"
+              colorTo="#00d2ff"
+            >
+              <HeroClaimBanner
+                topProduct={topProduct}
+                soundEnabled={soundEnabled}
+                onClaimRankOne={() => handleUpvote(topProduct)}
+                onViewDetails={(p) => handleOpenProductPage(p)}
+                onTrackClick={handleTrackClick}
+                onUpvote={handleUpvote}
+              />
+            </BorderBeam>
+          ) : featuredProductId === '' ? (
+            /* Empty state: admin cleared featured, show nothing */
+            null
+          ) : (
+            /* Default state: no featured assigned yet, show bid placeholder */
+            <div className="rounded-xl border-2 border-dashed border-neutral-300 bg-white px-4 py-6 sm:py-8 text-center">
+              <div className="flex flex-col items-center gap-2">
+                <Crown className="h-6 w-6 text-neutral-300" />
+                <p className="text-sm font-bold text-neutral-400">This spot is available</p>
+                <p className="text-xs text-neutral-400">Set a featured product from the admin page to fill this space</p>
+              </div>
+            </div>
+          )
         ) : selectedCategory !== 'All' && topThreeProducts.length > 0 ? (
           /* When any category is selected, ALWAYS show Top 3 at the top before showing the category */
           <div className="space-y-2.5">
@@ -1006,9 +1011,7 @@ export default function App() {
                     onShareProduct={(prod) => setShareProduct(prod)}
                     onTrackClick={handleTrackClick}
                     onUpvote={handleUpvote}
-                    isAdmin={isAdmin}
                     isFeatured={p.id === featuredProductId}
-                    onSetFeatured={handleSetFeatured}
                   />
                 </BorderBeam>
               ))}
@@ -1171,9 +1174,7 @@ export default function App() {
                       onShareProduct={(prod) => setShareProduct(prod)}
                       onTrackClick={handleTrackClick}
                       onUpvote={handleUpvote}
-                      isAdmin={isAdmin}
                       isFeatured={p.id === featuredProductId}
-                      onSetFeatured={handleSetFeatured}
                     />
                   );
 
