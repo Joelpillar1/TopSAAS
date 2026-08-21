@@ -22,6 +22,7 @@ import { SignInModal } from './components/SignInModal';
 import { SaaSIdeas } from './components/SaaSIdeas';
 import { playSound } from './utils/sound';
 import { supabase } from './utils/supabase';
+import { loadProducts, debouncedSyncProducts, toggleUpvote, getUserUpvotes, checkIsAdmin } from './utils/db';
 import { getWebsiteFavicon } from './utils/logo';
 import { LayoutGrid, Table as TableIcon, RefreshCw, Trophy, Sparkles, X, Plus, ShieldCheck } from 'lucide-react';
 
@@ -169,6 +170,9 @@ export default function App() {
 
   // Auth state
   const [user, setUser] = useState<User | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [userUpvotes, setUserUpvotes] = useState<Set<string>>(new Set());
+  const [productsLoaded, setProductsLoaded] = useState(false);
 
   // Sound FX toggle
   const [soundEnabled, setSoundEnabled] = useState<boolean>(() => {
@@ -315,6 +319,35 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Load products from Supabase on mount
+  useEffect(() => {
+    async function load() {
+      const dbProducts = await loadProducts();
+      if (dbProducts && dbProducts.length > 0) {
+        setProducts(dbProducts);
+      }
+      setProductsLoaded(true);
+    }
+    load();
+  }, []);
+
+  // Sync products to Supabase when they change (after initial load)
+  useEffect(() => {
+    if (!productsLoaded) return;
+    debouncedSyncProducts(products);
+  }, [products, productsLoaded]);
+
+  // Check admin status and load user upvotes when signed in
+  useEffect(() => {
+    if (!user) {
+      setIsAdmin(false);
+      setUserUpvotes(new Set());
+      return;
+    }
+    checkIsAdmin().then(setIsAdmin);
+    getUserUpvotes().then(setUserUpvotes);
+  }, [user]);
+
   // Save user profile to Supabase profiles table
   const saveUserProfile = async (u: User) => {
     try {
@@ -371,22 +404,47 @@ export default function App() {
     });
   }, []);
 
-  // Upvote a product
-  const handleUpvote = (product: Product) => {
+  // Upvote a product (uses Supabase RPC for per-user tracking)
+  const handleUpvote = async (product: Product) => {
     playSound('upvote', soundEnabled);
-    setProducts((prev) => {
-      const updated = prev.map((p) => {
-        if (p.id === product.id) {
-          return {
-            ...p,
-            upvotes: (p.upvotes ?? 0) + 1,
-            updatedAt: Date.now(),
-          };
-        }
-        return p;
+
+    if (user) {
+      // Logged in: use Supabase RPC (one upvote per user per product)
+      const result = await toggleUpvote(product.id);
+      if (result === null) return; // error
+
+      // Update local state based on RPC result
+      setUserUpvotes((prev) => {
+        const next = new Set(prev);
+        if (result) next.add(product.id); else next.delete(product.id);
+        return next;
       });
-      return recomputeRanks(updated);
-    });
+
+      setProducts((prev) => {
+        const updated = prev.map((p) => {
+          if (p.id === product.id) {
+            return {
+              ...p,
+              upvotes: (p.upvotes ?? 0) + (result ? 1 : -1),
+              updatedAt: Date.now(),
+            };
+          }
+          return p;
+        });
+        return recomputeRanks(updated);
+      });
+    } else {
+      // Not logged in: simple local increment
+      setProducts((prev) => {
+        const updated = prev.map((p) => {
+          if (p.id === product.id) {
+            return { ...p, upvotes: (p.upvotes ?? 0) + 1, updatedAt: Date.now() };
+          }
+          return p;
+        });
+        return recomputeRanks(updated);
+      });
+    }
   };
 
   // Handle User Submission (Places into "under_review" queue)
@@ -659,6 +717,19 @@ export default function App() {
 
   // 1. ADMIN ACCEPT PAGE ROUTE (/accept)
   if (currentRoute === '/accept') {
+    // Non-admins get redirected to homepage
+    if (user && !isAdmin) {
+      return (
+        <div className="min-h-screen bg-neutral-100 text-black flex items-center justify-center font-sans">
+          <div className="text-center space-y-3">
+            <ShieldCheck className="mx-auto h-10 w-10 text-neutral-400" />
+            <h2 className="text-lg font-bold">Admin Access Required</h2>
+            <p className="text-sm text-neutral-500">You don't have admin privileges.</p>
+            <button onClick={handleBackToLeaderboard} className="mt-2 rounded-xl bg-black text-white px-4 py-2 text-xs font-bold cursor-pointer">Back to Directory</button>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="min-h-screen bg-neutral-100 text-black flex flex-col justify-between font-sans">
         <AdminAcceptPage
