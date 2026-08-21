@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trophy, Search, Plus, X, Volume2, VolumeX, HelpCircle } from 'lucide-react';
+import { Search, Plus, X, Volume2, VolumeX, HelpCircle } from 'lucide-react';
 import { Category } from '../types';
 import { playSound } from '../utils/sound';
 
@@ -38,21 +38,17 @@ export const HeroWebsiteInfo: React.FC<HeroWebsiteInfoProps> = ({
 }) => {
   return (
     <div id="website-hero-info" className="w-full pt-6 sm:pt-10 pb-4 text-center">
-      {/* Centered Logo & Brand Name */}
-      <div className="flex flex-col items-center justify-center mb-3">
-        <div
+      {/* Brand Name */}
+      <div className="mb-3">
+        <span
           onClick={() => {
             playSound('click', soundEnabled);
             onSearchChange('');
             onSelectCategory('All');
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
-          className="flex h-11 w-11 items-center justify-center rounded-2xl bg-black text-white shadow-xs hover:scale-105 active:scale-95 transition-all cursor-pointer ring-4 ring-neutral-200/60 mb-2.5"
-          title="Directory Home"
+          className="text-[11px] font-extrabold uppercase tracking-widest text-neutral-500 font-mono-num cursor-pointer hover:text-black transition-colors"
         >
-          <Trophy className="h-5 w-5 fill-white stroke-white" />
-        </div>
-        <span className="text-[11px] font-extrabold uppercase tracking-widest text-neutral-500 font-mono-num">
           TOPSAAS
         </span>
       </div>
