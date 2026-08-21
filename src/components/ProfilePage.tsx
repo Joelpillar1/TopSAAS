@@ -16,20 +16,20 @@ const CATEGORIES: Category[] = [
 const STATUS_CONFIG: Record<SubmissionStatus, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
   under_review: {
     label: 'Under Review',
-    color: 'text-amber-700',
-    bg: 'bg-amber-50 border-amber-200',
+    color: 'text-neutral-700',
+    bg: 'bg-neutral-100 border-neutral-200',
     icon: <Clock className="h-3.5 w-3.5" />,
   },
   approved: {
     label: 'Approved & Live',
-    color: 'text-emerald-700',
-    bg: 'bg-emerald-50 border-emerald-200',
+    color: 'text-black',
+    bg: 'bg-white border-neutral-200',
     icon: <CheckCircle2 className="h-3.5 w-3.5" />,
   },
   rejected: {
     label: 'Not Approved',
-    color: 'text-red-700',
-    bg: 'bg-red-50 border-red-200',
+    color: 'text-neutral-500',
+    bg: 'bg-neutral-50 border-neutral-200',
     icon: <XCircle className="h-3.5 w-3.5" />,
   },
 };
@@ -165,17 +165,17 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onBack }) => {
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3">
-          <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-center">
-            <div className="text-lg font-black text-amber-700">{pendingCount}</div>
-            <div className="text-[10px] font-bold text-amber-600 uppercase">Pending</div>
+          <div className="rounded-xl border border-neutral-200 bg-white p-3 text-center">
+            <div className="text-lg font-black text-black">{pendingCount}</div>
+            <div className="text-[10px] font-bold text-neutral-500 uppercase">Pending</div>
           </div>
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-center">
-            <div className="text-lg font-black text-emerald-700">{approvedCount}</div>
-            <div className="text-[10px] font-bold text-emerald-600 uppercase">Approved</div>
+          <div className="rounded-xl border border-neutral-200 bg-white p-3 text-center">
+            <div className="text-lg font-black text-black">{approvedCount}</div>
+            <div className="text-[10px] font-bold text-neutral-500 uppercase">Approved</div>
           </div>
-          <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-center">
-            <div className="text-lg font-black text-red-700">{rejectedCount}</div>
-            <div className="text-[10px] font-bold text-red-600 uppercase">Rejected</div>
+          <div className="rounded-xl border border-neutral-200 bg-white p-3 text-center">
+            <div className="text-lg font-black text-black">{rejectedCount}</div>
+            <div className="text-[10px] font-bold text-neutral-500 uppercase">Rejected</div>
           </div>
         </div>
 
