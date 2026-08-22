@@ -209,13 +209,22 @@ export default function App() {
   // Submitter name auto-filled from Google profile
   const submitterName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || '';
 
-  // Sound FX toggle
-  const [soundEnabled, setSoundEnabled] = useState<boolean>(() => {
+  // In-Game Arcade Sound toggle (independent)
+  const [gameSoundEnabled, setGameSoundEnabled] = useState<boolean>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.SOUND);
+      const saved = localStorage.getItem('topsaas_game_sound');
       if (saved !== null) return saved === 'true';
     } catch {}
     return true;
+  });
+
+  // Global / UI Audio SFX toggle (under the game: OFF by default, independent)
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('topsaas_ui_sound');
+      if (saved !== null) return saved === 'true';
+    } catch {}
+    return false; // OFF by default as requested
   });
 
   // Active tab: directory vs SaaS ideas
@@ -912,8 +921,14 @@ export default function App() {
       <main className="mx-auto w-full max-w-5xl px-3.5 sm:px-6 space-y-3 sm:space-y-4 flex-1 pb-8 pt-4">
         {/* Dino Runner Game Arcade Hero */}
         <DinoGame
-          soundEnabled={soundEnabled}
-          onToggleSound={() => setSoundEnabled(!soundEnabled)}
+          soundEnabled={gameSoundEnabled}
+          onToggleSound={() => {
+            setGameSoundEnabled((prev) => {
+              const next = !prev;
+              try { localStorage.setItem('topsaas_game_sound', next.toString()); } catch {}
+              return next;
+            });
+          }}
           playAgainTrigger={playAgainTrigger}
           featuredProduct={featuredProductId && topProduct ? topProduct : null}
           onOpenFeaturedSpotModal={() => {
@@ -996,11 +1011,13 @@ export default function App() {
             <button
               type="button"
               onClick={() => {
-                playSound('click', !soundEnabled);
-                setSoundEnabled(!soundEnabled);
+                const next = !soundEnabled;
+                playSound('click', next);
+                setSoundEnabled(next);
+                try { localStorage.setItem('topsaas_ui_sound', next.toString()); } catch {}
               }}
               className="inline-flex items-center gap-1 hover:text-black transition-colors cursor-pointer"
-              title={soundEnabled ? 'Disable sound effects' : 'Enable sound effects'}
+              title={soundEnabled ? 'Disable UI sound effects' : 'Enable UI sound effects'}
             >
               {soundEnabled ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5" />}
               <span>{soundEnabled ? 'Audio on' : 'Audio off'}</span>
