@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Crown, ExternalLink, ShieldCheck, Share2, MousePointerClick, ThumbsUp } from 'lucide-react';
+import { X, Crown, ExternalLink, ShieldCheck, Share2, MousePointerClick, Zap } from 'lucide-react';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
 
@@ -9,7 +9,6 @@ interface ProductDetailDrawerProps {
   onClose: () => void;
   onShare: (product: Product) => void;
   onTrackClick: (productId: string, url: string) => void;
-  onUpvote?: (product: Product) => void;
   soundEnabled: boolean;
 }
 
@@ -18,7 +17,6 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
   onClose,
   onShare,
   onTrackClick,
-  onUpvote,
   soundEnabled,
 }) => {
   if (!product) return null;
@@ -26,7 +24,7 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
   const isRankOne = product.rank === 1;
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-xs animate-in fade-in duration-150 font-sans">
       <div className="relative h-full w-full max-w-md bg-white border-l border-neutral-200 p-6 shadow-2xl flex flex-col justify-between overflow-y-auto animate-in slide-in-from-right duration-200 text-black">
         {/* Top Header */}
         <div>
@@ -113,10 +111,11 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
 
             <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-2.5 shadow-2xs">
               <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 truncate">
-                Upvotes
+                Score
               </div>
-              <div className="font-mono-num text-base font-black text-black mt-0.5">
-                {product.upvotes ?? 0}
+              <div className="font-mono-num text-base font-black text-black mt-0.5 flex items-center gap-1">
+                <Zap className="h-3.5 w-3.5 text-black" />
+                <span>{product.dinoScore ?? 0}</span>
               </div>
             </div>
 
@@ -144,39 +143,30 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
 
         {/* Bottom CTAs */}
         <div className="pt-4 border-t border-neutral-200 mt-4 space-y-2">
-          {onUpvote && (
-            <button
-              onClick={() => {
-                playSound('click', soundEnabled);
-                onUpvote(product);
-              }}
-              className="w-full flex items-center justify-center gap-2 rounded-xl bg-black py-3 text-xs font-black text-white shadow-2xs hover:bg-neutral-800 active:scale-[0.98] transition-all cursor-pointer min-h-[44px]"
-            >
-              <ThumbsUp className="h-4 w-4" />
-              <span>Upvote Website ({product.upvotes ?? 0})</span>
-            </button>
-          )}
+          <a
+            href={product.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => {
+              playSound('click', soundEnabled);
+              onTrackClick(product.id, product.url);
+            }}
+            className="w-full flex items-center justify-center gap-2 rounded-xl bg-black py-3 text-xs font-black text-white shadow-2xs hover:bg-neutral-800 active:scale-[0.98] transition-all cursor-pointer min-h-[44px]"
+          >
+            <span>Visit Website</span>
+            <ExternalLink className="h-4 w-4" />
+          </a>
 
-          <div className="flex gap-2">
-            <a
-              href={product.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => onTrackClick(product.id, product.url)}
-              className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-neutral-300 bg-white py-2 text-xs font-bold text-black hover:bg-neutral-100 min-h-[40px]"
-            >
-              <span>Visit Website</span>
-              <ExternalLink className="h-3.5 w-3.5" />
-            </a>
-
-            <button
-              onClick={() => onShare(product)}
-              className="flex items-center justify-center gap-1.5 rounded-xl border border-neutral-300 bg-white px-4 py-2 text-xs font-bold text-black hover:bg-neutral-100 cursor-pointer min-h-[40px]"
-            >
-              <Share2 className="h-3.5 w-3.5" />
-              <span>Share</span>
-            </button>
-          </div>
+          <button
+            onClick={() => {
+              playSound('click', soundEnabled);
+              onShare(product);
+            }}
+            className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-neutral-300 bg-white py-2.5 text-xs font-bold text-black hover:bg-neutral-100 cursor-pointer min-h-[40px]"
+          >
+            <Share2 className="h-3.5 w-3.5" />
+            <span>Share Profile</span>
+          </button>
         </div>
       </div>
     </div>

@@ -13,7 +13,7 @@ import {
   ChevronRight,
   MessageSquareQuote,
   Target,
-  ThumbsUp
+  Zap
 } from 'lucide-react';
 import { playSound } from '../utils/sound';
 
@@ -26,7 +26,6 @@ interface ProductPageProps {
   onSelectProduct: (product: Product) => void;
   onShare: (product: Product) => void;
   onTrackClick: (productId: string, url: string) => void;
-  onUpvote?: (product: Product) => void;
 }
 
 export const ProductPage: React.FC<ProductPageProps> = ({
@@ -37,7 +36,6 @@ export const ProductPage: React.FC<ProductPageProps> = ({
   onSelectProduct,
   onShare,
   onTrackClick,
-  onUpvote,
 }) => {
   const isRankOne = product.rank === 1;
 
@@ -88,19 +86,6 @@ export const ProductPage: React.FC<ProductPageProps> = ({
               <Share2 className="h-4 w-4" />
               <span className="hidden sm:inline sm:ml-1.5">Share</span>
             </button>
-
-            {onUpvote && (
-              <button
-                onClick={() => {
-                  playSound('click', soundEnabled);
-                  onUpvote(product);
-                }}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-300 bg-white px-3.5 py-2 sm:py-1.5 text-xs font-bold text-black shadow-2xs hover:border-black hover:bg-neutral-50 active:scale-95 transition-all cursor-pointer min-h-[38px]"
-              >
-                <ThumbsUp className="h-3.5 w-3.5" />
-                <span>Upvote ({product.upvotes ?? 0})</span>
-              </button>
-            )}
           </div>
         </div>
       </div>
@@ -187,6 +172,9 @@ export const ProductPage: React.FC<ProductPageProps> = ({
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-col gap-2 shrink-0 pt-2 sm:pt-0">
               <a
+            {/* Action Buttons */}
+            <div className="flex flex-wrap items-center gap-2 pt-2">
+              <a
                 href={product.url}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -199,19 +187,6 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                 <span>Visit Official Website</span>
                 <ExternalLink className="h-3.5 w-3.5" />
               </a>
-
-              {onUpvote && (
-                <button
-                  onClick={() => {
-                    playSound('click', soundEnabled);
-                    onUpvote(product);
-                  }}
-                  className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-neutral-300 bg-white px-4 py-3 sm:py-2.5 text-xs font-bold text-black shadow-2xs hover:bg-neutral-100 hover:border-black active:scale-[0.98] transition-all cursor-pointer min-h-[44px] sm:min-h-[38px]"
-                >
-                  <ThumbsUp className="h-3.5 w-3.5 text-black" />
-                  <span>Upvote ({product.upvotes ?? 0})</span>
-                </button>
-              )}
             </div>
           </div>
 
@@ -234,10 +209,11 @@ export const ProductPage: React.FC<ProductPageProps> = ({
 
             <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3 shadow-2xs">
               <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
-                Community Upvotes
+                Dino Score
               </div>
-              <div className="font-mono-num text-lg font-black text-black mt-0.5">
-                {product.upvotes ?? 0}
+              <div className="font-mono-num text-lg font-black text-black mt-0.5 flex items-center gap-1">
+                <Zap className="h-4 w-4 text-black" />
+                <span>{product.dinoScore ?? 0}</span>
               </div>
             </div>
 

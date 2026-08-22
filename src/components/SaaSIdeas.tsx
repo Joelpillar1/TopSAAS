@@ -207,16 +207,15 @@ export const SaaSIdeas: React.FC<SaaSIdeasProps> = ({
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3">
             {topProducts.slice(0, 3).map((product, index) => (
-              <BorderBeam key={product.id} duration={5 + index}>
-                <ProductCard
-                  product={product}
-                  rank={product.rank ?? index + 1}
-                  soundEnabled={soundEnabled}
-                  showVerified={(product.rank ?? index + 1) <= 5}
-                  onShareProduct={onShareProduct}
-                  onTrackClick={onTrackClick}
-                />
-              </BorderBeam>
+              <ProductCard
+                key={product.id}
+                product={product}
+                rank={product.rank ?? index + 1}
+                soundEnabled={soundEnabled}
+                showVerified={(product.rank ?? index + 1) <= 5}
+                onShareProduct={onShareProduct}
+                onTrackClick={onTrackClick}
+              />
             ))}
           </div>
         </div>

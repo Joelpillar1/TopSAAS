@@ -35,7 +35,6 @@ import confetti from 'canvas-confetti';
 import { WebsiteSubmission, Category, Product } from '../types';
 import { playSound } from '../utils/sound';
 import { getWebsiteFavicon } from '../utils/logo';
-import { BorderBeam } from './BorderBeam';
 import { FeaturedProductSelector } from './FeaturedProductSelector';
 
 interface AdminAcceptPageProps {
@@ -795,7 +794,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                             </div>
                           </div>
 
-                          {/* Meta: Category & Upvotes */}
+                          {/* Meta: Category & Upvotes & Score */}
                           <div className="flex items-center gap-3 shrink-0 text-[11px] text-neutral-500">
                             <span className="rounded-md bg-neutral-100 border border-neutral-200 px-2 py-0.5 font-bold text-neutral-700">
                               {product.category}
@@ -803,6 +802,11 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                             <div className="flex items-center gap-1 font-bold">
                               <ChevronUp className="h-3 w-3 text-emerald-600" />
                               <span>{(product.upvotes ?? 0).toLocaleString()}</span>
+                            </div>
+                            <div className="flex items-center gap-1 font-bold">
+                              <span className="text-amber-500">⚡</span>
+                              <span className="font-mono-num">{product.dinoScore ?? 0}</span>
+                              <span className="text-neutral-400">pts</span>
                             </div>
                           </div>
 
@@ -888,21 +892,6 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                         </div>
                       </div>
                     );
-
-                    if (isTopThree) {
-                      return (
-                        <BorderBeam
-                          key={product.id}
-                          duration={5}
-                          size={200}
-                          colorFrom="#ffaa40"
-                          colorMid="#9c40ff"
-                          colorTo="#00d2ff"
-                        >
-                          {productRow}
-                        </BorderBeam>
-                      );
-                    }
 
                     return productRow;
                   })}

@@ -89,6 +89,31 @@ export async function deleteProduct(productId: string): Promise<void> {
   await supabase.from('products').delete().eq('id', productId);
 }
 
+// ── Game Scoring Anti-Cheat ──
+
+/** Submit a verified game score to Supabase with real-time velocity validation (No maximum caps) */
+export async function submitVerifiedGameScore(
+  productId: string,
+  score: number,
+  durationMs: number
+): Promise<{ success: boolean; score_added?: number; new_total_score?: number; error?: string }> {
+  try {
+    const { data, error } = await supabase.rpc('submit_verified_game_score', {
+      p_product_id: productId,
+      p_score: Math.floor(score),
+      p_duration_ms: Math.floor(durationMs),
+    });
+
+    if (error || !data) {
+      return { success: false, error: error?.message };
+    }
+
+    return data as { success: boolean; score_added?: number; new_total_score?: number; error?: string };
+  } catch (err: unknown) {
+    return { success: false, error: (err as Error)?.message || 'Network error' };
+  }
+}
+
 // ── Upvotes ──
 
 /** Toggle upvote via Supabase RPC (returns true if upvoted, false if un-upvoted) */
@@ -124,4 +149,80 @@ export function debouncedSyncProducts(products: Product[]): void {
   productsSyncTimeout = setTimeout(() => {
     saveAllProducts(products).catch(() => {});
   }, 2000);
+}
+
+// ── Global Featured Spot Settings ──
+
+export interface FeaturedProductConfig {
+  productId: string | null;
+  expiresAt: number | null;
+}
+
+/** Get global featured product from Supabase (with fallback to localStorage) */
+export async function getGlobalFeaturedProduct(): Promise<FeaturedProductConfig> {
+  try {
+    const { data, error } = await supabase
+      .from('site_settings')
+      .select('key, value')
+      .in('key', ['featured_product_id', 'featured_expires_at']);
+
+    if (!error && data && data.length > 0) {
+      const idRow = data.find((r) => r.key === 'featured_product_id');
+      const expRow = data.find((r) => r.key === 'featured_expires_at');
+
+      const productId = idRow?.value || null;
+      const expiresAt = expRow?.value ? parseInt(expRow.value, 10) : null;
+
+      // If expired, clear it
+      if (expiresAt && expiresAt < Date.now()) {
+        return { productId: null, expiresAt: null };
+      }
+
+      if (productId) {
+        return { productId, expiresAt };
+      }
+    }
+  } catch {}
+
+  // Fallback to local storage
+  try {
+    const localId = localStorage.getItem('topsaas_featured_product');
+    const localExp = localStorage.getItem('topsaas_featured_expiry');
+    const exp = localExp ? parseInt(localExp, 10) : null;
+    if (exp && exp < Date.now()) {
+      localStorage.removeItem('topsaas_featured_product');
+      localStorage.removeItem('topsaas_featured_expiry');
+      return { productId: null, expiresAt: null };
+    }
+    return { productId: localId || null, expiresAt: exp };
+  } catch {
+    return { productId: null, expiresAt: null };
+  }
+}
+
+/** Set global featured product in Supabase and localStorage */
+export async function setGlobalFeaturedProduct(
+  productId: string | null,
+  durationDays: number = 30
+): Promise<void> {
+  const expiresAt = productId ? Date.now() + durationDays * 86400000 : 0;
+
+  // 1. Sync to local storage
+  try {
+    if (productId) {
+      localStorage.setItem('topsaas_featured_product', productId);
+      localStorage.setItem('topsaas_featured_expiry', expiresAt.toString());
+    } else {
+      localStorage.removeItem('topsaas_featured_product');
+      localStorage.removeItem('topsaas_featured_expiry');
+    }
+  } catch {}
+
+  // 2. Sync to Supabase site_settings
+  try {
+    await supabase.from('site_settings').upsert([
+      { key: 'featured_product_id', value: productId || '' },
+      { key: 'featured_expires_at', value: expiresAt.toString() },
+    ]);
+  } catch {}
 }

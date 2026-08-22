@@ -57,7 +57,7 @@ export const RichFooter: React.FC<RichFooterProps> = ({
               <span className="font-black text-xl text-black tracking-tight">TopSAAS</span>
             </div>
             <p className="text-xs text-neutral-500 leading-relaxed max-w-xs">
-              The curated directory of top SaaS products ranked by the community. Discover, upvote, and explore the internet's best tools — free and open.
+              The curated directory of top SaaS products. Play the Dino Runner, rank up, and explore the internet&apos;s best tools — free and open.
             </p>
             {/* Mini Stats */}
             <div className="flex items-center gap-4 pt-1">

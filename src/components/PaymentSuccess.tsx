@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { CheckCircle, ArrowLeft, Crown, ExternalLink } from 'lucide-react';
 import { playSound } from '../utils/sound';
+import { setGlobalFeaturedProduct } from '../utils/db';
 
 interface PaymentSuccessProps {
   onBackToDirectory: () => void;
@@ -30,14 +31,12 @@ export const PaymentSuccess: React.FC<PaymentSuccessProps> = ({
     });
     playSound('success', soundEnabled);
 
-    // After successful payment, activate the pending featured product with expiry
+    // After successful payment, activate the pending featured product globally in Supabase
     const pendingProductId = localStorage.getItem('topsaas_featured_pending');
     const pendingPlan = localStorage.getItem('topsaas_featured_pending_plan');
     if (pendingProductId) {
       const durationDays = pendingPlan === '30days' ? 30 : 7;
-      const expiresAt = Date.now() + durationDays * 86400000;
-      localStorage.setItem('topsaas_featured_product', pendingProductId);
-      localStorage.setItem('topsaas_featured_expiry', expiresAt.toString());
+      setGlobalFeaturedProduct(pendingProductId, durationDays);
       localStorage.removeItem('topsaas_featured_pending');
       localStorage.removeItem('topsaas_featured_pending_plan');
       onActivateFeatured?.(pendingProductId);

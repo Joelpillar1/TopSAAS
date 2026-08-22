@@ -22,7 +22,7 @@ import { PaymentSuccess } from './components/PaymentSuccess';
 import { SaaSIdeas } from './components/SaaSIdeas';
 import { playSound } from './utils/sound';
 import { supabase } from './utils/supabase';
-import { loadProducts, debouncedSyncProducts, toggleUpvote, getUserUpvotes, checkIsAdmin } from './utils/db';
+import { loadProducts, debouncedSyncProducts, toggleUpvote, getUserUpvotes, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, submitVerifiedGameScore } from './utils/db';
 import { getWebsiteFavicon } from './utils/logo';
 import { LayoutGrid, Table as TableIcon, RefreshCw, Trophy, Sparkles, X, Plus, ShieldCheck, Crown, Loader2, Volume2, VolumeX, HelpCircle } from 'lucide-react';
 import { FeaturedSpotModal } from './components/FeaturedSpotModal';
@@ -190,18 +190,18 @@ export default function App() {
     } catch { return null; }
   });
 
-  // Periodically check if the featured spot has expired
+  // Load global featured product from Supabase on mount and check periodically
   useEffect(() => {
+    getGlobalFeaturedProduct().then((config) => {
+      if (config.productId !== undefined) {
+        setFeaturedProductId(config.productId);
+      }
+    });
+
     const interval = setInterval(() => {
-      try {
-        const id = localStorage.getItem('topsaas_featured_product');
-        const expiry = localStorage.getItem('topsaas_featured_expiry');
-        if (id && expiry && Date.now() > Number(expiry)) {
-          localStorage.removeItem('topsaas_featured_product');
-          localStorage.removeItem('topsaas_featured_expiry');
-          setFeaturedProductId(null);
-        }
-      } catch {}
+      getGlobalFeaturedProduct().then((config) => {
+        setFeaturedProductId(config.productId);
+      });
     }, 60_000); // Check every 60 seconds
     return () => clearInterval(interval);
   }, []);
@@ -247,6 +247,14 @@ export default function App() {
   const [isGameOverModalOpen, setIsGameOverModalOpen] = useState(false);
   const [gameOverStats, setGameOverStats] = useState({ score: 0, highScore: 0, isNewRecord: false });
   const [playAgainTrigger, setPlayAgainTrigger] = useState(0);
+  // User's submitted product ID tracking (persists even if not signed in)
+  const [myProductId, setMyProductId] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem('topsaas_my_product_id');
+    } catch {
+      return null;
+    }
+  });
 
   // Hash change and browser history listener for SPA routing
   useEffect(() => {
@@ -372,7 +380,7 @@ export default function App() {
       productsLoadedRef.current = true;
       const dbProducts = await loadProducts();
       if (dbProducts && dbProducts.length > 0) {
-        setProducts(dbProducts);
+        setProducts(recomputeRanks(dbProducts));
       }
       setProductsLoaded(true);
     }
@@ -506,9 +514,10 @@ export default function App() {
 
     const now = Date.now();
     const subId = generateUniqueId('sub');
+    const newProdId = generateUniqueId('prod');
 
     const newProd: Product = {
-      id: generateUniqueId('prod'),
+      id: newProdId,
       rank: products.length + 1,
       previousRank: products.length + 1,
       name,
@@ -517,13 +526,14 @@ export default function App() {
       logoUrl: getWebsiteFavicon(url),
       category,
       totalBid: 0,
+      dinoScore: 0,
       upvotes: 0,
       clicks: 0,
       createdAt: now,
       updatedAt: now,
       verified: false,
-      isUserOwned: !!(user),
-      submittedBy: user?.id,
+      isUserOwned: true,
+      submittedBy: user?.id || 'local_user',
       description: `${name} is a product in the ${category} ecosystem. ${tagline}.`,
       whatItDoes: [],
       features: [],
@@ -534,7 +544,19 @@ export default function App() {
       bidHistory: [],
     };
 
-    setProducts((prev) => [...prev, newProd]);
+    setMyProductId(newProdId);
+    try {
+      localStorage.setItem('topsaas_my_product_id', newProdId);
+    } catch {}
+
+    setProducts((prev) => {
+      const next = recomputeRanks([...prev, newProd]);
+      debouncedSyncProducts(next);
+      try {
+        localStorage.setItem('topsaas_products_cache_v2', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
 
     // Also create an approved submission record (all submissions accepted instantly)
     const newSubmission: WebsiteSubmission = {
@@ -549,11 +571,12 @@ export default function App() {
       status: 'approved',
       submittedAt: now,
       reviewedAt: now,
-      submittedBy: user?.id,
+      submittedBy: user?.id || 'local_user',
     };
     setSubmissions((prev) => [...prev, newSubmission]);
     try {
       await supabase.from('submissions').insert(toDbSubmission(newSubmission));
+      await supabase.from('products').insert(toDbProduct(newProd));
     } catch {}
   };
 
@@ -626,7 +649,7 @@ export default function App() {
         bidHistory: [],
       };
 
-      return [...prev, newProd];
+      return recomputeRanks([...prev, newProd]);
     });
   };
 
@@ -727,19 +750,20 @@ export default function App() {
   // Admin: set any product as the featured product (null = default/placeholder, '' = empty, 'prod-X' = specific product)
   const handleSetFeatured = (productId: string | null) => {
     setFeaturedProductId(productId);
-    try {
-      if (productId === null) {
-        localStorage.removeItem('topsaas_featured_product');
-      } else {
-        localStorage.setItem('topsaas_featured_product', productId);
-      }
-    } catch {}
+    setGlobalFeaturedProduct(productId);
     playSound('click', soundEnabled);
   };
 
   const topProduct = (featuredProductId ? products.find((p) => p.id === featuredProductId) : null) || products[0] || null;
-  // Compute isUserOwned dynamically from submittedBy
-  const markOwnership = (p: Product) => ({ ...p, isUserOwned: !!(user && p.submittedBy && p.submittedBy === user.id) });
+  // Compute isUserOwned dynamically from submittedBy or myProductId
+  const markOwnership = (p: Product) => ({
+    ...p,
+    isUserOwned: !!(
+      (user && p.submittedBy && p.submittedBy === user.id) ||
+      (myProductId && p.id === myProductId) ||
+      p.isUserOwned
+    ),
+  });
   const topThreeProducts = products.slice(0, 3).map(markOwnership);
 
   const pendingReviewCount = submissions.filter((s) => s.status === 'under_review').length;
@@ -881,6 +905,12 @@ export default function App() {
           soundEnabled={soundEnabled}
           onToggleSound={() => setSoundEnabled(!soundEnabled)}
           playAgainTrigger={playAgainTrigger}
+          featuredProduct={featuredProductId && topProduct ? topProduct : null}
+          onOpenFeaturedSpotModal={() => {
+            if (!user) setIsSignInModalOpen(true);
+            else setIsFeaturedSpotModalOpen(true);
+          }}
+          onTrackClick={handleTrackClick}
           isModalOpen={
             isSubmitModalOpen ||
             isSignInModalOpen ||
@@ -889,19 +919,56 @@ export default function App() {
             isFeaturedSpotModalOpen ||
             isGameOverModalOpen
           }
-          onGameOver={(score, highScore, isNewRecord) => {
+          onGameOver={(score, highScore, isNewRecord, durationMs = 1000) => {
             setGameOverStats({ score, highScore, isNewRecord });
             setIsGameOverModalOpen(true);
-            if (!user) return;
-            const myProduct = products.find((p) => p.submittedBy === user.id);
-            if (!myProduct) return;
-            // Only update if new score is higher
-            if (score <= (myProduct.dinoScore ?? 0)) return;
-            setProducts((prev) =>
-              prev.map((p) =>
-                p.id === myProduct.id ? { ...p, dinoScore: score } : p
-              )
+            if (score <= 0) return;
+
+            const savedMyId = myProductId || localStorage.getItem('topsaas_my_product_id');
+
+            // Find target product
+            const target = products.find(
+              (p) =>
+                (savedMyId && p.id === savedMyId) ||
+                (user && p.submittedBy && p.submittedBy === user.id) ||
+                p.isUserOwned
             );
+
+            if (!target) return;
+
+            // Submit verified score to Supabase anti-cheat RPC (no score cap, verified by real time velocity)
+            submitVerifiedGameScore(target.id, score, durationMs).then((res) => {
+              if (res.success && res.new_total_score !== undefined) {
+                setProducts((prev) => {
+                  const updated = prev.map((p) =>
+                    p.id === target.id
+                      ? { ...p, dinoScore: res.new_total_score, isUserOwned: true, updatedAt: Date.now() }
+                      : p
+                  );
+                  const reRanked = recomputeRanks(updated);
+                  try {
+                    localStorage.setItem('topsaas_products_cache_v2', JSON.stringify(reRanked));
+                  } catch {}
+                  return reRanked;
+                });
+              } else if (!res.success) {
+                console.warn('Score rejected by velocity verification:', res.error);
+              }
+            });
+
+            // Optimistic instant UI update
+            setProducts((prev) => {
+              const targetIndex = prev.findIndex((p) => p.id === target.id);
+              if (targetIndex === -1) return prev;
+              const updatedScore = (target.dinoScore ?? 0) + score;
+              const updatedProducts = prev.map((p, idx) =>
+                idx === targetIndex
+                  ? { ...p, dinoScore: updatedScore, isUserOwned: true, updatedAt: Date.now() }
+                  : p
+              );
+              const reRanked = recomputeRanks(updatedProducts);
+              return reRanked;
+            });
           }}
         />
 
@@ -1335,6 +1402,13 @@ export default function App() {
         onConfirmSubmit={handleConfirmSubmit}
         soundEnabled={soundEnabled}
         hasProduct={!!(user && products.some((p) => p.submittedBy === user.id))}
+        featuredProductId={featuredProductId}
+        featuredProduct={topProduct}
+        onOpenFeaturedSpotModal={() => {
+          setIsSubmitModalOpen(false);
+          setIsFeaturedSpotModalOpen(true);
+        }}
+        onTrackClick={handleTrackClick}
       />
       <SignInModal
         isOpen={isSignInModalOpen}

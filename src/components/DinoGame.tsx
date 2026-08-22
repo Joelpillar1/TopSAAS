@@ -1,14 +1,18 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import confetti from 'canvas-confetti';
-import { Volume2, VolumeX, RotateCcw, Trophy, Zap, ChevronUp, ChevronDown } from 'lucide-react';
+import { Volume2, VolumeX, RotateCcw, Trophy, Zap, ChevronUp, ChevronDown, Crown } from 'lucide-react';
 import { playSound } from '../utils/sound';
+import { Product } from '../types';
 
 interface DinoGameProps {
   soundEnabled?: boolean;
   onToggleSound?: () => void;
-  onGameOver?: (score: number, highScore: number, isNewRecord: boolean) => void;
+  onGameOver?: (score: number, highScore: number, isNewRecord: boolean, durationMs?: number) => void;
   playAgainTrigger?: number;
   isModalOpen?: boolean;
+  featuredProduct?: Product | null;
+  onOpenFeaturedSpotModal?: () => void;
+  onTrackClick?: (productId: string, url: string) => void;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -270,6 +274,9 @@ export const DinoGame: React.FC<DinoGameProps> = ({
   onGameOver,
   playAgainTrigger,
   isModalOpen = false,
+  featuredProduct,
+  onOpenFeaturedSpotModal,
+  onTrackClick,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -333,6 +340,7 @@ export const DinoGame: React.FC<DinoGameProps> = ({
     nextObstacleTimer: 80,
 
     lastFrameTime: 0,
+    startTime: 0,
     animId: 0,
   });
 
@@ -360,6 +368,7 @@ export const DinoGame: React.FC<DinoGameProps> = ({
     e.score = 0;
     e.distance = 0;
     e.speed = e.baseSpeed;
+    e.startTime = Date.now();
     e.obstacles = [];
     e.nextObstacleTimer = 90;
     e.dino.y = e.groundY - 48;
@@ -802,7 +811,8 @@ export const DinoGame: React.FC<DinoGameProps> = ({
                   localStorage.setItem('topsaas_dino_highscore_v2', e.score.toString());
                 } catch {}
               }
-              onGameOver?.(e.score, e.highScore, isNew);
+              const durationMs = Math.max(1000, Date.now() - (e.startTime || Date.now()));
+              onGameOver?.(e.score, e.highScore, isNew, durationMs);
               break;
             }
           }
@@ -890,8 +900,8 @@ export const DinoGame: React.FC<DinoGameProps> = ({
           <span className="flex h-5 w-5 items-center justify-center rounded-md bg-black text-white shadow-2xs">
             <Zap className="h-3 w-3 fill-current" />
           </span>
-          <span className="text-xs font-black uppercase tracking-wider text-black">
-            Chromium Dino Runner
+          <span className="text-xs font-black uppercase tracking-wider text-black font-mono">
+            TopSAAS Runner
           </span>
         </div>
 
@@ -919,7 +929,7 @@ export const DinoGame: React.FC<DinoGameProps> = ({
           {onToggleSound && (
             <button
               type="button"
-              onClick={() => {
+              onClick={(e) => {
                 playSound('click', soundEnabled);
                 onToggleSound();
               }}
@@ -952,6 +962,61 @@ export const DinoGame: React.FC<DinoGameProps> = ({
           handleDuckRelease();
         }}
       >
+        {/* In-Game Background Featured Sponsor Badge */}
+        <div className="absolute top-2.5 left-3 sm:left-4 z-10 pointer-events-auto">
+          {featuredProduct ? (
+            <a
+              href={featuredProduct.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => {
+                e.stopPropagation();
+                playSound('click', soundEnabled);
+                onTrackClick?.(featuredProduct.id, featuredProduct.url);
+              }}
+              onMouseDown={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
+              className="inline-flex items-center gap-1.5 sm:gap-2 rounded-xl border border-neutral-200/90 bg-white/90 hover:bg-white px-2 sm:px-2.5 py-1 text-[11px] font-bold text-black backdrop-blur-xs shadow-2xs hover:border-black transition-all cursor-pointer group select-none"
+              title={`Featured: ${featuredProduct.name}`}
+            >
+              {featuredProduct.logoUrl ? (
+                <img
+                  src={featuredProduct.logoUrl}
+                  alt={featuredProduct.name}
+                  className="h-4 w-4 rounded object-cover shrink-0 border border-neutral-200"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="flex h-4 w-4 items-center justify-center rounded bg-black text-white text-[9px] font-black shrink-0">
+                  {featuredProduct.name[0]}
+                </div>
+              )}
+              <span className="text-[11px] font-black text-black group-hover:underline truncate max-w-[100px] sm:max-w-[160px]">
+                {featuredProduct.name}
+              </span>
+              <span className="rounded bg-black text-white text-[8px] font-black uppercase px-1 py-0.5 tracking-wider shrink-0">
+                Featured
+              </span>
+            </a>
+          ) : (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                playSound('click', soundEnabled);
+                onOpenFeaturedSpotModal?.();
+              }}
+              onMouseDown={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-dashed border-neutral-300 bg-white/80 hover:bg-white px-2.5 py-1 text-[10px] sm:text-[11px] font-bold text-neutral-500 hover:text-black hover:border-black backdrop-blur-xs shadow-2xs transition-all cursor-pointer group select-none"
+              title="Claim this featured spot"
+            >
+              <Crown className="h-3 w-3 text-neutral-400 group-hover:text-black transition-colors" />
+              <span>Get Featured Here</span>
+            </button>
+          )}
+        </div>
+
         <canvas
           ref={canvasRef}
           className="block w-full h-[180px] bg-white cursor-pointer"

@@ -60,7 +60,7 @@ export const HeroWebsiteInfo: React.FC<HeroWebsiteInfoProps> = ({
 
       {/* Subtitle */}
       <p className="mt-2 text-xs sm:text-sm text-neutral-600 max-w-xl mx-auto px-4 leading-relaxed font-medium">
-        Discover, explore, and upvote the internet&apos;s top software, indie products, and web tools.
+        Discover and explore the internet&apos;s top software, indie products, and web tools.
         Free, open, and community ranked.
       </p>
 

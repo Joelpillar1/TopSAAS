@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Trophy, Sparkles, ArrowRight, MousePointerClick, ThumbsUp, Plus } from 'lucide-react';
+import { X, Trophy, Gamepad2, Plus, Sparkles, ArrowRight, MousePointerClick, Crown, Flame } from 'lucide-react';
 import { playSound } from '../utils/sound';
 
 interface HowItWorksModalProps {
@@ -18,7 +18,7 @@ export const HowItWorksModal: React.FC<HowItWorksModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3.5 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3.5 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto font-sans">
       <div className="relative w-full max-w-lg rounded-2xl border border-neutral-300 bg-white shadow-2xl p-5 sm:p-6 my-4 sm:my-8 text-black animate-in fade-in zoom-in-95 duration-150">
         <button
           type="button"
@@ -28,9 +28,10 @@ export const HowItWorksModal: React.FC<HowItWorksModalProps> = ({
           <X className="h-5 w-5" />
         </button>
 
-        <div className="flex items-center gap-2.5 mb-5 pr-8">
+        {/* Modal Header */}
+        <div className="flex items-center gap-3 mb-5 pr-8">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-black text-white font-black shadow-2xs">
-            <Trophy className="h-5 w-5 fill-white stroke-white" />
+            <Gamepad2 className="h-5 w-5 text-white" />
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -42,44 +43,60 @@ export const HowItWorksModal: React.FC<HowItWorksModalProps> = ({
               </span>
             </div>
             <p className="text-xs text-neutral-500 font-medium">
-              A community-curated directory of top web products and tools.
+              Game your way to the top of the directory.
             </p>
           </div>
         </div>
 
-        <div className="space-y-2.5 sm:space-y-3 text-xs text-black">
-          <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3 sm:p-3.5 space-y-1 shadow-2xs">
+        {/* Steps List */}
+        <div className="space-y-2.5 text-xs text-black">
+          {/* Step 1 */}
+          <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3.5 space-y-1 shadow-2xs">
             <div className="flex items-center gap-2 font-black text-black text-xs sm:text-sm">
-              <Plus className="h-4 w-4 text-black" />
+              <Plus className="h-4 w-4 text-black shrink-0" />
               <span>1. Submit Your Website for Free</span>
             </div>
-            <p className="text-neutral-600 leading-relaxed font-medium">
-              Submit your website, SaaS, developer tool, or AI app without any fees or bidding. Your website appears directly on the live directory.
+            <p className="text-neutral-600 leading-relaxed font-medium pl-6">
+              Add your SaaS, developer tool, or AI product in seconds. TopSAAS automatically extracts your product tagline and favicon.
             </p>
           </div>
 
-          <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3 sm:p-3.5 space-y-1 shadow-2xs">
+          {/* Step 2 */}
+          <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3.5 space-y-1 shadow-2xs">
             <div className="flex items-center gap-2 font-black text-black text-xs sm:text-sm">
-              <ThumbsUp className="h-4 w-4 text-black" />
-              <span>2. Community Upvotes</span>
+              <Flame className="h-4 w-4 text-black shrink-0" />
+              <span>2. Play the Dino Runner to Rank Up</span>
             </div>
-            <p className="text-neutral-600 leading-relaxed font-medium">
-              Users and fans can upvote your product for free to boost its community visibility and help others discover it.
+            <p className="text-neutral-600 leading-relaxed font-medium pl-6">
+              Pick your website and play the Dino game above! Every point you score directly boosts your product&apos;s <strong className="text-black font-semibold">Dino Score</strong> and pushes it higher up the leaderboard.
             </p>
           </div>
 
-          <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3 sm:p-3.5 space-y-1 shadow-2xs">
+          {/* Step 3 */}
+          <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3.5 space-y-1 shadow-2xs">
             <div className="flex items-center gap-2 font-black text-black text-xs sm:text-sm">
-              <MousePointerClick className="h-4 w-4 text-black" />
-              <span>3. Direct Visits & Traffic</span>
+              <MousePointerClick className="h-4 w-4 text-black shrink-0" />
+              <span>3. Get Direct Visits & Visibility</span>
             </div>
-            <p className="text-neutral-600 leading-relaxed font-medium">
-              Visitors click through directly to explore your official website, try your tool, and sign up.
+            <p className="text-neutral-600 leading-relaxed font-medium pl-6">
+              Visitors browse top ranked products, discover innovative tools, and click directly through to your website to sign up.
+            </p>
+          </div>
+
+          {/* Step 4 */}
+          <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3.5 space-y-1 shadow-2xs">
+            <div className="flex items-center gap-2 font-black text-black text-xs sm:text-sm">
+              <Crown className="h-4 w-4 text-black shrink-0" />
+              <span>4. Claim the Featured Spot (Optional)</span>
+            </div>
+            <p className="text-neutral-600 leading-relaxed font-medium pl-6">
+              Want instant maximum exposure? Secure the exclusive #1 banner spot at the very top of the directory with animated BorderBeam styling.
             </p>
           </div>
         </div>
 
-        <div className="mt-5 sm:mt-6 pt-4 border-t border-neutral-200">
+        {/* Action Button */}
+        <div className="mt-5 pt-4 border-t border-neutral-200">
           <button
             type="button"
             onClick={() => {
@@ -87,7 +104,7 @@ export const HowItWorksModal: React.FC<HowItWorksModalProps> = ({
               onClose();
               onStartBidding();
             }}
-            className="w-full flex items-center justify-center gap-2 rounded-xl bg-black py-3 sm:py-3 text-xs sm:text-sm font-black text-white shadow-2xs hover:bg-neutral-800 active:scale-[0.98] transition-all cursor-pointer min-h-[44px]"
+            className="w-full flex items-center justify-center gap-2 rounded-xl bg-black py-3 text-xs sm:text-sm font-black text-white shadow-2xs hover:bg-neutral-800 active:scale-[0.98] transition-all cursor-pointer min-h-[44px]"
           >
             <Sparkles className="h-4 w-4" />
             <span>Submit Your Website Now</span>
