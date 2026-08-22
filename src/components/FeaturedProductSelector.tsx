@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Crown, Search, X } from 'lucide-react';
+import { Crown, Search, X, Eraser } from 'lucide-react';
 import { Product } from '../types';
 
 interface FeaturedProductSelectorProps {
   products: Product[];
   featuredId: string | null;
-  onSelect: (productId: string) => void;
+  onSelect: (productId: string | null) => void;
 }
 
 export const FeaturedProductSelector: React.FC<FeaturedProductSelectorProps> = ({
@@ -77,7 +77,52 @@ export const FeaturedProductSelector: React.FC<FeaturedProductSelectorProps> = (
               className="flex-1 bg-transparent text-xs text-black placeholder:text-neutral-400 outline-none"
             />
           </div>
-          <div className="max-h-60 overflow-y-auto">
+          <div className="max-h-60 overflow-y-auto">              {/* Default & Empty options */}
+            <button
+              type="button"
+              onClick={() => {
+                onSelect(null);
+                setOpen(false);
+                setQuery('');
+              }}
+              className={`flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-neutral-50 transition-colors cursor-pointer ${
+                featuredId === null ? 'bg-neutral-100' : ''
+              }`}
+            >
+              <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-amber-400 text-white">
+                <Crown className="h-3 w-3 fill-white stroke-white" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-xs font-bold text-black">Default</div>
+                <div className="text-[10px] text-neutral-500">Show featured banner placeholder</div>
+              </div>
+              {featuredId === null && (
+                <Crown className="h-3 w-3 text-black shrink-0 fill-black" />
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onSelect('');
+                setOpen(false);
+                setQuery('');
+              }}
+              className={`flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-neutral-50 transition-colors cursor-pointer ${
+                featuredId === '' ? 'bg-neutral-100' : ''
+              }`}
+            >
+              <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-neutral-200 text-neutral-500">
+                <Eraser className="h-3 w-3" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-xs font-bold text-black">Empty</div>
+                <div className="text-[10px] text-neutral-500">Clear featured, show no spotlight</div>
+              </div>
+              {featuredId === '' && (
+                <Crown className="h-3 w-3 text-black shrink-0 fill-black" />
+              )}
+            </button>
+            <div className="border-b border-neutral-100 mx-3" />
             {filtered.map((p) => (
               <button
                 key={p.id}

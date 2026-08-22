@@ -5,7 +5,30 @@ export type Category =
   | 'Productivity'
   | 'Design & UI'
   | 'SaaS & Indie'
-  | 'Crypto & Web3';
+  | 'Social Media & Community'
+  | 'X / Twitter Tools'
+  | 'LinkedIn Tools'
+  | 'YouTube & Video'
+  | 'Discord & Telegram'
+  | 'Instagram & TikTok'
+  | 'Marketing & SEO'
+  | 'Analytics & Data'
+  | 'Finance & Fintech'
+  | 'E-commerce'
+  | 'Security & Privacy'
+  | 'Communication & Social'
+  | 'Sales & CRM'
+  | 'No-Code & Low-Code'
+  | 'Education & Learning'
+  | 'Cloud & DevOps'
+  | 'Content & Media'
+  | 'Automation & Workflows'
+  | 'Open Source'
+  | 'Crypto & Web3'
+  | 'HR & Hiring'
+  | 'Customer Support'
+  | 'Health & Wellness'
+  | (string & {});
 
 export interface BidHistoryEntry {
   id: string;
@@ -47,6 +70,7 @@ export interface Product {
   twitterHandle?: string;
   category: Category;
   upvotes?: number;
+  dinoScore?: number;
   totalBid?: number;
   clicks: number;
   createdAt: number;

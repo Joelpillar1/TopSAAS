@@ -1,5 +1,5 @@
 import React from 'react';
-import { Crown, ShieldCheck, Share2, ArrowUp, ArrowDown, ExternalLink, ThumbsUp } from 'lucide-react';
+import { Crown, ShieldCheck, Share2, ArrowUp, ArrowDown, Zap } from 'lucide-react';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
 
@@ -7,22 +7,18 @@ interface ProductCardProps {
   product: Product;
   rank: number;
   soundEnabled: boolean;
-  onViewDetails: (product: Product) => void;
+  showVerified?: boolean;
   onShareProduct: (product: Product) => void;
   onTrackClick: (productId: string, url: string) => void;
-  onUpvote?: (product: Product) => void;
-  isFeatured?: boolean;
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({
   product,
   rank,
   soundEnabled,
-  onViewDetails,
+  showVerified = false,
   onShareProduct,
   onTrackClick,
-  onUpvote,
-  isFeatured,
 }) => {
   const prevRank = product.previousRank ?? rank;
   const rankDiff = prevRank - rank;
@@ -39,13 +35,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   })();
 
   return (
-    <div
+    <a
       id={`mobile-product-card-${product.id}`}
+      href={product.url}
+      target="_blank"
+      rel="noopener noreferrer"
       onClick={(e) => {
         const target = e.target as HTMLElement;
-        if (target.closest('button') || target.closest('a')) return;
+        if (target.closest('button')) return;
         playSound('click', soundEnabled);
-        onViewDetails(product);
+        onTrackClick(product.id, product.url);
       }}
       className={`group cursor-pointer rounded-xl border p-3 transition-all flex flex-col justify-between h-full w-full hover:border-black hover:shadow-xs ${cardHighlightClass}`}
     >
@@ -84,11 +83,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             )}
 
             {/* Favicon / Avatar */}
-            <button
-              type="button"
-              onClick={() => onViewDetails(product)}
-              className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-md border border-neutral-200 bg-white shadow-2xs cursor-pointer hover:border-black transition-colors"
-            >
+            <div className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-md border border-neutral-200 bg-white shadow-2xs">
               {product.logoUrl ? (
                 <img
                   src={product.logoUrl}
@@ -99,19 +94,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               ) : (
                 <span className="font-bold text-[10px] text-black">{product.name[0]}</span>
               )}
-            </button>
+            </div>
 
             {/* Name */}
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => onViewDetails(product)}
-                  className="font-bold text-black text-left hover:underline truncate text-xs sm:text-sm cursor-pointer"
-                >
+                <span className="font-bold text-black truncate text-xs sm:text-sm">
                   {product.name}
-                </button>
-                {product.verified && (
+                </span>
+                {showVerified && product.verified && (
                   <ShieldCheck className="h-3 w-3 text-black shrink-0" />
                 )}
                 {product.isUserOwned && (
@@ -137,7 +128,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
             <button
               type="button"
-              onClick={() => onShareProduct(product)}
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onShareProduct(product); }}
               className="flex h-6 w-6 items-center justify-center rounded-md border border-neutral-200 bg-white text-neutral-400 hover:text-black hover:bg-neutral-50 cursor-pointer transition-colors"
               title="Share"
             >
@@ -164,40 +155,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         </div>
 
         <div className="flex items-center gap-1.5">
-          {isFeatured && (
-            <span className="inline-flex items-center gap-1 rounded-lg bg-black px-2 py-1 text-[10px] font-bold text-white min-h-[28px]">
-              <Crown className="h-2.5 w-2.5 fill-white stroke-white" />
-              <span>Featured</span>
-            </span>
-          )}
-          {onUpvote && (
-            <button
-              type="button"
-              onClick={() => {
-                playSound('click', soundEnabled);
-                onUpvote(product);
-              }}
-              title="Upvote website (Free)"
-              className="inline-flex items-center justify-center gap-1 rounded-lg border border-neutral-200 bg-white px-2 py-1 text-xs font-bold text-black hover:border-black hover:bg-neutral-50 transition-all cursor-pointer shadow-2xs min-h-[28px]"
-            >
-              <ThumbsUp className="h-3 w-3" />
-              <span className="font-mono-num">{product.upvotes ?? 0}</span>
-            </button>
-          )}
-
-          <a
-            href={product.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => onTrackClick(product.id, product.url)}
-            title="Visit Website"
-            className="inline-flex items-center justify-center gap-1 rounded-lg px-2.5 py-1 text-xs font-bold active:scale-95 transition-all shadow-2xs bg-black text-white hover:bg-neutral-800 cursor-pointer min-h-[28px]"
-          >
-            <span>Visit</span>
-            <ExternalLink className="h-3 w-3" />
-          </a>
+          <span className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 bg-white px-2 py-1 text-xs font-bold text-black shadow-2xs min-h-[28px]">
+            <Zap className="h-3 w-3 text-amber-500" />
+            <span className="font-mono-num">{product.dinoScore ?? 0}</span>
+            <span className="text-neutral-400 text-[10px]">pts</span>
+          </span>
         </div>
       </div>
-    </div>
+    </a>
   );
 };

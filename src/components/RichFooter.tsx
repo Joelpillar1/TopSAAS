@@ -20,7 +20,7 @@ import { playSound } from '../utils/sound';
 
 interface RichFooterProps {
   totalProducts: number;
-  totalUpvotes: number;
+  totalScore: number;
   soundEnabled: boolean;
   onOpenSubmit: () => void;
   onOpenHowItWorks: () => void;
@@ -29,7 +29,7 @@ interface RichFooterProps {
 
 export const RichFooter: React.FC<RichFooterProps> = ({
   totalProducts,
-  totalUpvotes,
+  totalScore,
   soundEnabled,
   onOpenSubmit,
   onOpenHowItWorks,
@@ -72,8 +72,8 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                 <div className="flex h-5 w-5 items-center justify-center rounded-md bg-neutral-100">
                   <ArrowUp className="h-3 w-3 text-emerald-600" />
                 </div>
-                <span className="font-bold text-black font-mono-num">{totalUpvotes.toLocaleString()}</span>
-                <span className="text-neutral-500">upvotes</span>
+                <span className="font-bold text-black font-mono-num">{totalScore.toLocaleString()}</span>
+                <span className="text-neutral-500">total score</span>
               </div>
             </div>
             {/* Social Links */}
@@ -148,8 +148,30 @@ export const RichFooter: React.FC<RichFooterProps> = ({
 
           {/* Resources Column */}
           <div className="space-y-3">
-            <h4 className="text-xs font-black uppercase tracking-wider text-black">Resources</h4>
+            <h4 className="text-xs font-black uppercase tracking-wider text-black">Useful Resources</h4>
             <ul className="space-y-2">
+              <li>
+                <a
+                  href="https://x.com/ads4apps/status/2077469507543498836?s=46"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-neutral-500 hover:text-black transition-colors flex items-center gap-1.5"
+                >
+                  <TrendingUp className="h-3 w-3 shrink-0" />
+                  <span>$10K in 90 Days App Marketing</span>
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://x.com/ErnestoSOFTWARE/status/2014110519913857122?s=46"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-neutral-500 hover:text-black transition-colors flex items-center gap-1.5"
+                >
+                  <TrendingUp className="h-3 w-3 shrink-0" />
+                  <span>$800K/y App Guide</span>
+                </a>
+              </li>
               <li>
                 <a
                   href="https://www.post-bridge.com/growth-guide"
@@ -157,27 +179,9 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                   rel="noopener noreferrer"
                   className="text-xs text-neutral-500 hover:text-black transition-colors flex items-center gap-1.5"
                 >
-                  <TrendingUp className="h-3 w-3" />
+                  <TrendingUp className="h-3 w-3 shrink-0" />
                   <span>Growth Hack by Jack Friks</span>
                 </a>
-              </li>
-              <li>
-                <span className="text-xs text-neutral-500 flex items-center gap-1.5">
-                  <TrendingUp className="h-3 w-3" />
-                  Community Rankings
-                </span>
-              </li>
-              <li>
-                <span className="text-xs text-neutral-500 flex items-center gap-1.5">
-                  <Star className="h-3 w-3" />
-                  Featured Products
-                </span>
-              </li>
-              <li>
-                <span className="text-xs text-neutral-500 flex items-center gap-1.5">
-                  <Globe className="h-3 w-3" />
-                  Free to List
-                </span>
               </li>
             </ul>
           </div>

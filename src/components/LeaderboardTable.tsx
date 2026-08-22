@@ -1,24 +1,22 @@
 import React from 'react';
-import { Crown, ExternalLink, ArrowUp, ArrowDown, ShieldCheck, Share2, MousePointerClick, ThumbsUp } from 'lucide-react';
+import { Crown, ArrowUp, ArrowDown, ShieldCheck, Share2, MousePointerClick, Zap } from 'lucide-react';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
 
 interface LeaderboardTableProps {
   products: Product[];
   soundEnabled: boolean;
-  onViewDetails: (product: Product) => void;
+  featuredProductId?: string | null;
   onShareProduct: (product: Product) => void;
   onTrackClick: (productId: string, url: string) => void;
-  onUpvote?: (product: Product) => void;
 }
 
 export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
   products,
   soundEnabled,
-  onViewDetails,
+  featuredProductId,
   onShareProduct,
   onTrackClick,
-  onUpvote,
 }) => {
   return (
     <div id="leaderboard-table-container" className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-xs transition-all">
@@ -30,7 +28,7 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
               <th className="py-3 px-4">Website / Product</th>
               <th className="py-3 px-4 text-center hidden md:table-cell">Category</th>
               <th className="py-3 px-4 text-center hidden sm:table-cell">Visits</th>
-              <th className="py-3 px-4 text-center">Upvotes</th>
+              <th className="py-3 px-4 text-center">Score</th>
               <th className="py-3 pr-4 pl-2 text-right">Action</th>
             </tr>
           </thead>
@@ -66,9 +64,10 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                   id={`product-row-${product.id}`}
                   onClick={(e) => {
                     const target = e.target as HTMLElement;
-                    if (target.closest('button') || target.closest('a')) return;
+                    if (target.closest('button')) return;
                     playSound('click', soundEnabled);
-                    onViewDetails(product);
+                    window.open(product.url, '_blank', 'noopener,noreferrer');
+                    onTrackClick(product.id, product.url);
                   }}
                   className={`group transition-colors cursor-pointer ${rowHighlightClass}`}
                 >
@@ -125,11 +124,7 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                   <td className="py-3.5 px-4 align-middle">
                     <div className="flex items-center gap-3">
                       {/* Favicon / Logo */}
-                      <button
-                        type="button"
-                        onClick={() => onViewDetails(product)}
-                        className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-neutral-200 bg-white group-hover:border-neutral-400 transition-all cursor-pointer shadow-xs"
-                      >
+                      <div className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-neutral-200 bg-white group-hover:border-neutral-400 transition-all shadow-xs">
                         {product.logoUrl ? (
                           <img
                             src={product.logoUrl}
@@ -145,31 +140,17 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                             YOU
                           </span>
                         )}
-                      </button>
+                      </div>
 
-                      {/* Name, URL & Tagline */}
+                      {/* Name & Tagline */}
                       <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => onViewDetails(product)}
-                            className="font-bold text-black group-hover:underline transition-colors text-left text-sm truncate cursor-pointer"
-                          >
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-black group-hover:underline transition-colors text-sm truncate">
                             {product.name}
-                          </button>
-                          {product.verified && (
+                          </span>
+                          {product.verified && (rank <= 5 || product.id === featuredProductId) && (
                             <ShieldCheck className="h-3.5 w-3.5 text-black shrink-0" title="Verified Website" />
                           )}
-                          <a
-                            href={product.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={() => onTrackClick(product.id, product.url)}
-                            className="inline-flex items-center gap-0.5 text-[11px] font-medium text-neutral-500 hover:text-black transition-colors"
-                          >
-                            <span>{cleanUrl(product.url)}</span>
-                            <ExternalLink className="h-2.5 w-2.5" />
-                          </a>
                         </div>
 
                         <p className="text-xs text-neutral-500 line-clamp-1 max-w-lg mt-0.5 font-normal">
@@ -194,29 +175,16 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                     </div>
                   </td>
 
-                  {/* Upvotes Column */}
+                  {/* Score Column */}
                   <td className="py-3.5 px-4 text-center align-middle">
-                    {onUpvote ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          playSound('click', soundEnabled);
-                          onUpvote(product);
-                        }}
-                        title="Upvote website (Free)"
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-2.5 py-1 text-xs font-bold text-black hover:border-black hover:bg-neutral-50 transition-all shadow-2xs cursor-pointer"
-                      >
-                        <ThumbsUp className="h-3 w-3" />
-                        <span className="font-mono-num">{product.upvotes ?? 0}</span>
-                      </button>
-                    ) : (
-                      <span className="font-mono-num text-xs font-bold text-black">
-                        {product.upvotes ?? 0}
-                      </span>
-                    )}
+                    <div className="inline-flex items-center gap-1">
+                      <Zap className="h-3 w-3 text-amber-500" />
+                      <span className="font-mono-num text-xs font-bold text-black">{product.dinoScore ?? 0}</span>
+                      <span className="text-[10px] text-neutral-400">pts</span>
+                    </div>
                   </td>
 
-                  {/* Action Column: Visit / Share */}
+                  {/* Action Column: Share */}
                   <td className="py-3.5 pr-4 pl-2 text-right align-middle">
                     <div className="flex items-center justify-end gap-1.5">
                       <button
@@ -227,18 +195,6 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                       >
                         <Share2 className="h-3 w-3" />
                       </button>
-
-                      <a
-                        href={product.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() => onTrackClick(product.id, product.url)}
-                        title="Visit Website"
-                        className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-bold transition-all shadow-2xs active:scale-95 bg-black text-white hover:bg-neutral-800 cursor-pointer"
-                      >
-                        <span>Visit</span>
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
                     </div>
                   </td>
                 </tr>

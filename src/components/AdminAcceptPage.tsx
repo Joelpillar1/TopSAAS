@@ -54,7 +54,7 @@ interface AdminAcceptPageProps {
   soundEnabled: boolean;
   onToggleSound: () => void;
   featuredProductId: string | null;
-  onSetFeatured: (productId: string) => void;
+  onSetFeatured: (productId: string | null) => void;
 }
 
 export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
@@ -74,11 +74,11 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
   featuredProductId,
   onSetFeatured,
 }) => {
-  // Active view tab: submissions queue vs products management
-  const [activeView, setActiveView] = useState<'submissions' | 'products'>('submissions');
+  // Active view tab: submissions queue vs products management vs featured
+  const [activeView, setActiveView] = useState<'submissions' | 'products' | 'featured'>('products');
 
   // Submissions state
-  const [statusFilter, setStatusFilter] = useState<'all' | 'under_review' | 'approved' | 'rejected'>('under_review');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'under_review' | 'approved' | 'rejected'>('approved');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   
@@ -94,6 +94,9 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
   const [editTagline, setEditTagline] = useState('');
   const [editUrl, setEditUrl] = useState('');
   const [editCategory, setEditCategory] = useState<Category>('Developer Tools');
+
+  // Revoke confirmation modal state
+  const [revokeTarget, setRevokeTarget] = useState<WebsiteSubmission | null>(null);
 
   // Counts
   const pendingCount = submissions.filter((s) => s.status === 'under_review').length;
@@ -131,6 +134,9 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
     }
     return true;
   });
+
+  // Current featured product (matches homepage logic: explicit pick or fallback to first product)
+  const featuredProduct = (featuredProductId ? products.find((p) => p.id === featuredProductId) : null) || products[0] || null;
 
   const handleAccept = (sub: WebsiteSubmission) => {
     playSound('success', soundEnabled);
@@ -296,6 +302,18 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
             <span className="ml-1 rounded-full bg-black text-white px-1.5 py-0.2 text-[9px] font-bold">
               {products.length}
             </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => { setActiveView('featured'); playSound('click', soundEnabled); }}
+            className={`flex items-center gap-1.5 rounded-t-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer border border-b-0 ${
+              activeView === 'featured'
+                ? 'bg-white border-neutral-300 text-black shadow-2xs'
+                : 'bg-transparent border-transparent text-neutral-500 hover:text-black hover:bg-neutral-50'
+            }`}
+          >
+            <Crown className="h-3.5 w-3.5" />
+            <span>Featured</span>
           </button>
         </div>
 
@@ -590,7 +608,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                   <Eye className="h-3.5 w-3.5 text-neutral-500" />
                                   <span>View Live</span>
                                 </button>
-                                <button type="button" onClick={() => handleReject(sub.id)} className="flex items-center gap-1 rounded-xl border border-neutral-300 bg-white px-2.5 py-2 text-xs font-bold text-neutral-600 hover:text-red-600 hover:border-red-300 transition-all cursor-pointer shadow-2xs" title="Revoke Approval">
+                                <button type="button" onClick={() => setRevokeTarget(sub)} className="flex items-center gap-1 rounded-xl border border-neutral-300 bg-white px-2.5 py-2 text-xs font-bold text-neutral-600 hover:text-red-600 hover:border-red-300 transition-all cursor-pointer shadow-2xs" title="Revoke Approval">
                                   <span>Revoke</span>
                                 </button>
                               </>
@@ -893,6 +911,147 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
             </div>
           </>
         )}
+
+        {/* ============================================================ */}
+        {/* FEATURED MANAGEMENT VIEW */}
+        {/* ============================================================ */}
+        {activeView === 'featured' && (
+          <>
+            {/* Featured Metrics */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <div className="rounded-xl border border-neutral-300 bg-white p-4 shadow-2xs">
+                <div className="flex items-center justify-between text-xs font-bold text-amber-700 mb-1">
+                  <span>Currently Featured</span>
+                  <Crown className="h-4 w-4" />
+                </div>
+                <div className="text-2xl sm:text-3xl font-black text-black">
+                  {featuredProduct ? featuredProduct.name : 'None'}
+                </div>
+                <p className="text-[11px] text-neutral-500 mt-1">
+                  {featuredProduct
+                    ? `Showing at top of directory — ${featuredProduct.category}`
+                    : 'No product is currently featured'}
+                </p>
+              </div>
+              <div className="rounded-xl border border-neutral-300 bg-white p-4 shadow-2xs">
+                <div className="flex items-center justify-between text-xs font-bold text-neutral-600 mb-1">
+                  <span>Featured Spot Status</span>
+                  <Star className="h-4 w-4" />
+                </div>
+                <div className="text-2xl sm:text-3xl font-black text-black">
+                  {featuredProductId === '' ? 'Cleared' : featuredProduct ? 'Active' : 'None'}
+                </div>
+                <p className="text-[11px] text-neutral-500 mt-1">
+                  {featuredProductId === ''
+                    ? 'No spotlight displayed'
+                    : featuredProduct
+                    ? 'Banner visible on homepage'
+                    : 'No products in directory'}
+                </p>
+              </div>
+            </div>
+
+            {/* Featured Product Selector */}
+            <div className="rounded-xl border border-neutral-300 bg-white p-4 shadow-2xs">
+              <div className="flex items-center gap-2 mb-3">
+                <Crown className="h-4 w-4 text-amber-500" />
+                <h3 className="text-sm font-black text-black">Assign Featured Product</h3>
+              </div>
+              <p className="text-xs text-neutral-500 mb-4">
+                Select which product appears as the featured banner on the homepage. You can override any user-purchased featured spot from here.
+              </p>
+              <FeaturedProductSelector
+                products={products}
+                featuredId={featuredProductId}
+                onSelect={onSetFeatured}
+              />
+            </div>
+
+            {/* Current Featured Detail */}
+            {featuredProduct && (
+              <div className="rounded-xl border border-amber-300 ring-1 ring-amber-200 bg-white p-4 sm:p-5 shadow-2xs">
+                <div className="flex items-center gap-2 mb-3">
+                  <Crown className="h-4 w-4 text-amber-500" />
+                  <h3 className="text-sm font-black text-black">Featured Product Details</h3>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-2xs">
+                    {featuredProduct.logoUrl ? (
+                      <img
+                        src={featuredProduct.logoUrl}
+                        alt={featuredProduct.name}
+                        className="h-full w-full object-cover"
+                        referrerPolicy="no-referrer"
+                        onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                      />
+                    ) : (
+                      <span className="text-sm font-black text-black">{featuredProduct.name.slice(0, 2).toUpperCase()}</span>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-base font-black text-black truncate">{featuredProduct.name}</h4>
+                      {featuredProduct.verified && <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />}
+                    </div>
+                    <p className="text-xs text-neutral-500 truncate">{featuredProduct.tagline}</p>
+                    <div className="flex items-center gap-3 mt-1.5 text-[11px] text-neutral-500">
+                      <span className="rounded-md bg-neutral-100 border border-neutral-200 px-2 py-0.5 font-bold text-neutral-700">
+                        {featuredProduct.category}
+                      </span>
+                      <div className="flex items-center gap-1 font-bold">
+                        <ChevronUp className="h-3 w-3 text-emerald-600" />
+                        <span>{(featuredProduct.upvotes ?? 0).toLocaleString()} upvotes</span>
+                      </div>
+                      <a
+                        href={featuredProduct.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-black font-semibold hover:underline"
+                      >
+                        <Globe className="h-3 w-3 text-neutral-500" />
+                        <span className="truncate max-w-[200px]">{featuredProduct.url}</span>
+                        <ExternalLink className="h-2.5 w-2.5 text-neutral-400" />
+                      </a>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => onSetFeatured(null)}
+                      className="flex items-center gap-1.5 rounded-xl border border-neutral-300 bg-white px-3 py-2 text-xs font-bold text-neutral-800 hover:border-black hover:bg-neutral-50 transition-all cursor-pointer shadow-2xs"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                      <span>Clear Featured</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* How It Works */}
+            <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+              <h4 className="text-xs font-bold text-black mb-2">How Featured Works</h4>
+              <ul className="space-y-1.5">
+                <li className="flex items-start gap-2 text-xs text-neutral-600">
+                  <span className="font-bold">1.</span>
+                  <span>Users can purchase a featured spot (7 or 30 days) which auto-sets the product.</span>
+                </li>
+                <li className="flex items-start gap-2 text-xs text-neutral-600">
+                  <span className="font-bold">2.</span>
+                  <span>As admin, you can override any user-purchased featured spot from this panel.</span>
+                </li>
+                <li className="flex items-start gap-2 text-xs text-neutral-600">
+                  <span className="font-bold">3.</span>
+                  <span>The featured product appears at the top of the directory with a BorderBeam animation.</span>
+                </li>
+                <li className="flex items-start gap-2 text-xs text-neutral-600">
+                  <span className="font-bold">4.</span>
+                  <span>Set to &quot;Default&quot; to show the bid placeholder, or &quot;Empty&quot; to hide the featured section entirely.</span>
+                </li>
+              </ul>
+            </div>
+          </>
+        )}
       </main>
 
       {/* Edit Submission Modal */}
@@ -946,6 +1105,40 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                 <button type="submit" className="rounded-xl bg-black px-4 py-2 text-xs font-bold text-white hover:bg-neutral-800">Save Changes</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Revoke Confirmation Modal */}
+      {revokeTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="relative w-full max-w-sm rounded-2xl border border-neutral-300 bg-white shadow-2xl p-6 text-center animate-in fade-in zoom-in-95 duration-150">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 border border-red-200 mb-4">
+              <XCircle className="h-6 w-6 text-red-500" />
+            </div>
+            <h3 className="text-base font-black text-black mb-1">Revoke Approval?</h3>
+            <p className="text-xs text-neutral-500 mb-5">
+              <span className="font-bold text-black">{revokeTarget.name}</span> will be removed from the live directory. This action can be undone by restoring the submission.
+            </p>
+            <div className="flex items-center justify-center gap-2">
+              <button
+                type="button"
+                onClick={() => setRevokeTarget(null)}
+                className="rounded-xl border border-neutral-300 bg-white px-4 py-2 text-xs font-bold text-neutral-800 hover:border-black hover:bg-neutral-50 transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  handleReject(revokeTarget.id);
+                  setRevokeTarget(null);
+                }}
+                className="rounded-xl bg-red-600 px-4 py-2 text-xs font-bold text-white hover:bg-red-700 transition-all cursor-pointer active:scale-[0.98]"
+              >
+                Yes, Revoke
+              </button>
+            </div>
           </div>
         </div>
       )}

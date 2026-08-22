@@ -3,16 +3,14 @@ import { User } from '@supabase/supabase-js';
 import { INITIAL_PRODUCTS } from './data/initialProducts';
 import { INITIAL_SUBMISSIONS } from './data/initialSubmissions';
 import { Category, Product, WebsiteSubmission } from './types';
-import { HeroWebsiteInfo } from './components/HeroWebsiteInfo';
+import { DinoGame } from './components/DinoGame';
 import { HeroClaimBanner } from './components/HeroClaimBanner';
 import { LeaderboardTable } from './components/LeaderboardTable';
 import { ProductCard } from './components/ProductCard';
 import { BidModal } from './components/BidModal';
-import { ProductDetailDrawer } from './components/ProductDetailDrawer';
 import { HowItWorksModal } from './components/HowItWorksModal';
 import { ShareModal } from './components/ShareModal';
 import { MobileBottomBar } from './components/MobileBottomBar';
-import { ProductPage } from './components/ProductPage';
 import { Pagination } from './components/Pagination';
 import { BorderBeam } from './components/BorderBeam';
 import { AdminAcceptPage } from './components/AdminAcceptPage';
@@ -20,12 +18,17 @@ import { RichFooter } from './components/RichFooter';
 import { Header } from './components/Header';
 import { SignInModal } from './components/SignInModal';
 import { ProfilePage } from './components/ProfilePage';
+import { PaymentSuccess } from './components/PaymentSuccess';
 import { SaaSIdeas } from './components/SaaSIdeas';
 import { playSound } from './utils/sound';
 import { supabase } from './utils/supabase';
 import { loadProducts, debouncedSyncProducts, toggleUpvote, getUserUpvotes, checkIsAdmin } from './utils/db';
 import { getWebsiteFavicon } from './utils/logo';
-import { LayoutGrid, Table as TableIcon, RefreshCw, Trophy, Sparkles, X, Plus, ShieldCheck, Crown } from 'lucide-react';
+import { LayoutGrid, Table as TableIcon, RefreshCw, Trophy, Sparkles, X, Plus, ShieldCheck, Crown, Loader2, Volume2, VolumeX, HelpCircle } from 'lucide-react';
+import { FeaturedSpotModal } from './components/FeaturedSpotModal';
+import { GameOverModal } from './components/GameOverModal';
+import { SkeletonCard } from './components/SkeletonCard';
+import { SkeletonTable } from './components/SkeletonTable';
 
 // Map a Supabase DB row to our WebsiteSubmission type
 const mapDbSubmission = (row: Record<string, unknown>): WebsiteSubmission => ({
@@ -90,6 +93,7 @@ const STORAGE_KEYS = {
   PRODUCTS: 'directory_free_products_v5',
   SOUND: 'directory_sound_enabled',
   SUBMISSIONS: 'directory_pending_submissions_v1',
+  VIEW_LAYOUT: 'directory_view_layout',
 };
 
 export default function App() {
@@ -101,20 +105,17 @@ export default function App() {
       if (path === '/accept' || hash === '#accept' || hash === '#/accept') {
         return '/accept';
       }
+      if (path === '/payment-success' || hash === '#payment-success' || hash === '#/payment-success') {
+        return '/payment-success';
+      }
+      if (path === '/profile' || hash === '#profile' || hash === '#/profile') {
+        return '/profile';
+      }
     }
     return '/';
   });
 
-  // Dedicated Product Page state (with hash support)
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(() => {
-    if (typeof window !== 'undefined' && window.location.hash) {
-      const hash = window.location.hash.replace('#product-', '').replace('#', '');
-      if (hash && hash !== 'accept' && hash !== '/accept') {
-        return hash;
-      }
-    }
-    return null;
-  });
+
 
   // Submissions queue (Under Review / Approved / Rejected)
   const [submissions, setSubmissions] = useState<WebsiteSubmission[]>(INITIAL_SUBMISSIONS);
@@ -137,51 +138,73 @@ export default function App() {
     loadSubmissions();
   }, []);
 
-  // Load persisted live products
+  // Load persisted live products (only user-submitted ones; seed products are removed)
   const [products, setProducts] = useState<Product[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
       if (saved) {
         const parsed: Product[] = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.map((p, index) => {
-            const initial = INITIAL_PRODUCTS.find((init) => init.id === p.id);
-            const defaultUpvotes = Math.max(12, 380 - index * 6);
-            const resolvedLogo = initial?.logoUrl || (!p.logoUrl || p.logoUrl.includes('unsplash.com') ? getWebsiteFavicon(p.url) : p.logoUrl);
-            return {
-              ...(initial || {}),
-              ...p,
-              logoUrl: resolvedLogo,
-              upvotes: typeof p.upvotes === 'number' ? p.upvotes : defaultUpvotes,
-              totalBid: 0,
-              bidHistory: [],
-            };
-          });
+          return parsed
+            .filter((p) => !!p.submittedBy)
+            .map((p) => {
+              const initial = INITIAL_PRODUCTS.find((init) => init.id === p.id);
+              const resolvedLogo = initial?.logoUrl || (!p.logoUrl || p.logoUrl.includes('unsplash.com') ? getWebsiteFavicon(p.url) : p.logoUrl);
+              return {
+                ...(initial || {}),
+                ...p,
+                logoUrl: resolvedLogo,
+                upvotes: 0,
+                totalBid: 0,
+                bidHistory: [],
+              };
+            });
         }
       }
     } catch {}
 
-    // Initialize initial products with initial upvotes
-    return INITIAL_PRODUCTS.map((p, index) => ({
-      ...p,
-      upvotes: Math.max(15, 420 - index * 7),
-      totalBid: 0,
-      bidHistory: [],
-    }));
+    // Start with empty directory — no seed products
+    return [];
   });
 
   // Auth state
   const [user, setUser] = useState<User | null>(null);
+  const [authLoaded, setAuthLoaded] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [userUpvotes, setUserUpvotes] = useState<Set<string>>(new Set());
   const [productsLoaded, setProductsLoaded] = useState(false);
 
-  // Featured product (admin can set any product as featured)
+  // Featured product (admin can set any product as featured, or user paid for it)
   const [featuredProductId, setFeaturedProductId] = useState<string | null>(() => {
     try {
-      return localStorage.getItem('topsaas_featured_product');
+      const id = localStorage.getItem('topsaas_featured_product');
+      if (!id) return null;
+      const expiry = localStorage.getItem('topsaas_featured_expiry');
+      if (expiry && Date.now() > Number(expiry)) {
+        // Featured spot has expired — clear it
+        localStorage.removeItem('topsaas_featured_product');
+        localStorage.removeItem('topsaas_featured_expiry');
+        return null;
+      }
+      return id;
     } catch { return null; }
   });
+
+  // Periodically check if the featured spot has expired
+  useEffect(() => {
+    const interval = setInterval(() => {
+      try {
+        const id = localStorage.getItem('topsaas_featured_product');
+        const expiry = localStorage.getItem('topsaas_featured_expiry');
+        if (id && expiry && Date.now() > Number(expiry)) {
+          localStorage.removeItem('topsaas_featured_product');
+          localStorage.removeItem('topsaas_featured_expiry');
+          setFeaturedProductId(null);
+        }
+      } catch {}
+    }, 60_000); // Check every 60 seconds
+    return () => clearInterval(interval);
+  }, []);
 
   // Submitter name auto-filled from Google profile
   const submitterName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || '';
@@ -199,7 +222,13 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'directory' | 'saas-ideas'>('directory');
 
   // View layout
-  const [viewLayout, setViewLayout] = useState<'cards' | 'table'>('cards');
+  const [viewLayout, setViewLayout] = useState<'cards' | 'table'>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.VIEW_LAYOUT);
+      if (saved === 'cards' || saved === 'table') return saved;
+    } catch {}
+    return 'cards';
+  });
 
   // Search and Category filtering state
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -209,12 +238,15 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize] = useState<number>(50);
 
-  // Modals & Drawers
+  // Modals
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
   const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
-  const [detailProduct, setDetailProduct] = useState<Product | null>(null);
   const [shareProduct, setShareProduct] = useState<Product | null>(null);
   const [isHowItWorksOpen, setIsHowItWorksOpen] = useState(false);
+  const [isFeaturedSpotModalOpen, setIsFeaturedSpotModalOpen] = useState(false);
+  const [isGameOverModalOpen, setIsGameOverModalOpen] = useState(false);
+  const [gameOverStats, setGameOverStats] = useState({ score: 0, highScore: 0, isNewRecord: false });
+  const [playAgainTrigger, setPlayAgainTrigger] = useState(0);
 
   // Hash change and browser history listener for SPA routing
   useEffect(() => {
@@ -224,17 +256,12 @@ export default function App() {
 
       if (path === '/accept' || hash === '#accept' || hash === '#/accept') {
         setCurrentRoute('/accept');
-        setSelectedProductId(null);
+      } else if (path === '/payment-success' || hash === '#payment-success' || hash === '#/payment-success') {
+        setCurrentRoute('/payment-success');
       } else if (path === '/profile' || hash === '#profile' || hash === '#/profile') {
         setCurrentRoute('/profile');
-        setSelectedProductId(null);
-      } else if (hash.startsWith('#product-')) {
-        setCurrentRoute('/');
-        const hashId = hash.replace('#product-', '');
-        setSelectedProductId(hashId || null);
       } else {
         setCurrentRoute('/');
-        setSelectedProductId(null);
       }
     };
 
@@ -247,32 +274,13 @@ export default function App() {
   }, []);
 
   // Navigation handlers
-  const handleOpenProductPage = (prod: Product) => {
-    setSelectedProductId(prod.id);
-    setCurrentRoute('/');
-    try {
-      window.location.hash = `product-${prod.id}`;
-    } catch {}
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
   const handleBackToLeaderboard = () => {
-    setSelectedProductId(null);
     setCurrentRoute('/');
+    setIsGameOverModalOpen(false);
+    setPlayAgainTrigger(0);
     try {
       window.history.pushState('', document.title, '/');
     } catch {}
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleGoToAcceptPage = () => {
-    setSelectedProductId(null);
-    setCurrentRoute('/accept');
-    try {
-      window.history.pushState({}, 'Admin Moderation', '/accept');
-    } catch {
-      window.location.hash = 'accept';
-    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -281,7 +289,6 @@ export default function App() {
       setIsSignInModalOpen(true);
       return;
     }
-    setSelectedProductId(null);
     setCurrentRoute('/profile');
     try {
       window.history.pushState({}, 'My Profile', '/profile');
@@ -298,6 +305,13 @@ export default function App() {
       localStorage.setItem(STORAGE_KEYS.SOUND, soundEnabled.toString());
     } catch {}
   }, [products, soundEnabled]);
+
+  // Persist view layout preference
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.VIEW_LAYOUT, viewLayout);
+    } catch {}
+  }, [viewLayout]);
 
   // Sync submissions to Supabase when they change (after initial load)
   useEffect(() => {
@@ -336,6 +350,7 @@ export default function App() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
+      setAuthLoaded(true);
       if (session?.user) saveUserProfile(session.user);
     });
 
@@ -426,7 +441,7 @@ export default function App() {
 
   // Re-rank helper: sorts by upvotes and assigns fresh rank numbers
   const recomputeRanks = useCallback((productList: Product[]): Product[] => {
-    const sorted = [...productList].sort((a, b) => (b.upvotes ?? 0) - (a.upvotes ?? 0));
+    const sorted = [...productList].sort((a, b) => (b.dinoScore ?? 0) - (a.dinoScore ?? 0));
     return sorted.map((p, index) => {
       const newRank = index + 1;
       return {
@@ -479,42 +494,67 @@ export default function App() {
     name,
     tagline,
     url,
-    twitterHandle,
     category,
-    backerName,
-    backerEmail,
   }: {
     name: string;
     tagline: string;
     url: string;
-    twitterHandle?: string;
     category: Category;
-    backerName: string;
-    backerEmail?: string;
   }) => {
-    const newSubmission: WebsiteSubmission = {
-      id: generateUniqueId('sub'),
+    // Block if user already has a product
+    if (user && products.some((p) => p.submittedBy === user.id)) return;
+
+    const now = Date.now();
+    const subId = generateUniqueId('sub');
+
+    const newProd: Product = {
+      id: generateUniqueId('prod'),
+      rank: products.length + 1,
+      previousRank: products.length + 1,
       name,
       tagline,
       url,
       logoUrl: getWebsiteFavicon(url),
-      twitterHandle,
       category,
-      backerName: backerName || submitterName || 'Creator',
-      backerEmail,
-      status: 'under_review',
-      submittedAt: Date.now(),
+      totalBid: 0,
+      upvotes: 0,
+      clicks: 0,
+      createdAt: now,
+      updatedAt: now,
+      verified: false,
+      isUserOwned: !!(user),
       submittedBy: user?.id,
+      description: `${name} is a product in the ${category} ecosystem. ${tagline}.`,
+      whatItDoes: [],
+      features: [],
+      useCases: [],
+      targetAudience: '',
+      pricingModel: '',
+      keyHighlights: [],
+      bidHistory: [],
     };
 
-    // Save to Supabase immediately
-    try {
-      const dbRow = toDbSubmission(newSubmission);
-      (dbRow as Record<string, unknown>).submitted_by = user?.id || null;
-      await supabase.from('submissions').insert(dbRow);
-    } catch {}
+    setProducts((prev) => [...prev, newProd]);
 
-    setSubmissions((prev) => [newSubmission, ...prev]);
+    // Also create an approved submission record (all submissions accepted instantly)
+    const newSubmission: WebsiteSubmission = {
+      id: subId,
+      name,
+      tagline,
+      url,
+      logoUrl: getWebsiteFavicon(url),
+      category,
+      backerName: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Creator',
+      backerEmail: user?.email,
+      status: 'approved',
+      submittedAt: now,
+      reviewedAt: now,
+      submittedBy: user?.id,
+    };
+    setSubmissions((prev) => [...prev, newSubmission]);
+    try {
+      await supabase.from('submissions').insert(toDbSubmission(newSubmission));
+    } catch {}
   };
 
   // Admin Acceptance Pipeline: converts a submission into a live Product on the website
@@ -676,32 +716,32 @@ export default function App() {
     });
   };
 
-  // Reset to initial curated demo data
+  // Reset directory — clears all products
   const handleResetBoard = () => {
-    if (window.confirm('Reset directory to initial curated data?')) {
-      const resetProds = INITIAL_PRODUCTS.map((p, index) => ({
-        ...p,
-        upvotes: Math.max(15, 420 - index * 7),
-        totalBid: 0,
-        bidHistory: [],
-      }));
-      setProducts(resetProds);
+    if (window.confirm('Clear all products from the directory?')) {
+      setProducts([]);
       playSound('click', soundEnabled);
     }
   };
 
-  // Admin: set any product as the featured product
-  const handleSetFeatured = (productId: string) => {
+  // Admin: set any product as the featured product (null = default/placeholder, '' = empty, 'prod-X' = specific product)
+  const handleSetFeatured = (productId: string | null) => {
     setFeaturedProductId(productId);
-    try { localStorage.setItem('topsaas_featured_product', productId); } catch {}
+    try {
+      if (productId === null) {
+        localStorage.removeItem('topsaas_featured_product');
+      } else {
+        localStorage.setItem('topsaas_featured_product', productId);
+      }
+    } catch {}
     playSound('click', soundEnabled);
   };
 
-  const topProduct = (featuredProductId ? products.find((p) => p.id === featuredProductId) : null) || products[0] || INITIAL_PRODUCTS[0];
+  const topProduct = (featuredProductId ? products.find((p) => p.id === featuredProductId) : null) || products[0] || null;
   // Compute isUserOwned dynamically from submittedBy
   const markOwnership = (p: Product) => ({ ...p, isUserOwned: !!(user && p.submittedBy && p.submittedBy === user.id) });
   const topThreeProducts = products.slice(0, 3).map(markOwnership);
-  const activeProductPage = products.find((p) => p.id === selectedProductId) ? markOwnership(products.find((p) => p.id === selectedProductId)!) : null;
+
   const pendingReviewCount = submissions.filter((s) => s.status === 'under_review').length;
 
   // Filter products by category and search query
@@ -734,8 +774,28 @@ export default function App() {
     }
   }, [filteredProducts.length, totalPages, currentPage]);
 
-  // 0. PROFILE PAGE ROUTE (/profile)
+  // 0. PAYMENT SUCCESS ROUTE (/payment-success)
+  if (currentRoute === '/payment-success') {
+    return (
+      <PaymentSuccess
+        onBackToDirectory={handleBackToLeaderboard}
+        soundEnabled={soundEnabled}
+        onActivateFeatured={(productId) => {
+          setFeaturedProductId(productId);
+        }}
+      />
+    );
+  }
+
+  // 0.5 PROFILE PAGE ROUTE (/profile)
   if (currentRoute === '/profile') {
+    if (!authLoaded) {
+      return (
+        <div className="min-h-screen bg-neutral-50 text-black flex items-center justify-center font-sans">
+          <Loader2 className="h-6 w-6 text-neutral-400 animate-spin" />
+        </div>
+      );
+    }
     if (!user) {
       setIsSignInModalOpen(true);
       setCurrentRoute('/');
@@ -746,6 +806,7 @@ export default function App() {
         user={user}
         onBack={handleBackToLeaderboard}
         onSignOut={handleSignOut}
+        onDeleteProduct={(productId) => setProducts((prev) => prev.filter((p) => p.id !== productId))}
       />
     );
   }
@@ -791,8 +852,8 @@ export default function App() {
           isOpen={isSubmitModalOpen}
           onClose={() => setIsSubmitModalOpen(false)}
           onConfirmSubmit={handleConfirmSubmit}
-          onGoToAcceptPage={handleGoToAcceptPage}
           soundEnabled={soundEnabled}
+          hasProduct={!!(user && products.some((p) => p.submittedBy === user.id))}
         />
         <SignInModal
           isOpen={isSignInModalOpen}
@@ -803,71 +864,7 @@ export default function App() {
     );
   }
 
-  // 2. DEDICATED PRODUCT PAGE ROUTE
-  if (activeProductPage) {
-    return (
-      <div className="min-h-screen bg-neutral-50 text-black flex flex-col justify-between selection:bg-black selection:text-white font-sans">
-        <Header
-          onGoHome={handleBackToLeaderboard}
-          onOpenSubmit={handleOpenSubmit}
-          onSignIn={handleSignIn}
-          onGoToProfile={handleGoToProfile}
-          user={user}
-        />
-        <ProductPage
-          product={activeProductPage}
-          topProduct={topProduct}
-          allProducts={products}
-          soundEnabled={soundEnabled}
-          onBack={handleBackToLeaderboard}
-          onSelectProduct={handleOpenProductPage}
-          onShare={(p) => setShareProduct(p)}
-          onTrackClick={handleTrackClick}
-          onUpvote={handleUpvote}
-        />
-
-        {/* Footer */}
-        <RichFooter
-          totalProducts={products.length}
-          totalUpvotes={products.reduce((s, p) => s + (p.upvotes ?? 0), 0)}
-          soundEnabled={soundEnabled}
-          onOpenSubmit={handleOpenSubmit}
-          onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
-          onSelectCategory={setSelectedCategory}
-        />
-
-        {/* Submit Website Modal */}
-        <BidModal
-          isOpen={isSubmitModalOpen}
-          onClose={() => setIsSubmitModalOpen(false)}
-          onConfirmSubmit={handleConfirmSubmit}
-          onGoToAcceptPage={handleGoToAcceptPage}
-          soundEnabled={soundEnabled}
-        />
-
-        {/* Share Modal */}
-        <ShareModal
-          product={shareProduct}
-          isOpen={!!shareProduct}
-          onClose={() => setShareProduct(null)}
-          soundEnabled={soundEnabled}
-        />
-
-        {/* How It Works Modal */}
-        <HowItWorksModal
-          isOpen={isHowItWorksOpen}
-          onClose={() => setIsHowItWorksOpen(false)}
-          onStartBidding={() => {
-            setIsHowItWorksOpen(false);
-            handleOpenSubmit();
-          }}
-          soundEnabled={soundEnabled}
-        />
-      </div>
-    );
-  }
-
-  // 3. MAIN DIRECTORY HOMEPAGE ROUTE
+  // 2. MAIN DIRECTORY HOMEPAGE ROUTE
   return (
     <div className="min-h-screen bg-neutral-50 text-black flex flex-col justify-between selection:bg-black selection:text-white font-sans">
       <Header
@@ -879,18 +876,72 @@ export default function App() {
       />
       {/* Main Content Area */}
       <main className="mx-auto w-full max-w-5xl px-3.5 sm:px-6 space-y-3 sm:space-y-4 flex-1 pb-24 sm:pb-8 pt-4">
-        {/* Centered Website Info Hero */}
-        <HeroWebsiteInfo
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          selectedCategory={selectedCategory}
-          onSelectCategory={setSelectedCategory}
-          onOpenSubmit={handleOpenSubmit}
-          onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
+        {/* Dino Runner Game Arcade Hero */}
+        <DinoGame
           soundEnabled={soundEnabled}
           onToggleSound={() => setSoundEnabled(!soundEnabled)}
-          totalWebsites={products.length}
+          playAgainTrigger={playAgainTrigger}
+          isModalOpen={
+            isSubmitModalOpen ||
+            isSignInModalOpen ||
+            !!shareProduct ||
+            isHowItWorksOpen ||
+            isFeaturedSpotModalOpen ||
+            isGameOverModalOpen
+          }
+          onGameOver={(score, highScore, isNewRecord) => {
+            setGameOverStats({ score, highScore, isNewRecord });
+            setIsGameOverModalOpen(true);
+            if (!user) return;
+            const myProduct = products.find((p) => p.submittedBy === user.id);
+            if (!myProduct) return;
+            // Only update if new score is higher
+            if (score <= (myProduct.dinoScore ?? 0)) return;
+            setProducts((prev) =>
+              prev.map((p) =>
+                p.id === myProduct.id ? { ...p, dinoScore: score } : p
+              )
+            );
+          }}
         />
+
+        {/* Under Dino Game: Tagline & Meta bar */}
+        <div className="text-center space-y-1 pt-0.5 pb-1">
+          <p className="text-xs sm:text-sm font-bold text-neutral-800">
+            Game your way to the top.
+          </p>
+          <div className="flex items-center justify-center gap-3 sm:gap-4 text-xs text-neutral-500 font-medium">
+            <div className="flex items-center gap-1.5">
+              <span className="font-bold text-black font-mono-num">{products.length}</span>
+              <span>websites listed</span>
+            </div>
+            <span className="text-neutral-300">•</span>
+            <button
+              type="button"
+              onClick={() => {
+                playSound('click', !soundEnabled);
+                setSoundEnabled(!soundEnabled);
+              }}
+              className="inline-flex items-center gap-1 hover:text-black transition-colors cursor-pointer"
+              title={soundEnabled ? 'Disable sound effects' : 'Enable sound effects'}
+            >
+              {soundEnabled ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5" />}
+              <span>{soundEnabled ? 'Audio on' : 'Audio off'}</span>
+            </button>
+            <span className="text-neutral-300">•</span>
+            <button
+              type="button"
+              onClick={() => {
+                playSound('click', soundEnabled);
+                setIsHowItWorksOpen(true);
+              }}
+              className="inline-flex items-center gap-1 hover:text-black underline cursor-pointer"
+            >
+              <HelpCircle className="h-3.5 w-3.5" />
+              <span>How it works</span>
+            </button>
+          </div>
+        </div>
 
         {/* Quick Access Tabs */}
         <div className="flex items-center justify-center">
@@ -934,7 +985,15 @@ export default function App() {
           <SaaSIdeas
             soundEnabled={soundEnabled}
             topProducts={topThreeProducts}
-            onViewProduct={handleOpenProductPage}
+            featuredProductId={featuredProductId}
+            featuredProduct={topProduct}
+            onOpenFeaturedSpotModal={() => {
+              if (!user) {
+                setIsSignInModalOpen(true);
+              } else {
+                setIsFeaturedSpotModalOpen(true);
+              }
+            }}
             onShareProduct={(p) => setShareProduct(p)}
             onTrackClick={handleTrackClick}
             onUpvote={handleUpvote}
@@ -953,10 +1012,7 @@ export default function App() {
               <HeroClaimBanner
                 topProduct={topProduct}
                 soundEnabled={soundEnabled}
-                onClaimRankOne={() => handleUpvote(topProduct)}
-                onViewDetails={(p) => handleOpenProductPage(p)}
                 onTrackClick={handleTrackClick}
-                onUpvote={handleUpvote}
               />
             </BorderBeam>
           ) : featuredProductId === '' ? (
@@ -964,13 +1020,35 @@ export default function App() {
             null
           ) : (
             /* Default state: no featured assigned yet, show bid placeholder */
-            <div className="rounded-xl border-2 border-dashed border-neutral-300 bg-white px-4 py-6 sm:py-8 text-center">
-              <div className="flex flex-col items-center gap-2">
-                <Crown className="h-6 w-6 text-neutral-300" />
-                <p className="text-sm font-bold text-neutral-400">This spot is available</p>
-                <p className="text-xs text-neutral-400">Set a featured product from the admin page to fill this space</p>
-              </div>
-            </div>
+            <BorderBeam
+              duration={5}
+              size={260}
+              colorFrom="#ffaa40"
+              colorMid="#9c40ff"
+              colorTo="#00d2ff"
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  playSound('click', soundEnabled);
+                  if (!user) {
+                    setIsSignInModalOpen(true);
+                  } else {
+                    setIsFeaturedSpotModalOpen(true);
+                  }
+                }}
+                className="w-full rounded-xl border-2 border-neutral-300 bg-white px-3 py-4 sm:px-4 sm:py-5 hover:bg-neutral-50 transition-all cursor-pointer text-left"
+              >
+                <div className="flex items-center gap-2.5">
+                  <Crown className="h-4 w-4 text-neutral-300 shrink-0" />
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-xs font-bold text-neutral-400">Featured spot</p>
+                    <span className="text-[10px] text-neutral-400">—</span>
+                    <p className="text-[11px] text-neutral-500 font-medium">Get featured for 30 days</p>
+                  </div>
+                </div>
+              </button>
+            </BorderBeam>
           )
         ) : selectedCategory !== 'All' && topThreeProducts.length > 0 ? (
           /* When any category is selected, ALWAYS show Top 3 at the top before showing the category */
@@ -1007,11 +1085,10 @@ export default function App() {
                     product={p}
                     rank={p.rank ?? index + 1}
                     soundEnabled={soundEnabled}
-                    onViewDetails={(prod) => handleOpenProductPage(prod)}
+                    showVerified={(p.rank ?? index + 1) <= 5 || p.id === featuredProductId}
                     onShareProduct={(prod) => setShareProduct(prod)}
                     onTrackClick={handleTrackClick}
-                    onUpvote={handleUpvote}
-                    isFeatured={p.id === featuredProductId}
+                    
                   />
                 </BorderBeam>
               ))}
@@ -1109,7 +1186,20 @@ export default function App() {
         </div>
 
         {/* Leaderboard Rendering */}
-        {filteredProducts.length === 0 ? (
+        {!productsLoaded ? (
+          /* Skeleton loading state */
+          viewLayout === 'table' ? (
+            <SkeletonTable />
+          ) : (
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3">
+                {Array.from({ length: 9 }).map((_, i) => (
+                  <SkeletonCard key={`skeleton-${i}`} />
+                ))}
+              </div>
+            </div>
+          )
+        ) : filteredProducts.length === 0 ? (
           <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center shadow-xs">
             <Trophy className="mx-auto h-10 w-10 text-neutral-400 mb-3" />
             <h3 className="text-lg font-bold text-black">No websites found</h3>
@@ -1152,10 +1242,10 @@ export default function App() {
                 <LeaderboardTable
                   products={paginatedProducts}
                   soundEnabled={soundEnabled}
-                  onViewDetails={(p) => handleOpenProductPage(p)}
+                  featuredProductId={featuredProductId}
                   onShareProduct={(p) => setShareProduct(p)}
                   onTrackClick={handleTrackClick}
-                  onUpvote={handleUpvote}
+                  
                 />
               </div>
             ) : (
@@ -1170,11 +1260,10 @@ export default function App() {
                       product={p}
                       rank={calculatedRank}
                       soundEnabled={soundEnabled}
-                      onViewDetails={(prod) => handleOpenProductPage(prod)}
+                      showVerified={calculatedRank <= 5 || p.id === featuredProductId}
                       onShareProduct={(prod) => setShareProduct(prod)}
                       onTrackClick={handleTrackClick}
-                      onUpvote={handleUpvote}
-                      isFeatured={p.id === featuredProductId}
+                      
                     />
                   );
 
@@ -1226,7 +1315,7 @@ export default function App() {
       {/* Footer */}
       <RichFooter
         totalProducts={products.length}
-        totalUpvotes={products.reduce((s, p) => s + (p.upvotes ?? 0), 0)}
+        totalScore={products.reduce((s, p) => s + (p.dinoScore ?? 0), 0)}
         soundEnabled={soundEnabled}
         onOpenSubmit={handleOpenSubmit}
         onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
@@ -1244,8 +1333,8 @@ export default function App() {
         isOpen={isSubmitModalOpen}
         onClose={() => setIsSubmitModalOpen(false)}
         onConfirmSubmit={handleConfirmSubmit}
-        onGoToAcceptPage={handleGoToAcceptPage}
         soundEnabled={soundEnabled}
+        hasProduct={!!(user && products.some((p) => p.submittedBy === user.id))}
       />
       <SignInModal
         isOpen={isSignInModalOpen}
@@ -1253,16 +1342,6 @@ export default function App() {
         onSignIn={handleSignIn}
       />
 
-      {/* Product Detail Drawer */}
-      <ProductDetailDrawer
-        product={detailProduct}
-        topProduct={topProduct}
-        onClose={() => setDetailProduct(null)}
-        onShare={(p) => setShareProduct(p)}
-        onTrackClick={handleTrackClick}
-        onUpvote={handleUpvote}
-        soundEnabled={soundEnabled}
-      />
 
       {/* Share Modal */}
       <ShareModal
@@ -1279,6 +1358,43 @@ export default function App() {
         onStartBidding={() => {
           setIsHowItWorksOpen(false);
           handleOpenSubmit();
+        }}
+        soundEnabled={soundEnabled}
+      />
+
+      {/* Featured Spot Modal */}
+      <FeaturedSpotModal
+        isOpen={isFeaturedSpotModalOpen}
+        onClose={() => setIsFeaturedSpotModalOpen(false)}
+        products={products}
+        user={user}
+        soundEnabled={soundEnabled}
+        onOpenSubmitModal={() => {
+          setIsFeaturedSpotModalOpen(false);
+          setIsSubmitModalOpen(true);
+        }}
+      />
+
+      {/* Game Over Details Modal */}
+      <GameOverModal
+        isOpen={isGameOverModalOpen}
+        onClose={() => setIsGameOverModalOpen(false)}
+        score={gameOverStats.score}
+        highScore={gameOverStats.highScore}
+        isNewRecord={gameOverStats.isNewRecord}
+        featuredProductId={featuredProductId}
+        featuredProduct={topProduct}
+        onOpenFeaturedSpotModal={() => {
+          if (!user) {
+            setIsSignInModalOpen(true);
+          } else {
+            setIsFeaturedSpotModalOpen(true);
+          }
+        }}
+        onTrackClick={handleTrackClick}
+        onPlayAgain={() => {
+          setIsGameOverModalOpen(false);
+          setPlayAgainTrigger((c) => c + 1);
         }}
         soundEnabled={soundEnabled}
       />

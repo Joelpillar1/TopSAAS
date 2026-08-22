@@ -15,6 +15,7 @@ export const mapDbProduct = (row: Record<string, unknown>): Product => ({
   twitterHandle: (row.twitter_handle as string) || undefined,
   category: row.category as Category,
   upvotes: (row.upvotes as number) || 0,
+  dinoScore: (row.dino_score as number) || 0,
   totalBid: (row.total_bid as number) || 0,
   clicks: (row.clicks as number) || 0,
   createdAt: row.created_at as number,
@@ -44,6 +45,7 @@ export const toDbProduct = (p: Product) => ({
   twitter_handle: p.twitterHandle || null,
   category: p.category,
   upvotes: p.upvotes ?? 0,
+  dino_score: p.dinoScore ?? 0,
   total_bid: p.totalBid ?? 0,
   clicks: p.clicks ?? 0,
   created_at: p.createdAt,
@@ -74,10 +76,12 @@ export async function loadProducts(): Promise<Product[] | null> {
 /** Save all products to Supabase (full replace) */
 export async function saveAllProducts(products: Product[]): Promise<void> {
   if (products.length === 0) return;
-  await supabase.from('products').upsert(
-    products.map(toDbProduct),
-    { onConflict: 'id' }
-  );
+  try {
+    await supabase.from('products').upsert(
+      products.map(toDbProduct),
+      { onConflict: 'id' }
+    );
+  } catch {}
 }
 
 /** Delete a product from Supabase */

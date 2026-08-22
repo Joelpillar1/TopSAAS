@@ -1,121 +1,77 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, ExternalLink, Clock, CheckCircle2, XCircle, Loader2, FileText, Globe, Mail, Calendar, Pencil, Save, X, AlertCircle, LogOut } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Loader2, Globe, Mail, Calendar, Trash2, LogOut } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '../utils/supabase';
-import { WebsiteSubmission, SubmissionStatus, Category } from '../types';
+import { Product } from '../types';
+import { getWebsiteFavicon } from '../utils/logo';
 
 interface ProfilePageProps {
   user: User;
   onBack: () => void;
   onSignOut?: () => void;
+  onDeleteProduct?: (productId: string) => void;
 }
 
-const CATEGORIES: Category[] = [
-  'AI Tools', 'Developer Tools', 'Productivity', 'Design & UI', 'SaaS & Indie', 'Crypto & Web3',
-];
-
-const STATUS_CONFIG: Record<SubmissionStatus, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
-  under_review: {
-    label: 'Under Review',
-    color: 'text-neutral-700',
-    bg: 'bg-neutral-100 border-neutral-200',
-    icon: <Clock className="h-3.5 w-3.5" />,
-  },
-  approved: {
-    label: 'Approved & Live',
-    color: 'text-black',
-    bg: 'bg-white border-neutral-200',
-    icon: <CheckCircle2 className="h-3.5 w-3.5" />,
-  },
-  rejected: {
-    label: 'Not Approved',
-    color: 'text-neutral-500',
-    bg: 'bg-neutral-50 border-neutral-200',
-    icon: <XCircle className="h-3.5 w-3.5" />,
-  },
-};
-
-const mapDbSubmission = (row: Record<string, unknown>): WebsiteSubmission => ({
+const mapDbProduct = (row: Record<string, unknown>): Product => ({
   id: row.id as string,
+  rank: row.rank as number,
+  previousRank: (row.previous_rank as number) || (row.rank as number),
   name: row.name as string,
   tagline: row.tagline as string,
   url: row.url as string,
-  logoUrl: (row.logo_url as string) || undefined,
+  logoUrl: (row.logo_url as string) || getWebsiteFavicon(row.url as string),
   twitterHandle: (row.twitter_handle as string) || undefined,
-  category: row.category as Category,
-  backerName: (row.backer_name as string) || 'Creator',
-  backerEmail: (row.backer_email as string) || undefined,
-  status: row.status as SubmissionStatus,
-  submittedAt: row.submitted_at as number,
-  reviewedAt: (row.reviewed_at as number) || undefined,
-  rejectionReason: (row.rejection_reason as string) || undefined,
+  category: row.category as Product['category'],
+  totalBid: (row.total_bid as number) || 0,
+  upvotes: (row.upvotes as number) || 0,
+  clicks: (row.clicks as number) || 0,
+  createdAt: (row.created_at as number) || Date.now(),
+  updatedAt: (row.updated_at as number) || Date.now(),
+  verified: (row.verified as boolean) || false,
+  isUserOwned: true,
+  submittedBy: (row.submitted_by as string) || undefined,
+  description: (row.description as string) || '',
+  whatItDoes: (row.what_it_does as string[]) || [],
+  features: (row.features as Product['features']) || [],
+  useCases: (row.use_cases as Product['useCases']) || [],
+  targetAudience: (row.target_audience as string) || '',
+  pricingModel: (row.pricing_model as string) || '',
+  keyHighlights: (row.key_highlights as Product['keyHighlights']) || [],
+  bidHistory: (row.bid_history as Product['bidHistory']) || [],
 });
 
-export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onBack, onSignOut }) => {
-  const [submissions, setSubmissions] = useState<WebsiteSubmission[]>([]);
+export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onBack, onSignOut, onDeleteProduct }) => {
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<{ name: string; tagline: string; url: string; category: Category }>({
-    name: '', tagline: '', url: '', category: 'AI Tools',
-  });
-  const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchSubmissions() {
-      // Fetch by submitted_by OR by matching email (for legacy submissions)
+    async function fetchProducts() {
       const { data, error } = await supabase
-        .from('submissions')
+        .from('products')
         .select('*')
-        .or(`submitted_by.eq.${user.id},backer_email.eq.${user.email || '__none__'}`)
-        .order('submitted_at', { ascending: false });
+        .eq('submitted_by', user.id)
+        .order('created_at', { ascending: false });
       if (!error && data) {
-        setSubmissions(data.map(mapDbSubmission));
+        setProducts(data.map(mapDbProduct));
       }
       setLoading(false);
     }
-    fetchSubmissions();
-  }, [user.id, user.email]);
+    fetchProducts();
+  }, [user.id]);
 
-  const startEditing = (sub: WebsiteSubmission) => {
-    setEditingId(sub.id);
-    setEditForm({ name: sub.name, tagline: sub.tagline, url: sub.url, category: sub.category });
-  };
-
-  const cancelEditing = () => {
-    setEditingId(null);
-  };
-
-  const saveEdit = async (sub: WebsiteSubmission) => {
-    setSaving(true);
+  const handleDelete = async (productId: string) => {
+    if (!window.confirm('Remove this product from the directory?')) return;
+    setDeletingId(productId);
     try {
-      const { error } = await supabase
-        .from('submissions')
-        .update({
-          name: editForm.name,
-          tagline: editForm.tagline,
-          url: editForm.url,
-          category: editForm.category,
-        })
-        .eq('id', sub.id);
-      if (!error) {
-        setSubmissions((prev) =>
-          prev.map((s) =>
-            s.id === sub.id
-              ? { ...s, name: editForm.name, tagline: editForm.tagline, url: editForm.url, category: editForm.category }
-              : s
-          )
-        );
-      }
+      await supabase.from('products').delete().eq('id', productId);
+      setProducts((prev) => prev.filter((p) => p.id !== productId));
+      onDeleteProduct?.(productId);
     } catch {}
-    setEditingId(null);
-    setSaving(false);
+    setDeletingId(null);
   };
 
-  const canEdit = () => true;
-
-  const pendingCount = submissions.filter((s) => s.status === 'under_review').length;
-  const approvedCount = submissions.filter((s) => s.status === 'approved').length;
-  const rejectedCount = submissions.filter((s) => s.status === 'rejected').length;
+  const liveCount = products.length;
 
   return (
     <div className="min-h-screen bg-neutral-50 text-black font-sans">
@@ -129,7 +85,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onBack, onSignOu
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
-          <h1 className="text-sm font-black text-black flex-1">My Submissions</h1>
+          <h1 className="text-sm font-black text-black flex-1">My Products</h1>
           {onSignOut && (
             <button
               type="button"
@@ -175,185 +131,82 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onBack, onSignOu
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className="rounded-xl border border-neutral-200 bg-white p-3 text-center">
-            <div className="text-lg font-black text-black">{pendingCount}</div>
-            <div className="text-[10px] font-bold text-neutral-500 uppercase">Pending</div>
-          </div>
-          <div className="rounded-xl border border-neutral-200 bg-white p-3 text-center">
-            <div className="text-lg font-black text-black">{approvedCount}</div>
-            <div className="text-[10px] font-bold text-neutral-500 uppercase">Approved</div>
-          </div>
-          <div className="rounded-xl border border-neutral-200 bg-white p-3 text-center">
-            <div className="text-lg font-black text-black">{rejectedCount}</div>
-            <div className="text-[10px] font-bold text-neutral-500 uppercase">Rejected</div>
-          </div>
+        <div className="rounded-xl border border-neutral-200 bg-white p-3 text-center">
+          <div className="text-lg font-black text-black">{liveCount}</div>
+          <div className="text-[10px] font-bold text-neutral-500 uppercase">Live Products</div>
         </div>
 
-        {/* Submissions List */}
+        {/* Products List */}
         <div className="space-y-3">
           <h3 className="text-xs font-black uppercase tracking-wider text-neutral-500">
-            Submissions ({submissions.length})
+            Products ({products.length})
           </h3>
 
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-6 w-6 text-neutral-400 animate-spin" />
             </div>
-          ) : submissions.length === 0 ? (
+          ) : products.length === 0 ? (
             <div className="rounded-2xl border border-neutral-200 bg-white p-10 text-center">
-              <FileText className="mx-auto h-8 w-8 text-neutral-300 mb-3" />
-              <p className="text-sm font-bold text-neutral-600">No submissions yet</p>
+              <Globe className="mx-auto h-8 w-8 text-neutral-300 mb-3" />
+              <p className="text-sm font-bold text-neutral-600">No products yet</p>
               <p className="text-xs text-neutral-400 mt-1">Submit a website to see it here</p>
             </div>
           ) : (
-            submissions.map((sub) => {
-              const config = STATUS_CONFIG[sub.status];
-              const isEditing = editingId === sub.id;
-              return (
-                <div
-                  key={sub.id}
-                  className={`rounded-xl border bg-white p-4 shadow-xs transition-shadow ${isEditing ? 'border-black ring-1 ring-black' : 'border-neutral-200 hover:shadow-sm'}`}
-                >
-                  {/* Status Badge + Actions */}
-                  <div className="flex items-center justify-between mb-3">
-                    <div className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-bold ${config.bg} ${config.color}`}>
-                      {config.icon}
-                      {config.label}
-                    </div>
+            products.map((product) => (
+              <div
+                key={product.id}
+                className="rounded-xl border border-neutral-200 bg-white p-4 shadow-xs hover:shadow-sm transition-shadow"
+              >
+                <div className="flex items-start gap-3">
+                  <img
+                    src={product.logoUrl || getWebsiteFavicon(product.url)}
+                    alt={product.name}
+                    className="h-10 w-10 rounded-lg object-cover border border-neutral-100 shrink-0"
+                  />
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] text-neutral-400 font-mono">
-                        {new Date(sub.submittedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      <h4 className="text-sm font-black text-black truncate">{product.name}</h4>
+                      <span className="text-[10px] font-semibold text-neutral-500 bg-neutral-100 px-1.5 py-0.2 rounded">
+                        Live
                       </span>
-                      {canEdit() && !isEditing && (
-                        <button
-                          type="button"
-                          onClick={() => startEditing(sub)}
-                          className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 bg-white px-2 py-1 text-[10px] font-bold text-neutral-600 hover:border-black hover:text-black transition-all cursor-pointer"
-                        >
-                          <Pencil className="h-2.5 w-2.5" />
-                          Edit
-                        </button>
-                      )}
-                      {isEditing && (
-                        <div className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() => saveEdit(sub)}
-                            disabled={saving}
-                            className="inline-flex items-center gap-1 rounded-lg bg-black px-2.5 py-1 text-[10px] font-bold text-white hover:bg-neutral-800 transition-all cursor-pointer disabled:opacity-50"
-                          >
-                            <Save className="h-2.5 w-2.5" />
-                            {saving ? 'Saving...' : 'Save'}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={cancelEditing}
-                            className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 bg-white px-2 py-1 text-[10px] font-bold text-neutral-600 hover:text-red-600 transition-all cursor-pointer"
-                          >
-                            <X className="h-2.5 w-2.5" />
-                          </button>
-                        </div>
-                      )}
+                    </div>
+                    <p className="text-xs text-neutral-500 truncate mt-0.5">{product.tagline}</p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="inline-flex items-center gap-1 rounded-md bg-neutral-100 px-2 py-0.5 text-[10px] font-bold text-neutral-600">
+                        <Globe className="h-2.5 w-2.5" />
+                        {product.category}
+                      </span>
+                      <span className="text-[10px] text-neutral-400 font-mono">
+                        {product.dinoScore ?? 0} pts
+                      </span>
+                      <a
+                        href={product.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-[10px] font-bold text-neutral-400 hover:text-black transition-colors"
+                      >
+                        Visit
+                        <ExternalLink className="h-2.5 w-2.5" />
+                      </a>
                     </div>
                   </div>
-
-                  {isEditing ? (
-                    /* Edit Form */
-                    <div className="space-y-3 mt-2">
-                      <div>
-                        <label className="text-[10px] font-bold text-neutral-500 uppercase mb-1 block">Name</label>
-                        <input
-                          type="text"
-                          value={editForm.name}
-                          onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                          className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs text-black focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-neutral-500 uppercase mb-1 block">Tagline</label>
-                        <input
-                          type="text"
-                          value={editForm.tagline}
-                          onChange={(e) => setEditForm({ ...editForm, tagline: e.target.value })}
-                          className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs text-black focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-neutral-500 uppercase mb-1 block">URL</label>
-                        <input
-                          type="url"
-                          value={editForm.url}
-                          onChange={(e) => setEditForm({ ...editForm, url: e.target.value })}
-                          className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs text-black focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-neutral-500 uppercase mb-1 block">Category</label>
-                        <select
-                          value={editForm.category}
-                          onChange={(e) => setEditForm({ ...editForm, category: e.target.value as Category })}
-                          className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs text-black focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
-                        >
-                          {CATEGORIES.map((cat) => (
-                            <option key={cat} value={cat}>{cat}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-[10px] text-neutral-400 mt-1">
-                        <AlertCircle className="h-3 w-3" />
-                        <span>Editing will reset status to "Under Review"</span>
-                      </div>
-                    </div>
-                  ) : (
-                    /* View Mode */
-                    <>
-                      <div className="flex items-start gap-3">
-                        <img
-                          src={sub.logoUrl || `https://www.google.com/s2/favicons?domain=${new URL(sub.url).hostname}&sz=64`}
-                          alt={sub.name}
-                          className="h-10 w-10 rounded-lg object-cover border border-neutral-100 shrink-0"
-                        />
-                        <div className="min-w-0 flex-1">
-                          <h4 className="text-sm font-black text-black truncate">{sub.name}</h4>
-                          <p className="text-xs text-neutral-500 truncate mt-0.5">{sub.tagline}</p>
-                          <div className="flex items-center gap-2 mt-2">
-                            <span className="inline-flex items-center gap-1 rounded-md bg-neutral-100 px-2 py-0.5 text-[10px] font-bold text-neutral-600">
-                              <Globe className="h-2.5 w-2.5" />
-                              {sub.category}
-                            </span>
-                            <a
-                              href={sub.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-[10px] font-bold text-neutral-400 hover:text-black transition-colors"
-                            >
-                              Visit
-                              <ExternalLink className="h-2.5 w-2.5" />
-                            </a>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Rejection Reason */}
-                      {sub.status === 'rejected' && sub.rejectionReason && (
-                        <div className="mt-3 rounded-lg bg-red-50 border border-red-100 p-2.5">
-                          <p className="text-[11px] font-bold text-red-600 mb-0.5">Reason:</p>
-                          <p className="text-[11px] text-red-500">{sub.rejectionReason}</p>
-                        </div>
-                      )}
-
-                      {/* Review Date */}
-                      {sub.reviewedAt && (
-                        <div className="mt-2 text-[10px] text-neutral-400">
-                          Reviewed {new Date(sub.reviewedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                        </div>
-                      )}
-                    </>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(product.id)}
+                    disabled={deletingId === product.id}
+                    className="flex h-7 w-7 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-400 hover:border-red-300 hover:text-red-600 hover:bg-red-50 transition-all cursor-pointer disabled:opacity-50 shrink-0"
+                    title="Remove product"
+                  >
+                    {deletingId === product.id ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-3.5 w-3.5" />
+                    )}
+                  </button>
                 </div>
-              );
-            })
+              </div>
+            ))
           )}
         </div>
       </div>
