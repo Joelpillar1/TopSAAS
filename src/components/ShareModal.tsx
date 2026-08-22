@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { X, Copy, Check, Share2, ExternalLink } from 'lucide-react';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
-import { getTrafficSharePercent } from '../utils/traffic';
+import { ProductLogo } from './ProductLogo';
 
 interface ShareModalProps {
   product: Product | null;
@@ -21,12 +21,10 @@ export const ShareModal: React.FC<ShareModalProps> = ({
 
   if (!isOpen || !product) return null;
 
-  const trafficShare = getTrafficSharePercent(product.rank);
-  const currentUrl = typeof window !== 'undefined' ? window.location.href : 'https://bidtraffic.io';
-  const shareText = `Check out ${product.name} holding Rank #${product.rank} on TopSAAS with $${product.totalBid.toLocaleString()} total top-up! ${currentUrl}`;
-  const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
-    `🔥 ${product.name} is holding Rank #${product.rank} on TopSAAS capturing ~${trafficShare}% of traffic with $${product.totalBid.toLocaleString()} total top-up!\n\nCan anyone top up and supersede them? 👇\n`
-  )}&url=${encodeURIComponent(currentUrl)}`;
+  const currentUrl = typeof window !== 'undefined' ? window.location.origin : 'https://topsaas.top';
+  const tweetText = `🚀 Check out ${product.name} currently holding Rank #${product.rank} on TopSAAS!\n\nGame your way to the top 👇\n`;
+  const shareText = `${tweetText}${currentUrl}`;
+  const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(currentUrl)}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(shareText);
@@ -54,7 +52,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
               Share {product.name}
             </h3>
             <p className="text-[11px] sm:text-xs text-neutral-500 font-medium line-clamp-1">
-              Rank #{product.rank} • ~{trafficShare}% Traffic • ${product.totalBid.toLocaleString()} Top-Up
+              Rank #{product.rank} • {product.category}
             </p>
           </div>
         </div>
@@ -62,9 +60,12 @@ export const ShareModal: React.FC<ShareModalProps> = ({
         {/* Share Preview Card */}
         <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3 sm:p-4 mb-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white border border-neutral-200 font-black text-black shadow-xs">
-              {product.name[0]}
-            </div>
+            <ProductLogo
+              src={product.logoUrl}
+              alt={product.name}
+              containerClassName="h-10 w-10 shrink-0 rounded-lg bg-white border border-neutral-200 shadow-xs relative flex items-center justify-center overflow-hidden"
+              iconClassName="h-5 w-5 text-black shrink-0"
+            />
             <div className="min-w-0 flex-1">
               <div className="font-bold text-black text-sm truncate">{product.name}</div>
               <div className="text-xs text-neutral-500 line-clamp-1">{product.tagline}</div>

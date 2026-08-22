@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Crown, Search, X, Eraser } from 'lucide-react';
 import { Product } from '../types';
+import { ProductLogo } from './ProductLogo';
 
 interface FeaturedProductSelectorProps {
   products: Product[];
@@ -136,17 +137,12 @@ export const FeaturedProductSelector: React.FC<FeaturedProductSelectorProps> = (
                   p.id === featuredId ? 'bg-neutral-100' : ''
                 }`}
               >
-                {p.logoUrl ? (
-                  <img
-                    src={p.logoUrl}
-                    alt={p.name}
-                    className="h-5 w-5 rounded border border-neutral-200 object-cover shrink-0"
-                  />
-                ) : (
-                  <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-black text-white text-[8px] font-black">
-                    {p.name[0]}
-                  </div>
-                )}
+                <ProductLogo
+                  src={p.logoUrl}
+                  alt={p.name}
+                  containerClassName="h-5 w-5 rounded border border-neutral-200 bg-white shrink-0 overflow-hidden relative flex items-center justify-center"
+                  iconClassName="h-3 w-3 text-black shrink-0"
+                />
                 <div className="min-w-0 flex-1">
                   <div className="text-xs font-bold text-black truncate">{p.name}</div>
                   <div className="text-[10px] text-neutral-500 truncate">{p.tagline}</div>

@@ -13,9 +13,10 @@ import {
   ChevronRight,
   MessageSquareQuote,
   Target,
-  Zap
+  Flame
 } from 'lucide-react';
 import { playSound } from '../utils/sound';
+import { ProductLogo } from './ProductLogo';
 
 interface ProductPageProps {
   product: Product;
@@ -97,29 +98,20 @@ export const ProductPage: React.FC<ProductPageProps> = ({
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 sm:gap-5">
             {/* Logo and titles */}
             <div className="flex items-start gap-3.5 sm:gap-4 min-w-0">
-              <div className="relative h-16 w-16 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-100 shadow-2xs flex items-center justify-center">
-                {product.logoUrl ? (
-                  <img
-                    src={product.logoUrl}
-                    alt={product.name}
-                    className="h-full w-full object-cover"
-                    referrerPolicy="no-referrer"
-                    onError={(e) => {
-                      (e.target as HTMLElement).style.display = 'none';
-                    }}
-                  />
-                ) : (
-                  <span className="text-xl sm:text-2xl font-black text-neutral-400">
-                    {product.name.slice(0, 2).toUpperCase()}
-                  </span>
-                )}
-                {/* Rank Badge on Logo */}
-                <div className={`absolute bottom-0 right-0 flex h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-tl-lg font-mono-num text-[10px] sm:text-[11px] font-black ${
-                  isRankOne ? 'bg-black text-white' : 'bg-neutral-800 text-white'
-                }`}>
-                  #{product.rank}
-                </div>
-              </div>
+              <ProductLogo
+                src={product.logoUrl}
+                alt={product.name}
+                containerClassName="relative h-16 w-16 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-2xs flex items-center justify-center"
+                iconClassName="h-8 w-8 text-black shrink-0"
+                badge={
+                  <div className={`absolute bottom-0 right-0 flex h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-tl-lg font-mono-num text-[10px] sm:text-[11px] font-black z-20 ${
+                    isRankOne ? 'bg-black text-white' : 'bg-neutral-800 text-white'
+                  }`}>
+                    #{product.rank}
+                  </div>
+                }
+              />
+            </div>
 
               <div className="space-y-1.5 min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
@@ -212,7 +204,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                 Dino Score
               </div>
               <div className="font-mono-num text-lg font-black text-black mt-0.5 flex items-center gap-1">
-                <Zap className="h-4 w-4 text-black" />
+                <Flame className="h-4 w-4 text-black shrink-0" />
                 <span>{product.dinoScore ?? 0}</span>
               </div>
             </div>

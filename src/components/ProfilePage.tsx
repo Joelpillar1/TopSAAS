@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, ExternalLink, Loader2, Globe, Mail, Calendar, Trash2, LogOut } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Loader2, Globe, Mail, Calendar, Trash2, LogOut, Flame } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '../utils/supabase';
 import { Product } from '../types';
 import { getWebsiteFavicon } from '../utils/logo';
+import { ProductLogo } from './ProductLogo';
 
 interface ProfilePageProps {
   user: User;
@@ -159,10 +160,11 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onBack, onSignOu
                 className="rounded-xl border border-neutral-200 bg-white p-4 shadow-xs hover:shadow-sm transition-shadow"
               >
                 <div className="flex items-start gap-3">
-                  <img
+                  <ProductLogo
                     src={product.logoUrl || getWebsiteFavicon(product.url)}
                     alt={product.name}
-                    className="h-10 w-10 rounded-lg object-cover border border-neutral-100 shrink-0"
+                    containerClassName="relative h-10 w-10 rounded-lg overflow-hidden border border-neutral-200 bg-white shrink-0 flex items-center justify-center shadow-2xs"
+                    iconClassName="h-5 w-5 text-black shrink-0"
                   />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
@@ -177,8 +179,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onBack, onSignOu
                         <Globe className="h-2.5 w-2.5" />
                         {product.category}
                       </span>
-                      <span className="text-[10px] text-neutral-400 font-mono">
-                        {product.dinoScore ?? 0} pts
+                      <span className="inline-flex items-center gap-1 text-[10px] text-neutral-600 font-mono font-bold">
+                        <Flame className="h-3 w-3 text-black shrink-0" />
+                        <span>{product.dinoScore ?? 0} pts</span>
                       </span>
                       <a
                         href={product.url}

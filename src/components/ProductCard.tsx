@@ -1,7 +1,8 @@
 import React from 'react';
-import { Crown, ShieldCheck, Share2, ArrowUp, ArrowDown, Zap } from 'lucide-react';
+import { Crown, ShieldCheck, Share2, Flame } from 'lucide-react';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
+import { ProductLogo } from './ProductLogo';
 
 interface ProductCardProps {
   product: Product;
@@ -20,14 +21,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onShareProduct,
   onTrackClick,
 }) => {
-  const prevRank = product.previousRank ?? rank;
-  const rankDiff = prevRank - rank;
 
-  // Progressive highlight fading from #1 down to others
+
+  // Top 3 bold stroke styling
   const cardHighlightClass = (() => {
     if (rank === 1) return 'border-2 border-black bg-white shadow-xs';
-    if (rank === 2) return 'border border-neutral-800 bg-white shadow-2xs';
-    if (rank === 3) return 'border border-neutral-600 bg-white shadow-2xs';
+    if (rank === 2) return 'border-2 border-neutral-900 bg-white shadow-xs';
+    if (rank === 3) return 'border-2 border-neutral-800 bg-white shadow-xs';
     if (rank === 4) return 'border border-neutral-400 bg-white';
     if (rank === 5) return 'border border-neutral-300 bg-white';
     if (product.isUserOwned) return 'border-neutral-400 bg-white';
@@ -83,18 +83,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             )}
 
             {/* Favicon / Avatar */}
-            <div className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-md border border-neutral-200 bg-white shadow-2xs">
-              {product.logoUrl ? (
-                <img
-                  src={product.logoUrl}
-                  alt={product.name}
-                  className="h-full w-full object-cover"
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                <span className="font-bold text-[10px] text-black">{product.name[0]}</span>
-              )}
-            </div>
+            <ProductLogo
+              src={product.logoUrl}
+              alt={product.name}
+              containerClassName="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-md border border-neutral-200 bg-white shadow-2xs relative"
+              iconClassName="h-3 w-3 text-black shrink-0"
+            />
 
             {/* Name */}
             <div className="min-w-0 flex-1">
@@ -114,18 +108,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             </div>
           </div>
 
-          {/* Share & Rank Delta */}
+          {/* Share */}
           <div className="flex items-center gap-1 shrink-0">
-            {rankDiff > 0 ? (
-              <span className="flex items-center text-[10px] font-bold text-neutral-800 font-mono-num">
-                <ArrowUp className="h-2.5 w-2.5" />+{rankDiff}
-              </span>
-            ) : rankDiff < 0 ? (
-              <span className="flex items-center text-[10px] font-bold text-neutral-500 font-mono-num">
-                <ArrowDown className="h-2.5 w-2.5" />{rankDiff}
-              </span>
-            ) : null}
-
             <button
               type="button"
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); onShareProduct(product); }}
@@ -156,7 +140,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
         <div className="flex items-center gap-1.5">
           <span className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 bg-white px-2 py-1 text-xs font-bold text-black shadow-2xs min-h-[28px]">
-            <Zap className="h-3 w-3 text-amber-500" />
+            <Flame className="h-3.5 w-3.5 text-black shrink-0" />
             <span className="font-mono-num">{product.dinoScore ?? 0}</span>
             <span className="text-neutral-400 text-[10px]">pts</span>
           </span>

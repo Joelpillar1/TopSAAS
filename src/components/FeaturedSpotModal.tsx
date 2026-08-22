@@ -5,6 +5,7 @@ import { Product } from '../types';
 import { playSound } from '../utils/sound';
 import { getWebsiteFavicon } from '../utils/logo';
 import { redirectToCheckout } from '../utils/dodo';
+import { ProductLogo } from './ProductLogo';
 
 interface FeaturedSpotModalProps {
   isOpen: boolean;
@@ -224,18 +225,12 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
                         onClick={() => handleSelectProduct(product)}
                         className="w-full flex items-center gap-3 p-3 rounded-xl border border-neutral-200 bg-white hover:border-black hover:bg-neutral-50 transition-all cursor-pointer text-left"
                       >
-                        {product.logoUrl ? (
-                          <img
-                            src={product.logoUrl}
-                            alt={product.name}
-                            className="h-9 w-9 rounded-lg border border-neutral-200 object-cover shrink-0"
-                            referrerPolicy="no-referrer"
-                          />
-                        ) : (
-                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-black text-white text-xs font-bold">
-                            {product.name[0]}
-                          </div>
-                        )}
+                        <ProductLogo
+                          src={product.logoUrl}
+                          alt={product.name}
+                          containerClassName="h-9 w-9 rounded-lg border border-neutral-200 bg-white shrink-0 overflow-hidden relative flex items-center justify-center"
+                          iconClassName="h-4 w-4 text-black shrink-0"
+                        />
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-bold text-black truncate">{product.name}</span>
@@ -331,18 +326,12 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
             {/* Order Summary */}
             <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 mb-4">
               <div className="flex items-center gap-3 mb-3">
-                {selectedProduct.logoUrl ? (
-                  <img
-                    src={selectedProduct.logoUrl}
-                    alt={selectedProduct.name}
-                    className="h-10 w-10 rounded-lg border border-neutral-200 object-cover"
-                    referrerPolicy="no-referrer"
-                  />
-                ) : (
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-black text-white text-sm font-bold">
-                    {selectedProduct.name[0]}
-                  </div>
-                )}
+                <ProductLogo
+                  src={selectedProduct.logoUrl}
+                  alt={selectedProduct.name}
+                  containerClassName="h-10 w-10 rounded-lg border border-neutral-200 bg-white shrink-0 overflow-hidden relative flex items-center justify-center"
+                  iconClassName="h-5 w-5 text-black shrink-0"
+                />
                 <div>
                   <h3 className="text-xs font-bold text-black">{selectedProduct.name}</h3>
                   <p className="text-[11px] text-neutral-500 truncate max-w-xs">{selectedProduct.tagline}</p>

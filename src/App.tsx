@@ -10,7 +10,6 @@ import { ProductCard } from './components/ProductCard';
 import { BidModal } from './components/BidModal';
 import { HowItWorksModal } from './components/HowItWorksModal';
 import { ShareModal } from './components/ShareModal';
-import { MobileBottomBar } from './components/MobileBottomBar';
 import { Pagination } from './components/Pagination';
 import { BorderBeam } from './components/BorderBeam';
 import { AdminAcceptPage } from './components/AdminAcceptPage';
@@ -379,7 +378,7 @@ export default function App() {
       if (productsLoadedRef.current) return;
       productsLoadedRef.current = true;
       const dbProducts = await loadProducts();
-      if (dbProducts && dbProducts.length > 0) {
+      if (dbProducts !== null) {
         setProducts(recomputeRanks(dbProducts));
       }
       setProductsLoaded(true);
@@ -899,7 +898,7 @@ export default function App() {
         user={user}
       />
       {/* Main Content Area */}
-      <main className="mx-auto w-full max-w-5xl px-3.5 sm:px-6 space-y-3 sm:space-y-4 flex-1 pb-24 sm:pb-8 pt-4">
+      <main className="mx-auto w-full max-w-5xl px-3.5 sm:px-6 space-y-3 sm:space-y-4 flex-1 pb-8 pt-4">
         {/* Dino Runner Game Arcade Hero */}
         <DinoGame
           soundEnabled={soundEnabled}
@@ -1140,24 +1139,15 @@ export default function App() {
             {/* Top 3 Cards Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3">
               {topThreeProducts.map((p, index) => (
-                <BorderBeam
+                <ProductCard
                   key={`top-three-showcase-${p.id}`}
-                  duration={5}
-                  size={200}
-                  colorFrom="#ffaa40"
-                  colorMid="#9c40ff"
-                  colorTo="#00d2ff"
-                >
-                  <ProductCard
-                    product={p}
-                    rank={p.rank ?? index + 1}
-                    soundEnabled={soundEnabled}
-                    showVerified={(p.rank ?? index + 1) <= 5 || p.id === featuredProductId}
-                    onShareProduct={(prod) => setShareProduct(prod)}
-                    onTrackClick={handleTrackClick}
-                    
-                  />
-                </BorderBeam>
+                  product={p}
+                  rank={p.rank ?? index + 1}
+                  soundEnabled={soundEnabled}
+                  showVerified={(p.rank ?? index + 1) <= 5 || p.id === featuredProductId}
+                  onShareProduct={(prod) => setShareProduct(prod)}
+                  onTrackClick={handleTrackClick}
+                />
               ))}
             </div>
           </div>
@@ -1320,8 +1310,7 @@ export default function App() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3">
                 {paginatedProducts.map((p, index) => {
                   const calculatedRank = p.rank ?? (startIndex + index + 1);
-                  const isTopThree = selectedCategory === 'All' && calculatedRank <= 3;
-                  const cardElement = (
+                  return (
                     <ProductCard
                       key={p.id}
                       product={p}
@@ -1330,26 +1319,8 @@ export default function App() {
                       showVerified={calculatedRank <= 5 || p.id === featuredProductId}
                       onShareProduct={(prod) => setShareProduct(prod)}
                       onTrackClick={handleTrackClick}
-                      
                     />
                   );
-
-                  if (isTopThree) {
-                    return (
-                      <BorderBeam
-                        key={p.id}
-                        duration={5}
-                        size={200}
-                        colorFrom="#ffaa40"
-                        colorMid="#9c40ff"
-                        colorTo="#00d2ff"
-                      >
-                        {cardElement}
-                      </BorderBeam>
-                    );
-                  }
-
-                  return cardElement;
                 })}
               </div>
             )}
@@ -1387,12 +1358,6 @@ export default function App() {
         onOpenSubmit={handleOpenSubmit}
         onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
         onSelectCategory={setSelectedCategory}
-      />
-
-      {/* Sticky Mobile Bottom Bar */}
-      <MobileBottomBar
-        onOpenSubmit={handleOpenSubmit}
-        soundEnabled={soundEnabled}
       />
 
       {/* Submit Website Modal (Under Review Queue) */}

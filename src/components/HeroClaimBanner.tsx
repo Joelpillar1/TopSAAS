@@ -2,6 +2,7 @@ import React from 'react';
 import { ShieldCheck, ExternalLink } from 'lucide-react';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
+import { ProductLogo } from './ProductLogo';
 
 interface HeroClaimBannerProps {
   topProduct?: Product;
@@ -34,18 +35,12 @@ export const HeroClaimBanner: React.FC<HeroClaimBannerProps> = ({
       <div className="flex items-center gap-3 min-w-0 flex-1">
 
         {/* Favicon / Avatar */}
-        <div className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-2xs group-hover:border-black transition-all">
-          {topProduct.logoUrl ? (
-            <img
-              src={topProduct.logoUrl}
-              alt={topProduct.name}
-              className="h-full w-full object-cover"
-              referrerPolicy="no-referrer"
-            />
-          ) : (
-            <span className="text-xs font-black text-black">{topProduct.name[0]}</span>
-          )}
-        </div>
+        <ProductLogo
+          src={topProduct.logoUrl}
+          alt={topProduct.name}
+          containerClassName="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-2xs group-hover:border-black transition-all relative"
+          iconClassName="h-4 w-4 text-black shrink-0"
+        />
 
         {/* Name & Tagline */}
         <div className="min-w-0 flex-1">

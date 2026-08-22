@@ -8,7 +8,6 @@ import {
   Twitter,
   Github,
   Globe,
-  Heart,
   ArrowUp,
   Star,
   Zap,
@@ -194,18 +193,9 @@ export const RichFooter: React.FC<RichFooterProps> = ({
           <div className="flex items-center gap-1.5 text-[11px] text-neutral-500">
             <span>© {currentYear} TopSAAS.</span>
             <span>All rights reserved.</span>
-            <span className="text-neutral-400">•</span>
-            <span className="flex items-center gap-0.5">
-              Made with <Heart className="h-3 w-3 text-red-400 fill-red-400" /> by the community
-            </span>
           </div>
           <div className="flex items-center gap-3 text-[11px] text-neutral-400">
-            <span className="flex items-center gap-1">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              All systems operational
-            </span>
-            <span className="hidden sm:inline">•</span>
-            <span className="hidden sm:inline font-mono-num">{totalProducts} products indexed</span>
+            <span className="font-mono-num">{totalProducts} products indexed</span>
           </div>
         </div>
       </div>

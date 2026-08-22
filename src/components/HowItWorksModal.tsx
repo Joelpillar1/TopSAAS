@@ -90,7 +90,7 @@ export const HowItWorksModal: React.FC<HowItWorksModalProps> = ({
               <span>4. Claim the Featured Spot (Optional)</span>
             </div>
             <p className="text-neutral-600 leading-relaxed font-medium pl-6">
-              Want instant maximum exposure? Secure the exclusive #1 banner spot at the very top of the directory with animated BorderBeam styling.
+              Want instant maximum exposure? Secure the exclusive #1 banner spot at the very top of the directory and inside the TopSAAS Runner game.
             </p>
           </div>
         </div>

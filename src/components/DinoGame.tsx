@@ -3,6 +3,7 @@ import confetti from 'canvas-confetti';
 import { Volume2, VolumeX, RotateCcw, Trophy, Zap, ChevronUp, ChevronDown, Crown } from 'lucide-react';
 import { playSound } from '../utils/sound';
 import { Product } from '../types';
+import { ProductLogo } from './ProductLogo';
 
 interface DinoGameProps {
   soundEnabled?: boolean;
@@ -341,6 +342,9 @@ export const DinoGame: React.FC<DinoGameProps> = ({
 
     lastFrameTime: 0,
     startTime: 0,
+    virtualWidth: 640,
+    virtualHeight: 175,
+    scaleFactor: 1,
     animId: 0,
   });
 
@@ -504,12 +508,19 @@ export const DinoGame: React.FC<DinoGameProps> = ({
     const ctx = canvas.getContext('2d', { alpha: false });
     if (!ctx) return;
 
-    // Resize Canvas to device pixel ratio
+    // Resize Canvas to device pixel ratio with responsive virtual width
     const updateSize = () => {
       const container = containerRef.current;
       const width = container ? container.clientWidth : 750;
-      const height = 180;
+      const isMobile = width < 640;
+      // Sleek reduced frame height for mobile while keeping desktop spacious
+      const height = isMobile ? 140 : 175;
       const dpr = window.devicePixelRatio || 1;
+
+      // Ensure mobile has generous runway & spacing (never too close)
+      const virtualWidth = Math.max(640, width);
+      const scaleFactor = width / virtualWidth;
+      const virtualHeight = height / scaleFactor;
 
       canvas.width = Math.floor(width * dpr);
       canvas.height = Math.floor(height * dpr);
@@ -519,7 +530,11 @@ export const DinoGame: React.FC<DinoGameProps> = ({
       ctx.imageSmoothingEnabled = false;
 
       const e = engineRef.current;
-      e.groundY = height - 26;
+      e.virtualWidth = virtualWidth;
+      e.virtualHeight = virtualHeight;
+      e.scaleFactor = scaleFactor;
+      // Shift down the ground baseline so the "Get Featured" badge has ample clearance above all game action
+      e.groundY = virtualHeight - (isMobile ? 16 : 22);
       e.dino.baseY = e.groundY;
       if (e.dino.isGrounded) {
         e.dino.y = e.groundY - (e.dino.isDucking ? 30 : 48);
@@ -529,13 +544,13 @@ export const DinoGame: React.FC<DinoGameProps> = ({
     updateSize();
     window.addEventListener('resize', updateSize);
 
-    // Initialize clouds
+    // Initialize clouds in upper sky
     const e = engineRef.current;
     if (e.clouds.length === 0) {
       for (let i = 0; i < 4; i++) {
         e.clouds.push({
           x: 100 + i * 200 + Math.random() * 80,
-          y: 20 + Math.random() * 40,
+          y: 12 + Math.random() * 22,
           speed: 0.6 + Math.random() * 0.4,
         });
       }
@@ -648,13 +663,15 @@ export const DinoGame: React.FC<DinoGameProps> = ({
       const dpr = window.devicePixelRatio || 1;
       const width = canvas.width / dpr;
       const height = canvas.height / dpr;
+      const virtualWidth = e.virtualWidth || width;
+      const scaleFactor = e.scaleFactor || (width / virtualWidth);
 
       ctx.save();
-      ctx.scale(dpr, dpr);
+      ctx.scale(dpr * scaleFactor, dpr * scaleFactor);
 
       // Clear Canvas Background (Clean Chrome #f7f7f7 or white)
       ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, width, height);
+      ctx.fillRect(0, 0, virtualWidth, height / scaleFactor);
 
       // 1. UPDATE GAME
       if (e.state === 'running') {
@@ -702,7 +719,7 @@ export const DinoGame: React.FC<DinoGameProps> = ({
         e.clouds.forEach((c) => {
           c.x -= c.speed * (dt * 60);
           if (c.x < -70) {
-            c.x = width + 20 + Math.random() * 100;
+            c.x = virtualWidth + 20 + Math.random() * 100;
             c.y = 15 + Math.random() * 40;
           }
         });
@@ -755,7 +772,7 @@ export const DinoGame: React.FC<DinoGameProps> = ({
           }
 
           e.obstacles.push({
-            x: width + 30,
+            x: virtualWidth + 40,
             y: obsY,
             width: obsW,
             height: obsH,
@@ -829,7 +846,7 @@ export const DinoGame: React.FC<DinoGameProps> = ({
       e.clouds.forEach((c) => drawCloudSprite(c.x, c.y));
 
       // Render Ground
-      drawGround(width, e.groundY, e.groundOffset);
+      drawGround(virtualWidth, e.groundY, e.groundOffset);
 
       // Render Obstacles
       e.obstacles.forEach((obs) => {
@@ -869,12 +886,12 @@ export const DinoGame: React.FC<DinoGameProps> = ({
       if (e.flashScoreTimer > 0) {
         e.flashScoreTimer--;
         if (Math.floor(e.flashScoreTimer / 4) % 2 === 0) {
-          ctx.fillText(`${hiStr}${scoreStr}`, width - 16, 22);
+          ctx.fillText(`${hiStr}${scoreStr}`, virtualWidth - 16, 22);
         } else {
-          ctx.fillText(`${hiStr}`, width - 16, 22);
+          ctx.fillText(`${hiStr}`, virtualWidth - 16, 22);
         }
       } else {
-        ctx.fillText(`${hiStr}${scoreStr}`, width - 16, 22);
+        ctx.fillText(`${hiStr}${scoreStr}`, virtualWidth - 16, 22);
       }
 
       ctx.restore();
@@ -963,7 +980,7 @@ export const DinoGame: React.FC<DinoGameProps> = ({
         }}
       >
         {/* In-Game Background Featured Sponsor Badge */}
-        <div className="absolute top-2.5 left-3 sm:left-4 z-10 pointer-events-auto">
+        <div className="absolute top-2 left-2.5 sm:top-2.5 sm:left-4 z-10 pointer-events-auto">
           {featuredProduct ? (
             <a
               href={featuredProduct.url}
@@ -979,18 +996,12 @@ export const DinoGame: React.FC<DinoGameProps> = ({
               className="inline-flex items-center gap-1.5 sm:gap-2 rounded-xl border border-neutral-200/90 bg-white/90 hover:bg-white px-2 sm:px-2.5 py-1 text-[11px] font-bold text-black backdrop-blur-xs shadow-2xs hover:border-black transition-all cursor-pointer group select-none"
               title={`Featured: ${featuredProduct.name}`}
             >
-              {featuredProduct.logoUrl ? (
-                <img
-                  src={featuredProduct.logoUrl}
-                  alt={featuredProduct.name}
-                  className="h-4 w-4 rounded object-cover shrink-0 border border-neutral-200"
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                <div className="flex h-4 w-4 items-center justify-center rounded bg-black text-white text-[9px] font-black shrink-0">
-                  {featuredProduct.name[0]}
-                </div>
-              )}
+              <ProductLogo
+                src={featuredProduct.logoUrl}
+                alt={featuredProduct.name}
+                containerClassName="h-4 w-4 rounded overflow-hidden shrink-0 border border-neutral-200 bg-white flex items-center justify-center relative"
+                iconClassName="h-2.5 w-2.5 text-black shrink-0"
+              />
               <span className="text-[11px] font-black text-black group-hover:underline truncate max-w-[100px] sm:max-w-[160px]">
                 {featuredProduct.name}
               </span>
@@ -1072,41 +1083,6 @@ export const DinoGame: React.FC<DinoGameProps> = ({
             </button>
           </div>
         )}
-      </div>
-
-      {/* Mobile Touch Quick Controls */}
-      <div className="flex sm:hidden items-center justify-between border-t border-neutral-200 bg-neutral-50 px-3 py-1.5">
-        <button
-          type="button"
-          onTouchStart={(e) => {
-            e.preventDefault();
-            handleDuckPress();
-          }}
-          onTouchEnd={(e) => {
-            e.preventDefault();
-            handleDuckRelease();
-          }}
-          className="flex-1 mr-2 flex items-center justify-center gap-1 rounded-lg border border-neutral-300 bg-white py-1.5 text-xs font-bold text-neutral-700 active:bg-neutral-200"
-        >
-          <ChevronDown className="h-3.5 w-3.5" />
-          <span>DUCK</span>
-        </button>
-
-        <button
-          type="button"
-          onTouchStart={(e) => {
-            e.preventDefault();
-            handleJumpPress();
-          }}
-          onTouchEnd={(e) => {
-            e.preventDefault();
-            handleJumpRelease();
-          }}
-          className="flex-1 ml-2 flex items-center justify-center gap-1 rounded-lg bg-black py-1.5 text-xs font-bold text-white active:bg-neutral-800 shadow-2xs"
-        >
-          <ChevronUp className="h-3.5 w-3.5" />
-          <span>JUMP</span>
-        </button>
       </div>
     </div>
   );

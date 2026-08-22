@@ -1,7 +1,8 @@
 import React from 'react';
-import { X, Crown, ExternalLink, ShieldCheck, Share2, MousePointerClick, Zap } from 'lucide-react';
+import { X, Crown, ExternalLink, ShieldCheck, Share2, MousePointerClick, Flame } from 'lucide-react';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
+import { ProductLogo } from './ProductLogo';
 
 interface ProductDetailDrawerProps {
   product: Product | null;
@@ -46,23 +47,19 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
 
           {/* Product Header */}
           <div className="mt-5 flex items-start gap-3.5">
-            <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-2xs">
-              {product.logoUrl ? (
-                <img
-                  src={product.logoUrl}
-                  alt={product.name}
-                  className="h-full w-full object-cover"
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                <span className="text-2xl font-black text-black">{product.name[0]}</span>
-              )}
-              {isRankOne && (
-                <div className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-black text-white shadow-2xs">
-                  <Crown className="h-3 w-3 fill-white" />
-                </div>
-              )}
-            </div>
+            <ProductLogo
+              src={product.logoUrl}
+              alt={product.name}
+              containerClassName="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-2xs"
+              iconClassName="h-6 w-6 text-black shrink-0"
+              badge={
+                isRankOne ? (
+                  <div className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-black text-white shadow-2xs z-20">
+                    <Crown className="h-3 w-3 fill-white" />
+                  </div>
+                ) : null
+              }
+            />
 
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
@@ -114,7 +111,7 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
                 Score
               </div>
               <div className="font-mono-num text-base font-black text-black mt-0.5 flex items-center gap-1">
-                <Zap className="h-3.5 w-3.5 text-black" />
+                <Flame className="h-4 w-4 text-black shrink-0" />
                 <span>{product.dinoScore ?? 0}</span>
               </div>
             </div>

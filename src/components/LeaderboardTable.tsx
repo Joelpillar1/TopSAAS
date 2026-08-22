@@ -1,7 +1,8 @@
 import React from 'react';
-import { Crown, ArrowUp, ArrowDown, ShieldCheck, Share2, MousePointerClick, Zap } from 'lucide-react';
+import { Crown, ShieldCheck, Share2, MousePointerClick, Flame } from 'lucide-react';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
+import { ProductLogo } from './ProductLogo';
 
 interface LeaderboardTableProps {
   products: Product[];
@@ -35,8 +36,6 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
           <tbody className="divide-y divide-neutral-100">
             {products.map((product, index) => {
               const rank = product.rank ?? (index + 1);
-              const prevRank = product.previousRank ?? rank;
-              const rankDiff = prevRank - rank;
               const isTopThree = rank <= 3;
 
               // Progressive row highlight fading from #1 (boldest) down to #5
@@ -49,14 +48,6 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                 if (product.isUserOwned) return 'bg-neutral-50/40 hover:bg-neutral-100/50';
                 return 'hover:bg-neutral-50/80';
               })();
-
-              // Gradient colors for the beam accent on top 3 rows
-              const beamGradientStyle: React.CSSProperties = isTopThree
-                ? {
-                    backgroundImage:
-                      'linear-gradient(180deg, #ffaa40 0%, #9c40ff 50%, #00d2ff 100%)',
-                  }
-                : {};
 
               return (
                 <tr
@@ -73,12 +64,13 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                 >
                   {/* Rank / Spot Column */}
                   <td className="py-3.5 pl-4 pr-2 text-center align-middle relative">
-                    {/* Gradient beam accent bar for top 3 rows */}
+                    {/* Bold stroke accent bar for top 3 rows */}
                     {isTopThree && (
-                      <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-full" style={beamGradientStyle} />
-                    )}
-                    {isTopThree && (
-                      <div className="absolute left-0 top-0 bottom-0 w-[8px] blur-sm opacity-40" style={beamGradientStyle} />
+                      <div
+                        className={`absolute left-0 top-0 bottom-0 w-[3.5px] rounded-r-xs ${
+                          rank === 1 ? 'bg-black' : rank === 2 ? 'bg-neutral-800' : 'bg-neutral-600'
+                        }`}
+                      />
                     )}
                     <div className="flex flex-col items-center justify-center relative z-10">
                       {rank === 1 ? (
@@ -107,16 +99,7 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                         </span>
                       )}
 
-                      {/* Rank Movement Indicator */}
-                      {rankDiff > 0 ? (
-                        <span className="flex items-center text-[9px] font-bold text-neutral-800 font-mono-num mt-0.5">
-                          <ArrowUp className="h-2 w-2" />+{rankDiff}
-                        </span>
-                      ) : rankDiff < 0 ? (
-                        <span className="flex items-center text-[9px] font-bold text-neutral-400 font-mono-num mt-0.5">
-                          <ArrowDown className="h-2 w-2" />{rankDiff}
-                        </span>
-                      ) : null}
+
                     </div>
                   </td>
 
@@ -124,23 +107,19 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                   <td className="py-3.5 px-4 align-middle">
                     <div className="flex items-center gap-3">
                       {/* Favicon / Logo */}
-                      <div className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-neutral-200 bg-white group-hover:border-neutral-400 transition-all shadow-xs">
-                        {product.logoUrl ? (
-                          <img
-                            src={product.logoUrl}
-                            alt={product.name}
-                            className="h-full w-full object-cover"
-                            referrerPolicy="no-referrer"
-                          />
-                        ) : (
-                          <span className="font-black text-black">{product.name[0]}</span>
-                        )}
-                        {product.isUserOwned && (
-                          <span className="absolute bottom-0 left-0 right-0 bg-black text-[7px] font-black text-white text-center uppercase tracking-wider">
-                            YOU
-                          </span>
-                        )}
-                      </div>
+                      <ProductLogo
+                        src={product.logoUrl}
+                        alt={product.name}
+                        containerClassName="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-neutral-200 bg-white group-hover:border-neutral-400 transition-all shadow-xs"
+                        iconClassName="h-5 w-5 text-black shrink-0"
+                        badge={
+                          product.isUserOwned ? (
+                            <span className="absolute bottom-0 left-0 right-0 bg-black text-[7px] font-black text-white text-center uppercase tracking-wider z-20">
+                              YOU
+                            </span>
+                          ) : null
+                        }
+                      />
 
                       {/* Name & Tagline */}
                       <div className="min-w-0 flex-1">
@@ -178,7 +157,7 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                   {/* Score Column */}
                   <td className="py-3.5 px-4 text-center align-middle">
                     <div className="inline-flex items-center gap-1">
-                      <Zap className="h-3 w-3 text-amber-500" />
+                      <Flame className="h-3.5 w-3.5 text-black shrink-0" />
                       <span className="font-mono-num text-xs font-bold text-black">{product.dinoScore ?? 0}</span>
                       <span className="text-[10px] text-neutral-400">pts</span>
                     </div>
