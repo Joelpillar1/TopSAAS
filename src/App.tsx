@@ -19,6 +19,7 @@ import { SignInModal } from './components/SignInModal';
 import { ProfilePage } from './components/ProfilePage';
 import { PaymentSuccess } from './components/PaymentSuccess';
 import { SaaSIdeas } from './components/SaaSIdeas';
+import { LegalModal, LegalTab } from './components/LegalModal';
 import { playSound } from './utils/sound';
 import { supabase } from './utils/supabase';
 import { loadProducts, debouncedSyncProducts, toggleUpvote, getUserUpvotes, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, submitVerifiedGameScore } from './utils/db';
@@ -244,6 +245,8 @@ export default function App() {
   const [isHowItWorksOpen, setIsHowItWorksOpen] = useState(false);
   const [isFeaturedSpotModalOpen, setIsFeaturedSpotModalOpen] = useState(false);
   const [isGameOverModalOpen, setIsGameOverModalOpen] = useState(false);
+  const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
+  const [legalTab, setLegalTab] = useState<LegalTab>('privacy');
   const [gameOverStats, setGameOverStats] = useState({ score: 0, highScore: 0, isNewRecord: false });
   const [playAgainTrigger, setPlayAgainTrigger] = useState(0);
   // User's submitted product ID tracking (persists even if not signed in)
@@ -267,6 +270,14 @@ export default function App() {
         setCurrentRoute('/payment-success');
       } else if (path === '/profile' || hash === '#profile' || hash === '#/profile') {
         setCurrentRoute('/profile');
+      } else if (path === '/privacy' || hash === '#privacy' || hash === '#/privacy') {
+        setLegalTab('privacy');
+        setIsLegalModalOpen(true);
+        setCurrentRoute('/');
+      } else if (path === '/terms' || hash === '#terms' || hash === '#/terms') {
+        setLegalTab('terms');
+        setIsLegalModalOpen(true);
+        setCurrentRoute('/');
       } else {
         setCurrentRoute('/');
       }
@@ -1358,6 +1369,14 @@ export default function App() {
         onOpenSubmit={handleOpenSubmit}
         onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
         onSelectCategory={setSelectedCategory}
+        onOpenPrivacy={() => {
+          setLegalTab('privacy');
+          setIsLegalModalOpen(true);
+        }}
+        onOpenTerms={() => {
+          setLegalTab('terms');
+          setIsLegalModalOpen(true);
+        }}
       />
 
       {/* Submit Website Modal (Under Review Queue) */}
@@ -1435,6 +1454,14 @@ export default function App() {
           setIsGameOverModalOpen(false);
           setPlayAgainTrigger((c) => c + 1);
         }}
+        soundEnabled={soundEnabled}
+      />
+
+      {/* Legal: Privacy Policy & Terms of Service */}
+      <LegalModal
+        isOpen={isLegalModalOpen}
+        onClose={() => setIsLegalModalOpen(false)}
+        initialTab={legalTab}
         soundEnabled={soundEnabled}
       />
     </div>

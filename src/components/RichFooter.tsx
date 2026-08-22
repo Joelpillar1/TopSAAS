@@ -13,6 +13,7 @@ import {
   Zap,
   LayoutGrid,
   TrendingUp,
+  FileText,
 } from 'lucide-react';
 import { Category } from '../types';
 import { playSound } from '../utils/sound';
@@ -24,6 +25,8 @@ interface RichFooterProps {
   onOpenSubmit: () => void;
   onOpenHowItWorks: () => void;
   onSelectCategory: (cat: Category) => void;
+  onOpenPrivacy?: () => void;
+  onOpenTerms?: () => void;
 }
 
 export const RichFooter: React.FC<RichFooterProps> = ({
@@ -33,6 +36,8 @@ export const RichFooter: React.FC<RichFooterProps> = ({
   onOpenSubmit,
   onOpenHowItWorks,
   onSelectCategory,
+  onOpenPrivacy,
+  onOpenTerms,
 }) => {
   const currentYear = new Date().getFullYear();
 
@@ -123,6 +128,26 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                 </button>
               </li>
 
+              <li>
+                <button
+                  type="button"
+                  onClick={() => { playSound('click', soundEnabled); onOpenPrivacy?.(); }}
+                  className="text-xs text-neutral-500 hover:text-black transition-colors cursor-pointer flex items-center gap-1.5"
+                >
+                  <ShieldCheck className="h-3 w-3" />
+                  Privacy Policy
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => { playSound('click', soundEnabled); onOpenTerms?.(); }}
+                  className="text-xs text-neutral-500 hover:text-black transition-colors cursor-pointer flex items-center gap-1.5"
+                >
+                  <FileText className="h-3 w-3" />
+                  Terms of Service
+                </button>
+              </li>
             </ul>
           </div>
 
@@ -190,9 +215,25 @@ export const RichFooter: React.FC<RichFooterProps> = ({
       {/* Bottom Bar */}
       <div className="border-t border-neutral-200 bg-neutral-50">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-1.5 text-[11px] text-neutral-500">
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-3 gap-y-1 text-[11px] text-neutral-500">
             <span>© {currentYear} TopSAAS.</span>
             <span>All rights reserved.</span>
+            <span className="text-neutral-300 hidden sm:inline">•</span>
+            <button
+              type="button"
+              onClick={() => { playSound('click', soundEnabled); onOpenPrivacy?.(); }}
+              className="hover:text-black hover:underline transition-colors cursor-pointer"
+            >
+              Privacy Policy
+            </button>
+            <span className="text-neutral-300">•</span>
+            <button
+              type="button"
+              onClick={() => { playSound('click', soundEnabled); onOpenTerms?.(); }}
+              className="hover:text-black hover:underline transition-colors cursor-pointer"
+            >
+              Terms of Service
+            </button>
           </div>
           <div className="flex items-center gap-3 text-[11px] text-neutral-400">
             <span className="font-mono-num">{totalProducts} products indexed</span>
