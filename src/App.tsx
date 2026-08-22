@@ -19,7 +19,7 @@ import { SignInModal } from './components/SignInModal';
 import { ProfilePage } from './components/ProfilePage';
 import { PaymentSuccess } from './components/PaymentSuccess';
 import { SaaSIdeas } from './components/SaaSIdeas';
-import { LegalModal, LegalTab } from './components/LegalModal';
+import { LegalPage } from './components/LegalPage';
 import { playSound } from './utils/sound';
 import { supabase } from './utils/supabase';
 import { loadProducts, debouncedSyncProducts, toggleUpvote, getUserUpvotes, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, submitVerifiedGameScore } from './utils/db';
@@ -280,13 +280,9 @@ export default function App() {
       } else if (path === '/profile' || hash === '#profile' || hash === '#/profile') {
         setCurrentRoute('/profile');
       } else if (path === '/privacy' || hash === '#privacy' || hash === '#/privacy') {
-        setLegalTab('privacy');
-        setIsLegalModalOpen(true);
-        setCurrentRoute('/');
+        setCurrentRoute('/privacy');
       } else if (path === '/terms' || hash === '#terms' || hash === '#/terms') {
-        setLegalTab('terms');
-        setIsLegalModalOpen(true);
-        setCurrentRoute('/');
+        setCurrentRoute('/terms');
       } else {
         setCurrentRoute('/');
       }
@@ -907,6 +903,25 @@ export default function App() {
     );
   }
 
+  // Legal Page Route (Privacy Policy & Terms of Service)
+  if (currentRoute === '/privacy' || currentRoute === '/terms') {
+    return (
+      <LegalPage
+        initialDoc={currentRoute === '/terms' ? 'terms' : 'privacy'}
+        onBack={handleBackToLeaderboard}
+        onOpenSubmit={handleOpenSubmit}
+        onSignIn={handleSignIn}
+        onGoToProfile={handleGoToProfile}
+        user={user}
+        totalProducts={products.length}
+        totalScore={products.reduce((s, p) => s + (p.dinoScore ?? 0), 0)}
+        soundEnabled={soundEnabled}
+        onSelectCategory={setSelectedCategory}
+        onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
+      />
+    );
+  }
+
   // 2. MAIN DIRECTORY HOMEPAGE ROUTE
   return (
     <div className="min-h-screen bg-neutral-50 text-black flex flex-col justify-between selection:bg-black selection:text-white font-sans">
@@ -1387,12 +1402,14 @@ export default function App() {
         onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
         onSelectCategory={setSelectedCategory}
         onOpenPrivacy={() => {
-          setLegalTab('privacy');
-          setIsLegalModalOpen(true);
+          setCurrentRoute('/privacy');
+          try { window.history.pushState('', document.title, '/privacy'); } catch {}
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
         onOpenTerms={() => {
-          setLegalTab('terms');
-          setIsLegalModalOpen(true);
+          setCurrentRoute('/terms');
+          try { window.history.pushState('', document.title, '/terms'); } catch {}
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
       />
 
@@ -1471,14 +1488,6 @@ export default function App() {
           setIsGameOverModalOpen(false);
           setPlayAgainTrigger((c) => c + 1);
         }}
-        soundEnabled={soundEnabled}
-      />
-
-      {/* Legal: Privacy Policy & Terms of Service */}
-      <LegalModal
-        isOpen={isLegalModalOpen}
-        onClose={() => setIsLegalModalOpen(false)}
-        initialTab={legalTab}
         soundEnabled={soundEnabled}
       />
     </div>
