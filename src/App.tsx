@@ -966,47 +966,47 @@ export default function App() {
 
             const savedMyId = myProductId || localStorage.getItem('topsaas_my_product_id');
 
-            // Find target product
-            const target = products.find(
-              (p) =>
-                (savedMyId && p.id === savedMyId) ||
-                (user && p.submittedBy && p.submittedBy === user.id) ||
-                p.isUserOwned
-            );
-
-            if (!target) return;
-
-            // Submit verified score to Supabase anti-cheat RPC (no score cap, verified by real time velocity)
-            submitVerifiedGameScore(target.id, score, durationMs).then((res) => {
-              if (res.success && res.new_total_score !== undefined) {
-                setProducts((prev) => {
-                  const updated = prev.map((p) =>
-                    p.id === target.id
-                      ? { ...p, dinoScore: res.new_total_score, isUserOwned: true, updatedAt: Date.now() }
-                      : p
-                  );
-                  const reRanked = recomputeRanks(updated);
-                  try {
-                    localStorage.setItem('topsaas_products_cache_v2', JSON.stringify(reRanked));
-                  } catch {}
-                  return reRanked;
-                });
-              } else if (!res.success) {
-                console.warn('Score rejected by velocity verification:', res.error);
-              }
-            });
-
-            // Optimistic instant UI update
+            // 1. Instant Synchronous UI State Update
             setProducts((prev) => {
-              const targetIndex = prev.findIndex((p) => p.id === target.id);
+              const targetIndex = prev.findIndex(
+                (p) =>
+                  (savedMyId && p.id === savedMyId) ||
+                  (user && p.submittedBy && p.submittedBy === user.id) ||
+                  p.isUserOwned
+              );
+
               if (targetIndex === -1) return prev;
-              const updatedScore = (target.dinoScore ?? 0) + score;
+
+              const target = prev[targetIndex];
+              const updatedScore = (target.dinoScore ?? 0) + Math.floor(score);
               const updatedProducts = prev.map((p, idx) =>
                 idx === targetIndex
                   ? { ...p, dinoScore: updatedScore, isUserOwned: true, updatedAt: Date.now() }
                   : p
               );
               const reRanked = recomputeRanks(updatedProducts);
+              try {
+                localStorage.setItem('topsaas_products_cache_v2', JSON.stringify(reRanked));
+              } catch {}
+
+              // 2. Submit verified score to Supabase in background
+              submitVerifiedGameScore(target.id, score, durationMs).then((res) => {
+                if (res.success && res.new_total_score !== undefined) {
+                  setProducts((latestPrev) => {
+                    const idx = latestPrev.findIndex((p) => p.id === target.id);
+                    if (idx === -1) return latestPrev;
+                    const synced = latestPrev.map((p, i) =>
+                      i === idx
+                        ? { ...p, dinoScore: res.new_total_score, isUserOwned: true, updatedAt: Date.now() }
+                        : p
+                    );
+                    return recomputeRanks(synced);
+                  });
+                } else if (!res.success) {
+                  console.warn('Score rejected by velocity verification:', res.error);
+                }
+              });
+
               return reRanked;
             });
           }}

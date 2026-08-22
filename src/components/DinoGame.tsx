@@ -282,6 +282,17 @@ export const DinoGame: React.FC<DinoGameProps> = ({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
+  // Callback & audio state refs to guarantee instant non-stale executions in RAF loop
+  const onGameOverRef = useRef(onGameOver);
+  useEffect(() => {
+    onGameOverRef.current = onGameOver;
+  }, [onGameOver]);
+
+  const soundEnabledRef = useRef(soundEnabled);
+  useEffect(() => {
+    soundEnabledRef.current = soundEnabled;
+  }, [soundEnabled]);
+
   // High level UI states (Only updated on Game Over or Init to keep 60+ FPS)
   const [gameState, setGameState] = useState<'idle' | 'running' | 'gameover'>('idle');
   const [gameOverScore, setGameOverScore] = useState<number>(0);
@@ -435,9 +446,9 @@ export const DinoGame: React.FC<DinoGameProps> = ({
       e.dino.vy = e.initialJumpVelocity;
       e.dino.isGrounded = false;
       e.isJumpHeld = true;
-      dinoAudio.jump(soundEnabled);
+      dinoAudio.jump(soundEnabledRef.current);
     }
-  }, [startGame, soundEnabled]);
+  }, [startGame]);
 
   const handleJumpRelease = useCallback(() => {
     const e = engineRef.current;
@@ -680,7 +691,7 @@ export const DinoGame: React.FC<DinoGameProps> = ({
 
         // Score 100-pt checkpoint chime
         if (curScore > 0 && curScore % 100 === 0 && curScore !== e.score) {
-          dinoAudio.score(soundEnabled);
+          dinoAudio.score(soundEnabledRef.current);
           e.flashScoreTimer = 30; // Flash score for 30 frames
         }
         e.score = curScore;
@@ -817,7 +828,7 @@ export const DinoGame: React.FC<DinoGameProps> = ({
               e.state = 'gameover';
               setGameState('gameover');
               setGameOverScore(e.score);
-              dinoAudio.hit(soundEnabled);
+              dinoAudio.hit(soundEnabledRef.current);
               const isNew = e.score > e.highScore;
               if (isNew) {
                 e.highScore = e.score;
@@ -829,7 +840,7 @@ export const DinoGame: React.FC<DinoGameProps> = ({
                 } catch {}
               }
               const durationMs = Math.max(1000, Date.now() - (e.startTime || Date.now()));
-              onGameOver?.(e.score, e.highScore, isNew, durationMs);
+              onGameOverRef.current?.(e.score, e.highScore, isNew, durationMs);
               break;
             }
           }
