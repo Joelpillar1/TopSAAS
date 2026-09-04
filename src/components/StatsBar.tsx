@@ -1,5 +1,5 @@
 import React from 'react';
-import { DollarSign, Flame, MousePointerClick, Trophy } from 'lucide-react';
+import { DollarSign, Flame, Trophy } from 'lucide-react';
 import { Category, Product, SortOption } from '../types';
 import { playSound } from '../utils/sound';
 

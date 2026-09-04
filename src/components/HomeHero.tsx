@@ -1,5 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Search, Command } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { GridPattern } from '@/components/ui/grid-pattern';
 
 interface HomeHeroProps {
   totalProducts: number;
@@ -35,8 +37,30 @@ export const HomeHero: React.FC<HomeHeroProps> = ({
   }, []);
 
   return (
-    <section className="px-1 pt-6 sm:pt-10" aria-label="Find the best SaaS">
-      <div className="mx-auto flex max-w-2xl flex-col items-center text-center">
+    <section className="relative overflow-hidden px-1 pt-6 sm:pt-10" aria-label="Find the best SaaS">
+      {/* Background: subtle grid pattern */}
+      <GridPattern
+        width={32}
+        height={32}
+        x={-1}
+        y={-1}
+        strokeDasharray="3 3"
+        squares={[
+          [4, 4],
+          [5, 1],
+          [8, 2],
+          [5, 3],
+          [5, 5],
+          [10, 10],
+          [12, 15],
+        ]}
+        className={cn(
+          '[mask-image:radial-gradient(560px_circle_at_center,white,transparent)]',
+          'inset-x-0 inset-y-[-30%] h-[200%] skew-y-12',
+          'fill-neutral-800/60 stroke-neutral-800/50',
+        )}
+      />
+      <div className="relative z-10 mx-auto flex max-w-2xl flex-col items-center text-center">
         {/* Headline */}
         <h1 className="text-3xl font-black leading-[1.05] tracking-tight text-white sm:text-5xl">
           <span className="whitespace-nowrap">Find the best SaaS.</span>

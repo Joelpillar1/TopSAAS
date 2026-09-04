@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Crown, ExternalLink, ShieldCheck, Share2, MousePointerClick, Trophy } from 'lucide-react';
+import { X, Crown, ExternalLink, ShieldCheck, Share2, Trophy, ChevronUp } from 'lucide-react';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
@@ -99,10 +99,11 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
           <div className="mt-5 grid grid-cols-3 gap-2">
             <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-2.5 shadow-2xs">
               <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 truncate">
-                Category
+                Upvotes
               </div>
-              <div className="text-xs font-black text-black mt-1 truncate">
-                {product.category}
+              <div className="font-mono-num text-base font-black text-black mt-0.5 flex items-center gap-1">
+                <ChevronUp className="h-3.5 w-3.5 text-mint-600 shrink-0" />
+                <span>{(product.upvotes ?? 0).toLocaleString()}</span>
               </div>
             </div>
 
@@ -118,11 +119,10 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
 
             <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-2.5 shadow-2xs">
               <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 truncate">
-                Visits
+                Category
               </div>
-              <div className="font-mono-num text-base font-black text-black flex items-center gap-1 mt-0.5">
-                <MousePointerClick className="h-3.5 w-3.5 text-black" />
-                <span>{product.clicks.toLocaleString()}</span>
+              <div className="text-xs font-black text-black mt-1 truncate">
+                {product.category}
               </div>
             </div>
           </div>

@@ -57,7 +57,7 @@ export const ProductTile: React.FC<ProductTileProps> = ({
     >
       {/* Icon + rank */}
       <div className="flex items-start justify-between">
-        <div className={`flex h-11 w-11 items-center justify-center overflow-hidden rounded-lg border bg-[#222222] transition-colors ${isWinner ? 'border-mint-500/50' : 'border-neutral-800 group-hover:border-neutral-700'}`}>
+        <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-lg border border-neutral-800 bg-[#222222] transition-colors group-hover:border-neutral-700">
           <ProductLogo
             src={product.logoUrl}
             alt={product.name}
@@ -66,11 +66,6 @@ export const ProductTile: React.FC<ProductTileProps> = ({
           />
         </div>
         <div className="flex items-center gap-2">
-          {isWinner && (
-            <span className="rounded-md bg-mint-500/15 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-mint-300 ring-1 ring-inset ring-mint-500/40">
-              Winner
-            </span>
-          )}
           <span className={`font-mono-num text-[11px] font-bold ${isWinner ? 'text-mint-300' : 'text-neutral-600'}`}>
             #{rank}
           </span>
@@ -92,12 +87,10 @@ export const ProductTile: React.FC<ProductTileProps> = ({
       <div className="mt-4 flex items-center justify-between border-t border-neutral-800 pt-3">
         <div className="flex items-center gap-2 text-[10.5px] font-semibold text-neutral-500">
           <span>{timeAgo(product.createdAt)}</span>
-          {typeof commentCount === 'number' && commentCount > 0 && (
-            <span className="inline-flex items-center gap-1">
-              <MessageCircle className="h-3 w-3" />
-              <span className="font-mono-num">{commentCount}</span>
-            </span>
-          )}
+          <span className="inline-flex items-center gap-1 text-neutral-400">
+            <MessageCircle className="h-3 w-3 text-neutral-500" />
+            <span className="font-mono-num">{commentCount ?? 0}</span>
+          </span>
         </div>
         <div className="flex items-center gap-1.5">
           {onUpvote && (

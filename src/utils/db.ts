@@ -169,6 +169,30 @@ export async function insertProductDirect(p: Product): Promise<void> {
   } catch {}
 }
 
+/** Update an existing product in Supabase */
+export async function updateProductDirect(p: Product): Promise<boolean> {
+  try {
+    const [includeScreenshots, includeSocials] = await Promise.all([
+      screenshotsColumnAvailable(),
+      socialsColumnsAvailable(),
+    ]);
+    const row = { ...toDbProduct(p) } as Record<string, unknown>;
+    if (!includeScreenshots) delete row.screenshots;
+    if (!includeSocials) {
+      delete row.socials;
+      delete row.creator_name;
+      delete row.creator_username;
+      delete row.creator_x_handle;
+      delete row.creator_avatar;
+      delete row.creator_role;
+    }
+    const { error } = await supabase.from('products').update(row).eq('id', p.id);
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
 /** Delete a product from Supabase */
 export async function deleteProduct(productId: string): Promise<void> {
   await supabase.from('products').delete().eq('id', productId);
@@ -215,27 +239,79 @@ export async function getUserUpvotes(): Promise<Set<string>> {
   return new Set(data as string[]);
 }
 
-// ── Comments ──
+// ── Comments (with Caching & DB Sync) ──
 
-/** Load all comments (aggregated per product on the client) */
-export async function fetchComments(): Promise<Comment[]> {
-  const { data, error } = await supabase
-    .from('comments')
-    .select('*')
-    .order('created_at', { ascending: true });
-  if (error || !data) return [];
-  return data.map((row) => ({
-    id: row.id as string,
-    productId: row.product_id as string,
-    userName: row.user_name as string,
-    userEmail: (row.user_email as string) || undefined,
-    userAvatar: (row.user_avatar as string) || undefined,
-    content: row.content as string,
-    createdAt: row.created_at as number,
-  }));
+const COMMENTS_CACHE_KEY = 'topsaas_comments_cache_v2';
+const COMMENTS_CACHE_TTL_MS = 3 * 60 * 1000; // 3 minutes cache validity
+
+let commentsMemoryCache: { timestamp: number; data: Comment[] } | null = null;
+
+function getStoredCommentsCache(): { timestamp: number; data: Comment[] } | null {
+  if (commentsMemoryCache) return commentsMemoryCache;
+  try {
+    const raw = localStorage.getItem(COMMENTS_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed && Array.isArray(parsed.data)) {
+      commentsMemoryCache = parsed;
+      return parsed;
+    }
+  } catch {}
+  return null;
 }
 
-/** Post a comment; returns the saved row or null on failure (caller keeps an optimistic copy) */
+function persistCommentsCache(comments: Comment[]): void {
+  const cacheObj = { timestamp: Date.now(), data: comments };
+  commentsMemoryCache = cacheObj;
+  try {
+    localStorage.setItem(COMMENTS_CACHE_KEY, JSON.stringify(cacheObj));
+  } catch {}
+}
+
+/** Get currently cached comments synchronously without network roundtrip */
+export function getCachedCommentsSync(): Comment[] {
+  const cache = getStoredCommentsCache();
+  return cache ? cache.data : [];
+}
+
+/** Load comments from cache if fresh, otherwise fetch from Supabase and update cache */
+export async function fetchComments(forceFresh = false): Promise<Comment[]> {
+  const cache = getStoredCommentsCache();
+  const isFresh = cache && Date.now() - cache.timestamp < COMMENTS_CACHE_TTL_MS;
+
+  if (!forceFresh && isFresh && cache.data.length > 0) {
+    return cache.data;
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('comments')
+      .select('*')
+      .order('created_at', { ascending: true });
+
+    if (error || !data) {
+      // Fallback to cache if network fails
+      return cache ? cache.data : [];
+    }
+
+    const mapped: Comment[] = data.map((row) => ({
+      id: row.id as string,
+      productId: row.product_id as string,
+      userName: row.user_name as string,
+      userEmail: (row.user_email as string) || undefined,
+      userAvatar: (row.user_avatar as string) || undefined,
+      content: row.content as string,
+      createdAt: Number(row.created_at) || Date.now(),
+    }));
+
+    persistCommentsCache(mapped);
+    return mapped;
+  } catch {
+    return cache ? cache.data : [];
+  }
+}
+
+/** Post a comment; saves to Supabase and immediately updates local cache */
 export async function addComment(input: {
   productId: string;
   userName: string;
@@ -279,16 +355,36 @@ export async function addComment(input: {
     error = retry.error;
   }
 
-  if (error || !data) return null;
-  return {
-    id: data.id as string,
-    productId: data.product_id as string,
-    userName: data.user_name as string,
-    userEmail: (data.user_email as string) || undefined,
-    userAvatar: (data.user_avatar as string) || input.userAvatar || undefined,
-    content: data.content as string,
-    createdAt: data.created_at as number,
-  };
+  const savedComment: Comment = data
+    ? {
+        id: data.id as string,
+        productId: data.product_id as string,
+        userName: data.user_name as string,
+        userEmail: (data.user_email as string) || undefined,
+        userAvatar: (data.user_avatar as string) || input.userAvatar || undefined,
+        content: data.content as string,
+        createdAt: Number(data.created_at) || now,
+      }
+    : {
+        id: `local-${now}-${Math.random().toString(36).slice(2, 7)}`,
+        productId: input.productId,
+        userName: input.userName,
+        userEmail: input.userEmail,
+        userAvatar: input.userAvatar,
+        content: input.content,
+        createdAt: now,
+      };
+
+  // Update memory and localStorage cache immediately
+  const existing = getStoredCommentsCache()?.data || [];
+  const updatedList = [...existing.filter((c) => c.id !== savedComment.id), savedComment];
+  persistCommentsCache(updatedList);
+
+  if (error && !data) {
+    console.warn('Could not persist comment to Supabase, stored locally in cache', error);
+  }
+
+  return savedComment;
 }
 
 // ── Admin ──

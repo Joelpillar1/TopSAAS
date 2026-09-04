@@ -1,5 +1,5 @@
 import React from 'react';
-import { Crown, ShieldCheck, Share2, MousePointerClick, ExternalLink, ChevronUp } from 'lucide-react';
+import { Crown, ShieldCheck, Share2, ExternalLink, ChevronUp } from 'lucide-react';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
@@ -37,13 +37,12 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
               <th className="py-3 px-4">Product</th>
               {onUpvote && <th className="py-3 px-4 text-center">Upvotes</th>}
               <th className="py-3 px-4 text-center hidden md:table-cell">Category</th>
-              <th className="py-3 px-4 text-center hidden sm:table-cell">Visits</th>
               <th className="py-3 pr-4 pl-2 text-right">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100">
             {products.map((product, index) => {
-              const rank = product.rank ?? (index + 1);
+              const rank = index + 1;
               const isTopThree = rank <= 3;
 
               const handleRowClick = () => {
@@ -153,14 +152,6 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                     <span className="rounded-md border border-neutral-200 bg-neutral-50 px-2 py-0.5 text-[11px] font-semibold text-neutral-600">
                       {product.category}
                     </span>
-                  </td>
-
-                  {/* Visits */}
-                  <td className="py-3.5 px-4 text-center hidden sm:table-cell align-middle">
-                    <div className="inline-flex items-center gap-1 text-xs font-bold text-neutral-700 font-mono-num">
-                      <MousePointerClick className="h-3 w-3 text-neutral-400" />
-                      <span>{product.clicks.toLocaleString()}</span>
-                    </div>
                   </td>
 
                   {/* Actions */}

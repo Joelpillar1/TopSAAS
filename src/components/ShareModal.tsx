@@ -34,41 +34,41 @@ export const ShareModal: React.FC<ShareModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3.5 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
-      <div className="relative w-full max-w-md rounded-2xl border border-neutral-300 bg-white shadow-2xl p-5 sm:p-6 text-black animate-in fade-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3.5 sm:p-4 bg-black/75 backdrop-blur-md overflow-y-auto font-sans">
+      <div className="relative w-full max-w-md rounded-2xl border border-neutral-800 bg-[#222222] shadow-2xl p-5 sm:p-6 text-neutral-100 animate-in fade-in zoom-in-95 duration-150">
         <button
           onClick={onClose}
-          className="absolute right-3.5 top-3.5 sm:right-4 sm:top-4 rounded-xl p-2 text-neutral-400 hover:bg-neutral-100 hover:text-black transition-colors cursor-pointer"
+          className="absolute right-3.5 top-3.5 sm:right-4 sm:top-4 rounded-xl p-2 text-neutral-400 hover:bg-neutral-800 hover:text-white transition-colors cursor-pointer"
         >
           <X className="h-5 w-5" />
         </button>
 
         <div className="flex items-center gap-2.5 mb-4 pr-8">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-black text-white font-black shadow-xs">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-neutral-800 text-mint-300 border border-neutral-700 font-black shadow-xs">
             <Share2 className="h-4 w-4" />
           </div>
           <div>
-            <h3 className="text-base sm:text-lg font-black text-black">
+            <h3 className="text-base sm:text-lg font-black text-white">
               Share {product.name}
             </h3>
-            <p className="text-[11px] sm:text-xs text-neutral-500 font-medium line-clamp-1">
+            <p className="text-[11px] sm:text-xs text-neutral-400 font-medium line-clamp-1">
               Rank #{product.rank} • {product.category}
             </p>
           </div>
         </div>
 
         {/* Share Preview Card */}
-        <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3 sm:p-4 mb-4">
+        <div className="rounded-xl border border-neutral-800 bg-[#2a2a2a] p-3 sm:p-4 mb-4">
           <div className="flex items-center gap-3">
             <ProductLogo
               src={product.logoUrl}
               alt={product.name}
-              containerClassName="h-10 w-10 shrink-0 rounded-lg bg-white border border-neutral-200 shadow-xs relative flex items-center justify-center overflow-hidden"
-              iconClassName="h-5 w-5 text-black shrink-0"
+              containerClassName="h-10 w-10 shrink-0 rounded-lg bg-[#1e1e1e] border border-neutral-700 shadow-xs relative flex items-center justify-center overflow-hidden"
+              iconClassName="h-5 w-5 text-neutral-300 shrink-0"
             />
             <div className="min-w-0 flex-1">
-              <div className="font-bold text-black text-sm truncate">{product.name}</div>
-              <div className="text-xs text-neutral-500 line-clamp-1">{product.tagline}</div>
+              <div className="font-bold text-white text-sm truncate">{product.name}</div>
+              <div className="text-xs text-neutral-400 line-clamp-1">{product.tagline}</div>
             </div>
           </div>
         </div>
@@ -80,7 +80,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => playSound('click', soundEnabled)}
-            className="flex items-center justify-center gap-2 w-full rounded-xl bg-black py-3 sm:py-2.5 text-xs font-bold text-white shadow-xs hover:bg-neutral-800 transition-all min-h-[44px]"
+            className="flex items-center justify-center gap-2 w-full rounded-xl bg-white py-3 sm:py-2.5 text-xs font-black text-black shadow-xs hover:bg-neutral-200 transition-all min-h-[44px]"
           >
             <span>Post to X / Twitter</span>
             <ExternalLink className="h-3.5 w-3.5" />
@@ -88,12 +88,12 @@ export const ShareModal: React.FC<ShareModalProps> = ({
 
           <button
             onClick={handleCopy}
-            className="flex items-center justify-center gap-2 w-full rounded-xl border border-neutral-300 bg-white py-3 sm:py-2.5 text-xs font-bold text-black hover:border-black hover:bg-neutral-100 shadow-xs transition-all cursor-pointer min-h-[44px]"
+            className="flex items-center justify-center gap-2 w-full rounded-xl border border-neutral-700 bg-[#2a2a2a] py-3 sm:py-2.5 text-xs font-bold text-neutral-200 hover:border-neutral-500 hover:text-white shadow-xs transition-all cursor-pointer min-h-[44px]"
           >
             {copied ? (
               <>
-                <Check className="h-4 w-4 text-black" />
-                <span className="text-black font-black">Copied to Clipboard!</span>
+                <Check className="h-4 w-4 text-mint-400" />
+                <span className="text-mint-300 font-black">Copied to Clipboard!</span>
               </>
             ) : (
               <>

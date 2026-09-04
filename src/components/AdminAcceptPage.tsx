@@ -699,42 +699,42 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
 
       {/* Edit Submission Modal */}
       {editingSubmission && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3.5 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
-          <div className="relative w-full max-w-md rounded-2xl border border-neutral-300 bg-white shadow-2xl p-5 sm:p-6 text-black animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3.5 sm:p-4 bg-black/75 backdrop-blur-md overflow-y-auto font-sans">
+          <div className="relative w-full max-w-md rounded-2xl border border-neutral-800 bg-[#222222] shadow-2xl p-5 sm:p-6 text-neutral-100 animate-in fade-in zoom-in-95 duration-150">
             <button
               type="button"
               onClick={() => setEditingSubmission(null)}
-              className="absolute right-3.5 top-3.5 rounded-xl p-2 text-neutral-400 hover:bg-neutral-100 hover:text-black transition-colors cursor-pointer"
+              className="absolute right-3.5 top-3.5 rounded-xl p-2 text-neutral-400 hover:bg-neutral-800 hover:text-white transition-colors cursor-pointer"
             >
               <X className="h-5 w-5" />
             </button>
 
             <div className="flex items-center gap-2.5 mb-4">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-black text-white font-bold text-xs shadow-2xs">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-neutral-800 text-mint-300 border border-neutral-700 font-bold text-xs shadow-2xs">
                 <Edit3 className="h-4 w-4" />
               </div>
               <div>
-                <h3 className="text-base font-black text-black">Edit Submission</h3>
-                <p className="text-xs text-neutral-500">Modify details before approving</p>
+                <h3 className="text-base font-black text-white">Edit Submission</h3>
+                <p className="text-xs text-neutral-400">Modify details before approving</p>
               </div>
             </div>
 
             <form onSubmit={handleSaveEdit} className="space-y-3.5">
               <div>
-                <label className="block text-xs font-bold text-neutral-800 mb-1">Website Name</label>
-                <input type="text" required value={editName} onChange={(e) => setEditName(e.target.value)} className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-xs text-black focus:border-black focus:outline-none focus:ring-1 focus:ring-black" />
+                <label className="block text-xs font-bold text-neutral-300 mb-1">Website Name</label>
+                <input type="text" required value={editName} onChange={(e) => setEditName(e.target.value)} className="w-full rounded-xl border border-neutral-700 bg-[#1e1e1e] px-3 py-2 text-xs text-white focus:border-mint-500 focus:outline-none focus:ring-1 focus:ring-mint-500" />
               </div>
               <div>
-                <label className="block text-xs font-bold text-neutral-800 mb-1">Website URL</label>
-                <input type="text" required value={editUrl} onChange={(e) => setEditUrl(e.target.value)} className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-xs text-black focus:border-black focus:outline-none focus:ring-1 focus:ring-black" />
+                <label className="block text-xs font-bold text-neutral-300 mb-1">Website URL</label>
+                <input type="text" required value={editUrl} onChange={(e) => setEditUrl(e.target.value)} className="w-full rounded-xl border border-neutral-700 bg-[#1e1e1e] px-3 py-2 text-xs text-white focus:border-mint-500 focus:outline-none focus:ring-1 focus:ring-mint-500" />
               </div>
               <div>
-                <label className="block text-xs font-bold text-neutral-800 mb-1">Tagline</label>
-                <textarea required rows={2} value={editTagline} onChange={(e) => setEditTagline(e.target.value)} className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-xs text-black focus:border-black focus:outline-none focus:ring-1 focus:ring-black" />
+                <label className="block text-xs font-bold text-neutral-300 mb-1">Tagline</label>
+                <textarea required rows={2} value={editTagline} onChange={(e) => setEditTagline(e.target.value)} className="w-full rounded-xl border border-neutral-700 bg-[#1e1e1e] px-3 py-2 text-xs text-white focus:border-mint-500 focus:outline-none focus:ring-1 focus:ring-mint-500" />
               </div>
               <div>
-                <label className="block text-xs font-bold text-neutral-800 mb-1">Category</label>
-                <select value={editCategory} onChange={(e) => setEditCategory(e.target.value as Category)} className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-xs text-black focus:border-black focus:outline-none focus:ring-1 focus:ring-black">
+                <label className="block text-xs font-bold text-neutral-300 mb-1">Category</label>
+                <select value={editCategory} onChange={(e) => setEditCategory(e.target.value as Category)} className="w-full rounded-xl border border-neutral-700 bg-[#1e1e1e] px-3 py-2 text-xs text-white focus:border-mint-500 focus:outline-none focus:ring-1 focus:ring-mint-500">
                   <option value="AI Tools">AI Tools</option>
                   <option value="Developer Tools">Developer Tools</option>
                   <option value="Productivity">Productivity</option>
@@ -744,8 +744,8 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                 </select>
               </div>
               <div className="pt-2 flex items-center justify-end gap-2">
-                <button type="button" onClick={() => setEditingSubmission(null)} className="rounded-xl border border-neutral-300 bg-white px-4 py-2 text-xs font-bold text-neutral-800 hover:border-black">Cancel</button>
-                <button type="submit" className="rounded-xl bg-black px-4 py-2 text-xs font-bold text-white hover:bg-neutral-800">Save Changes</button>
+                <button type="button" onClick={() => setEditingSubmission(null)} className="rounded-xl border border-neutral-700 bg-[#2a2a2a] px-4 py-2 text-xs font-bold text-neutral-300 hover:border-neutral-500 hover:text-white">Cancel</button>
+                <button type="submit" className="rounded-xl bg-white px-4 py-2 text-xs font-black text-black hover:bg-neutral-200">Save Changes</button>
               </div>
             </form>
           </div>
@@ -754,20 +754,20 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
 
       {/* Revoke Confirmation Modal */}
       {revokeTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="relative w-full max-w-sm rounded-2xl border border-neutral-300 bg-white shadow-2xl p-6 text-center animate-in fade-in zoom-in-95 duration-150">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 border border-red-200 mb-4">
-              <XCircle className="h-6 w-6 text-red-500" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md font-sans">
+          <div className="relative w-full max-w-sm rounded-2xl border border-neutral-800 bg-[#222222] shadow-2xl p-6 text-center animate-in fade-in zoom-in-95 duration-150 text-white">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-red-950/40 border border-red-800/60 mb-4">
+              <XCircle className="h-6 w-6 text-red-400" />
             </div>
-            <h3 className="text-base font-black text-black mb-1">Revoke Approval?</h3>
-            <p className="text-xs text-neutral-500 mb-5">
-              <span className="font-bold text-black">{revokeTarget.name}</span> will be removed from the live directory. This action can be undone by restoring the submission.
+            <h3 className="text-base font-black text-white mb-1">Revoke Approval?</h3>
+            <p className="text-xs text-neutral-400 mb-5">
+              <span className="font-bold text-white">{revokeTarget.name}</span> will be removed from the live directory. This action can be undone by restoring the submission.
             </p>
             <div className="flex items-center justify-center gap-2">
               <button
                 type="button"
                 onClick={() => setRevokeTarget(null)}
-                className="rounded-xl border border-neutral-300 bg-white px-4 py-2 text-xs font-bold text-neutral-800 hover:border-black hover:bg-neutral-50 transition-all cursor-pointer"
+                className="rounded-xl border border-neutral-700 bg-[#2a2a2a] px-4 py-2 text-xs font-bold text-neutral-300 hover:border-neutral-500 hover:text-white transition-all cursor-pointer"
               >
                 Cancel
               </button>

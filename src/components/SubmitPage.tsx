@@ -1,13 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import confetti from 'canvas-confetti';
-import { AlertCircle, ArrowLeft, Check, ChevronDown, Loader2, Video } from 'lucide-react';
+import { AlertCircle, Check, ChevronDown, Loader2, Search, Video, X } from 'lucide-react';
 import { Category, PricingModel, ProductSocial, SubmitProductDetails } from '../types';
 import { SUBMISSION_CATEGORIES } from './BidModal';
-import { fetchWebsiteMetadata } from '../utils/fetchMetadata';
 import { getWebsiteFavicon } from '../utils/logo';
 import { playSound } from '../utils/sound';
 
 const DRAFT_KEY = 'topsaas_launch_draft_v1';
+const STEP_KEY = 'topsaas_launch_step_v1';
 
 const PRICING_OPTIONS: { value: PricingModel; hint: string }[] = [
   { value: 'Free', hint: 'No cost to use' },
@@ -23,13 +23,14 @@ interface FormState {
   name: string;
   tagline: string;
   description: string;
-  category: Category | '';
+  category: Category | string;
+  categories: Category[];
   logoDataUrl: string;
   screenshots: string[];
   demoVideoUrl: string;
   twitter: string;
   linkedin: string;
-  reddit: string;
+  youtube: string;
   appStore: string;
   playStore: string;
   chromeWebStore: string;
@@ -42,13 +43,12 @@ interface FormState {
   solution: string;
   uniqueSellingPoint: string;
   creatorName: string;
-  creatorUsername: string;
   creatorXHandle: string;
   creatorAvatar: string;
   creatorRole: string;
 }
 
-type FieldKey = 'name' | 'tagline' | 'url' | 'category';
+type FieldKey = 'name' | 'tagline' | 'url' | 'category' | 'demoVideoUrl';
 
 const EMPTY_FORM: FormState = {
   url: '',
@@ -56,12 +56,13 @@ const EMPTY_FORM: FormState = {
   tagline: '',
   description: '',
   category: '',
+  categories: [],
   logoDataUrl: '',
   screenshots: [],
   demoVideoUrl: '',
   twitter: '',
   linkedin: '',
-  reddit: '',
+  youtube: '',
   appStore: '',
   playStore: '',
   chromeWebStore: '',
@@ -74,11 +75,26 @@ const EMPTY_FORM: FormState = {
   solution: '',
   uniqueSellingPoint: '',
   creatorName: '',
-  creatorUsername: '',
   creatorXHandle: '',
   creatorAvatar: '',
   creatorRole: '',
 };
+
+function autoFormatUrl(raw: string): string {
+  const v = raw.trim();
+  if (!v) return '';
+  if (/^https?:\/\//i.test(v)) return v;
+  return `https://${v}`;
+}
+
+function autoFormatHandle(raw: string): string {
+  let v = raw.trim();
+  if (!v) return '';
+  v = v.replace(/^https?:\/\/(www\.)?(twitter|x)\.com\//i, '');
+  v = v.replace(/\/.*$/, '');
+  v = v.replace(/^@+/, '');
+  return v ? `@${v}` : '';
+}
 
 function loadDraft(): Partial<FormState> | null {
   try {
@@ -92,40 +108,41 @@ function loadDraft(): Partial<FormState> | null {
   }
 }
 
-function saveDraft(state: FormState) {
+function loadSavedStep(): number {
+  try {
+    const raw = localStorage.getItem(STEP_KEY);
+    if (!raw) return 0;
+    const parsed = parseInt(raw, 10);
+    return Number.isFinite(parsed) && parsed >= 0 && parsed <= 3 ? parsed : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function saveDraft(state: FormState, currentStep?: number) {
   try {
     localStorage.setItem(DRAFT_KEY, JSON.stringify(state));
+    if (typeof currentStep === 'number') {
+      localStorage.setItem(STEP_KEY, String(currentStep));
+    }
   } catch {
-    /* storage full / unavailable — ignore */
+    // Quota exceeded: retry saving without large image data URLs
+    try {
+      const lightweight = { ...state, screenshots: [], logoDataUrl: '' };
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(lightweight));
+    } catch {
+      /* storage completely unavailable */
+    }
   }
 }
 
 function clearDraft() {
   try {
     localStorage.removeItem(DRAFT_KEY);
+    localStorage.removeItem(STEP_KEY);
   } catch {
     /* ignore */
   }
-}
-
-function cleanDomainToName(rawUrl: string): string {
-  try {
-    let u = rawUrl.trim();
-    if (!/^https?:\/\//i.test(u)) u = `https://${u}`;
-    const host = new URL(u).hostname.replace(/^www\./, '');
-    const part = host.split('.')[0];
-    if (part) return part.charAt(0).toUpperCase() + part.slice(1);
-  } catch {}
-  return 'My Product';
-}
-
-function truncateTo(text: string, max: number): string {
-  const trimmed = text.replace(/\s+/g, ' ').trim();
-  if (trimmed.length <= max) return trimmed;
-  const cut = trimmed.slice(0, max);
-  const lastSpace = cut.lastIndexOf(' ');
-  const base = lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut;
-  return `${base.replace(/[,.;:]$/, '')}…`;
 }
 
 function normalizeTwitterHandle(raw: string): string {
@@ -233,20 +250,28 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
 }) => {
   const [form, setForm] = useState<FormState>(() => {
     const draft = loadDraft();
-    return {
+    const initial: FormState = {
       ...EMPTY_FORM,
       creatorName: defaultCreatorName || '',
       creatorAvatar: defaultCreatorAvatar || '',
       ...draft,
     };
+    if (draft?.categories && draft.categories.length > 0 && !draft.category) {
+      initial.category = draft.categories.join(', ');
+    } else if (draft?.category && (!draft.categories || draft.categories.length === 0)) {
+      initial.categories = draft.category.split(',').map((c) => c.trim() as Category).filter(Boolean);
+    }
+    return initial;
   });
   const [errors, setErrors] = useState<Partial<Record<FieldKey, string>>>({});
   const [banner, setBanner] = useState<string | null>(null);
 
-  const [step, setStep] = useState(0);
-  const [maxVisited, setMaxVisited] = useState(0);
-  const [isFilling, setIsFilling] = useState(false);
-  const [fillNote, setFillNote] = useState<string | null>(null);
+  const [step, setStep] = useState<number>(() => loadSavedStep());
+
+  // Automatically persist form inputs and active step on every change
+  useEffect(() => {
+    saveDraft(form, step);
+  }, [form, step]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [categorySearch, setCategorySearch] = useState('');
@@ -279,114 +304,133 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
     }
   };
 
-  // ── Per-step required validation ──
-  const stepRequired: Partial<Record<number, FieldKey[]>> = {
-    0: ['name', 'tagline', 'url'],
-    2: ['category'],
+  const toggleCategory = (cat: Category) => {
+    playSound('click', soundEnabled);
+    setForm((prev) => {
+      const exists = prev.categories.includes(cat);
+      let nextCats: Category[];
+      if (exists) {
+        nextCats = prev.categories.filter((c) => c !== cat);
+      } else {
+        if (prev.categories.length >= 3) {
+          setBanner('You can select up to 3 categories.');
+          return prev;
+        }
+        nextCats = [...prev.categories, cat];
+      }
+      setErrors((errs) => ({ ...errs, category: undefined }));
+      return {
+        ...prev,
+        categories: nextCats,
+        category: nextCats.join(', '),
+      };
+    });
   };
 
+  // ── Per-step validation ──
   const validateStep = (i: number): Partial<Record<FieldKey, string>> => {
     const out: Partial<Record<FieldKey, string>> = {};
-    const required = stepRequired[i] || [];
-    for (const key of required) {
-      if (key === 'name' && form.name.trim().length < 2) out.name = 'Enter your product name.';
-      if (key === 'name' && form.name.trim().length > 60) out.name = 'Keep the name under 60 characters.';
-      if (key === 'tagline' && form.tagline.trim().length < 3) out.tagline = 'Add a one-line tagline (max 80 characters).';
-      if (key === 'tagline' && form.tagline.trim().length > 80) out.tagline = 'Taglines are capped at 80 characters.';
-      if (key === 'url') {
+    if (i === 0) {
+      if (!form.url.trim()) {
+        out.url = 'Enter your website URL.';
+      } else {
         const check = normalizeUrl(form.url);
-        if (!check.ok) out.url = check.error;
+        if (!check.ok) out.url = check.error || 'Enter a valid website URL, e.g. https://yourproduct.com';
       }
-      if (key === 'category' && !form.category) out.category = 'Choose a category for your listing.';
+
+      if (!form.name.trim()) {
+        out.name = 'Enter your product name.';
+      } else if (form.name.trim().length < 2) {
+        out.name = 'Product name must be at least 2 characters.';
+      } else if (form.name.trim().length > 60) {
+        out.name = 'Keep the name under 60 characters.';
+      }
+
+      if (!form.tagline.trim()) {
+        out.tagline = 'Add a one-line tagline for your product.';
+      } else if (form.tagline.trim().length < 3) {
+        out.tagline = 'Tagline must be at least 3 characters.';
+      } else if (form.tagline.trim().length > 80) {
+        out.tagline = 'Taglines are capped at 80 characters.';
+      }
+    } else if (i === 1) {
+      if (form.demoVideoUrl.trim()) {
+        const check = normalizeUrl(form.demoVideoUrl);
+        if (!check.ok) out.demoVideoUrl = 'Enter a valid video URL or clear this field.';
+      }
+    } else if (i === 2) {
+      if (form.categories.length === 0 && !form.category.trim()) {
+        out.category = 'Choose at least one category for your listing.';
+      }
     }
     return out;
   };
 
-  const goToStep = (next: number) => {
+  const isStepComplete = (i: number): boolean => {
+    const errs = validateStep(i);
+    if (Object.keys(errs).length > 0) return false;
+    if (i === 0) {
+      return (
+        form.name.trim().length >= 2 &&
+        form.tagline.trim().length >= 3 &&
+        normalizeUrl(form.url).ok
+      );
+    }
+    if (i === 1) {
+      return isStepComplete(0);
+    }
+    if (i === 2) {
+      return isStepComplete(0) && (form.categories.length > 0 || !!form.category.trim());
+    }
+    if (i === 3) {
+      return isStepComplete(0) && isStepComplete(2);
+    }
+    return false;
+  };
+
+  const handleTabClick = (targetStep: number) => {
+    if (targetStep === step) return;
+    if (targetStep < step) {
+      playSound('click', soundEnabled);
+      setStep(targetStep);
+      setErrors({});
+      setBanner(null);
+      requestAnimationFrame(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+      return;
+    }
+    // Moving forwards: validate all prior steps up to targetStep
+    for (let s = 0; s < targetStep; s++) {
+      const stepErrors = validateStep(s);
+      if (Object.keys(stepErrors).length > 0 || !isStepComplete(s)) {
+        setStep(s);
+        setErrors(stepErrors);
+        setBanner('Please fill in the required fields before proceeding to the next step.');
+        playSound('click', soundEnabled);
+        requestAnimationFrame(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+        return;
+      }
+    }
     playSound('click', soundEnabled);
-    setStep(next);
-    setMaxVisited((v) => Math.max(v, next));
+    setStep(targetStep);
     setErrors({});
+    setBanner(null);
     requestAnimationFrame(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   };
 
   const handleNext = () => {
     const stepErrors = validateStep(step);
-    if (Object.keys(stepErrors).length > 0) {
+    if (Object.keys(stepErrors).length > 0 || !isStepComplete(step)) {
       setErrors(stepErrors);
-      setBanner('Complete the highlighted fields to continue.');
+      setBanner('Please complete the required fields to continue.');
       playSound('click', soundEnabled);
       return;
     }
     setErrors({});
     setBanner(null);
-    goToStep(Math.min(step + 1, STEPS.length - 1));
-  };
-
-  // ── Auto-fill from the pasted URL (reads page title & description) ──
-  const handleAutoFill = async () => {
-    if (isFilling) return;
-    const check = normalizeUrl(form.url);
-    if (!check.ok) {
-      setErrors((prev) => ({ ...prev, url: check.error }));
-      setBanner('Paste a valid website URL first, then use Auto-fill.');
-      return;
-    }
-    setIsFilling(true);
-    setFillNote(null);
-    try {
-      const metadata = await fetchWebsiteMetadata(check.value);
-      const applied: string[] = [];
-
-      if (!form.name.trim() && metadata.title) {
-        set('name', truncateTo(metadata.title.replace(/\s+/g, ' '), 60));
-        applied.push('name');
-      }
-
-      if (!form.tagline.trim() && metadata.description) {
-        const desc = metadata.description.replace(/\s+/g, ' ').trim();
-        if (desc.length <= 80) {
-          set('tagline', desc);
-          applied.push('tagline');
-        } else {
-          const short = truncateTo(desc, 80);
-          if (short.length > 3) {
-            set('tagline', short);
-            applied.push('tagline');
-          }
-          set('description', truncateTo(desc, 2000));
-          applied.push('description');
-        }
-      }
-
-      if (applied.length === 0) {
-        if (!form.name.trim()) {
-          set('name', cleanDomainToName(check.value));
-          applied.push('name');
-        }
-        if (!form.tagline.trim()) {
-          // Fallback if the page exposed no description
-          set('tagline', `A website at ${check.value.replace(/^https?:\/\//, '')}`);
-          applied.push('tagline');
-        }
-        setFillNote(`We could not read that page — only the domain name was filled.`);
-      } else {
-        setFillNote(`Filled ${applied.join(', ')} from your page. You can edit them below.`);
-      }
-      playSound('success', soundEnabled);
-    } catch {
-      if (!form.name.trim()) {
-        set('name', cleanDomainToName(check.value));
-        if (!form.tagline.trim()) {
-          set('tagline', `A website at ${check.value.replace(/^https?:\/\//, '')}`);
-        }
-        setFillNote('We could not reach that page — the domain name was filled instead.');
-      } else {
-        setFillNote('We could not reach that page — your entries were kept.');
-      }
-    } finally {
-      setIsFilling(false);
-    }
+    playSound('click', soundEnabled);
+    const next = Math.min(step + 1, STEPS.length - 1);
+    setStep(next);
+    requestAnimationFrame(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   };
 
   // ── Logo ──
@@ -469,7 +513,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
       const first = missing[0];
       setErrors(validateStep(first));
       setBanner('Some required fields are still empty — they are marked below.');
-      goToStep(first);
+      setStep(first);
+      requestAnimationFrame(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
       return;
     }
 
@@ -491,27 +536,26 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
         socials.push({ platform: 'x', url: `https://x.com/${handle}` });
       }
       if (form.linkedin.trim()) socials.push({ platform: 'linkedin', url: cleanUrl(form.linkedin) });
-      if (form.reddit.trim()) socials.push({ platform: 'reddit', url: cleanUrl(form.reddit) });
+      if (form.youtube.trim()) socials.push({ platform: 'youtube', url: cleanUrl(form.youtube) });
       if (form.productHunt.trim()) socials.push({ platform: 'product_hunt', url: cleanUrl(form.productHunt) });
       if (form.github.trim()) socials.push({ platform: 'github', url: cleanUrl(form.github) });
       if (form.discord.trim()) socials.push({ platform: 'discord', url: cleanUrl(form.discord) });
       if (form.appStore.trim()) socials.push({ platform: 'app_store', url: cleanUrl(form.appStore) });
       if (form.playStore.trim()) socials.push({ platform: 'play_store', url: cleanUrl(form.playStore) });
-      if (form.chromeWebStore.trim()) socials.push({ platform: 'chrome_web_store', url: cleanUrl(form.chromeWebStore) });
+      const finalCategory = form.categories.length > 0 ? (form.categories.join(', ') as Category) : form.category;
 
       const newId = await onSubmit({
         name: form.name.trim(),
         tagline: form.tagline.trim(),
         url: check.value,
-        category: form.category,
+        category: finalCategory,
         description: form.description.trim() || undefined,
         logoUrl: form.logoDataUrl || undefined,
         screenshots: form.screenshots.length > 0 ? form.screenshots.slice(0, 10) : undefined,
-        demoVideoUrl: form.demoVideoUrl.trim() || undefined,
+        demoVideoUrl: form.demoVideoUrl ? autoFormatUrl(form.demoVideoUrl) : undefined,
         twitterHandle: normalizeTwitterHandle(form.twitter) || undefined,
         socials: socials.length > 0 ? socials : undefined,
         creatorName: form.creatorName.trim() || defaultCreatorName || undefined,
-        creatorUsername: form.creatorUsername.trim().replace(/^@/, '') || undefined,
         creatorXHandle: normalizeTwitterHandle(form.creatorXHandle) || undefined,
         creatorAvatar: form.creatorAvatar || defaultCreatorAvatar || undefined,
         creatorRole: form.creatorRole.trim() || undefined,
@@ -554,7 +598,6 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
     setBanner(null);
     setLaunched(null);
     setStep(0);
-    setMaxVisited(0);
     requestAnimationFrame(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   };
 
@@ -613,25 +656,12 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
     <div className="bg-[#222222] text-neutral-100 font-sans flex flex-col flex-1">
       <main className="mx-auto w-full max-w-2xl flex-1 px-3.5 sm:px-6 pb-12 pt-4 sm:pt-6">
         <div ref={panelRef}>
-          {/* ── Intro & Side Back Button ── */}
-          <div className="mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">Submit your website</h1>
-              <p className="mt-1 text-[13px] sm:text-sm font-medium text-neutral-400">
-                Four quick steps: website details, media & video, directory specs, and founder profile.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                playSound('click', soundEnabled);
-                onBack();
-              }}
-              className="group self-start sm:self-center shrink-0 inline-flex items-center gap-1.5 rounded-xl border border-neutral-700 bg-[#2a2a2a] px-3 py-1.5 text-xs font-bold text-neutral-300 hover:border-neutral-500 hover:bg-[#343434] hover:text-white active:scale-95 transition-all cursor-pointer shadow-2xs"
-            >
-              <ArrowLeft className="h-3.5 w-3.5 text-neutral-400 group-hover:text-white transition-colors" />
-              <span>Back to Directory</span>
-            </button>
+          {/* ── Intro ── */}
+          <div className="mb-5 pt-1">
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">Submit your website</h1>
+            <p className="mt-1 text-[13px] sm:text-sm font-medium text-neutral-400">
+              Four quick steps: website details, media & video, directory specs, and founder profile.
+            </p>
           </div>
 
           {/* ── Signed-out notice ── */}
@@ -658,14 +688,14 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
           <div className="mb-5 grid grid-cols-4 gap-1 rounded-2xl border border-neutral-800 bg-[#2a2a2a] p-1" role="tablist" aria-label="Submission steps">
             {STEPS.map((label, i) => {
               const active = step === i;
-              const isDone = i < maxVisited;
+              const isCompleted = isStepComplete(i) && step > i;
               return (
                 <button
                   key={label}
                   type="button"
                   role="tab"
                   aria-selected={active}
-                  onClick={() => goToStep(i)}
+                  onClick={() => handleTabClick(i)}
                   className={`flex items-center justify-center gap-1.5 sm:gap-2 rounded-xl px-1.5 sm:px-2 py-2.5 text-xs font-bold transition-all cursor-pointer ${
                     active
                       ? 'bg-white text-[#0b0f14] shadow-2xs'
@@ -674,10 +704,14 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                 >
                   <span
                     className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-black shrink-0 ${
-                      active ? 'bg-[#0b0f14] text-white' : 'bg-neutral-800 text-neutral-400'
+                      active
+                        ? 'bg-[#0b0f14] text-white'
+                        : isCompleted
+                        ? 'bg-mint-500/20 text-mint-400 border border-mint-500/40'
+                        : 'bg-neutral-800 text-neutral-400'
                     }`}
                   >
-                    {isDone ? <Check className="h-3 w-3" strokeWidth={3.5} /> : i + 1}
+                    {isCompleted ? <Check className="h-3 w-3" strokeWidth={3.5} /> : i + 1}
                   </span>
                   <span className="hidden xs:inline sm:inline truncate">{label}</span>
                 </button>
@@ -699,41 +733,12 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                     set('url', e.target.value);
                     if (draftSaved) setDraftSaved(false);
                   }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleAutoFill();
-                    }
-                  }}
                   placeholder="https://yourproduct.com"
                   className={inputClass(!!showUrlError)}
                 />
                 <FieldError message={showUrlError ? errors.url : undefined} />
               </div>
 
-              <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-neutral-800 bg-[#222222] px-3.5 py-3">
-                <p className="text-[11px] sm:text-xs font-medium text-neutral-400 leading-relaxed">
-                  Auto-fill the fields below from the page title and description. You can edit everything afterwards.
-                </p>
-                <button
-                  type="button"
-                  onClick={handleAutoFill}
-                  disabled={isFilling}
-                  className="rounded-lg bg-white px-3.5 py-2 text-[11px] font-black text-[#0b0f14] hover:bg-neutral-200 disabled:opacity-60 disabled:cursor-not-allowed transition-all cursor-pointer shrink-0"
-                >
-                  {isFilling ? (
-                    <span className="inline-flex items-center gap-1.5">
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                      Reading page…
-                    </span>
-                  ) : (
-                    'Auto-fill'
-                  )}
-                </button>
-              </div>
-              {fillNote && (
-                <p className="-mt-2 text-[11px] font-medium text-neutral-500">{fillNote}</p>
-              )}
 
               <div className="border-t border-neutral-800 pt-4">
                 <label className={labelClass}>
@@ -750,7 +755,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                     set('name', e.target.value);
                     if (draftSaved) setDraftSaved(false);
                   }}
-                  placeholder="e.g. ScrollLaunch"
+                  placeholder="e.g. TopSAAS"
                   className={inputClass(!!showNameError)}
                 />
                 <FieldError message={showNameError ? errors.name : undefined} />
@@ -960,6 +965,10 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                       set('demoVideoUrl', e.target.value);
                       if (draftSaved) setDraftSaved(false);
                     }}
+                    onBlur={(e) => {
+                      const formatted = autoFormatUrl(e.target.value);
+                      if (formatted !== e.target.value) set('demoVideoUrl', formatted);
+                    }}
                     placeholder="https://www.youtube.com/watch?v=... or Loom / Vimeo link"
                     className={inputClass(false)}
                   />
@@ -985,11 +994,38 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
 
           {step === 2 && (
             <section className="rounded-2xl border border-neutral-800 bg-[#2a2a2a] p-4 sm:p-6 shadow-xs space-y-6">
-              {/* Category */}
+              {/* Multi-Category Selection */}
               <div>
-                <label className={labelClass}>
-                  Category <span className="text-red-400">*</span>
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className={labelClass}>
+                    Categories <span className="text-red-400">*</span>
+                  </label>
+                  <span className="font-mono-num text-[11px] font-bold text-neutral-400 bg-[#222222] px-2 py-0.5 rounded-md border border-neutral-700">
+                    {form.categories.length}/3 selected
+                  </span>
+                </div>
+
+                {/* Selected categories pill tags */}
+                {form.categories.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-3 p-2.5 rounded-xl border border-neutral-800 bg-[#222222]">
+                    {form.categories.map((cat) => (
+                      <span
+                        key={cat}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-mint-500/15 border border-mint-500/40 px-2.5 py-1 text-xs font-bold text-mint-200 shadow-2xs"
+                      >
+                        <span>{cat}</span>
+                        <button
+                          type="button"
+                          onClick={() => toggleCategory(cat)}
+                          className="flex h-4 w-4 items-center justify-center rounded-full hover:bg-mint-500/30 text-mint-300 hover:text-white transition-colors cursor-pointer"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+
                 <div ref={categoryRef} className="relative">
                   <button
                     type="button"
@@ -1006,8 +1042,10 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                           : 'border-neutral-700 hover:border-neutral-500'
                     }`}
                   >
-                    <span className={form.category ? 'truncate' : 'text-neutral-600 font-medium'}>
-                      {form.category || 'Select a category'}
+                    <span className="text-neutral-400 font-medium">
+                      {form.categories.length > 0
+                        ? `${form.categories.length} category${form.categories.length > 1 ? 'ies' : ''} selected — click to manage`
+                        : 'Choose up to 3 categories...'}
                     </span>
                     <ChevronDown
                       className={`h-4 w-4 shrink-0 text-neutral-500 transition-transform duration-200 ${
@@ -1017,39 +1055,37 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                   </button>
 
                   {isCategoryOpen && (
-                    <div className="absolute left-0 right-0 top-full z-30 mt-1.5 rounded-xl border border-neutral-700 bg-[#343434] p-1.5 shadow-2xl">
-                      <input
-                        type="text"
-                        autoFocus
-                        value={categorySearch}
-                        onChange={(e) => setCategorySearch(e.target.value)}
-                        placeholder="Search categories"
-                        className="w-full rounded-lg border border-neutral-700 bg-[#222222] px-3 py-1.5 text-xs text-white placeholder:text-neutral-500 focus:border-neutral-400 focus:outline-none"
-                      />
-                      <div className="mt-1.5 max-h-56 overflow-y-auto space-y-0.5 pr-0.5">
+                    <div className="absolute left-0 right-0 top-full z-30 mt-1.5 rounded-xl border border-neutral-700 bg-[#343434] p-2 shadow-2xl space-y-2">
+                      <div className="relative">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-500" />
+                        <input
+                          type="text"
+                          autoFocus
+                          value={categorySearch}
+                          onChange={(e) => setCategorySearch(e.target.value)}
+                          placeholder="Search 25+ categories..."
+                          className="w-full rounded-lg border border-neutral-700 bg-[#222222] pl-8 pr-3 py-1.5 text-xs text-white placeholder:text-neutral-500 focus:border-neutral-400 focus:outline-none"
+                        />
+                      </div>
+                      <div className="max-h-56 overflow-y-auto space-y-0.5 pr-0.5">
                         {visibleCategories.length === 0 ? (
                           <div className="p-3 text-center text-xs text-neutral-500">No matching categories</div>
                         ) : (
                           visibleCategories.map((cat) => {
-                            const selected = form.category === cat;
+                            const selected = form.categories.includes(cat);
                             return (
                               <button
                                 key={cat}
                                 type="button"
-                                onClick={() => {
-                                  playSound('click', soundEnabled);
-                                  set('category', cat);
-                                  setErrors((prev) => ({ ...prev, category: undefined }));
-                                  setIsCategoryOpen(false);
-                                }}
+                                onClick={() => toggleCategory(cat)}
                                 className={`w-full flex items-center justify-between rounded-lg px-2.5 py-2 text-left text-xs transition-colors cursor-pointer ${
                                   selected
-                                    ? 'bg-white/10 font-bold text-white'
+                                    ? 'bg-mint-500/20 font-bold text-mint-200'
                                     : 'font-medium text-neutral-400 hover:bg-white/5 hover:text-white'
                                 }`}
                               >
                                 <span className="truncate">{cat}</span>
-                                {selected && <Check className="h-3.5 w-3.5 shrink-0 text-white" />}
+                                {selected && <Check className="h-3.5 w-3.5 shrink-0 text-mint-300 stroke-[3]" />}
                               </button>
                             );
                           })
@@ -1058,9 +1094,36 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                     </div>
                   )}
                 </div>
+
+                {/* Quick Toggle Popular Categories */}
+                <div className="mt-2.5 flex flex-wrap gap-1.5">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 self-center mr-1">
+                    Popular:
+                  </span>
+                  {['AI Tools', 'Developer Tools', 'Productivity', 'SaaS & Indie', 'Marketing & SEO', 'Design & UI'].map(
+                    (cat) => {
+                      const active = form.categories.includes(cat as Category);
+                      return (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => toggleCategory(cat as Category)}
+                          className={`rounded-lg px-2 py-1 text-[10px] font-bold transition-all cursor-pointer ${
+                            active
+                              ? 'bg-mint-500/20 text-mint-200 border border-mint-500/50 shadow-2xs'
+                              : 'bg-[#222222] text-neutral-400 border border-neutral-700 hover:text-white hover:border-neutral-500'
+                          }`}
+                        >
+                          {active ? `✓ ${cat}` : `+ ${cat}`}
+                        </button>
+                      );
+                    }
+                  )}
+                </div>
+
                 <FieldError message={showCategoryError ? errors.category : undefined} />
                 <p className="mt-1.5 text-[11px] font-medium text-neutral-600">
-                  Used to filter the directory and group your listing.
+                  Select up to 3 relevant categories to maximize visibility across directory filters.
                 </p>
               </div>
 
@@ -1193,15 +1256,15 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                     />
                   </div>
 
-                  {/* Reddit */}
+                  {/* YouTube */}
                   <div>
-                    <label className={labelClass}>Reddit</label>
+                    <label className={labelClass}>YouTube</label>
                     <input
                       type="text"
-                      value={form.reddit}
+                      value={form.youtube}
                       maxLength={160}
-                      onChange={(e) => set('reddit', e.target.value)}
-                      placeholder="https://reddit.com/r/yourproduct"
+                      onChange={(e) => set('youtube', e.target.value)}
+                      placeholder="https://youtube.com/@yourchannel or video"
                       className={inputClass(false)}
                     />
                   </div>
@@ -1390,40 +1453,23 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                 </p>
               </div>
 
-              {/* Username (@) */}
-              <div className="border-t border-neutral-800 pt-5">
-                <label className={labelClass}>Username handle (@)</label>
-                <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-neutral-500">
-                    @
-                  </span>
-                  <input
-                    type="text"
-                    value={form.creatorUsername.replace(/^@/, '')}
-                    maxLength={30}
-                    onChange={(e) => set('creatorUsername', e.target.value.replace(/^@/, ''))}
-                    placeholder="alexrivera"
-                    className={`${inputClass(false)} pl-8`}
-                  />
-                </div>
-                <p className="mt-1.5 text-[11px] font-medium text-neutral-500">
-                  Your handle in the TopSAAS maker community.
-                </p>
-              </div>
-
               {/* Personal X Handle */}
               <div className="border-t border-neutral-800 pt-5">
-                <label className={labelClass}>Personal X (Twitter) handle</label>
+                <label className={labelClass}>Personal X (Twitter) profile</label>
                 <input
                   type="text"
                   value={form.creatorXHandle}
                   maxLength={80}
                   onChange={(e) => set('creatorXHandle', e.target.value)}
-                  placeholder="https://x.com/alexrivera or @alexrivera"
+                  onBlur={(e) => {
+                    const formatted = autoFormatHandle(e.target.value);
+                    if (formatted !== e.target.value) set('creatorXHandle', formatted);
+                  }}
+                  placeholder="@alexrivera or https://x.com/alexrivera"
                   className={inputClass(false)}
                 />
                 <p className="mt-1.5 text-[11px] font-medium text-neutral-500">
-                  Allows visitors to follow your builder journey directly on X.
+                  Allows visitors to follow your maker journey directly on X.
                 </p>
               </div>
 
@@ -1476,7 +1522,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
             {step > 0 && (
               <button
                 type="button"
-                onClick={() => goToStep(step - 1)}
+                onClick={() => handleTabClick(step - 1)}
                 className="rounded-xl border border-neutral-700 bg-[#343434] px-4 py-2.5 text-xs font-bold text-neutral-200 hover:border-neutral-500 hover:text-white transition-all cursor-pointer"
               >
                 Back

@@ -224,34 +224,34 @@ export const BidModal: React.FC<BidModalProps> = ({
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3.5 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto font-sans">
-      <div className="relative w-full max-w-lg rounded-2xl border border-neutral-300 bg-white shadow-2xl p-5 sm:p-6 my-4 text-black animate-in fade-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3.5 sm:p-4 bg-black/75 backdrop-blur-md overflow-y-auto font-sans">
+      <div className="relative w-full max-w-lg rounded-2xl border border-neutral-800 bg-[#222222] shadow-2xl p-5 sm:p-6 my-4 text-neutral-100 animate-in fade-in zoom-in-95 duration-150">
         <button
           type="button"
           onClick={handleClose}
-          className="absolute right-3.5 top-3.5 sm:right-4 sm:top-4 rounded-xl p-2 text-neutral-400 hover:bg-neutral-100 hover:text-black transition-colors cursor-pointer"
+          className="absolute right-3.5 top-3.5 sm:right-4 sm:top-4 rounded-xl p-2 text-neutral-400 hover:bg-neutral-800 hover:text-white transition-colors cursor-pointer"
         >
           <X className="h-5 w-5" />
         </button>
 
         {isSubmitted ? (
           <div className="py-6 text-center space-y-4">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-600 shadow-2xs">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-mint-500/10 border border-mint-500/25 text-mint-400 shadow-2xs">
               <CheckCircle2 className="h-7 w-7" />
             </div>
             <div className="space-y-1.5">
-              <h3 className="text-xl font-black text-black tracking-tight">
+              <h3 className="text-xl font-black text-white tracking-tight">
                 You&apos;re live! 🎉
               </h3>
-              <p className="text-xs text-neutral-600 max-w-sm mx-auto leading-relaxed">
-                <strong className="text-black font-semibold">{name}</strong> has been added to the directory and is now visible on the homepage.
+              <p className="text-xs text-neutral-400 max-w-sm mx-auto leading-relaxed">
+                <strong className="text-white font-semibold">{name}</strong> has been added to the directory and is now visible on the homepage.
               </p>
             </div>
             <div className="pt-2">
               <button
                 type="button"
                 onClick={handleClose}
-                className="w-full flex items-center justify-center gap-2 rounded-xl bg-black py-2.5 px-4 text-xs font-bold text-white hover:bg-neutral-800 transition-all cursor-pointer min-h-[42px]"
+                className="w-full flex items-center justify-center gap-2 rounded-xl bg-white py-2.5 px-4 text-xs font-black text-black hover:bg-neutral-200 transition-all cursor-pointer min-h-[42px]"
               >
                 <span>Done</span>
               </button>
@@ -260,26 +260,26 @@ export const BidModal: React.FC<BidModalProps> = ({
         ) : (
           <>
             <div className="flex items-center gap-3 mb-5 pr-8">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-black text-white font-black shadow-2xs">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-neutral-800 text-mint-300 border border-neutral-700 font-black shadow-2xs">
                 <Globe className="h-5 w-5" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-base sm:text-lg font-black text-black tracking-tight">
+                  <h3 className="text-base sm:text-lg font-black text-white tracking-tight">
                     Submit Your Website
                   </h3>
-                  <span className="rounded-full bg-neutral-100 border border-neutral-200 px-2 py-0.5 text-[10px] font-bold text-neutral-800 uppercase">
+                  <span className="rounded-full bg-mint-500/10 border border-mint-500/25 px-2 py-0.5 text-[10px] font-bold text-mint-300 uppercase">
                     Free
                   </span>
                 </div>
-                <p className="text-xs text-neutral-500 font-medium">
+                <p className="text-xs text-neutral-400 font-medium">
                   Add your product to the directory instantly.
                 </p>
               </div>
             </div>
 
             {error && (
-              <div className="mb-4 rounded-xl bg-red-50 border border-red-200 p-3 text-xs font-semibold text-red-800">
+              <div className="mb-4 rounded-xl bg-red-950/40 border border-red-800/60 p-3 text-xs font-semibold text-red-200">
                 {error}
               </div>
             )}
@@ -287,8 +287,8 @@ export const BidModal: React.FC<BidModalProps> = ({
             <form onSubmit={handleSubmit} className="space-y-3.5">
               {/* Website URL */}
               <div>
-                <label className="block text-xs font-bold text-neutral-800 mb-1">
-                  Website URL <span className="text-red-500">*</span>
+                <label className="block text-xs font-bold text-neutral-300 mb-1">
+                  Website URL <span className="text-mint-400">*</span>
                 </label>
                 <div className="relative flex items-center">
                   <Globe className="absolute left-3 h-3.5 w-3.5 text-neutral-400" />
@@ -299,29 +299,29 @@ export const BidModal: React.FC<BidModalProps> = ({
                     onChange={(e) => setUrl(e.target.value)}
                     onBlur={handleUrlBlur}
                     placeholder="https://yourwebsite.com"
-                    className="w-full rounded-xl border border-neutral-300 bg-white pl-8.5 pr-3 py-2.5 text-xs text-black placeholder-neutral-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black shadow-2xs"
+                    className="w-full rounded-xl border border-neutral-700 bg-[#1e1e1e] pl-8.5 pr-3 py-2.5 text-xs text-white placeholder-neutral-500 focus:border-mint-500 focus:outline-none focus:ring-1 focus:ring-mint-500 shadow-2xs"
                   />
                 </div>
               </div>
 
               {/* Website Name */}
               <div>
-                <label className="block text-xs font-bold text-neutral-800 mb-1">
-                  Product Name <span className="text-neutral-400 font-normal">(auto-detected from URL)</span>
+                <label className="block text-xs font-bold text-neutral-300 mb-1">
+                  Product Name <span className="text-neutral-500 font-normal">(auto-detected from URL)</span>
                 </label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Linear, Raycast, Supabase"
-                  className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-xs text-black placeholder-neutral-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black shadow-2xs"
+                  className="w-full rounded-xl border border-neutral-700 bg-[#1e1e1e] px-3 py-2 text-xs text-white placeholder-neutral-500 focus:border-mint-500 focus:outline-none focus:ring-1 focus:ring-mint-500 shadow-2xs"
                 />
               </div>
 
               {/* Tagline */}
               <div>
-                <label className="block text-xs font-bold text-neutral-800 mb-1">
-                  One-liner Tagline <span className="text-neutral-400 font-normal">(auto-detected from URL)</span>
+                <label className="block text-xs font-bold text-neutral-300 mb-1">
+                  One-liner Tagline <span className="text-neutral-500 font-normal">(auto-detected from URL)</span>
                 </label>
                 <input
                   type="text"
@@ -329,14 +329,14 @@ export const BidModal: React.FC<BidModalProps> = ({
                   value={tagline}
                   onChange={(e) => setTagline(e.target.value)}
                   placeholder="One sentence describing what it does"
-                  className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-xs text-black placeholder-neutral-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black shadow-2xs"
+                  className="w-full rounded-xl border border-neutral-700 bg-[#1e1e1e] px-3 py-2 text-xs text-white placeholder-neutral-500 focus:border-mint-500 focus:outline-none focus:ring-1 focus:ring-mint-500 shadow-2xs"
                 />
               </div>
 
               {/* Custom Category Dropdown */}
               <div>
-                <label className="block text-xs font-bold text-neutral-800 mb-1">
-                  Category <span className="text-red-500">*</span>
+                <label className="block text-xs font-bold text-neutral-300 mb-1">
+                  Category <span className="text-mint-400">*</span>
                 </label>
                 <div className="relative" ref={categoryDropdownRef}>
                   {/* Custom Trigger Button */}
@@ -347,23 +347,23 @@ export const BidModal: React.FC<BidModalProps> = ({
                       setIsCategoryOpen(!isCategoryOpen);
                       setCategorySearch('');
                     }}
-                    className={`w-full flex items-center justify-between rounded-xl border bg-white px-3.5 py-2.5 text-xs font-semibold text-black transition-all cursor-pointer shadow-2xs text-left ${
+                    className={`w-full flex items-center justify-between rounded-xl border bg-[#1e1e1e] px-3.5 py-2.5 text-xs font-semibold text-white transition-all cursor-pointer shadow-2xs text-left ${
                       isCategoryOpen
-                        ? 'border-black ring-1 ring-black'
-                        : 'border-neutral-300 hover:border-neutral-400'
+                        ? 'border-mint-500 ring-1 ring-mint-500'
+                        : 'border-neutral-700 hover:border-neutral-500'
                     }`}
                   >
                     <span className="truncate">{category}</span>
                     <ChevronDown
-                      className={`h-4 w-4 text-neutral-500 transition-transform duration-200 shrink-0 ${
-                        isCategoryOpen ? 'rotate-180 text-black' : ''
+                      className={`h-4 w-4 text-neutral-400 transition-transform duration-200 shrink-0 ${
+                        isCategoryOpen ? 'rotate-180 text-mint-400' : ''
                       }`}
                     />
                   </button>
 
                   {/* Custom Dropdown Menu */}
                   {isCategoryOpen && (
-                    <div className="absolute left-0 right-0 top-full z-50 mt-1.5 rounded-xl border border-neutral-200 bg-white p-1.5 shadow-xl animate-in fade-in zoom-in-95 duration-100">
+                    <div className="absolute left-0 right-0 top-full z-50 mt-1.5 rounded-xl border border-neutral-800 bg-[#2a2a2a] p-1.5 shadow-xl animate-in fade-in zoom-in-95 duration-100">
                       {/* Search Filter */}
                       <div className="relative mb-1.5 px-1 pt-1">
                         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400" />
@@ -372,7 +372,7 @@ export const BidModal: React.FC<BidModalProps> = ({
                           value={categorySearch}
                           onChange={(e) => setCategorySearch(e.target.value)}
                           placeholder="Search categories..."
-                          className="w-full rounded-lg border border-neutral-200 bg-neutral-50 pl-8 pr-2.5 py-1.5 text-xs text-black placeholder-neutral-400 focus:border-black focus:bg-white focus:outline-none"
+                          className="w-full rounded-lg border border-neutral-700 bg-[#1e1e1e] pl-8 pr-2.5 py-1.5 text-xs text-white placeholder-neutral-500 focus:border-mint-500 focus:outline-none"
                           autoFocus
                         />
                       </div>
@@ -397,13 +397,13 @@ export const BidModal: React.FC<BidModalProps> = ({
                                 }}
                                 className={`w-full flex items-center justify-between rounded-lg px-2.5 py-2 text-xs transition-colors cursor-pointer text-left ${
                                   isSelected
-                                    ? 'bg-neutral-100 font-bold text-black'
-                                    : 'font-medium text-neutral-700 hover:bg-neutral-50 hover:text-black'
+                                    ? 'bg-mint-500/15 font-bold text-mint-300'
+                                    : 'font-medium text-neutral-300 hover:bg-[#323232] hover:text-white'
                                 }`}
                               >
                                 <span className="truncate">{cat}</span>
                                 {isSelected && (
-                                  <Check className="h-3.5 w-3.5 text-black shrink-0" />
+                                  <Check className="h-3.5 w-3.5 text-mint-400 shrink-0" />
                                 )}
                               </button>
                             );
@@ -420,7 +420,7 @@ export const BidModal: React.FC<BidModalProps> = ({
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-black py-2.5 px-4 text-xs font-bold text-white shadow-2xs hover:bg-neutral-800 active:scale-[0.98] transition-all cursor-pointer min-h-[44px] disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-white py-2.5 px-4 text-xs font-black text-black shadow-2xs hover:bg-neutral-200 active:scale-[0.98] transition-all cursor-pointer min-h-[44px] disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? (
                     <>

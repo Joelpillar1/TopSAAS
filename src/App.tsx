@@ -22,7 +22,7 @@ import { LegalPage } from './components/LegalPage';
 import { LegalTab } from './components/LegalModal';
 import { playSound } from './utils/sound';
 import { supabase } from './utils/supabase';
-import { loadProducts, toggleUpvote, getUserUpvotes, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, insertProductDirect, fetchComments, addComment } from './utils/db';
+import { loadProducts, debouncedSyncProducts, toggleUpvote, getUserUpvotes, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, insertProductDirect, fetchComments, addComment } from './utils/db';
 import { getRecentWeeks, isInWeek } from './utils/weeks';
 import { getWebsiteFavicon } from './utils/logo';
 import { LayoutGrid, Table as TableIcon, Trophy, X, Plus, ShieldCheck, Loader2, Star, MessageCircle } from 'lucide-react';
@@ -32,6 +32,7 @@ import { SkeletonGrid } from './components/SkeletonCard';
 import { SkeletonTable } from './components/SkeletonTable';
 import { timeAgo } from './components/ProductRow';
 import { ProductTile } from './components/ProductTile';
+import { SponsorTile } from './components/SponsorTile';
 import { SpotlightCard, RailCard, FeedRow, PromotedCard, SponsoredLaunchBanner } from './components/DirectoryRails';
 import { ProductLogo } from './components/ProductLogo';
 import { GridFillerCell, useGridColumns } from './components/GridFiller';
@@ -509,20 +510,26 @@ export default function App() {
     if (error) console.error('Sign out error:', error.message);
   };
 
-  // Re-rank helper: renumbers products sequentially in their current (curated) order.
-  // Directory order is editorial — new listings start at the bottom; admins promote products up.
+  // Re-rank helper: dynamically sorts and ranks products by upvotes descending
+  // (Higher upvotes = higher rank (#1, #2, #3...). Products overtake others whenever they receive more upvotes)
   const recomputeRanks = useCallback((productList: Product[]): Product[] => {
-    return productList.map((p, index) => {
-      const newRank = index + 1;
-      return {
-        ...p,
-        previousRank: p.rank !== newRank ? p.rank : p.previousRank ?? newRank,
-        rank: newRank,
-      };
-    });
+    return [...productList]
+      .sort((a, b) => {
+        const upvoteDiff = (b.upvotes ?? 0) - (a.upvotes ?? 0);
+        if (upvoteDiff !== 0) return upvoteDiff;
+        return (b.createdAt ?? 0) - (a.createdAt ?? 0);
+      })
+      .map((p, index) => {
+        const newRank = index + 1;
+        return {
+          ...p,
+          previousRank: p.rank !== newRank ? (p.rank ?? newRank) : p.previousRank ?? newRank,
+          rank: newRank,
+        };
+      });
   }, []);
 
-  // Upvote a product (uses Supabase RPC for per-user tracking)
+  // Upvote a product (uses Supabase RPC for per-user tracking and dynamically updates ranks)
   const handleUpvote = async (product: Product) => {
     playSound('upvote', soundEnabled);
 
@@ -538,24 +545,31 @@ export default function App() {
         return next;
       });
 
-      setProducts((prev) =>
-        prev.map((p) => {
+      setProducts((prev) => {
+        const updated = prev.map((p) => {
           if (p.id === product.id) {
-            return { ...p, upvotes: (p.upvotes ?? 0) + (result ? 1 : -1), updatedAt: Date.now() };
+            const nextUpvotes = Math.max(0, (p.upvotes ?? 0) + (result ? 1 : -1));
+            return { ...p, upvotes: nextUpvotes, updatedAt: Date.now() };
           }
           return p;
-        })
-      );
+        });
+        const ranked = recomputeRanks(updated);
+        debouncedSyncProducts(ranked);
+        return ranked;
+      });
     } else {
-      // Not logged in: simple local increment
-      setProducts((prev) =>
-        prev.map((p) => {
+      // Not logged in: simple local increment and re-rank
+      setProducts((prev) => {
+        const updated = prev.map((p) => {
           if (p.id === product.id) {
             return { ...p, upvotes: (p.upvotes ?? 0) + 1, updatedAt: Date.now() };
           }
           return p;
-        })
-      );
+        });
+        const ranked = recomputeRanks(updated);
+        debouncedSyncProducts(ranked);
+        return ranked;
+      });
     }
   };
 
@@ -951,9 +965,14 @@ export default function App() {
     const seen = new Set<string>();
     const cats: string[] = [];
     for (const p of products) {
-      if (p.category && !seen.has(p.category)) {
-        seen.add(p.category);
-        cats.push(p.category);
+      if (p.category) {
+        const parts = p.category.split(',').map((c) => c.trim()).filter(Boolean);
+        for (const cat of parts) {
+          if (!seen.has(cat)) {
+            seen.add(cat);
+            cats.push(cat);
+          }
+        }
       }
     }
     return cats;
@@ -971,7 +990,11 @@ export default function App() {
   // Filter products by category and search query (within the selected week)
   const filteredProducts = weekScopedProducts
     .filter((p) => {
-      const matchesCat = selectedCategory === 'All' || p.category === selectedCategory;
+      const productCats = p.category ? p.category.split(',').map((c) => c.trim().toLowerCase()) : [];
+      const matchesCat =
+        selectedCategory === 'All' ||
+        p.category === selectedCategory ||
+        productCats.includes(selectedCategory.toLowerCase());
       const query = searchQuery.trim().toLowerCase();
       const matchesQuery =
         !query ||
@@ -982,7 +1005,11 @@ export default function App() {
       return matchesCat && matchesQuery;
     })
     .map(markOwnership)
-    .sort((a, b) => (selectedWeek ? (b.upvotes ?? 0) - (a.upvotes ?? 0) : 0));
+    .sort((a, b) => {
+      const upvoteDiff = (b.upvotes ?? 0) - (a.upvotes ?? 0);
+      if (upvoteDiff !== 0) return upvoteDiff;
+      return (b.createdAt ?? 0) - (a.createdAt ?? 0);
+    });
 
   // Promoted / featured product used in the rails and mid-board banner
   const promotedProduct = featuredProductId
@@ -1010,8 +1037,9 @@ export default function App() {
   const paginatedProducts = filteredProducts.slice(startIndex, startIndex + pageSize);
 
   // Striped cells that complete the last row of the bento grid
+  const totalGridCards = paginatedProducts.length + (currentPage === 1 ? 1 : 0);
   const directoryGridFillerCount =
-    (directoryGridColumns - (paginatedProducts.length % directoryGridColumns)) % directoryGridColumns;
+    (directoryGridColumns - (totalGridCards % directoryGridColumns)) % directoryGridColumns;
 
   // Keep currentPage valid if products change
   useEffect(() => {
@@ -1088,6 +1116,8 @@ export default function App() {
           onBack={handleBackToLeaderboard}
           onSignOut={handleSignOut}
           onDeleteProduct={(productId) => setProducts((prev) => prev.filter((p) => p.id !== productId))}
+          onUpdateProduct={(updated) => setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))}
+          soundEnabled={soundEnabled}
         />
       </>
     );
@@ -1095,7 +1125,9 @@ export default function App() {
 
   // 1.5 PRODUCT DETAIL ROUTE (/product/:id)
   if (currentRoute === 'product') {
-    const product = (productRouteId ? products.find((p) => p.id === productRouteId) : null) || null;
+    const rawProduct = (productRouteId ? products.find((p) => p.id === productRouteId) : null) || null;
+    const dynamicRank = rawProduct ? products.findIndex((p) => p.id === rawProduct.id) + 1 : 1;
+    const product = rawProduct ? { ...rawProduct, rank: dynamicRank } : null;
     if (!product) {
       if (!productsLoaded) {
         return (
@@ -1156,6 +1188,8 @@ export default function App() {
           }}
           onShare={(p) => setShareProduct(p)}
           onTrackClick={handleTrackClick}
+          onUpvote={handleUpvote}
+          isUpvoted={userUpvotes.has(product.id)}
         />
         <RichFooter
           totalProducts={products.length}
@@ -1333,6 +1367,7 @@ export default function App() {
             productsLoaded={productsLoaded}
             featuredProductId={featuredProductId}
             featuredProduct={topProduct}
+            commentCounts={commentCounts}
             onOpenFeaturedSpotModal={() => {
               if (!user) {
                 setIsSignInModalOpen(true);
@@ -1516,15 +1551,24 @@ export default function App() {
           <div className="space-y-4">
             {/* Bento-style grid of product tiles */}
             <div className="grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-800 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {currentPage === 1 && (
+                <SponsorTile
+                  soundEnabled={soundEnabled}
+                  onOpenFeaturedSpotModal={() => {
+                    if (!user) {
+                      setIsSignInModalOpen(true);
+                    } else {
+                      setIsFeaturedSpotModalOpen(true);
+                    }
+                  }}
+                />
+              )}
               {paginatedProducts.map((p, index) => {
-                // In a weekly round, rank = position in the upvote-sorted list
-                const calculatedRank = selectedWeek
-                  ? startIndex + index + 1
-                  : (p.rank ?? (startIndex + index + 1));
+                const calculatedRank = startIndex + index + 1;
                 return (
                   <ProductTile
                     key={p.id}
-                    product={p}
+                    product={{ ...p, rank: calculatedRank }}
                     rank={calculatedRank}
                     soundEnabled={soundEnabled}
                     verified={p.verified && (calculatedRank <= 5 || p.id === featuredProductId)}
@@ -1622,11 +1666,6 @@ export default function App() {
                     }
                     name={p.name}
                     sub={timeAgo(p.createdAt)}
-                    right={
-                      <span className="font-mono-num text-[10px] font-bold text-neutral-500">
-                        {p.clicks.toLocaleString()}
-                      </span>
-                    }
                   />
                 ))
               )}

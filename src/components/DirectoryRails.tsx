@@ -242,7 +242,7 @@ export const SponsoredLaunchBanner: React.FC<SponsoredLaunchBannerProps> = ({
             {product.tagline}
           </p>
           <p className="mt-1 text-[10px] font-semibold text-neutral-400">
-            {product.category} · {product.clicks.toLocaleString()} clicks
+            {product.category}
           </p>
         </div>
       </button>

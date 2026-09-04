@@ -123,13 +123,13 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3.5 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
-      <div className="relative w-full max-w-lg rounded-2xl border border-neutral-300 bg-white shadow-2xl p-5 sm:p-6 my-4 text-black animate-in fade-in zoom-in-95 duration-150 font-sans">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3.5 sm:p-4 bg-black/75 backdrop-blur-md overflow-y-auto font-sans">
+      <div className="relative w-full max-w-lg rounded-2xl border border-neutral-800 bg-[#222222] shadow-2xl p-5 sm:p-6 my-4 text-neutral-100 animate-in fade-in zoom-in-95 duration-150 font-sans">
         {/* Close Button */}
         <button
           type="button"
           onClick={handleClose}
-          className="absolute right-3.5 top-3.5 sm:right-4 sm:top-4 rounded-xl p-2 text-neutral-400 hover:bg-neutral-100 hover:text-black transition-colors cursor-pointer"
+          className="absolute right-3.5 top-3.5 sm:right-4 sm:top-4 rounded-xl p-2 text-neutral-400 hover:bg-neutral-800 hover:text-white transition-colors cursor-pointer"
         >
           <X className="h-5 w-5" />
         </button>
@@ -139,7 +139,7 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
           <button
             type="button"
             onClick={handleBack}
-            className="absolute left-3.5 top-3.5 sm:left-4 sm:top-4 rounded-xl p-2 text-neutral-400 hover:bg-neutral-100 hover:text-black transition-colors cursor-pointer"
+            className="absolute left-3.5 top-3.5 sm:left-4 sm:top-4 rounded-xl p-2 text-neutral-400 hover:bg-neutral-800 hover:text-white transition-colors cursor-pointer"
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
@@ -147,22 +147,22 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
 
         {/* Minimalist Step Indicators */}
         <div className="flex items-center justify-center gap-2 mb-5">
-          <div className={`flex items-center gap-1.5 ${step === 'product' ? 'text-black' : 'text-neutral-400'}`}>
-            <div className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold ${step === 'product' ? 'bg-black text-white' : 'bg-neutral-200 text-neutral-600'}`}>
+          <div className={`flex items-center gap-1.5 ${step === 'product' ? 'text-white' : 'text-neutral-500'}`}>
+            <div className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold ${step === 'product' ? 'bg-white text-black' : 'bg-neutral-800 text-neutral-400'}`}>
               1
             </div>
             <span className="text-xs font-semibold hidden sm:inline">Your Product</span>
           </div>
-          <div className="w-6 h-px bg-neutral-200" />
-          <div className={`flex items-center gap-1.5 ${step === 'plan' ? 'text-black' : 'text-neutral-400'}`}>
-            <div className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold ${step === 'plan' ? 'bg-black text-white' : step === 'confirm' ? 'bg-black text-white' : 'bg-neutral-200 text-neutral-600'}`}>
+          <div className="w-6 h-px bg-neutral-800" />
+          <div className={`flex items-center gap-1.5 ${step === 'plan' ? 'text-white' : 'text-neutral-500'}`}>
+            <div className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold ${step === 'plan' ? 'bg-white text-black' : step === 'confirm' ? 'bg-mint-500 text-black' : 'bg-neutral-800 text-neutral-400'}`}>
               {step === 'confirm' ? <Check className="h-3 w-3" /> : '2'}
             </div>
             <span className="text-xs font-semibold hidden sm:inline">Pricing</span>
           </div>
-          <div className="w-6 h-px bg-neutral-200" />
-          <div className={`flex items-center gap-1.5 ${step === 'confirm' ? 'text-black' : 'text-neutral-400'}`}>
-            <div className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold ${step === 'confirm' ? 'bg-black text-white' : 'bg-neutral-200 text-neutral-600'}`}>
+          <div className="w-6 h-px bg-neutral-800" />
+          <div className={`flex items-center gap-1.5 ${step === 'confirm' ? 'text-white' : 'text-neutral-500'}`}>
+            <div className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold ${step === 'confirm' ? 'bg-white text-black' : 'bg-neutral-800 text-neutral-400'}`}>
               3
             </div>
             <span className="text-xs font-semibold hidden sm:inline">Payment</span>
@@ -173,28 +173,28 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
         {step === 'product' && (
           <>
             <div className="text-center mb-5">
-              <div className="inline-flex items-center gap-1.5 rounded-full bg-neutral-100 border border-neutral-200 px-3 py-1 mb-2.5">
-                <Crown className="h-3.5 w-3.5 text-neutral-700" />
-                <span className="text-xs font-bold text-neutral-800">Featured Spot</span>
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-mint-500/10 border border-mint-500/25 px-3 py-1 mb-2.5">
+                <Crown className="h-3.5 w-3.5 text-mint-300" />
+                <span className="text-xs font-bold text-mint-200">Featured Spot</span>
               </div>
-              <h2 className="text-lg sm:text-xl font-bold text-black tracking-tight">Choose Your Product</h2>
-              <p className="text-xs text-neutral-500 mt-1 max-w-sm mx-auto">
+              <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight">Choose Your Product</h2>
+              <p className="text-xs text-neutral-400 mt-1 max-w-sm mx-auto">
                 Select one of your submitted products to get featured at the top for 30 days.
               </p>
             </div>
 
             {/* Product List */}
             {userOwnedItems.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-neutral-300 bg-neutral-50/80 p-6 text-center mb-3">
+              <div className="rounded-xl border border-dashed border-neutral-700 bg-[#2a2a2a] p-6 text-center mb-3">
                 <Globe className="h-8 w-8 mx-auto text-neutral-400 mb-2" />
-                <h3 className="text-xs font-bold text-black">No submitted products found</h3>
-                <p className="text-[11px] text-neutral-500 max-w-xs mx-auto mt-1 mb-4">
+                <h3 className="text-xs font-bold text-white">No submitted products found</h3>
+                <p className="text-[11px] text-neutral-400 max-w-xs mx-auto mt-1 mb-4">
                   You haven&apos;t submitted any products under your account yet. Submit your website to feature it.
                 </p>
                 <button
                   type="button"
                   onClick={handleAddProduct}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-black px-4 py-2 text-xs font-bold text-white hover:bg-neutral-800 transition-all cursor-pointer shadow-2xs"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-xs font-bold text-black hover:bg-neutral-200 transition-all cursor-pointer shadow-2xs"
                 >
                   <Plus className="h-3.5 w-3.5" />
                   <span>Submit Project</span>
@@ -211,36 +211,36 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
                       value={productSearch}
                       onChange={(e) => setProductSearch(e.target.value)}
                       placeholder="Search your products..."
-                      className="w-full rounded-xl border border-neutral-200 bg-white pl-9 pr-3 py-2 text-xs text-black placeholder-neutral-400 focus:border-black focus:outline-none"
+                      className="w-full rounded-xl border border-neutral-700 bg-[#1e1e1e] pl-9 pr-3 py-2 text-xs text-white placeholder-neutral-500 focus:border-mint-500 focus:outline-none"
                     />
                   </div>
                 )}
 
-                <div className="max-h-72 overflow-y-auto space-y-2 mb-3">
+                <div className="max-h-72 overflow-y-auto space-y-2 mb-3 pr-0.5">
                   {filteredProducts.map((product) => {
                     return (
                       <button
                         key={product.id}
                         type="button"
                         onClick={() => handleSelectProduct(product)}
-                        className="w-full flex items-center gap-3 p-3 rounded-xl border border-neutral-200 bg-white hover:border-black hover:bg-neutral-50 transition-all cursor-pointer text-left"
+                        className="w-full flex items-center gap-3 p-3 rounded-xl border border-neutral-800 bg-[#2a2a2a] hover:border-neutral-600 hover:bg-[#303030] transition-all cursor-pointer text-left group"
                       >
                         <ProductLogo
                           src={product.logoUrl}
                           alt={product.name}
-                          containerClassName="h-9 w-9 rounded-lg border border-neutral-200 bg-white shrink-0 overflow-hidden relative flex items-center justify-center"
-                          iconClassName="h-4 w-4 text-black shrink-0"
+                          containerClassName="h-9 w-9 rounded-lg border border-neutral-700 bg-[#1e1e1e] shrink-0 overflow-hidden relative flex items-center justify-center"
+                          iconClassName="h-4 w-4 text-neutral-300 shrink-0"
                         />
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-black truncate">{product.name}</span>
-                            <span className="text-[10px] font-semibold text-neutral-500 bg-neutral-100 px-1.5 py-0.2 rounded">
+                            <span className="text-xs font-bold text-white group-hover:text-mint-200 transition-colors truncate">{product.name}</span>
+                            <span className="text-[10px] font-semibold text-mint-300 bg-mint-500/15 border border-mint-500/30 px-1.5 py-0.2 rounded">
                               Live
                             </span>
                           </div>
-                          <p className="text-[11px] text-neutral-500 truncate">{product.tagline}</p>
+                          <p className="text-[11px] text-neutral-400 truncate">{product.tagline}</p>
                         </div>
-                        <ArrowRight className="h-3.5 w-3.5 text-neutral-400 shrink-0" />
+                        <ArrowRight className="h-3.5 w-3.5 text-neutral-500 group-hover:text-white transition-colors shrink-0" />
                       </button>
                     );
                   })}
@@ -250,7 +250,7 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
                 <button
                   type="button"
                   onClick={handleAddProduct}
-                  className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-neutral-200 bg-white py-2 px-3 text-xs font-semibold text-neutral-600 hover:border-black hover:text-black transition-all cursor-pointer"
+                  className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-neutral-700 bg-[#2a2a2a] py-2 px-3 text-xs font-semibold text-neutral-300 hover:border-neutral-500 hover:text-white transition-all cursor-pointer"
                 >
                   <Plus className="h-3 w-3" />
                   <span>Submit Project</span>
@@ -264,38 +264,38 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
         {step === 'plan' && selectedProduct && (
           <>
             <div className="text-center mb-5">
-              <h2 className="text-lg font-bold text-black tracking-tight">Featured Placement</h2>
-              <p className="text-xs text-neutral-500 mt-1">
-                30 days of top-tier exposure for <span className="font-bold text-black">{selectedProduct.name}</span>
+              <h2 className="text-lg font-bold text-white tracking-tight">Featured Placement</h2>
+              <p className="text-xs text-neutral-400 mt-1">
+                30 days of top-tier exposure for <span className="font-bold text-white">{selectedProduct.name}</span>
               </p>
             </div>
 
             {/* Single Clean Pricing Card */}
-            <div className="rounded-xl border border-neutral-300 bg-white p-5 text-left mb-4 shadow-xs">
+            <div className="rounded-xl border border-neutral-700 bg-[#2a2a2a] p-5 text-left mb-4 shadow-xs">
               <div className="flex items-baseline justify-between mb-2">
                 <div className="flex items-baseline gap-1.5">
-                  <span className="text-3xl font-black text-black font-mono-num">
+                  <span className="text-3xl font-black text-white font-mono-num">
                     ${FEATURED_PLAN.price}
                   </span>
-                  <span className="text-xs font-medium text-neutral-500">
+                  <span className="text-xs font-medium text-neutral-400">
                     /m
                   </span>
                 </div>
-                <span className="text-[11px] font-mono font-medium text-neutral-500">
+                <span className="text-[11px] font-mono font-medium text-neutral-400">
                   ~${FEATURED_PLAN.perDay.toFixed(2)} / day
                 </span>
               </div>
 
-              <p className="text-xs text-neutral-600 mb-4 font-medium">
+              <p className="text-xs text-neutral-300 mb-4 font-medium leading-relaxed">
                 {FEATURED_PLAN.description}
               </p>
 
-              <div className="border-t border-neutral-100 pt-3 mb-4">
+              <div className="border-t border-neutral-800 pt-3 mb-4">
                 <ul className="space-y-2">
                   {FEATURED_PLAN.features.map((feature) => (
                     <li key={feature} className="flex items-start gap-2">
-                      <Check className="h-3.5 w-3.5 mt-0.5 shrink-0 text-black" />
-                      <span className="text-xs text-neutral-600 leading-snug">
+                      <Check className="h-3.5 w-3.5 mt-0.5 shrink-0 text-mint-400" />
+                      <span className="text-xs text-neutral-300 leading-snug">
                         {feature}
                       </span>
                     </li>
@@ -306,7 +306,7 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
               <button
                 type="button"
                 onClick={handleProceedToConfirm}
-                className="w-full flex items-center justify-center gap-2 rounded-xl bg-black py-2.5 px-4 text-xs font-bold text-white shadow-2xs hover:bg-neutral-800 active:scale-[0.99] transition-all cursor-pointer"
+                className="w-full flex items-center justify-center gap-2 rounded-xl bg-white py-2.5 px-4 text-xs font-black text-black shadow-2xs hover:bg-neutral-200 active:scale-[0.99] transition-all cursor-pointer"
               >
                 <span>Continue with 30-Day Plan</span>
                 <ArrowRight className="h-3.5 w-3.5" />
@@ -319,37 +319,37 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
         {step === 'confirm' && selectedProduct && (
           <>
             <div className="text-center mb-5">
-              <h2 className="text-lg font-bold text-black tracking-tight">Confirm & Proceed</h2>
-              <p className="text-xs text-neutral-500 mt-1">Review your featured spot summary</p>
+              <h2 className="text-lg font-bold text-white tracking-tight">Confirm & Proceed</h2>
+              <p className="text-xs text-neutral-400 mt-1">Review your featured spot summary</p>
             </div>
 
             {/* Order Summary */}
-            <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 mb-4">
+            <div className="rounded-xl border border-neutral-800 bg-[#2a2a2a] p-4 mb-4">
               <div className="flex items-center gap-3 mb-3">
                 <ProductLogo
                   src={selectedProduct.logoUrl}
                   alt={selectedProduct.name}
-                  containerClassName="h-10 w-10 rounded-lg border border-neutral-200 bg-white shrink-0 overflow-hidden relative flex items-center justify-center"
-                  iconClassName="h-5 w-5 text-black shrink-0"
+                  containerClassName="h-10 w-10 rounded-lg border border-neutral-700 bg-[#1e1e1e] shrink-0 overflow-hidden relative flex items-center justify-center"
+                  iconClassName="h-5 w-5 text-neutral-300 shrink-0"
                 />
                 <div>
-                  <h3 className="text-xs font-bold text-black">{selectedProduct.name}</h3>
-                  <p className="text-[11px] text-neutral-500 truncate max-w-xs">{selectedProduct.tagline}</p>
+                  <h3 className="text-xs font-bold text-white">{selectedProduct.name}</h3>
+                  <p className="text-[11px] text-neutral-400 truncate max-w-xs">{selectedProduct.tagline}</p>
                 </div>
               </div>
 
-              <div className="border-t border-neutral-200 pt-2.5 space-y-1.5">
+              <div className="border-t border-neutral-800 pt-2.5 space-y-1.5">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-neutral-500">Plan Duration</span>
-                  <span className="font-semibold text-black">30 Days</span>
+                  <span className="text-neutral-400">Plan Duration</span>
+                  <span className="font-semibold text-white">30 Days</span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-neutral-500">Placement</span>
-                  <span className="font-semibold text-black">Top Directory Banner</span>
+                  <span className="text-neutral-400">Placement</span>
+                  <span className="font-semibold text-white">Top Directory Banner</span>
                 </div>
-                <div className="border-t border-neutral-200 pt-2 mt-2 flex items-center justify-between">
-                  <span className="text-xs font-bold text-black">Total Due</span>
-                  <span className="text-lg font-black text-black font-mono-num">
+                <div className="border-t border-neutral-800 pt-2 mt-2 flex items-center justify-between">
+                  <span className="text-xs font-bold text-white">Total Due</span>
+                  <span className="text-lg font-black text-white font-mono-num">
                     ${FEATURED_PLAN.price}
                   </span>
                 </div>
@@ -358,7 +358,7 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
 
             {/* Error Message */}
             {paymentError && (
-              <div className="mb-3 rounded-xl bg-neutral-100 border border-neutral-300 p-2.5 text-xs text-black">
+              <div className="mb-3 rounded-xl bg-red-950/40 border border-red-800/60 p-2.5 text-xs text-red-200">
                 {paymentError}
               </div>
             )}
@@ -368,7 +368,7 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
               type="button"
               onClick={handleProceed}
               disabled={isProcessing}
-              className="w-full flex items-center justify-center gap-2 rounded-xl bg-black py-2.5 px-4 text-xs font-bold text-white shadow-2xs hover:bg-neutral-800 active:scale-[0.99] transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-white py-2.5 px-4 text-xs font-black text-black shadow-2xs hover:bg-neutral-200 active:scale-[0.99] transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {isProcessing ? (
                 <>
@@ -382,7 +382,7 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
                 </>
               )}
             </button>
-            <p className="text-center text-[10px] text-neutral-400 mt-2">
+            <p className="text-center text-[10px] text-neutral-500 mt-2">
               Secure checkout powered by DodoPayments
             </p>
           </>

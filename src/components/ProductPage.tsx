@@ -19,7 +19,8 @@ import {
   LogIn,
   User as UserIcon,
   Video,
-  Play
+  Play,
+  ChevronUp
 } from 'lucide-react';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
@@ -105,6 +106,8 @@ interface ProductPageProps {
   onShare: (product: Product) => void;
   onTrackClick: (productId: string, url: string) => void;
   onAddComment: (productId: string, content: string, userName: string, userEmail?: string, userAvatar?: string) => void;
+  onUpvote?: (product: Product) => void;
+  isUpvoted?: boolean;
 }
 
 export const ProductPage: React.FC<ProductPageProps> = ({
@@ -122,6 +125,8 @@ export const ProductPage: React.FC<ProductPageProps> = ({
   onShare,
   onTrackClick,
   onAddComment,
+  onUpvote,
+  isUpvoted = false,
 }) => {
   const [commentText, setCommentText] = useState('');
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -211,9 +216,11 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                       <span>Verified</span>
                     </span>
                   )}
-                  <span className="rounded-full bg-[#343434] border border-neutral-700 px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold text-neutral-400">
-                    {product.category}
-                  </span>
+                  {product.category.split(',').map((cat) => cat.trim()).filter(Boolean).map((cat) => (
+                    <span key={cat} className="rounded-full bg-[#343434] border border-neutral-700 px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold text-neutral-400">
+                      {cat}
+                    </span>
+                  ))}
                 </div>
 
                 <p className="text-xs sm:text-base font-medium text-neutral-400 max-w-2xl leading-relaxed">
@@ -221,22 +228,17 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                 </p>
 
                 {/* Built By Founder Hero Badge */}
-                {(product.creatorName || product.creatorUsername || product.creatorAvatar) && (
+                {(product.creatorName || product.creatorAvatar) && (
                   <div className="flex items-center gap-2 pt-0.5">
                     <div className="inline-flex items-center gap-1.5 rounded-full bg-[#222222] border border-neutral-700/80 pl-1 pr-2.5 py-0.5 text-xs">
                       <CommentAvatar
                         avatarUrl={product.creatorAvatar}
-                        name={product.creatorName || product.creatorUsername || 'Founder'}
+                        name={product.creatorName || 'Founder'}
                         className="h-5 w-5 shrink-0 rounded-full object-cover border border-neutral-600"
                         fallbackClassName="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-mint-500 text-[9px] font-black text-[#0b0f14]"
                       />
                       <span className="text-neutral-500 font-medium text-[11px]">Built by</span>
-                      <span className="font-bold text-white text-[11px]">{product.creatorName || product.creatorUsername}</span>
-                      {product.creatorUsername && product.creatorName && (
-                        <span className="text-neutral-400 text-[10px]">
-                          {product.creatorUsername.startsWith('@') ? product.creatorUsername : `@${product.creatorUsername}`}
-                        </span>
-                      )}
+                      <span className="font-bold text-white text-[11px]">{product.creatorName}</span>
                       {product.creatorRole && (
                         <span className="text-[9px] font-semibold text-mint-300 bg-mint-500/10 border border-mint-500/25 px-1.5 py-0.5 rounded">
                           {product.creatorRole}
@@ -276,6 +278,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                       switch (s.platform) {
                         case 'x': return 'X (Twitter)';
                         case 'linkedin': return 'LinkedIn';
+                        case 'youtube': return 'YouTube';
                         case 'reddit': return 'Reddit';
                         case 'product_hunt': return 'Product Hunt';
                         case 'github': return 'GitHub';
@@ -304,6 +307,43 @@ export const ProductPage: React.FC<ProductPageProps> = ({
 
             {/* Action Buttons */}
             <div className="flex flex-wrap items-center gap-2 pt-2 sm:pt-0">
+              {onUpvote ? (
+                <button
+                  type="button"
+                  onClick={() => onUpvote(product)}
+                  className={`inline-flex items-center gap-2 rounded-xl px-4 py-3 text-xs font-bold transition-all cursor-pointer active:scale-95 border min-h-[44px] sm:min-h-[38px] ${
+                    isUpvoted
+                      ? 'bg-mint-500 border-mint-400 text-[#0b0f14]'
+                      : 'bg-[#2a2a2a] border-neutral-700 text-neutral-200 hover:border-neutral-500 hover:text-white'
+                  }`}
+                  title={isUpvoted ? 'Remove upvote' : 'Upvote product'}
+                >
+                  <ChevronUp className="h-4 w-4" />
+                  <span className="font-mono-num font-black text-sm">{(product.upvotes ?? 0).toLocaleString()}</span>
+                  <span>{isUpvoted ? 'Upvoted' : 'Upvote'}</span>
+                </button>
+              ) : (
+                <div className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-700 bg-[#2a2a2a] px-3.5 py-3 text-xs font-bold text-neutral-200 min-h-[44px] sm:min-h-[38px]">
+                  <ChevronUp className="h-4 w-4 text-mint-400" />
+                  <span className="font-mono-num font-black">{(product.upvotes ?? 0).toLocaleString()}</span>
+                  <span className="text-neutral-400">Upvotes</span>
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById('product-discussion-section');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="inline-flex items-center gap-2 rounded-xl border border-neutral-700 bg-[#2a2a2a] px-4 py-3 text-xs font-bold text-neutral-200 hover:border-neutral-500 hover:text-white transition-all cursor-pointer min-h-[44px] sm:min-h-[38px]"
+                title="Jump to discussion"
+              >
+                <MessageCircle className="h-4 w-4 text-mint-400" />
+                <span className="font-mono-num font-black text-sm">{comments.length.toLocaleString()}</span>
+                <span>Comments</span>
+              </button>
+
               <a
                 href={product.url}
                 target="_blank"
@@ -314,14 +354,14 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                 }}
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-xs font-black text-[#0b0f14] shadow-2xs hover:bg-neutral-300 active:scale-[0.98] transition-all cursor-pointer text-center min-h-[44px] sm:min-h-[38px]"
               >
-                <span>Visit Official Website</span>
+                <span>Visit Website</span>
                 <ExternalLink className="h-3.5 w-3.5" />
               </a>
             </div>
           </div>
 
           {/* Metrics bar */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 pt-4 border-t border-neutral-800">
+          <div className="grid grid-cols-2 gap-3 pt-4 border-t border-neutral-800">
             <div className="rounded-xl border border-neutral-800 bg-[#222222] p-3 shadow-2xs">
               <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
                 Directory Spot
@@ -334,15 +374,6 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                 <span className="text-[11px] font-semibold text-neutral-500">
                   {isRankOne ? 'Top Featured' : 'Spot'}
                 </span>
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-neutral-800 bg-[#222222] p-3 shadow-2xs">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
-                Total Visits
-              </div>
-              <div className="font-mono-num text-lg font-black text-white mt-0.5">
-                {product.clicks.toLocaleString()}
               </div>
             </div>
 
@@ -599,7 +630,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
           {/* Right 1 Col: Specifications, Quick Action Panel */}
           <div className="space-y-6">
             {/* Founder / Maker Spotlight Card */}
-            {(product.creatorName || product.creatorUsername || product.creatorAvatar || product.creatorXHandle) && (
+            {(product.creatorName || product.creatorAvatar || product.creatorXHandle) && (
               <div className="rounded-2xl border border-neutral-800 bg-[#2a2a2a] p-5 shadow-xs space-y-3.5">
                 <div className="flex items-center justify-between border-b border-neutral-800 pb-2.5">
                   <div className="flex items-center gap-1.5">
@@ -617,21 +648,16 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                 <div className="flex items-center gap-3.5">
                   <CommentAvatar
                     avatarUrl={product.creatorAvatar}
-                    name={product.creatorName || product.creatorUsername || 'Founder'}
+                    name={product.creatorName || 'Founder'}
                     className="h-12 w-12 shrink-0 rounded-full object-cover border-2 border-neutral-700 bg-neutral-800 shadow-md"
                     fallbackClassName="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-mint-500 text-sm font-black text-[#0b0f14]"
                   />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
                       <h3 className="text-sm font-black text-white truncate">
-                        {product.creatorName || product.creatorUsername || 'Product Maker'}
+                        {product.creatorName || 'Product Maker'}
                       </h3>
                     </div>
-                    {product.creatorUsername && (
-                      <p className="text-xs font-semibold text-mint-300">
-                        {product.creatorUsername.startsWith('@') ? product.creatorUsername : `@${product.creatorUsername}`}
-                      </p>
-                    )}
                     <p className="text-[11px] font-medium text-neutral-400 mt-0.5">
                       {product.creatorRole || 'Founder & Creator'}
                     </p>
@@ -688,8 +714,19 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                 ))}
 
                 <div className="flex items-center justify-between pt-1 border-t border-neutral-800">
-                  <span className="text-neutral-500 font-medium">Directory Visits</span>
-                  <span className="font-mono-num font-bold text-white">{product.clicks.toLocaleString()} clicks</span>
+                  <span className="text-neutral-500 font-medium">Upvotes</span>
+                  <span className="font-mono-num font-bold text-white flex items-center gap-1">
+                    <ChevronUp className="h-3.5 w-3.5 text-mint-400" />
+                    <span>{(product.upvotes ?? 0).toLocaleString()}</span>
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between pt-1 border-t border-neutral-800">
+                  <span className="text-neutral-500 font-medium">Comments</span>
+                  <span className="font-mono-num font-bold text-white flex items-center gap-1">
+                    <MessageCircle className="h-3.5 w-3.5 text-mint-400" />
+                    <span>{comments.length.toLocaleString()}</span>
+                  </span>
                 </div>
 
                 <div className="flex items-center justify-between pt-1 border-t border-neutral-800">
@@ -715,6 +752,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                           switch (s.platform) {
                             case 'x': return 'X';
                             case 'linkedin': return 'LinkedIn';
+                            case 'youtube': return 'YouTube';
                             case 'reddit': return 'Reddit';
                             case 'product_hunt': return 'Product Hunt';
                             case 'github': return 'GitHub';
@@ -777,7 +815,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
         </div>
 
         {/* Discussion & Comments */}
-        <div className="rounded-2xl border border-neutral-800 bg-[#2a2a2a] p-6 shadow-xs space-y-4">
+        <div id="product-discussion-section" className="rounded-2xl border border-neutral-800 bg-[#2a2a2a] p-6 shadow-xs space-y-4">
           <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
             <div className="flex items-center gap-2">
               <MessageCircle className="h-4 w-4 text-mint-300" />

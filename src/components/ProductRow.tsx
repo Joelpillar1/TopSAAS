@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowUpRight, ShieldCheck, ChevronUp, Crown, MessageCircle, MousePointerClick } from 'lucide-react';
+import { ArrowUpRight, ShieldCheck, ChevronUp, Crown, MessageCircle } from 'lucide-react';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
@@ -114,15 +114,9 @@ export const ProductRow: React.FC<ProductRowProps> = ({
             {product.category}
           </span>
           <span className="inline-flex items-center gap-1">
-            <MousePointerClick className="h-3 w-3" />
-            <span className="font-mono-num">{product.clicks.toLocaleString()}</span>
+            <MessageCircle className="h-3 w-3" />
+            <span className="font-mono-num">{commentCount ?? 0}</span>
           </span>
-          {typeof commentCount === 'number' && commentCount > 0 && (
-            <span className="inline-flex items-center gap-1">
-              <MessageCircle className="h-3 w-3" />
-              <span className="font-mono-num">{commentCount}</span>
-            </span>
-          )}
         </div>
       </div>
 

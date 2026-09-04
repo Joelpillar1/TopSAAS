@@ -104,12 +104,7 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-mint-500 text-[#0b0f14] shadow-[0_0_0_1px_rgba(102,204,136,0.4)] group-hover:bg-mint-400 transition-colors">
               <Trophy className="h-4 w-4 fill-[#0b0f14] stroke-[#0b0f14]" />
             </div>
-            <span className="hidden md:flex flex-col items-start leading-tight">
-              <span className="font-black text-xl tracking-tight text-white">TopSAAS</span>
-              <span className="mt-0.5 text-[9px] font-bold uppercase tracking-[0.24em] text-mint-500">
-                SaaS Directory
-              </span>
-            </span>
+            <span className="font-black text-xl tracking-tight text-white">TopSAAS</span>
           </button>
 
           {/* Center: Top-nav sections (desktop only — mobile lives in the hamburger menu) */}

@@ -133,6 +133,7 @@ export type SocialPlatform =
   | 'product_hunt'
   | 'discord'
   | 'linkedin'
+  | 'youtube'
   | 'reddit'
   | 'app_store'
   | 'play_store'

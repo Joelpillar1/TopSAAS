@@ -1,5 +1,5 @@
 import React from 'react';
-import { Crown, ShieldCheck, Share2, ExternalLink, ChevronUp } from 'lucide-react';
+import { Crown, ShieldCheck, Share2, ExternalLink, ChevronUp, MessageCircle } from 'lucide-react';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
@@ -9,6 +9,7 @@ interface ProductCardProps {
   rank: number;
   soundEnabled: boolean;
   showVerified?: boolean;
+  commentCount?: number;
   onShareProduct: (product: Product) => void;
   onTrackClick: (productId: string, url: string) => void;
   /** When provided, the whole card opens the in-app product profile instead of navigating away. */
@@ -22,6 +23,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   rank,
   soundEnabled,
   showVerified = false,
+  commentCount = 0,
   onShareProduct,
   onTrackClick,
   onOpenDetail,
@@ -134,11 +136,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               <span className="font-mono-num">{product.upvotes ?? 0}</span>
             </button>
           )}
-          <span className="truncate rounded-md bg-neutral-800 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-400">
-            {product.category}
-          </span>
-          <span className="shrink-0 text-[10px] text-neutral-600 font-mono-num">
-            {product.clicks.toLocaleString()} visits
+          {product.category.split(',').map((cat) => cat.trim()).filter(Boolean).slice(0, 2).map((cat) => (
+            <span key={cat} className="truncate rounded-md bg-neutral-800 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-400 max-w-[120px]">
+              {cat}
+            </span>
+          ))}
+          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-neutral-400">
+            <MessageCircle className="h-3 w-3 text-neutral-500" />
+            <span className="font-mono-num">{commentCount ?? 0}</span>
           </span>
         </div>
 

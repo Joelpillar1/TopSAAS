@@ -7,6 +7,8 @@ import { ProductCard } from './ProductCard';
 import { HeroClaimBanner } from './HeroClaimBanner';
 import { playSound } from '../utils/sound';
 import { GridFillerCell, useGridColumns } from './GridFiller';
+import { cn } from '@/lib/utils';
+import { GridPattern } from '@/components/ui/grid-pattern';
 
 interface SaaSIdeasProps {
   soundEnabled: boolean;
@@ -14,6 +16,7 @@ interface SaaSIdeasProps {
   productsLoaded?: boolean;
   featuredProductId?: string | null;
   featuredProduct: Product | null;
+  commentCounts?: Record<string, number>;
   onOpenFeaturedSpotModal?: () => void;
   onClaimFeatured?: () => void;
   onShareProduct: (product: Product) => void;
@@ -103,6 +106,7 @@ export const SaaSIdeas: React.FC<SaaSIdeasProps> = ({
   productsLoaded = true,
   featuredProductId,
   featuredProduct,
+  commentCounts = {},
   onOpenFeaturedSpotModal,
   onClaimFeatured,
   onShareProduct,
@@ -202,8 +206,30 @@ export const SaaSIdeas: React.FC<SaaSIdeasProps> = ({
   return (
     <div className="space-y-6 font-sans">
       {/* ── Hero: brand statement + search ── */}
-      <section className="px-1 pt-6 sm:pt-10" aria-label="Find the best SaaS idea">
-        <div className="mx-auto flex max-w-2xl flex-col items-center text-center">
+      <section className="relative overflow-hidden px-1 pt-6 sm:pt-10" aria-label="Find the best SaaS idea">
+        {/* Background: subtle grid pattern matching Directory Hero */}
+        <GridPattern
+          width={32}
+          height={32}
+          x={-1}
+          y={-1}
+          strokeDasharray="3 3"
+          squares={[
+            [4, 4],
+            [5, 1],
+            [8, 2],
+            [5, 3],
+            [5, 5],
+            [10, 10],
+            [12, 15],
+          ]}
+          className={cn(
+            '[mask-image:radial-gradient(560px_circle_at_center,white,transparent)]',
+            'inset-x-0 inset-y-[-30%] h-[200%] skew-y-12',
+            'fill-neutral-800/60 stroke-neutral-800/50',
+          )}
+        />
+        <div className="relative z-10 mx-auto flex max-w-2xl flex-col items-center text-center">
           <h1 className="text-3xl font-black leading-[1.05] tracking-tight text-white sm:text-5xl">
             <span className="whitespace-nowrap">Find your SaaS idea.</span>
             <br />
@@ -369,6 +395,7 @@ export const SaaSIdeas: React.FC<SaaSIdeasProps> = ({
                 rank={product.rank ?? index + 1}
                 soundEnabled={soundEnabled}
                 showVerified={(product.rank ?? index + 1) <= 5}
+                commentCount={commentCounts?.[product.id] ?? 0}
                 onShareProduct={onShareProduct}
                 onTrackClick={onTrackClick}
                 onOpenDetail={onOpenDetail}
