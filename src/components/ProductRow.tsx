@@ -108,12 +108,17 @@ export const ProductRow: React.FC<ProductRowProps> = ({
         <p className="mt-0.5 line-clamp-2 text-xs font-medium leading-relaxed text-neutral-500 sm:text-[13px] sm:max-w-2xl">
           {product.tagline}
         </p>
-        <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10.5px] font-semibold text-neutral-400">
-          <span>{timeAgo(product.createdAt)}</span>
-          <span className="rounded-md bg-neutral-100 px-1.5 py-px font-bold text-neutral-500">
-            {product.category}
-          </span>
-          <span className="inline-flex items-center gap-1">
+        <div className="mt-1.5 flex items-center gap-2 text-[10.5px] font-semibold text-neutral-400 min-w-0 overflow-hidden">
+          {product.category && (
+            <span
+              className="truncate rounded-md bg-neutral-100 px-1.5 py-px font-bold text-neutral-500 max-w-[120px] sm:max-w-[160px] shrink-0"
+              title={product.category}
+            >
+              {product.category}
+            </span>
+          )}
+          <span className="shrink-0">{timeAgo(product.createdAt)}</span>
+          <span className="inline-flex shrink-0 items-center gap-1">
             <MessageCircle className="h-3 w-3" />
             <span className="font-mono-num">{commentCount ?? 0}</span>
           </span>

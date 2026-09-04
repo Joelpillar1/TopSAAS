@@ -84,15 +84,23 @@ export const ProductTile: React.FC<ProductTileProps> = ({
       </p>
 
       {/* Footer */}
-      <div className="mt-4 flex items-center justify-between border-t border-neutral-800 pt-3">
-        <div className="flex items-center gap-2 text-[10.5px] font-semibold text-neutral-500">
-          <span>{timeAgo(product.createdAt)}</span>
-          <span className="inline-flex items-center gap-1 text-neutral-400">
+      <div className="mt-4 flex items-center justify-between gap-2 border-t border-neutral-800 pt-3">
+        <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden text-[10.5px] font-semibold text-neutral-500">
+          {product.category && (
+            <span
+              className="truncate rounded-md bg-neutral-800 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-300 shrink-0 max-w-[110px] sm:max-w-[140px]"
+              title={product.category}
+            >
+              {product.category}
+            </span>
+          )}
+          <span className="shrink-0">{timeAgo(product.createdAt)}</span>
+          <span className="inline-flex items-center gap-1 text-neutral-400 shrink-0">
             <MessageCircle className="h-3 w-3 text-neutral-500" />
             <span className="font-mono-num">{commentCount ?? 0}</span>
           </span>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 shrink-0">
           {onUpvote && (
             <button
               type="button"

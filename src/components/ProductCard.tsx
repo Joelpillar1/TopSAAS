@@ -120,13 +120,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
       {/* Footer */}
       <div className="mt-3 flex items-center justify-between gap-2 pt-2.5 border-t border-neutral-800">
-        <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+        <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden">
           {onUpvote && (
             <button
               type="button"
               onClick={handleUpvote}
               title={upvoted ? 'Remove your upvote' : 'Upvote this product'}
-              className={`inline-flex items-center gap-0.5 rounded-full border px-1.5 py-0.5 text-[10px] font-bold transition-all cursor-pointer active:scale-95 ${
+              className={`inline-flex shrink-0 items-center gap-0.5 rounded-full border px-1.5 py-0.5 text-[10px] font-bold transition-all cursor-pointer active:scale-95 ${
                 upvoted
                   ? 'border-mint-500 bg-mint-500 text-[#0b0f14]'
                   : 'border-neutral-700 bg-transparent text-neutral-300 hover:border-neutral-500 hover:text-white'
@@ -136,12 +136,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               <span className="font-mono-num">{product.upvotes ?? 0}</span>
             </button>
           )}
-          {product.category.split(',').map((cat) => cat.trim()).filter(Boolean).slice(0, 2).map((cat) => (
-            <span key={cat} className="truncate rounded-md bg-neutral-800 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-400 max-w-[120px]">
-              {cat}
+          {product.category && (
+            <span
+              className="truncate rounded-md bg-neutral-800 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-300 shrink-0 max-w-[110px] sm:max-w-[140px]"
+              title={product.category}
+            >
+              {product.category}
             </span>
-          ))}
-          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-neutral-400">
+          )}
+          <span className="inline-flex shrink-0 items-center gap-1 text-[10px] font-semibold text-neutral-400">
             <MessageCircle className="h-3 w-3 text-neutral-500" />
             <span className="font-mono-num">{commentCount ?? 0}</span>
           </span>

@@ -99,12 +99,14 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             type="button"
             onClick={onGoHome}
-            className="flex items-center gap-2.5 cursor-pointer group shrink-0"
+            className="flex items-center gap-2 sm:gap-2.5 cursor-pointer group shrink-0"
           >
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-mint-500 text-[#0b0f14] shadow-[0_0_0_1px_rgba(102,204,136,0.4)] group-hover:bg-mint-400 transition-colors">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-mint-500 text-[#0b0f14] shadow-[0_0_0_1px_rgba(102,204,136,0.4)] group-hover:bg-mint-400 transition-colors">
               <Trophy className="h-4 w-4 fill-[#0b0f14] stroke-[#0b0f14]" />
             </div>
-            <span className="font-black text-xl tracking-tight text-white">TopSAAS</span>
+            <span className="font-black text-lg sm:text-xl tracking-tight text-white whitespace-nowrap inline-block shrink-0">
+              TopSAAS
+            </span>
           </button>
 
           {/* Center: Top-nav sections (desktop only — mobile lives in the hamburger menu) */}
