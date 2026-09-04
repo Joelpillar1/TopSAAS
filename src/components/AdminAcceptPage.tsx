@@ -232,25 +232,25 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-neutral-100 text-neutral-900 pb-24">
+    <div className="min-h-screen bg-[#222222] text-neutral-100 pb-24">
       {/* Top Admin Header */}
-      <header className="sticky top-0 z-30 border-b border-neutral-300 bg-white/95 backdrop-blur-md px-4 py-3 sm:px-6 shadow-2xs">
+      <header className="sticky top-0 z-30 border-b border-neutral-800 bg-[#222222]/95 backdrop-blur-md px-4 py-3 sm:px-6">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={onBackToDirectory}
-              className="flex items-center gap-1.5 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs font-bold text-neutral-800 hover:border-black hover:bg-neutral-50 transition-all cursor-pointer shadow-2xs"
+              className="flex items-center gap-1.5 rounded-lg border border-neutral-700 bg-[#2a2a2a] px-3 py-1.5 text-xs font-bold text-neutral-300 hover:border-mint-500/60 hover:bg-[#333333] transition-all cursor-pointer"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
               <span>Back to Directory</span>
             </button>
-            <div className="h-4 w-px bg-neutral-300" />
+            <div className="h-4 w-px bg-neutral-700" />
             <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-black text-white font-black text-xs shadow-2xs">
+              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-mint-500 text-[#0b0f14] font-black text-xs shadow-2xs">
                 <ShieldCheck className="h-4 w-4" />
               </div>
-              <span className="rounded bg-neutral-200 px-2 py-0.5 text-xs font-mono font-bold text-neutral-800">
+              <span className="rounded bg-neutral-800 px-2 py-0.5 text-xs font-mono font-bold text-neutral-300">
                 /accept
               </span>
             </div>
@@ -260,7 +260,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
             <button
               type="button"
               onClick={onOpenSubmitModal}
-              className="hidden sm:inline-flex items-center gap-1.5 rounded-lg bg-black px-3 py-1.5 text-xs font-bold text-white hover:bg-neutral-800 transition-all cursor-pointer shadow-2xs"
+              className="hidden sm:inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-black hover:bg-neutral-200 transition-all cursor-pointer shadow-2xs"
             >
               <Plus className="h-3.5 w-3.5" />
               <span>Test New Submission</span>
@@ -271,19 +271,19 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
 
       <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 space-y-6">
         {/* View Switcher Tabs */}
-        <div className="flex items-center gap-2 border-b border-neutral-300 pb-0">
+        <div className="flex items-center gap-2 border-b border-neutral-800 pb-0">
           <button
             type="button"
             onClick={() => { setActiveView('products'); playSound('click', soundEnabled); }}
             className={`flex items-center gap-1.5 rounded-t-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer border border-b-0 ${
               activeView === 'products'
-                ? 'bg-white border-neutral-300 text-black shadow-2xs'
-                : 'bg-transparent border-transparent text-neutral-500 hover:text-black hover:bg-neutral-50'
+                ? 'bg-[#2a2a2a] border-neutral-800 text-white shadow-2xs'
+                : 'bg-transparent border-transparent text-neutral-400 hover:text-white hover:bg-neutral-800/60'
             }`}
           >
             <LayoutList className="h-3.5 w-3.5" />
             <span>Live Products</span>
-            <span className="ml-1 rounded-full bg-black text-white px-1.5 py-0.2 text-[9px] font-bold">
+            <span className="ml-1 rounded-full bg-mint-500 text-[#0b0f14] px-1.5 py-0.2 text-[9px] font-bold">
               {products.length}
             </span>
           </button>
@@ -292,8 +292,8 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
             onClick={() => { setActiveView('featured'); playSound('click', soundEnabled); }}
             className={`flex items-center gap-1.5 rounded-t-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer border border-b-0 ${
               activeView === 'featured'
-                ? 'bg-white border-neutral-300 text-black shadow-2xs'
-                : 'bg-transparent border-transparent text-neutral-500 hover:text-black hover:bg-neutral-50'
+                ? 'bg-[#2a2a2a] border-neutral-800 text-white shadow-2xs'
+                : 'bg-transparent border-transparent text-neutral-400 hover:text-white hover:bg-neutral-800/60'
             }`}
           >
             <Crown className="h-3.5 w-3.5" />
@@ -308,31 +308,31 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
           <>
             {/* Products Metrics */}
             <div className="grid grid-cols-3 gap-3 sm:gap-4">
-              <div className="rounded-xl border border-neutral-300 bg-white p-4 shadow-2xs">
+              <div className="rounded-xl border border-neutral-800 bg-[#2a2a2a] p-4 shadow-2xs">
                 <div className="flex items-center justify-between text-xs font-bold text-amber-700 mb-1">
                   <span>Top 3 (Featured)</span>
                   <Trophy className="h-4 w-4" />
                 </div>
-                <div className="text-2xl sm:text-3xl font-black text-black">3</div>
-                <p className="text-[11px] text-neutral-500 mt-1">Auto BorderBeam enabled</p>
+                <div className="text-2xl sm:text-3xl font-black text-white">3</div>
+                <p className="text-[11px] text-neutral-400 mt-1">Top 3 highlighted</p>
               </div>
-              <div className="rounded-xl border border-neutral-300 bg-white p-4 shadow-2xs">
+              <div className="rounded-xl border border-neutral-800 bg-[#2a2a2a] p-4 shadow-2xs">
                 <div className="flex items-center justify-between text-xs font-bold text-emerald-700 mb-1">
                   <span>Live Products</span>
                   <CheckCircle2 className="h-4 w-4" />
                 </div>
-                <div className="text-2xl sm:text-3xl font-black text-black">{products.length}</div>
-                <p className="text-[11px] text-neutral-500 mt-1">In the directory</p>
+                <div className="text-2xl sm:text-3xl font-black text-white">{products.length}</div>
+                <p className="text-[11px] text-neutral-400 mt-1">In the directory</p>
               </div>
-              <div className="rounded-xl border border-neutral-300 bg-white p-4 shadow-2xs">
-                <div className="flex items-center justify-between text-xs font-bold text-neutral-600 mb-1">
+              <div className="rounded-xl border border-neutral-800 bg-[#2a2a2a] p-4 shadow-2xs">
+                <div className="flex items-center justify-between text-xs font-bold text-neutral-400 mb-1">
                   <span>Total Upvotes</span>
                   <ArrowUpDown className="h-4 w-4" />
                 </div>
-                <div className="text-2xl sm:text-3xl font-black text-black">
+                <div className="text-2xl sm:text-3xl font-black text-white">
                   {products.reduce((sum, p) => sum + (p.upvotes ?? 0), 0).toLocaleString()}
                 </div>
-                <p className="text-[11px] text-neutral-500 mt-1">Across all products</p>
+                <p className="text-[11px] text-neutral-400 mt-1">Across all products</p>
               </div>
             </div>
 
@@ -344,7 +344,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
             />
 
             {/* Products Search & Filter */}
-            <div className="rounded-xl border border-neutral-300 bg-white p-3.5 sm:p-4 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="rounded-xl border border-neutral-800 bg-[#2a2a2a] p-3.5 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
               <div className="relative w-full sm:w-80">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400" />
                 <input
@@ -352,10 +352,10 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                   value={productSearchQuery}
                   onChange={(e) => setProductSearchQuery(e.target.value)}
                   placeholder="Search live products by name, category, or URL..."
-                  className="w-full rounded-lg border border-neutral-300 bg-neutral-50 pl-8.5 pr-3 py-1.5 text-xs text-black placeholder-neutral-400 focus:border-black focus:bg-white focus:outline-none focus:ring-1 focus:ring-black"
+                  className="w-full rounded-lg border border-neutral-700 bg-[#343434] pl-8.5 pr-3 py-1.5 text-xs text-neutral-100 placeholder-neutral-500 focus:border-mint-500/70 focus:bg-[#343434] focus:outline-none focus:ring-1 focus:ring-mint-500/30"
                 />
                 {productSearchQuery && (
-                  <button type="button" onClick={() => setProductSearchQuery('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-black">
+                  <button type="button" onClick={() => setProductSearchQuery('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white">
                     <X className="h-3 w-3" />
                   </button>
                 )}
@@ -368,8 +368,8 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                     onClick={() => setProductCategoryFilter(cat)}
                     className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                       productCategoryFilter === cat
-                        ? 'bg-black text-white'
-                        : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                        ? 'bg-mint-500 text-[#0b0f14]'
+                        : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
                     }`}
                   >
                     {cat}
@@ -381,23 +381,23 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
             {/* Products Table */}
             <div className="space-y-2">
               <div className="flex items-center justify-between px-1">
-                <h2 className="text-xs font-bold uppercase tracking-wider text-neutral-600">
+                <h2 className="text-xs font-bold uppercase tracking-wider text-neutral-400">
                   Live Products Management
                   <span className="ml-1.5 font-normal text-neutral-500">({filteredProducts.length})</span>
                 </h2>
                 <p className="text-[11px] text-neutral-500 hidden sm:block">
-                  Click rank to edit. Top 3 auto-receive BorderBeam on the directory.
+                  Click rank to edit. The top 3 rows are highlighted with a black crown accent.
                 </p>
               </div>
 
               {filteredProducts.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-neutral-300 bg-white p-8 sm:p-12 text-center space-y-3">
-                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-neutral-100 text-neutral-500">
+                <div className="rounded-2xl border border-dashed border-neutral-700 bg-[#2a2a2a] p-8 sm:p-12 text-center space-y-3">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-neutral-800 text-neutral-400">
                     <AlertCircle className="h-6 w-6" />
                   </div>
                   <div className="space-y-1">
-                    <h3 className="text-sm font-black text-black">No products found</h3>
-                    <p className="text-xs text-neutral-500 max-w-sm mx-auto">Try changing your search or category filter.</p>
+                    <h3 className="text-sm font-black text-white">No products found</h3>
+                    <p className="text-xs text-neutral-400 max-w-sm mx-auto">Try changing your search or category filter.</p>
                   </div>
                 </div>
               ) : (
@@ -410,10 +410,10 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                     const productRow = (
                       <div
                         key={product.id}
-                        className={`rounded-xl border bg-white p-4 transition-all shadow-2xs ${
+                        className={`rounded-xl border bg-[#2a2a2a] p-4 transition-all ${
                           isTopThree
-                            ? 'border-amber-300 ring-1 ring-amber-200'
-                            : 'border-neutral-300'
+                            ? 'border-amber-400/70 ring-1 ring-amber-400/30'
+                            : 'border-neutral-800'
                         }`}
                       >
                         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
@@ -423,10 +423,10 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                               product.rank === 1
                                 ? 'bg-amber-400 text-white'
                                 : product.rank === 2
-                                ? 'bg-neutral-400 text-white'
+                                ? 'bg-neutral-500 text-white'
                                 : product.rank === 3
                                 ? 'bg-orange-600 text-white'
-                                : 'bg-neutral-200 text-neutral-700'
+                                : 'bg-neutral-800 text-neutral-300'
                             }`}>
                               {product.rank === 1 ? <Crown className="h-4 w-4" /> : `#${product.rank}`}
                             </div>
@@ -442,7 +442,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                             />
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2">
-                                <h3 className="text-sm font-black text-black tracking-tight truncate">{product.name}</h3>
+                                <h3 className="text-sm font-black text-white tracking-tight truncate">{product.name}</h3>
                                 {product.verified && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />}
                                 {isTopThree && (
                                   <span className="rounded-md bg-amber-100 border border-amber-300 px-1.5 py-0.5 text-[9px] font-bold text-amber-800 shrink-0">
@@ -450,18 +450,18 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                   </span>
                                 )}
                               </div>
-                              <p className="text-xs text-neutral-500 truncate">{product.tagline}</p>
+                              <p className="text-xs text-neutral-400 truncate">{product.tagline}</p>
                             </div>
                           </div>
 
                           {/* Meta: Category & Upvotes & Score */}
                           <div className="flex items-center gap-3 shrink-0 text-[11px] text-neutral-500">
-                            <span className="rounded-md bg-neutral-100 border border-neutral-200 px-2 py-0.5 font-bold text-neutral-700">
+                            <span className="rounded-md bg-neutral-800 border border-neutral-700 px-2 py-0.5 font-bold text-neutral-300">
                               {product.category}
                             </span>
 
                             <div className="flex items-center gap-1 font-bold">
-                              <Flame className="h-3.5 w-3.5 text-black shrink-0" />
+                              <Flame className="h-3.5 w-3.5 text-mint-500 shrink-0" />
                               <span className="font-mono-num">{product.dinoScore ?? 0}</span>
                               <span className="text-neutral-400">pts</span>
                             </div>
@@ -482,12 +482,12 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                     if (e.key === 'Escape') { setEditingRankId(null); setRankInputValue(''); }
                                   }}
                                   autoFocus
-                                  className="w-16 rounded-lg border border-black bg-white px-2 py-1 text-xs font-bold text-black text-center focus:outline-none focus:ring-2 focus:ring-black"
+                                  className="w-16 rounded-lg border border-mint-500/70 bg-[#343434] px-2 py-1 text-xs font-bold text-neutral-100 text-center focus:outline-none focus:ring-2 focus:ring-mint-500/40"
                                 />
                                 <button type="button" onClick={() => handleConfirmRankEdit(product)} className="rounded-lg bg-emerald-600 p-1.5 text-white hover:bg-emerald-700 transition-colors cursor-pointer">
                                   <Check className="h-3 w-3" />
                                 </button>
-                                <button type="button" onClick={() => { setEditingRankId(null); setRankInputValue(''); }} className="rounded-lg bg-neutral-200 p-1.5 text-neutral-600 hover:bg-neutral-300 transition-colors cursor-pointer">
+                                <button type="button" onClick={() => { setEditingRankId(null); setRankInputValue(''); }} className="rounded-lg bg-neutral-800 p-1.5 text-neutral-400 hover:bg-neutral-700 transition-colors cursor-pointer">
                                   <X className="h-3 w-3" />
                                 </button>
                               </div>
@@ -496,9 +496,9 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                 type="button"
                                 onClick={() => handleStartRankEdit(product)}
                                 title="Click to set rank manually"
-                                className="flex items-center gap-1 rounded-lg border border-neutral-300 bg-white px-2.5 py-1.5 text-xs font-bold text-black hover:border-black hover:bg-neutral-50 transition-all cursor-pointer shadow-2xs"
+                                className="flex items-center gap-1 rounded-lg border border-neutral-700 bg-[#2a2a2a] px-2.5 py-1.5 text-xs font-bold text-neutral-300 hover:border-mint-500/60 hover:bg-[#333333] transition-all cursor-pointer"
                               >
-                                <ArrowUpDown className="h-3 w-3 text-neutral-500" />
+                                <ArrowUpDown className="h-3 w-3 text-neutral-400" />
                                 <span>Rank</span>
                               </button>
                             )}
@@ -509,7 +509,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                 type="button"
                                 onClick={() => handleMoveRank(product, 'up')}
                                 disabled={(product.rank ?? 0) <= 1}
-                                className="rounded-md bg-neutral-100 p-1 text-neutral-600 hover:bg-black hover:text-white transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                                className="rounded-md bg-neutral-800 p-1 text-neutral-400 hover:bg-mint-500 hover:text-[#0b0f14] transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                                 title="Move up"
                               >
                                 <ChevronUp className="h-3 w-3" />
@@ -518,7 +518,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                 type="button"
                                 onClick={() => handleMoveRank(product, 'down')}
                                 disabled={(product.rank ?? 0) >= products.length}
-                                className="rounded-md bg-neutral-100 p-1 text-neutral-600 hover:bg-black hover:text-white transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                                className="rounded-md bg-neutral-800 p-1 text-neutral-400 hover:bg-mint-500 hover:text-[#0b0f14] transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                                 title="Move down"
                               >
                                 <ChevronDown className="h-3 w-3" />
@@ -532,7 +532,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                               href={product.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="rounded-lg border border-neutral-300 bg-white p-2 text-neutral-600 hover:border-black hover:text-black transition-all cursor-pointer shadow-2xs"
+                              className="rounded-lg border border-neutral-700 bg-[#2a2a2a] p-2 text-neutral-400 hover:border-mint-500/60 hover:text-white transition-all cursor-pointer"
                               title="Visit website"
                             >
                               <ExternalLink className="h-3.5 w-3.5" />
@@ -540,7 +540,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                             <button
                               type="button"
                               onClick={() => handleDelist(product)}
-                              className="rounded-lg border border-neutral-300 bg-white p-2 text-neutral-400 hover:text-red-600 hover:border-red-300 hover:bg-red-50 transition-all cursor-pointer shadow-2xs"
+                              className="rounded-lg border border-neutral-700 bg-[#2a2a2a] p-2 text-neutral-400 hover:text-red-400 hover:border-red-400/70 hover:bg-red-500/10 transition-all cursor-pointer"
                               title={`Delist "${product.name}" from directory`}
                             >
                               <Trash2 className="h-3.5 w-3.5" />
@@ -565,29 +565,29 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
           <>
             {/* Featured Metrics */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              <div className="rounded-xl border border-neutral-300 bg-white p-4 shadow-2xs">
+              <div className="rounded-xl border border-neutral-800 bg-[#2a2a2a] p-4 shadow-2xs">
                 <div className="flex items-center justify-between text-xs font-bold text-amber-700 mb-1">
                   <span>Currently Featured</span>
                   <Crown className="h-4 w-4" />
                 </div>
-                <div className="text-2xl sm:text-3xl font-black text-black">
+                <div className="text-2xl sm:text-3xl font-black text-white">
                   {featuredProduct ? featuredProduct.name : 'None'}
                 </div>
-                <p className="text-[11px] text-neutral-500 mt-1">
+                <p className="text-[11px] text-neutral-400 mt-1">
                   {featuredProduct
                     ? `Showing at top of directory — ${featuredProduct.category}`
                     : 'No product is currently featured'}
                 </p>
               </div>
-              <div className="rounded-xl border border-neutral-300 bg-white p-4 shadow-2xs">
-                <div className="flex items-center justify-between text-xs font-bold text-neutral-600 mb-1">
+              <div className="rounded-xl border border-neutral-800 bg-[#2a2a2a] p-4 shadow-2xs">
+                <div className="flex items-center justify-between text-xs font-bold text-neutral-400 mb-1">
                   <span>Featured Spot Status</span>
                   <Star className="h-4 w-4" />
                 </div>
-                <div className="text-2xl sm:text-3xl font-black text-black">
+                <div className="text-2xl sm:text-3xl font-black text-white">
                   {featuredProductId === '' ? 'Cleared' : featuredProduct ? 'Active' : 'None'}
                 </div>
-                <p className="text-[11px] text-neutral-500 mt-1">
+                <p className="text-[11px] text-neutral-400 mt-1">
                   {featuredProductId === ''
                     ? 'No spotlight displayed'
                     : featuredProduct
@@ -598,12 +598,12 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
             </div>
 
             {/* Featured Product Selector */}
-            <div className="rounded-xl border border-neutral-300 bg-white p-4 shadow-2xs">
+            <div className="rounded-xl border border-neutral-800 bg-[#2a2a2a] p-4 shadow-2xs">
               <div className="flex items-center gap-2 mb-3">
                 <Crown className="h-4 w-4 text-amber-500" />
-                <h3 className="text-sm font-black text-black">Assign Featured Product</h3>
+                <h3 className="text-sm font-black text-white">Assign Featured Product</h3>
               </div>
-              <p className="text-xs text-neutral-500 mb-4">
+              <p className="text-xs text-neutral-400 mb-4">
                 Select which product appears as the featured banner on the homepage. You can override any user-purchased featured spot from here.
               </p>
               <FeaturedProductSelector
@@ -615,10 +615,10 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
 
             {/* Current Featured Detail */}
             {featuredProduct && (
-              <div className="rounded-xl border border-amber-300 ring-1 ring-amber-200 bg-white p-4 sm:p-5 shadow-2xs">
+              <div className="rounded-xl border border-amber-400/70 ring-1 ring-amber-400/30 bg-[#2a2a2a] p-4 sm:p-5">
                 <div className="flex items-center gap-2 mb-3">
                   <Crown className="h-4 w-4 text-amber-500" />
-                  <h3 className="text-sm font-black text-black">Featured Product Details</h3>
+                  <h3 className="text-sm font-black text-white">Featured Product Details</h3>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-2xs">
@@ -631,17 +631,17 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                         onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
                       />
                     ) : (
-                      <span className="text-sm font-black text-black">{featuredProduct.name.slice(0, 2).toUpperCase()}</span>
+                      <span className="text-sm font-black text-white">{featuredProduct.name.slice(0, 2).toUpperCase()}</span>
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <h4 className="text-base font-black text-black truncate">{featuredProduct.name}</h4>
+                      <h4 className="text-base font-black text-white truncate">{featuredProduct.name}</h4>
                       {featuredProduct.verified && <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />}
                     </div>
-                    <p className="text-xs text-neutral-500 truncate">{featuredProduct.tagline}</p>
-                    <div className="flex items-center gap-3 mt-1.5 text-[11px] text-neutral-500">
-                      <span className="rounded-md bg-neutral-100 border border-neutral-200 px-2 py-0.5 font-bold text-neutral-700">
+                    <p className="text-xs text-neutral-400 truncate">{featuredProduct.tagline}</p>
+                    <div className="flex items-center gap-3 mt-1.5 text-[11px] text-neutral-400">
+                      <span className="rounded-md bg-neutral-800 border border-neutral-700 px-2 py-0.5 font-bold text-neutral-300">
                         {featuredProduct.category}
                       </span>
 
@@ -649,9 +649,9 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                         href={featuredProduct.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-black font-semibold hover:underline"
+                        className="inline-flex items-center gap-1 text-white font-semibold hover:underline"
                       >
-                        <Globe className="h-3 w-3 text-neutral-500" />
+                        <Globe className="h-3 w-3 text-neutral-400" />
                         <span className="truncate max-w-[200px]">{featuredProduct.url}</span>
                         <ExternalLink className="h-2.5 w-2.5 text-neutral-400" />
                       </a>
@@ -661,7 +661,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                     <button
                       type="button"
                       onClick={() => onSetFeatured(null)}
-                      className="flex items-center gap-1.5 rounded-xl border border-neutral-300 bg-white px-3 py-2 text-xs font-bold text-neutral-800 hover:border-black hover:bg-neutral-50 transition-all cursor-pointer shadow-2xs"
+                      className="flex items-center gap-1.5 rounded-xl border border-neutral-700 bg-[#2a2a2a] px-3 py-2 text-xs font-bold text-neutral-300 hover:border-mint-500/60 hover:bg-[#333333] transition-all cursor-pointer"
                     >
                       <X className="h-3.5 w-3.5" />
                       <span>Clear Featured</span>
@@ -672,22 +672,22 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
             )}
 
             {/* How It Works */}
-            <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
-              <h4 className="text-xs font-bold text-black mb-2">How Featured Works</h4>
+            <div className="rounded-xl border border-neutral-800 bg-[#2a2a2a] p-4">
+              <h4 className="text-xs font-bold text-white mb-2">How Featured Works</h4>
               <ul className="space-y-1.5">
-                <li className="flex items-start gap-2 text-xs text-neutral-600">
+                <li className="flex items-start gap-2 text-xs text-neutral-400">
                   <span className="font-bold">1.</span>
                   <span>Users can purchase a featured spot (7 or 30 days) which auto-sets the product.</span>
                 </li>
-                <li className="flex items-start gap-2 text-xs text-neutral-600">
+                <li className="flex items-start gap-2 text-xs text-neutral-400">
                   <span className="font-bold">2.</span>
                   <span>As admin, you can override any user-purchased featured spot from this panel.</span>
                 </li>
-                <li className="flex items-start gap-2 text-xs text-neutral-600">
+                <li className="flex items-start gap-2 text-xs text-neutral-400">
                   <span className="font-bold">3.</span>
-                  <span>The featured product appears at the top of the directory with a BorderBeam animation.</span>
+                  <span>The featured product appears at the top of the directory as the Featured spotlight.</span>
                 </li>
-                <li className="flex items-start gap-2 text-xs text-neutral-600">
+                <li className="flex items-start gap-2 text-xs text-neutral-400">
                   <span className="font-bold">4.</span>
                   <span>Set to &quot;Default&quot; to show the bid placeholder, or &quot;Empty&quot; to hide the featured section entirely.</span>
                 </li>

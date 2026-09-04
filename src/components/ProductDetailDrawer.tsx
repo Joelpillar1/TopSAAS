@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Crown, ExternalLink, ShieldCheck, Share2, MousePointerClick, Flame } from 'lucide-react';
+import { X, Crown, ExternalLink, ShieldCheck, Share2, MousePointerClick, Trophy } from 'lucide-react';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
@@ -32,10 +32,10 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
           <div className="flex items-center justify-between pb-4 border-b border-neutral-200">
             <div className="flex items-center gap-2">
               <span className="font-mono-num text-xs font-black uppercase tracking-wider text-black">
-                Website Profile
+                Product Profile
               </span>
               <span className="text-neutral-300">•</span>
-              <span className="text-xs font-bold text-neutral-600">Spot #{product.rank} on Page</span>
+              <span className="text-xs font-bold text-neutral-600">Ranked #{product.rank}</span>
             </div>
             <button
               onClick={onClose}
@@ -71,13 +71,13 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
                 )}
               </div>
               <div className="flex items-center gap-2 mt-0.5">
-                <a
-                  href={product.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => onTrackClick(product.id, product.url)}
-                  className="inline-flex items-center gap-1 text-xs font-bold text-black hover:underline"
-                >
+          <a
+            href={product.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => onTrackClick(product.id, product.url)}
+            className="inline-flex items-center gap-1 text-xs font-bold text-black hover:underline"
+          >
                   <span>{product.url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}</span>
                   <ExternalLink className="h-3 w-3" />
                 </a>
@@ -108,11 +108,11 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
 
             <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-2.5 shadow-2xs">
               <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 truncate">
-                Score
+                Rank
               </div>
               <div className="font-mono-num text-base font-black text-black mt-0.5 flex items-center gap-1">
-                <Flame className="h-4 w-4 text-black shrink-0" />
-                <span>{product.dinoScore ?? 0}</span>
+                <Trophy className="h-3.5 w-3.5 text-black shrink-0" />
+                <span>#{product.rank}</span>
               </div>
             </div>
 

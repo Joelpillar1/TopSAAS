@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Flame } from 'lucide-react';
+import { Globe } from 'lucide-react';
 
 interface ProductLogoProps {
   src?: string | null;
@@ -23,10 +23,10 @@ export const ProductLogo: React.FC<ProductLogoProps> = ({
 
   return (
     <div className={containerClassName}>
-      {/* While loading or if error / unreachable, show score Fire icon */}
+      {/* While loading or if error / unreachable, show a generic globe */}
       {(!src || hasError || !isLoaded) && (
         <div className="absolute inset-0 flex items-center justify-center bg-white z-0">
-          <Flame className={iconClassName} />
+          <Globe className={iconClassName} />
         </div>
       )}
 

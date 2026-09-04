@@ -1,11 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Globe, Loader2, CheckCircle2, ChevronDown, Check, Search, Crown } from 'lucide-react';
+import { X, Globe, Loader2, CheckCircle2, ChevronDown, Check, Search } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { playSound } from '../utils/sound';
 import { fetchWebsiteMetadata } from '../utils/fetchMetadata';
-import { Category, Product } from '../types';
-import { BorderBeam } from './BorderBeam';
-import { HeroClaimBanner } from './HeroClaimBanner';
+import { Category } from '../types';
 
 export const SUBMISSION_CATEGORIES: Category[] = [
   'AI Tools',
@@ -48,11 +46,6 @@ interface BidModalProps {
     category: Category;
   }) => void;
   soundEnabled: boolean;
-  hasProduct?: boolean;
-  featuredProductId?: string | null;
-  featuredProduct?: Product | null;
-  onOpenFeaturedSpotModal?: () => void;
-  onTrackClick?: (productId: string, url: string) => void;
 }
 
 function cleanDomainToName(rawUrl: string): string {
@@ -74,11 +67,6 @@ export const BidModal: React.FC<BidModalProps> = ({
   onClose,
   onConfirmSubmit,
   soundEnabled,
-  hasProduct = false,
-  featuredProductId,
-  featuredProduct,
-  onOpenFeaturedSpotModal,
-  onTrackClick,
 }) => {
   const [name, setName] = useState('');
   const [tagline, setTagline] = useState('');
@@ -266,78 +254,6 @@ export const BidModal: React.FC<BidModalProps> = ({
                 className="w-full flex items-center justify-center gap-2 rounded-xl bg-black py-2.5 px-4 text-xs font-bold text-white hover:bg-neutral-800 transition-all cursor-pointer min-h-[42px]"
               >
                 <span>Done</span>
-              </button>
-            </div>
-          </div>
-        ) : hasProduct ? (
-          <div className="py-4 text-center space-y-4">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-neutral-100 border border-neutral-200 text-neutral-500 shadow-2xs">
-              <Globe className="h-6 w-6" />
-            </div>
-            <div className="space-y-1">
-              <h3 className="text-lg font-black text-black tracking-tight">
-                You already have a product listed
-              </h3>
-              <p className="text-xs text-neutral-500 max-w-sm mx-auto leading-relaxed">
-                Each account can submit one product. Play the dino game above to increase your product&apos;s score and ranking!
-              </p>
-            </div>
-
-            {/* Featured Spot Preview */}
-            <div className="pt-1 text-left">
-              {featuredProductId && featuredProduct ? (
-                <BorderBeam
-                  duration={5}
-                  size={260}
-                  colorFrom="#ffaa40"
-                  colorMid="#9c40ff"
-                  colorTo="#00d2ff"
-                >
-                  <HeroClaimBanner
-                    topProduct={featuredProduct}
-                    soundEnabled={soundEnabled}
-                    onTrackClick={onTrackClick || (() => {})}
-                  />
-                </BorderBeam>
-              ) : featuredProductId === '' ? (
-                null
-              ) : (
-                <BorderBeam
-                  duration={5}
-                  size={260}
-                  colorFrom="#ffaa40"
-                  colorMid="#9c40ff"
-                  colorTo="#00d2ff"
-                >
-                  <button
-                    type="button"
-                    onClick={() => {
-                      playSound('click', soundEnabled);
-                      handleClose();
-                      onOpenFeaturedSpotModal?.();
-                    }}
-                    className="w-full rounded-xl border-2 border-neutral-300 bg-white px-3 py-3.5 hover:bg-neutral-50 transition-all cursor-pointer text-left block"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <Crown className="h-4 w-4 text-neutral-300 shrink-0" />
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <p className="text-xs font-bold text-neutral-400">Featured spot</p>
-                        <span className="text-[10px] text-neutral-400">—</span>
-                        <p className="text-[11px] text-neutral-500 font-medium">Get featured for 30 days</p>
-                      </div>
-                    </div>
-                  </button>
-                </BorderBeam>
-              )}
-            </div>
-
-            <div className="pt-1">
-              <button
-                type="button"
-                onClick={handleClose}
-                className="w-full flex items-center justify-center gap-2 rounded-xl bg-black py-2.5 px-4 text-xs font-bold text-white hover:bg-neutral-800 transition-all cursor-pointer min-h-[42px]"
-              >
-                <span>Got it</span>
               </button>
             </div>
           </div>

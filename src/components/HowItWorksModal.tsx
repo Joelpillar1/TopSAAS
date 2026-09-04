@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Trophy, Gamepad2, Plus, Sparkles, ArrowRight, MousePointerClick, Crown, Flame } from 'lucide-react';
+import { X, Rocket, Plus, Sparkles, ArrowRight, MousePointerClick, TrendingUp, Crown } from 'lucide-react';
 import { playSound } from '../utils/sound';
 
 interface HowItWorksModalProps {
@@ -31,7 +31,7 @@ export const HowItWorksModal: React.FC<HowItWorksModalProps> = ({
         {/* Modal Header */}
         <div className="flex items-center gap-3 mb-5 pr-8">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-black text-white font-black shadow-2xs">
-            <Gamepad2 className="h-5 w-5 text-white" />
+            <Rocket className="h-5 w-5 text-white" />
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -39,11 +39,11 @@ export const HowItWorksModal: React.FC<HowItWorksModalProps> = ({
                 How It Works
               </h3>
               <span className="rounded-full bg-neutral-100 border border-neutral-200 px-2 py-0.5 text-[10px] font-bold text-neutral-800 uppercase">
-                100% Free
+                Free to list
               </span>
             </div>
             <p className="text-xs text-neutral-500 font-medium">
-              Game your way to the top of the directory.
+              From listing to featured — in minutes.
             </p>
           </div>
         </div>
@@ -54,32 +54,32 @@ export const HowItWorksModal: React.FC<HowItWorksModalProps> = ({
           <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3.5 space-y-1 shadow-2xs">
             <div className="flex items-center gap-2 font-black text-black text-xs sm:text-sm">
               <Plus className="h-4 w-4 text-black shrink-0" />
-              <span>1. Submit Your Website for Free</span>
+              <span>1. List Your SaaS for Free</span>
             </div>
             <p className="text-neutral-600 leading-relaxed font-medium pl-6">
-              Add your SaaS, developer tool, or AI product in seconds. TopSAAS automatically extracts your product tagline and favicon.
+              Add your product in under a minute. Listings go live instantly — no review queue, no waiting. Your favicon and tagline are picked up automatically.
             </p>
           </div>
 
           {/* Step 2 */}
           <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3.5 space-y-1 shadow-2xs">
             <div className="flex items-center gap-2 font-black text-black text-xs sm:text-sm">
-              <Flame className="h-4 w-4 text-black shrink-0" />
-              <span>2. Play the Dino Runner to Rank Up</span>
+              <MousePointerClick className="h-4 w-4 text-black shrink-0" />
+              <span>2. Get Discovered</span>
             </div>
             <p className="text-neutral-600 leading-relaxed font-medium pl-6">
-              Pick your website and play the Dino game above! Every point you score directly boosts your product&apos;s <strong className="text-black font-semibold">Dino Score</strong> and pushes it higher up the leaderboard.
+              Visitors search the directory, browse categories, and open your product profile — then click straight through to your website.
             </p>
           </div>
 
           {/* Step 3 */}
           <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3.5 space-y-1 shadow-2xs">
             <div className="flex items-center gap-2 font-black text-black text-xs sm:text-sm">
-              <MousePointerClick className="h-4 w-4 text-black shrink-0" />
-              <span>3. Get Direct Visits & Visibility</span>
+              <TrendingUp className="h-4 w-4 text-black shrink-0" />
+              <span>3. Rise in the Rankings</span>
             </div>
             <p className="text-neutral-600 leading-relaxed font-medium pl-6">
-              Visitors browse top ranked products, discover innovative tools, and click directly through to your website to sign up.
+              TopSAAS is editor-curated. The most useful, most-visited products get promoted to the top of the directory.
             </p>
           </div>
 
@@ -90,7 +90,7 @@ export const HowItWorksModal: React.FC<HowItWorksModalProps> = ({
               <span>4. Claim the Featured Spot (Optional)</span>
             </div>
             <p className="text-neutral-600 leading-relaxed font-medium pl-6">
-              Want instant maximum exposure? Secure the exclusive #1 banner spot at the very top of the directory and inside the TopSAAS Runner game.
+              Want maximum exposure? Reserve the #1 spotlight banner at the top of the directory for 30 days.
             </p>
           </div>
         </div>
@@ -107,7 +107,7 @@ export const HowItWorksModal: React.FC<HowItWorksModalProps> = ({
             className="w-full flex items-center justify-center gap-2 rounded-xl bg-black py-3 text-xs sm:text-sm font-black text-white shadow-2xs hover:bg-neutral-800 active:scale-[0.98] transition-all cursor-pointer min-h-[44px]"
           >
             <Sparkles className="h-4 w-4" />
-            <span>Submit Your Website Now</span>
+            <span>List Your SaaS Now</span>
             <ArrowRight className="h-4 w-4" />
           </button>
         </div>

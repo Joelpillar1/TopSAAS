@@ -105,7 +105,7 @@ export const HeroWebsiteInfo: React.FC<HeroWebsiteInfoProps> = ({
           className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-black px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-xs hover:bg-neutral-900 active:scale-[0.99] transition-all cursor-pointer min-h-[42px]"
         >
           <Plus className="h-4 w-4 stroke-[2.5]" />
-          <span>Submit website</span>
+          <span>New Launch</span>
         </button>
       </div>
 

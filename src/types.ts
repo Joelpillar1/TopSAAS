@@ -67,7 +67,17 @@ export interface Product {
   tagline: string;
   url: string;
   logoUrl?: string;
+  /** Up to 10 feature screenshots shown in a gallery on the listing page */
+  screenshots?: string[];
+  demoVideoUrl?: string;
   twitterHandle?: string;
+  /** Creator links (X, GitHub, Product Hunt, Discord, LinkedIn, stores, …) */
+  socials?: ProductSocial[];
+  creatorName?: string;
+  creatorUsername?: string;
+  creatorXHandle?: string;
+  creatorAvatar?: string;
+  creatorRole?: string;
   category: Category;
   upvotes?: number;
   dinoScore?: number;
@@ -89,6 +99,16 @@ export interface Product {
   keyHighlights?: ProductHighlight[];
 }
 
+export interface Comment {
+  id: string;
+  productId: string;
+  userName: string;
+  userEmail?: string;
+  userAvatar?: string;
+  content: string;
+  createdAt: number;
+}
+
 export interface LiveActivity {
   id: string;
   productId: string;
@@ -107,13 +127,63 @@ export type SortOption = 'rank' | 'recent' | 'clicks' | 'climb';
 
 export type SubmissionStatus = 'under_review' | 'approved' | 'rejected';
 
+export type SocialPlatform =
+  | 'x'
+  | 'github'
+  | 'product_hunt'
+  | 'discord'
+  | 'linkedin'
+  | 'reddit'
+  | 'app_store'
+  | 'play_store'
+  | 'chrome_web_store';
+
+export interface ProductSocial {
+  platform: SocialPlatform;
+  url: string;
+}
+
+export type PricingModel = 'Free' | 'Freemium' | 'Paid' | 'Open Source';
+
+/** Rich payload collected by the Launch a Product page */
+export interface SubmitProductDetails {
+  name: string;
+  tagline: string;
+  url: string;
+  category: Category;
+  description?: string;
+  logoUrl?: string;
+  screenshots?: string[];
+  demoVideoUrl?: string;
+  twitterHandle?: string;
+  socials?: ProductSocial[];
+  creatorName?: string;
+  creatorUsername?: string;
+  creatorXHandle?: string;
+  creatorAvatar?: string;
+  creatorRole?: string;
+  targetAudience?: string;
+  pricingModel?: PricingModel;
+  problemItSolves?: string;
+  solution?: string;
+  uniqueSellingPoint?: string;
+}
+
 export interface WebsiteSubmission {
   id: string;
   name: string;
   tagline: string;
   url: string;
   logoUrl?: string;
+  screenshots?: string[];
+  demoVideoUrl?: string;
   twitterHandle?: string;
+  socials?: ProductSocial[];
+  creatorName?: string;
+  creatorUsername?: string;
+  creatorXHandle?: string;
+  creatorAvatar?: string;
+  creatorRole?: string;
   category: Category;
   backerName: string;
   backerEmail?: string;

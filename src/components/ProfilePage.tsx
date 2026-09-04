@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, ExternalLink, Loader2, Globe, Mail, Calendar, Trash2, LogOut, Flame } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Loader2, Globe, Mail, Calendar, Trash2, LogOut, MousePointerClick } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '../utils/supabase';
 import { Product } from '../types';
@@ -75,23 +75,23 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onBack, onSignOu
   const liveCount = products.length;
 
   return (
-    <div className="min-h-screen bg-neutral-50 text-black font-sans">
+    <div className="min-h-screen bg-[#222222] text-neutral-100 font-sans">
       {/* Header */}
-      <div className="sticky top-0 z-40 border-b border-neutral-200 bg-white/95 backdrop-blur-md">
+      <div className="sticky top-0 z-40 border-b border-neutral-800 bg-[#222222]/95 backdrop-blur-md">
         <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3 sm:px-6">
           <button
             type="button"
             onClick={onBack}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50 transition-all cursor-pointer"
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-700 bg-[#2a2a2a] text-neutral-300 hover:border-neutral-500 hover:text-white transition-all cursor-pointer"
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
-          <h1 className="text-sm font-black text-black flex-1">My Products</h1>
+          <h1 className="text-sm font-black text-white flex-1">My Products</h1>
           {onSignOut && (
             <button
               type="button"
               onClick={onSignOut}
-              className="flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-bold text-neutral-500 hover:border-red-300 hover:text-red-600 hover:bg-red-50 transition-all cursor-pointer"
+              className="flex items-center gap-1.5 rounded-lg border border-neutral-700 bg-[#2a2a2a] px-3 py-1.5 text-xs font-bold text-neutral-400 hover:border-red-400/70 hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
             >
               <LogOut className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Sign out</span>
@@ -102,28 +102,28 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onBack, onSignOu
 
       <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6 space-y-6">
         {/* User Info Card */}
-        <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-xs">
+        <div className="rounded-2xl border border-neutral-800 bg-[#2a2a2a] p-5 shadow-xs">
           <div className="flex items-center gap-4">
             {user.user_metadata?.avatar_url ? (
               <img
                 src={user.user_metadata.avatar_url}
                 alt={user.user_metadata?.full_name || 'User'}
-                className="h-14 w-14 rounded-full object-cover ring-2 ring-neutral-100"
+                className="h-14 w-14 rounded-full object-cover ring-2 ring-neutral-700"
               />
             ) : (
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-black text-white text-lg font-black">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-mint-500 text-[#0b0f14] text-lg font-black">
                 {(user.email?.[0] || 'U').toUpperCase()}
               </div>
             )}
             <div className="space-y-0.5">
-              <h2 className="text-base font-black text-black">
+              <h2 className="text-base font-black text-white">
                 {user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
               </h2>
-              <div className="flex items-center gap-1.5 text-xs text-neutral-500">
+              <div className="flex items-center gap-1.5 text-xs text-neutral-400">
                 <Mail className="h-3 w-3" />
                 <span>{user.email || 'No email'}</span>
               </div>
-              <div className="flex items-center gap-1.5 text-xs text-neutral-400">
+              <div className="flex items-center gap-1.5 text-xs text-neutral-500">
                 <Calendar className="h-3 w-3" />
                 <span>Joined {new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
               </div>
@@ -132,14 +132,14 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onBack, onSignOu
         </div>
 
         {/* Stats */}
-        <div className="rounded-xl border border-neutral-200 bg-white p-3 text-center">
-          <div className="text-lg font-black text-black">{liveCount}</div>
-          <div className="text-[10px] font-bold text-neutral-500 uppercase">Live Products</div>
+        <div className="rounded-xl border border-neutral-800 bg-[#2a2a2a] p-3 text-center">
+          <div className="text-lg font-black text-white">{liveCount}</div>
+          <div className="text-[10px] font-bold text-neutral-400 uppercase">Live Products</div>
         </div>
 
         {/* Products List */}
         <div className="space-y-3">
-          <h3 className="text-xs font-black uppercase tracking-wider text-neutral-500">
+          <h3 className="text-xs font-black uppercase tracking-wider text-neutral-400">
             Products ({products.length})
           </h3>
 
@@ -148,16 +148,16 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onBack, onSignOu
               <Loader2 className="h-6 w-6 text-neutral-400 animate-spin" />
             </div>
           ) : products.length === 0 ? (
-            <div className="rounded-2xl border border-neutral-200 bg-white p-10 text-center">
-              <Globe className="mx-auto h-8 w-8 text-neutral-300 mb-3" />
-              <p className="text-sm font-bold text-neutral-600">No products yet</p>
-              <p className="text-xs text-neutral-400 mt-1">Submit a website to see it here</p>
+            <div className="rounded-2xl border border-neutral-800 bg-[#2a2a2a] p-10 text-center">
+              <Globe className="mx-auto h-8 w-8 text-neutral-600 mb-3" />
+              <p className="text-sm font-bold text-neutral-300">No products yet</p>
+              <p className="text-xs text-neutral-500 mt-1">Submit a website to see it here</p>
             </div>
           ) : (
             products.map((product) => (
               <div
                 key={product.id}
-                className="rounded-xl border border-neutral-200 bg-white p-4 shadow-xs hover:shadow-sm transition-shadow"
+                className="rounded-xl border border-neutral-800 bg-[#2a2a2a] p-4 shadow-xs hover:border-neutral-700 transition-shadow"
               >
                 <div className="flex items-start gap-3">
                   <ProductLogo
@@ -168,26 +168,26 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onBack, onSignOu
                   />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <h4 className="text-sm font-black text-black truncate">{product.name}</h4>
-                      <span className="text-[10px] font-semibold text-neutral-500 bg-neutral-100 px-1.5 py-0.2 rounded">
+                      <h4 className="text-sm font-black text-white truncate">{product.name}</h4>
+                      <span className="text-[10px] font-semibold text-neutral-400 bg-neutral-800 px-1.5 py-0.2 rounded">
                         Live
                       </span>
                     </div>
-                    <p className="text-xs text-neutral-500 truncate mt-0.5">{product.tagline}</p>
+                    <p className="text-xs text-neutral-400 truncate mt-0.5">{product.tagline}</p>
                     <div className="flex items-center gap-2 mt-2">
-                      <span className="inline-flex items-center gap-1 rounded-md bg-neutral-100 px-2 py-0.5 text-[10px] font-bold text-neutral-600">
+                      <span className="inline-flex items-center gap-1 rounded-md bg-neutral-800 px-2 py-0.5 text-[10px] font-bold text-neutral-300">
                         <Globe className="h-2.5 w-2.5" />
                         {product.category}
                       </span>
-                      <span className="inline-flex items-center gap-1 text-[10px] text-neutral-600 font-mono font-bold">
-                        <Flame className="h-3 w-3 text-black shrink-0" />
-                        <span>{product.dinoScore ?? 0} pts</span>
+                      <span className="inline-flex items-center gap-1 text-[10px] text-neutral-400 font-mono font-bold">
+                        <MousePointerClick className="h-3 w-3 text-mint-500 shrink-0" />
+                        <span>{product.clicks.toLocaleString()} visits</span>
                       </span>
                       <a
                         href={product.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-[10px] font-bold text-neutral-400 hover:text-black transition-colors"
+                        className="inline-flex items-center gap-1 text-[10px] font-bold text-neutral-500 hover:text-white transition-colors"
                       >
                         Visit
                         <ExternalLink className="h-2.5 w-2.5" />
@@ -198,7 +198,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onBack, onSignOu
                     type="button"
                     onClick={() => handleDelete(product.id)}
                     disabled={deletingId === product.id}
-                    className="flex h-7 w-7 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-400 hover:border-red-300 hover:text-red-600 hover:bg-red-50 transition-all cursor-pointer disabled:opacity-50 shrink-0"
+                    className="flex h-7 w-7 items-center justify-center rounded-lg border border-neutral-700 bg-[#2a2a2a] text-neutral-500 hover:border-red-400/70 hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer disabled:opacity-50 shrink-0"
                     title="Remove product"
                   >
                     {deletingId === product.id ? (

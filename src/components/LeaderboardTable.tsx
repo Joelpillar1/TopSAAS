@@ -1,5 +1,5 @@
 import React from 'react';
-import { Crown, ShieldCheck, Share2, MousePointerClick, Flame } from 'lucide-react';
+import { Crown, ShieldCheck, Share2, MousePointerClick, ExternalLink, ChevronUp } from 'lucide-react';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
@@ -10,6 +10,11 @@ interface LeaderboardTableProps {
   featuredProductId?: string | null;
   onShareProduct: (product: Product) => void;
   onTrackClick: (productId: string, url: string) => void;
+  /** When provided, clicking a row opens the in-app product page. */
+  onOpenDetail?: (product: Product) => void;
+  /** When provided the table shows upvote controls */
+  onUpvote?: (product: Product) => void;
+  upvotedIds?: Set<string>;
 }
 
 export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
@@ -18,18 +23,21 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
   featuredProductId,
   onShareProduct,
   onTrackClick,
+  onOpenDetail,
+  onUpvote,
+  upvotedIds,
 }) => {
   return (
-    <div id="leaderboard-table-container" className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-xs transition-all">
+    <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
           <thead>
-            <tr className="border-b border-neutral-200 bg-neutral-100/90 text-[11px] font-bold uppercase tracking-wider text-neutral-600">
-              <th className="py-3 pl-4 pr-2 w-14 text-center">Spot</th>
-              <th className="py-3 px-4">Website / Product</th>
+            <tr className="border-b border-neutral-200 bg-neutral-50 text-[11px] font-bold uppercase tracking-wider text-neutral-500">
+              <th className="py-3 pl-4 pr-2 w-14 text-center">Rank</th>
+              <th className="py-3 px-4">Product</th>
+              {onUpvote && <th className="py-3 px-4 text-center">Upvotes</th>}
               <th className="py-3 px-4 text-center hidden md:table-cell">Category</th>
               <th className="py-3 px-4 text-center hidden sm:table-cell">Visits</th>
-              <th className="py-3 px-4 text-center">Score</th>
               <th className="py-3 pr-4 pl-2 text-right">Action</th>
             </tr>
           </thead>
@@ -38,16 +46,25 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
               const rank = product.rank ?? (index + 1);
               const isTopThree = rank <= 3;
 
-              // Progressive row highlight fading from #1 (boldest) down to #5
-              const rowHighlightClass = (() => {
-                if (rank === 1) return 'bg-neutral-100/90 font-medium hover:bg-neutral-100';
-                if (rank === 2) return 'bg-neutral-100/60 hover:bg-neutral-100/80';
-                if (rank === 3) return 'bg-neutral-50/80 hover:bg-neutral-100/60';
-                if (rank === 4) return 'bg-neutral-50/50 hover:bg-neutral-50/80';
-                if (rank === 5) return 'bg-neutral-50/25 hover:bg-neutral-50/60';
-                if (product.isUserOwned) return 'bg-neutral-50/40 hover:bg-neutral-100/50';
-                return 'hover:bg-neutral-50/80';
-              })();
+              const handleRowClick = () => {
+                if (onOpenDetail) {
+                  playSound('click', soundEnabled);
+                  onOpenDetail(product);
+                  return;
+                }
+                playSound('click', soundEnabled);
+                window.open(product.url, '_blank', 'noopener,noreferrer');
+                onTrackClick(product.id, product.url);
+              };
+
+              const handleVisit = (e: React.MouseEvent) => {
+                e.stopPropagation();
+                playSound('click', soundEnabled);
+                onTrackClick(product.id, product.url);
+                window.open(product.url, '_blank', 'noopener,noreferrer');
+              };
+
+              const isUpvoted = !!upvotedIds?.has(product.id);
 
               return (
                 <tr
@@ -56,82 +73,52 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                   onClick={(e) => {
                     const target = e.target as HTMLElement;
                     if (target.closest('button')) return;
-                    playSound('click', soundEnabled);
-                    window.open(product.url, '_blank', 'noopener,noreferrer');
-                    onTrackClick(product.id, product.url);
+                    handleRowClick();
                   }}
-                  className={`group transition-colors cursor-pointer ${rowHighlightClass}`}
+                  className={`group transition-colors cursor-pointer ${
+                    rank === 1 ? 'bg-mint-50/30 hover:bg-mint-50/60' : 'hover:bg-neutral-50/80'
+                  }`}
                 >
-                  {/* Rank / Spot Column */}
+                  {/* Rank */}
                   <td className="py-3.5 pl-4 pr-2 text-center align-middle relative">
-                    {/* Bold stroke accent bar for top 3 rows */}
                     {isTopThree && (
                       <div
-                        className={`absolute left-0 top-0 bottom-0 w-[3.5px] rounded-r-xs ${
-                          rank === 1 ? 'bg-black' : rank === 2 ? 'bg-neutral-800' : 'bg-neutral-600'
+                        className={`absolute left-0 top-0 bottom-0 w-[3px] rounded-r ${
+                          rank === 1 ? 'bg-mint-500' : 'bg-neutral-300'
                         }`}
                       />
                     )}
-                    <div className="flex flex-col items-center justify-center relative z-10">
+                    <div className="flex justify-center">
                       {rank === 1 ? (
-                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-black text-white font-black shadow-xs" title="#1 on the page">
-                          <Crown className="h-4 w-4 fill-white stroke-white" />
-                        </div>
-                      ) : rank === 2 ? (
-                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-neutral-900 text-white font-black text-xs shadow-xs border border-neutral-900">
-                          #2
-                        </div>
-                      ) : rank === 3 ? (
-                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-neutral-700 text-white font-extrabold text-xs shadow-xs border border-neutral-700">
-                          #3
-                        </div>
-                      ) : rank === 4 ? (
-                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-neutral-300 text-black font-bold text-xs border border-neutral-400">
-                          #4
-                        </div>
-                      ) : rank === 5 ? (
-                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-neutral-200 text-neutral-800 font-bold text-xs border border-neutral-300">
-                          #5
-                        </div>
+                        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-mint-500 text-white shadow-2xs" title="#1 in the directory">
+                          <Crown className="h-3.5 w-3.5 fill-white stroke-white" />
+                        </span>
                       ) : (
-                        <span className="font-mono-num text-xs font-semibold text-neutral-500 group-hover:text-black">
-                          #{rank}
+                        <span className="font-mono-num text-xs font-semibold text-neutral-400 group-hover:text-neutral-800">
+                          {rank}
                         </span>
                       )}
-
-
                     </div>
                   </td>
 
-                  {/* Website Info Column */}
+                  {/* Product */}
                   <td className="py-3.5 px-4 align-middle">
                     <div className="flex items-center gap-3">
-                      {/* Favicon / Logo */}
                       <ProductLogo
                         src={product.logoUrl}
                         alt={product.name}
-                        containerClassName="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-neutral-200 bg-white group-hover:border-neutral-400 transition-all shadow-xs"
-                        iconClassName="h-5 w-5 text-black shrink-0"
-                        badge={
-                          product.isUserOwned ? (
-                            <span className="absolute bottom-0 left-0 right-0 bg-black text-[7px] font-black text-white text-center uppercase tracking-wider z-20">
-                              YOU
-                            </span>
-                          ) : null
-                        }
+                        containerClassName="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-neutral-200 bg-white shadow-2xs"
+                        iconClassName="h-5 w-5 text-neutral-400 shrink-0"
                       />
-
-                      {/* Name & Tagline */}
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
-                          <span className="font-bold text-black group-hover:underline transition-colors text-sm truncate">
+                          <span className="font-bold text-neutral-900 group-hover:underline transition-colors text-sm truncate">
                             {product.name}
                           </span>
                           {product.verified && (rank <= 5 || product.id === featuredProductId) && (
-                            <ShieldCheck className="h-3.5 w-3.5 text-black shrink-0" title="Verified Website" />
+                            <ShieldCheck className="h-3.5 w-3.5 text-neutral-400 shrink-0" title="Verified listing" />
                           )}
                         </div>
-
                         <p className="text-xs text-neutral-500 line-clamp-1 max-w-lg mt-0.5 font-normal">
                           {product.tagline}
                         </p>
@@ -139,40 +126,64 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                     </div>
                   </td>
 
-                  {/* Category Column */}
+                  {/* Upvotes */}
+                  {onUpvote && (
+                    <td className="py-3.5 px-4 text-center align-middle">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onUpvote(product);
+                        }}
+                        title={isUpvoted ? 'Remove your upvote' : 'Upvote this product'}
+                        className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-bold transition-all cursor-pointer active:scale-95 ${
+                          isUpvoted
+                            ? 'border-mint-500 bg-mint-50 text-mint-700'
+                            : 'border-neutral-200 bg-white text-neutral-600 hover:border-neutral-400 hover:text-neutral-900'
+                        }`}
+                      >
+                        <ChevronUp className="h-3.5 w-3.5" />
+                        <span className="font-mono-num">{product.upvotes ?? 0}</span>
+                      </button>
+                    </td>
+                  )}
+
+                  {/* Category */}
                   <td className="py-3.5 px-4 text-center hidden md:table-cell align-middle">
-                    <span className="rounded-md border border-neutral-200 bg-neutral-50 px-2 py-0.5 text-[11px] font-semibold text-neutral-700">
+                    <span className="rounded-md border border-neutral-200 bg-neutral-50 px-2 py-0.5 text-[11px] font-semibold text-neutral-600">
                       {product.category}
                     </span>
                   </td>
 
-                  {/* Visits / Clicks Column */}
+                  {/* Visits */}
                   <td className="py-3.5 px-4 text-center hidden sm:table-cell align-middle">
-                    <div className="inline-flex items-center gap-1 text-xs font-bold text-black font-mono-num">
-                      <MousePointerClick className="h-3 w-3 text-neutral-600" />
+                    <div className="inline-flex items-center gap-1 text-xs font-bold text-neutral-700 font-mono-num">
+                      <MousePointerClick className="h-3 w-3 text-neutral-400" />
                       <span>{product.clicks.toLocaleString()}</span>
                     </div>
                   </td>
 
-                  {/* Score Column */}
-                  <td className="py-3.5 px-4 text-center align-middle">
-                    <div className="inline-flex items-center gap-1">
-                      <Flame className="h-3.5 w-3.5 text-black shrink-0" />
-                      <span className="font-mono-num text-xs font-bold text-black">{product.dinoScore ?? 0}</span>
-                      <span className="text-[10px] text-neutral-400">pts</span>
-                    </div>
-                  </td>
-
-                  {/* Action Column: Share */}
+                  {/* Actions */}
                   <td className="py-3.5 pr-4 pl-2 text-right align-middle">
                     <div className="flex items-center justify-end gap-1.5">
                       <button
                         type="button"
-                        onClick={() => onShareProduct(product)}
-                        title="Share website link"
-                        className="flex h-7 w-7 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-500 hover:text-black hover:bg-neutral-100 transition-colors shadow-2xs cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onShareProduct(product);
+                        }}
+                        title="Share link"
+                        className="flex h-7 w-7 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-400 hover:text-neutral-900 hover:bg-neutral-50 transition-colors cursor-pointer"
                       >
                         <Share2 className="h-3 w-3" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleVisit}
+                        title="Visit website"
+                        className="flex h-7 w-7 items-center justify-center rounded-lg bg-neutral-900 text-white opacity-0 group-hover:opacity-100 hover:bg-neutral-800 transition-all cursor-pointer"
+                      >
+                        <ExternalLink className="h-3 w-3" />
                       </button>
                     </div>
                   </td>
@@ -185,12 +196,3 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
     </div>
   );
 };
-
-function cleanUrl(url: string): string {
-  try {
-    const parsed = new URL(url);
-    return parsed.hostname.replace('www.', '');
-  } catch {
-    return url;
-  }
-}

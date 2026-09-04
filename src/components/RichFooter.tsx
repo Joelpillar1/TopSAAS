@@ -1,26 +1,21 @@
 import React from 'react';
 import {
   ShieldCheck,
-  RefreshCw,
   Sparkles,
   Trophy,
-  ExternalLink,
   Twitter,
   Github,
   Globe,
-  ArrowUp,
-  Star,
-  Zap,
+  FileText,
   LayoutGrid,
   TrendingUp,
-  FileText,
 } from 'lucide-react';
 import { Category } from '../types';
 import { playSound } from '../utils/sound';
 
 interface RichFooterProps {
   totalProducts: number;
-  totalScore: number;
+  totalVisits: number;
   soundEnabled: boolean;
   onOpenSubmit: () => void;
   onOpenHowItWorks: () => void;
@@ -31,7 +26,7 @@ interface RichFooterProps {
 
 export const RichFooter: React.FC<RichFooterProps> = ({
   totalProducts,
-  totalScore,
+  totalVisits,
   soundEnabled,
   onOpenSubmit,
   onOpenHowItWorks,
@@ -48,36 +43,36 @@ export const RichFooter: React.FC<RichFooterProps> = ({
   };
 
   return (
-    <footer className="border-t border-neutral-200 bg-white mt-8">
-      {/* Main Footer Content */}
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 pt-10 pb-8">
+    <footer className="mt-10 border-t border-neutral-800 bg-[#1c1c1c]">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-12 pb-8">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-8 lg:gap-6">
           {/* Brand Column */}
           <div className="col-span-2 sm:col-span-3 lg:col-span-2 space-y-4">
             <div className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-black text-white shadow-2xs">
-                <Trophy className="h-5 w-5 fill-white stroke-white" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-mint-500 text-[#0b0f14]">
+                <Trophy className="h-5 w-5 fill-[#0b0f14] stroke-[#0b0f14]" />
               </div>
-              <span className="font-black text-xl text-black tracking-tight">TopSAAS</span>
+              <span className="font-black text-xl text-white tracking-tight">TopSAAS</span>
             </div>
             <p className="text-xs text-neutral-500 leading-relaxed max-w-xs">
-              The curated directory of top SaaS products. Play the Dino Runner, rank up, and explore the internet&apos;s best tools — free and open.
+              The curated directory of the internet&apos;s best SaaS products. Founders list their
+              software, real people discover it, and the best rise to the top.
             </p>
             {/* Mini Stats */}
             <div className="flex items-center gap-4 pt-1">
               <div className="flex items-center gap-1.5 text-xs">
-                <div className="flex h-5 w-5 items-center justify-center rounded-md bg-neutral-100">
-                  <Globe className="h-3 w-3 text-neutral-600" />
+                <div className="flex h-5 w-5 items-center justify-center rounded-md bg-neutral-800">
+                  <Globe className="h-3 w-3 text-neutral-300" />
                 </div>
-                <span className="font-bold text-black font-mono-num">{totalProducts}</span>
+                <span className="font-bold text-white font-mono-num">{totalProducts}</span>
                 <span className="text-neutral-500">products</span>
               </div>
               <div className="flex items-center gap-1.5 text-xs">
-                <div className="flex h-5 w-5 items-center justify-center rounded-md bg-neutral-100">
-                  <ArrowUp className="h-3 w-3 text-emerald-600" />
+                <div className="flex h-5 w-5 items-center justify-center rounded-md bg-neutral-800">
+                  <TrendingUp className="h-3 w-3 text-neutral-300" />
                 </div>
-                <span className="font-bold text-black font-mono-num">{totalScore.toLocaleString()}</span>
-                <span className="text-neutral-500">total score</span>
+                <span className="font-bold text-white font-mono-num">{totalVisits.toLocaleString()}</span>
+                <span className="text-neutral-500">visits tracked</span>
               </div>
             </div>
             {/* Social Links */}
@@ -86,7 +81,7 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                 href="https://twitter.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-500 hover:text-black hover:border-black hover:bg-neutral-50 transition-all cursor-pointer shadow-2xs"
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-700 bg-[#343434] text-neutral-400 hover:text-white hover:border-neutral-400 hover:bg-neutral-800 transition-all cursor-pointer"
                 title="Follow on Twitter / X"
               >
                 <Twitter className="h-3.5 w-3.5" />
@@ -95,7 +90,7 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                 href="https://github.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-500 hover:text-black hover:border-black hover:bg-neutral-50 transition-all cursor-pointer shadow-2xs"
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-700 bg-[#343434] text-neutral-400 hover:text-white hover:border-neutral-400 hover:bg-neutral-800 transition-all cursor-pointer"
                 title="View on GitHub"
               >
                 <Github className="h-3.5 w-3.5" />
@@ -105,15 +100,14 @@ export const RichFooter: React.FC<RichFooterProps> = ({
 
           {/* Product Column */}
           <div className="space-y-3">
-            <h4 className="text-xs font-black uppercase tracking-wider text-black">Product</h4>
-            <ul className="space-y-2">
+            <h4 className="text-xs font-black uppercase tracking-wider text-neutral-200">Product</h4>
+            <ul className="space-y-2.5">
               <li>
                 <button
                   type="button"
                   onClick={() => { playSound('click', soundEnabled); onOpenHowItWorks(); }}
-                  className="text-xs text-neutral-500 hover:text-black transition-colors cursor-pointer flex items-center gap-1.5"
+                  className="text-xs text-neutral-500 hover:text-white transition-colors cursor-pointer"
                 >
-                  <Zap className="h-3 w-3" />
                   How It Works
                 </button>
               </li>
@@ -121,18 +115,17 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                 <button
                   type="button"
                   onClick={() => { playSound('click', soundEnabled); onOpenSubmit(); }}
-                  className="text-xs text-neutral-500 hover:text-black transition-colors cursor-pointer flex items-center gap-1.5"
+                  className="text-xs text-neutral-500 hover:text-white transition-colors cursor-pointer flex items-center gap-1.5"
                 >
                   <Sparkles className="h-3 w-3" />
-                  Submit Website
+                  New Launch
                 </button>
               </li>
-
               <li>
                 <button
                   type="button"
                   onClick={() => { playSound('click', soundEnabled); onOpenPrivacy?.(); }}
-                  className="text-xs text-neutral-500 hover:text-black transition-colors cursor-pointer flex items-center gap-1.5"
+                  className="text-xs text-neutral-500 hover:text-white transition-colors cursor-pointer flex items-center gap-1.5"
                 >
                   <ShieldCheck className="h-3 w-3" />
                   Privacy Policy
@@ -142,7 +135,7 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                 <button
                   type="button"
                   onClick={() => { playSound('click', soundEnabled); onOpenTerms?.(); }}
-                  className="text-xs text-neutral-500 hover:text-black transition-colors cursor-pointer flex items-center gap-1.5"
+                  className="text-xs text-neutral-500 hover:text-white transition-colors cursor-pointer flex items-center gap-1.5"
                 >
                   <FileText className="h-3 w-3" />
                   Terms of Service
@@ -153,16 +146,16 @@ export const RichFooter: React.FC<RichFooterProps> = ({
 
           {/* Categories Column */}
           <div className="space-y-3">
-            <h4 className="text-xs font-black uppercase tracking-wider text-black">Categories</h4>
-            <ul className="space-y-2">
+            <h4 className="text-xs font-black uppercase tracking-wider text-neutral-200">Categories</h4>
+            <ul className="space-y-2.5">
               {(['AI Tools', 'Developer Tools', 'Productivity', 'Design & UI', 'SaaS & Indie', 'Crypto & Web3'] as const).map((cat) => (
                 <li key={cat}>
                   <button
                     type="button"
                     onClick={() => handleCategoryClick(cat)}
-                    className="text-xs text-neutral-500 hover:text-black transition-colors cursor-pointer flex items-center gap-1.5"
+                    className="text-xs text-neutral-500 hover:text-white transition-colors cursor-pointer flex items-center gap-1.5"
                   >
-                    <LayoutGrid className="h-3 w-3" />
+                    <LayoutGrid className="h-3 w-3 text-neutral-600" />
                     {cat}
                   </button>
                 </li>
@@ -172,17 +165,16 @@ export const RichFooter: React.FC<RichFooterProps> = ({
 
           {/* Resources Column */}
           <div className="space-y-3">
-            <h4 className="text-xs font-black uppercase tracking-wider text-black">Useful Resources</h4>
-            <ul className="space-y-2">
+            <h4 className="text-xs font-black uppercase tracking-wider text-neutral-200">Resources</h4>
+            <ul className="space-y-2.5">
               <li>
                 <a
                   href="https://x.com/ads4apps/status/2077469507543498836?s=46"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-neutral-500 hover:text-black transition-colors flex items-center gap-1.5"
+                  className="text-xs text-neutral-500 hover:text-white transition-colors cursor-pointer"
                 >
-                  <TrendingUp className="h-3 w-3 shrink-0" />
-                  <span>$10K in 90 Days App Marketing</span>
+                  $10K in 90 Days App Marketing
                 </a>
               </li>
               <li>
@@ -190,10 +182,9 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                   href="https://x.com/ErnestoSOFTWARE/status/2014110519913857122?s=46"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-neutral-500 hover:text-black transition-colors flex items-center gap-1.5"
+                  className="text-xs text-neutral-500 hover:text-white transition-colors cursor-pointer"
                 >
-                  <TrendingUp className="h-3 w-3 shrink-0" />
-                  <span>$800K/y App Guide</span>
+                  $800K/y App Guide
                 </a>
               </li>
               <li>
@@ -201,10 +192,9 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                   href="https://www.post-bridge.com/growth-guide"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-neutral-500 hover:text-black transition-colors flex items-center gap-1.5"
+                  className="text-xs text-neutral-500 hover:text-white transition-colors cursor-pointer"
                 >
-                  <TrendingUp className="h-3 w-3 shrink-0" />
-                  <span>Growth Hack by Jack Friks</span>
+                  Growth Hack by Jack Friks
                 </a>
               </li>
             </ul>
@@ -213,29 +203,28 @@ export const RichFooter: React.FC<RichFooterProps> = ({
       </div>
 
       {/* Bottom Bar */}
-      <div className="border-t border-neutral-200 bg-neutral-50">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div className="border-t border-neutral-800">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-3 gap-y-1 text-[11px] text-neutral-500">
             <span>© {currentYear} TopSAAS.</span>
             <span>All rights reserved.</span>
-            <span className="text-neutral-300 hidden sm:inline">•</span>
             <button
               type="button"
               onClick={() => { playSound('click', soundEnabled); onOpenPrivacy?.(); }}
-              className="hover:text-black hover:underline transition-colors cursor-pointer"
+              className="hover:text-white hover:underline transition-colors cursor-pointer"
             >
               Privacy Policy
             </button>
-            <span className="text-neutral-300">•</span>
+            <span className="text-neutral-700">•</span>
             <button
               type="button"
               onClick={() => { playSound('click', soundEnabled); onOpenTerms?.(); }}
-              className="hover:text-black hover:underline transition-colors cursor-pointer"
+              className="hover:text-white hover:underline transition-colors cursor-pointer"
             >
               Terms of Service
             </button>
           </div>
-          <div className="flex items-center gap-3 text-[11px] text-neutral-400">
+          <div className="flex items-center gap-3 text-[11px] text-neutral-500">
             <span className="font-mono-num">{totalProducts} products indexed</span>
           </div>
         </div>

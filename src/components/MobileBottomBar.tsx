@@ -21,7 +21,7 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
         className="w-full flex items-center justify-center gap-2 rounded-xl bg-black py-3 px-4 text-xs font-bold text-white shadow-xs hover:bg-neutral-900 active:scale-[0.98] transition-all cursor-pointer min-h-[44px]"
       >
         <Plus className="h-4 w-4 stroke-[2.5]" />
-        <span>Submit Website</span>
+        <span>New Launch</span>
       </button>
     </div>
   );

@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { Product, Category } from '../types';
+import { Product, Category, Comment } from '../types';
 
 // ── Products ──
 
@@ -12,7 +12,15 @@ export const mapDbProduct = (row: Record<string, unknown>): Product => ({
   tagline: row.tagline as string,
   url: row.url as string,
   logoUrl: (row.logo_url as string) || undefined,
+  screenshots: (row.screenshots as string[]) || undefined,
+  demoVideoUrl: (row.demo_video_url as string) || undefined,
   twitterHandle: (row.twitter_handle as string) || undefined,
+  socials: (row.socials as Product['socials']) || undefined,
+  creatorName: (row.creator_name as string) || undefined,
+  creatorUsername: (row.creator_username as string) || undefined,
+  creatorXHandle: (row.creator_x_handle as string) || undefined,
+  creatorAvatar: (row.creator_avatar as string) || undefined,
+  creatorRole: (row.creator_role as string) || undefined,
   category: row.category as Category,
   upvotes: (row.upvotes as number) || 0,
   dinoScore: (row.dino_score as number) || 0,
@@ -42,7 +50,15 @@ export const toDbProduct = (p: Product) => ({
   tagline: p.tagline,
   url: p.url,
   logo_url: p.logoUrl || null,
+  screenshots: p.screenshots || null,
+  demo_video_url: p.demoVideoUrl || null,
   twitter_handle: p.twitterHandle || null,
+  socials: p.socials || null,
+  creator_name: p.creatorName || null,
+  creator_username: p.creatorUsername || null,
+  creator_x_handle: p.creatorXHandle || null,
+  creator_avatar: p.creatorAvatar || null,
+  creator_role: p.creatorRole || null,
   category: p.category,
   upvotes: p.upvotes ?? 0,
   dino_score: p.dinoScore ?? 0,
@@ -63,6 +79,44 @@ export const toDbProduct = (p: Product) => ({
   bid_history: p.bidHistory || [],
 });
 
+/**
+ * Whether the remote `products` table has the `screenshots` column yet.
+ * Probed once so the app keeps working until the 013 migration is applied.
+ */
+let screenshotsColumnAvailablePromise: Promise<boolean> | null = null;
+export function screenshotsColumnAvailable(): Promise<boolean> {
+  if (!screenshotsColumnAvailablePromise) {
+    screenshotsColumnAvailablePromise = (async () => {
+      try {
+        const { error } = await supabase.from('products').select('screenshots').limit(1);
+        return !error;
+      } catch {
+        return false;
+      }
+    })();
+  }
+  return screenshotsColumnAvailablePromise;
+}
+
+/** Whether the remote `products` table has the socials / creator columns yet (needs migration 014) */
+let socialsColumnsAvailablePromise: Promise<boolean> | null = null;
+export function socialsColumnsAvailable(): Promise<boolean> {
+  if (!socialsColumnsAvailablePromise) {
+    socialsColumnsAvailablePromise = (async () => {
+      try {
+        const { error } = await supabase
+          .from('products')
+          .select('socials,creator_name,creator_username,creator_x_handle')
+          .limit(1);
+        return !error;
+      } catch {
+        return false;
+      }
+    })();
+  }
+  return socialsColumnsAvailablePromise;
+}
+
 /** Load all products from Supabase */
 export async function loadProducts(): Promise<Product[] | null> {
   const { data, error } = await supabase
@@ -77,10 +131,41 @@ export async function loadProducts(): Promise<Product[] | null> {
 export async function saveAllProducts(products: Product[]): Promise<void> {
   if (products.length === 0) return;
   try {
-    await supabase.from('products').upsert(
-      products.map(toDbProduct),
-      { onConflict: 'id' }
-    );
+    const [includeScreenshots, includeSocials] = await Promise.all([
+      screenshotsColumnAvailable(),
+      socialsColumnsAvailable(),
+    ]);
+    const rows: Record<string, unknown>[] = products.map((p) => {
+      const row = { ...toDbProduct(p) } as Record<string, unknown>;
+      if (!includeScreenshots) delete row.screenshots;
+      if (!includeSocials) {
+        delete row.socials;
+        delete row.creator_name;
+        delete row.creator_username;
+        delete row.creator_x_handle;
+      }
+      return row;
+    });
+    await supabase.from('products').upsert(rows, { onConflict: 'id' });
+  } catch {}
+}
+
+/** Insert a single product (payload respects whether screenshots are supported yet) */
+export async function insertProductDirect(p: Product): Promise<void> {
+  try {
+    const [includeScreenshots, includeSocials] = await Promise.all([
+      screenshotsColumnAvailable(),
+      socialsColumnsAvailable(),
+    ]);
+    const row = { ...toDbProduct(p) } as Record<string, unknown>;
+    if (!includeScreenshots) delete row.screenshots;
+    if (!includeSocials) {
+      delete row.socials;
+      delete row.creator_name;
+      delete row.creator_username;
+      delete row.creator_x_handle;
+    }
+    await supabase.from('products').insert(row);
   } catch {}
 }
 
@@ -128,6 +213,82 @@ export async function getUserUpvotes(): Promise<Set<string>> {
   const { data, error } = await supabase.rpc('get_user_upvotes');
   if (error || !data) return new Set();
   return new Set(data as string[]);
+}
+
+// ── Comments ──
+
+/** Load all comments (aggregated per product on the client) */
+export async function fetchComments(): Promise<Comment[]> {
+  const { data, error } = await supabase
+    .from('comments')
+    .select('*')
+    .order('created_at', { ascending: true });
+  if (error || !data) return [];
+  return data.map((row) => ({
+    id: row.id as string,
+    productId: row.product_id as string,
+    userName: row.user_name as string,
+    userEmail: (row.user_email as string) || undefined,
+    userAvatar: (row.user_avatar as string) || undefined,
+    content: row.content as string,
+    createdAt: row.created_at as number,
+  }));
+}
+
+/** Post a comment; returns the saved row or null on failure (caller keeps an optimistic copy) */
+export async function addComment(input: {
+  productId: string;
+  userName: string;
+  userEmail?: string;
+  userAvatar?: string;
+  content: string;
+}): Promise<Comment | null> {
+  const now = Date.now();
+  
+  // Try inserting with user_avatar first
+  let payload: Record<string, unknown> = {
+    product_id: input.productId,
+    user_name: input.userName,
+    user_email: input.userEmail || null,
+    user_avatar: input.userAvatar || null,
+    content: input.content,
+    created_at: now,
+  };
+
+  let { data, error } = await supabase
+    .from('comments')
+    .insert(payload)
+    .select()
+    .single();
+
+  // If column doesn't exist yet in Supabase schema, fall back without user_avatar
+  if (error && (error.message?.includes('user_avatar') || error.code === 'PGRST204')) {
+    payload = {
+      product_id: input.productId,
+      user_name: input.userName,
+      user_email: input.userEmail || null,
+      content: input.content,
+      created_at: now,
+    };
+    const retry = await supabase
+      .from('comments')
+      .insert(payload)
+      .select()
+      .single();
+    data = retry.data;
+    error = retry.error;
+  }
+
+  if (error || !data) return null;
+  return {
+    id: data.id as string,
+    productId: data.product_id as string,
+    userName: data.user_name as string,
+    userEmail: (data.user_email as string) || undefined,
+    userAvatar: (data.user_avatar as string) || input.userAvatar || undefined,
+    content: data.content as string,
+    createdAt: data.created_at as number,
+  };
 }
 
 // ── Admin ──

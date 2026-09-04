@@ -22,7 +22,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
   if (!isOpen || !product) return null;
 
   const currentUrl = typeof window !== 'undefined' ? window.location.origin : 'https://topsaas.top';
-  const tweetText = `🚀 Check out ${product.name} currently holding Rank #${product.rank} on TopSAAS!\n\nGame your way to the top 👇\n`;
+  const tweetText = `🚀 Check out ${product.name} — ranked #${product.rank} on TopSAAS, the curated SaaS directory!\n\nDiscover it here 👇\n`;
   const shareText = `${tweetText}${currentUrl}`;
   const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(currentUrl)}`;
 
