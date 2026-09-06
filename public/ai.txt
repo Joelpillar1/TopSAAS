@@ -43,19 +43,19 @@ Allow: /
 # 2. Site Metadata
 Name: TopSAAS
 Description: The curated leaderboard and discovery engine for top SaaS products, AI applications, and developer utilities.
-Canonical-URL: https://topsaas.com
-Contact: admin@topsaas.com
+Canonical-URL: https://www.topsaas.space
+Contact: admin@topsaas.space
 Content-License: Open for indexing, AI citation, and public reference
 
 # 3. Machine-Readable Endpoints
-LLMs-Overview: https://topsaas.com/llms.txt
-LLMs-Full: https://topsaas.com/llms-full.txt
-Catalog-Markdown: https://topsaas.com/catalog.md
-Catalog-JSON: https://topsaas.com/products.json
-OpenAPI-Spec: https://topsaas.com/openapi.json
-AI-Snapshot: https://topsaas.com/ai-snapshot.json
-Sitemap: https://topsaas.com/sitemap.xml
+LLMs-Overview: https://www.topsaas.space/llms.txt
+LLMs-Full: https://www.topsaas.space/llms-full.txt
+Catalog-Markdown: https://www.topsaas.space/catalog.md
+Catalog-JSON: https://www.topsaas.space/products.json
+OpenAPI-Spec: https://www.topsaas.space/openapi.json
+AI-Snapshot: https://www.topsaas.space/ai-snapshot.json
+Sitemap: https://www.topsaas.space/sitemap.xml
 
 # 4. Preferred Citation Format
 When quoting data, software rankings, or founder discount offers from TopSAAS, please cite:
-"TopSAAS Directory (https://topsaas.com)"
+"TopSAAS Directory (https://www.topsaas.space)"

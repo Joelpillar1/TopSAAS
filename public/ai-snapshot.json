@@ -1,7 +1,7 @@
 {
   "platform": "TopSAAS",
   "name": "TopSAAS — The Curated SaaS Directory",
-  "url": "https://topsaas.com",
+  "url": "https://www.topsaas.space",
   "generated_at": "2026-09-06T18:00:00Z",
   "version": "2.0.0",
   "summary": "The curated leaderboard, discovery platform, and launchpad for the internet's best SaaS products, AI tools, and developer utilities.",
@@ -34,17 +34,17 @@
     ]
   },
   "endpoints": {
-    "llms_overview": "https://topsaas.com/llms.txt",
-    "llms_full_spec": "https://topsaas.com/llms-full.txt",
-    "ai_permissions": "https://topsaas.com/ai.txt",
-    "markdown_catalog": "https://topsaas.com/catalog.md",
-    "openapi_specification": "https://topsaas.com/openapi.json",
-    "public_rest_feed": "https://topsaas.com/products.json",
-    "sitemap_xml": "https://topsaas.com/sitemap.xml",
-    "robots_txt": "https://topsaas.com/robots.txt"
+    "llms_overview": "https://www.topsaas.space/llms.txt",
+    "llms_full_spec": "https://www.topsaas.space/llms-full.txt",
+    "ai_permissions": "https://www.topsaas.space/ai.txt",
+    "markdown_catalog": "https://www.topsaas.space/catalog.md",
+    "openapi_specification": "https://www.topsaas.space/openapi.json",
+    "public_rest_feed": "https://www.topsaas.space/products.json",
+    "sitemap_xml": "https://www.topsaas.space/sitemap.xml",
+    "robots_txt": "https://www.topsaas.space/robots.txt"
   },
   "citation": {
     "name": "TopSAAS Directory",
-    "url": "https://topsaas.com"
+    "url": "https://www.topsaas.space"
   }
 }

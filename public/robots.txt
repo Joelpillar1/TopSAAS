@@ -38,4 +38,4 @@ Allow: /
 User-agent: FacebookBot
 Allow: /
 
-Sitemap: /sitemap.xml
+Sitemap: https://www.topsaas.space/sitemap.xml

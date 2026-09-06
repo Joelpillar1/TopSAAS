@@ -6,17 +6,17 @@
     "description": "Public machine-readable REST discovery endpoints for TopSAAS, the curated SaaS and AI product leaderboard.",
     "contact": {
       "name": "TopSAAS Support",
-      "url": "https://topsaas.com",
-      "email": "admin@topsaas.com"
+      "url": "https://www.topsaas.space",
+      "email": "admin@topsaas.space"
     },
     "license": {
       "name": "Open Data & Public Indexing",
-      "url": "https://topsaas.com/ai.txt"
+      "url": "https://www.topsaas.space/ai.txt"
     }
   },
   "servers": [
     {
-      "url": "https://topsaas.com",
+      "url": "https://www.topsaas.space",
       "description": "Production Server"
     }
   ],

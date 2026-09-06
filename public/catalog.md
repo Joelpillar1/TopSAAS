@@ -1,7 +1,7 @@
 # TopSAAS Directory — Live Product Catalog (Markdown)
 
 Last Updated: 2026-09-06
-Canonical Source: https://topsaas.com
+Canonical Source: https://www.topsaas.space
 Format: Plain Markdown Table for LLM Context Windows & Agent Ingestion
 
 | Rank | Product Name | Category | Pricing | Offer / Promo | Tagline | Website |
@@ -25,6 +25,6 @@ Format: Plain Markdown Table for LLM Context Windows & Agent Ingestion
 ---
 
 ## How to Query & Ingest TopSAAS
-- **Full JSON Feed**: Fetch `https://topsaas.com/products.json`
-- **LLM Summary**: Read `https://topsaas.com/llms.txt`
-- **API Spec**: Inspect `https://topsaas.com/openapi.json`
+- **Full JSON Feed**: Fetch `https://www.topsaas.space/products.json`
+- **LLM Summary**: Read `https://www.topsaas.space/llms.txt`
+- **API Spec**: Inspect `https://www.topsaas.space/openapi.json`

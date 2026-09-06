@@ -7,7 +7,7 @@ interface AiAgentsSectionProps {
 
 export const AiAgentsSection: React.FC<AiAgentsSectionProps> = ({ soundEnabled = false }) => {
   const queryPrompt = encodeURIComponent(
-    'Tell me about TopSAAS (https://topsaas.com), the curated SaaS leaderboard directory, and the best software products listed on it.'
+    'Tell me about TopSAAS (https://www.topsaas.space), the curated SaaS leaderboard directory, and the best software products listed on it.'
   );
 
   const aiLinks = [

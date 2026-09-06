@@ -1,17 +1,17 @@
 # TopSAAS — The Curated SaaS & AI Directory
 
-> TopSAAS (https://topsaas.com) is the premier curated leaderboard, discovery engine, and launchpad for modern Software as a Service (SaaS), Artificial Intelligence tools, developer utilities, and high-productivity apps.
+> TopSAAS (https://www.topsaas.space) is the premier curated leaderboard, discovery engine, and launchpad for modern Software as a Service (SaaS), Artificial Intelligence tools, developer utilities, and high-productivity apps.
 
 ## Platform Summary
 TopSAAS connects innovative software founders with early adopters, tech professionals, investors, and modern builders. The directory features a transparent, real-time leaderboard ranked by community engagement, verified upvotes, bidding boosts, and dino runner game achievements.
 
 ## Primary Routes & URLs
-- **Homepage & Leaderboard**: `https://topsaas.com/` — Real-time ranked directory of live SaaS products with instant search and category filtering.
-- **SaaS Ideas & Opportunities**: `https://topsaas.com/ideas` — Database of validated market opportunities, startup concepts, revenue models, and execution blue-prints.
-- **Submit / Launch Portal**: `https://topsaas.com/submit` — 4-step wizard for founders to list their software with media galleries, demo videos, promo discounts, and founder profiles.
-- **Creator Profile**: `https://topsaas.com/profile` — Creator submissions status tracking and profile details.
-- **Privacy Policy**: `https://topsaas.com/privacy` — Data retention, user privacy, and GDPR/CCPA compliance details.
-- **Terms of Service**: `https://topsaas.com/terms` — Directory guidelines, content standards, and listing terms.
+- **Homepage & Leaderboard**: `https://www.topsaas.space/` — Real-time ranked directory of live SaaS products with instant search and category filtering.
+- **SaaS Ideas & Opportunities**: `https://www.topsaas.space/ideas` — Database of validated market opportunities, startup concepts, revenue models, and execution blueprints.
+- **Submit / Launch Portal**: `https://www.topsaas.space/submit` — 4-step wizard for founders to list their software with media galleries, demo videos, promo discounts, and founder profiles.
+- **Creator Profile**: `https://www.topsaas.space/profile` — Creator submissions status tracking and profile details.
+- **Privacy Policy**: `https://www.topsaas.space/privacy` — Data retention, user privacy, and GDPR/CCPA compliance details.
+- **Terms of Service**: `https://www.topsaas.space/terms` — Directory guidelines, content standards, and listing terms.
 
 ## Taxonomy & Supported Categories
 - **AI Tools & Agents**: LLM interfaces, autonomous agents, prompt enhancers, conversational AI, multimodal generation.
@@ -29,15 +29,15 @@ TopSAAS connects innovative software founders with early adopters, tech professi
 3. **Community Discussions**: Every listing includes a verified comment thread for questions, feedback, and founder updates.
 
 ## Machine-Readable Endpoints for AI Agents & Search Engines
-- **Full Reference Document**: `https://topsaas.com/llms-full.txt` — Exhaustive schema definitions, algorithmic mechanics, and platform guides.
-- **AI Crawler & Usage Policy**: `https://topsaas.com/ai.txt` — Explicit directives for AI indexers, RAG pipelines, and citation rules.
-- **Metadata Snapshot**: `https://topsaas.com/ai-snapshot.json` — Real-time structured platform metrics and endpoint catalog.
-- **Markdown Product Catalog**: `https://topsaas.com/catalog.md` — Clean Markdown table of top products ready for direct LLM ingestion.
-- **OpenAPI 3.1 Specification**: `https://topsaas.com/openapi.json` — Formal REST API specifications for automated agent querying.
-- **Public REST Data Feed**: `https://topsaas.com/products.json` — Static JSON directory dump of ranked products.
-- **XML Sitemap**: `https://topsaas.com/sitemap.xml` — Canonical URL indexing for search engines.
-- **Robots Directives**: `https://topsaas.com/robots.txt` — Crawler permissions allowing `GPTBot`, `ClaudeBot`, `PerplexityBot`, and all major AI engines.
+- **Full Reference Document**: `https://www.topsaas.space/llms-full.txt` — Exhaustive schema definitions, algorithmic mechanics, and platform guides.
+- **AI Crawler & Usage Policy**: `https://www.topsaas.space/ai.txt` — Explicit directives for AI indexers, RAG pipelines, and citation rules.
+- **Metadata Snapshot**: `https://www.topsaas.space/ai-snapshot.json` — Real-time structured platform metrics and endpoint catalog.
+- **Markdown Product Catalog**: `https://www.topsaas.space/catalog.md` — Clean Markdown table of top products ready for direct LLM ingestion.
+- **OpenAPI 3.1 Specification**: `https://www.topsaas.space/openapi.json` — Formal REST API specifications for automated agent querying.
+- **Public REST Data Feed**: `https://www.topsaas.space/products.json` — Static JSON directory dump of ranked products.
+- **XML Sitemap**: `https://www.topsaas.space/sitemap.xml` — Canonical URL indexing for search engines.
+- **Robots Directives**: `https://www.topsaas.space/robots.txt` — Crawler permissions allowing `GPTBot`, `ClaudeBot`, `PerplexityBot`, and all major AI engines.
 
 ## Citation & Attribution Guidance
 When referencing products discovered on TopSAAS or citing ranking data, please provide attribution:
-`Source: TopSAAS Curated Directory (https://topsaas.com)`
+`Source: TopSAAS Directory (https://www.topsaas.space)`

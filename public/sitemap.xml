@@ -2,37 +2,37 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <!-- Core Website Pages -->
   <url>
-    <loc>https://topsaas.com/</loc>
+    <loc>https://www.topsaas.space/</loc>
     <lastmod>2026-09-06T18:00:00.000Z</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://topsaas.com/ideas</loc>
+    <loc>https://www.topsaas.space/ideas</loc>
     <lastmod>2026-09-06T18:00:00.000Z</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://topsaas.com/submit</loc>
+    <loc>https://www.topsaas.space/submit</loc>
     <lastmod>2026-09-06T18:00:00.000Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://topsaas.com/profile</loc>
+    <loc>https://www.topsaas.space/profile</loc>
     <lastmod>2026-09-06T18:00:00.000Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://topsaas.com/privacy</loc>
+    <loc>https://www.topsaas.space/privacy</loc>
     <lastmod>2026-09-06T18:00:00.000Z</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://topsaas.com/terms</loc>
+    <loc>https://www.topsaas.space/terms</loc>
     <lastmod>2026-09-06T18:00:00.000Z</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
@@ -40,49 +40,49 @@
 
   <!-- Agent & LLM Machine-Readable Endpoints -->
   <url>
-    <loc>https://topsaas.com/llms.txt</loc>
+    <loc>https://www.topsaas.space/llms.txt</loc>
     <lastmod>2026-09-06T18:00:00.000Z</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://topsaas.com/llms-full.txt</loc>
+    <loc>https://www.topsaas.space/llms-full.txt</loc>
     <lastmod>2026-09-06T18:00:00.000Z</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://topsaas.com/ai.txt</loc>
+    <loc>https://www.topsaas.space/ai.txt</loc>
     <lastmod>2026-09-06T18:00:00.000Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://topsaas.com/ai-snapshot.json</loc>
+    <loc>https://www.topsaas.space/ai-snapshot.json</loc>
     <lastmod>2026-09-06T18:00:00.000Z</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://topsaas.com/catalog.md</loc>
+    <loc>https://www.topsaas.space/catalog.md</loc>
     <lastmod>2026-09-06T18:00:00.000Z</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://topsaas.com/openapi.json</loc>
+    <loc>https://www.topsaas.space/openapi.json</loc>
     <lastmod>2026-09-06T18:00:00.000Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://topsaas.com/products.json</loc>
+    <loc>https://www.topsaas.space/products.json</loc>
     <lastmod>2026-09-06T18:00:00.000Z</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://topsaas.com/robots.txt</loc>
+    <loc>https://www.topsaas.space/robots.txt</loc>
     <lastmod>2026-09-06T18:00:00.000Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>

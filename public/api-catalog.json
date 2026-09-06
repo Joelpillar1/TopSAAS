@@ -1,7 +1,7 @@
 {
   "api_version": "1.0",
   "name": "TopSAAS API Catalog",
-  "base_url": "https://topsaas.com",
+  "base_url": "https://www.topsaas.space",
   "endpoints": [
     { "name": "Catalog JSON", "path": "/products.json", "method": "GET", "format": "json" },
     { "name": "Catalog Markdown", "path": "/catalog.md", "method": "GET", "format": "markdown" },
