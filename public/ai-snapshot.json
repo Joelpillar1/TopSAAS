@@ -1,0 +1,50 @@
+{
+  "platform": "TopSAAS",
+  "name": "TopSAAS — The Curated SaaS Directory",
+  "url": "https://topsaas.com",
+  "generated_at": "2026-09-06T18:00:00Z",
+  "version": "2.0.0",
+  "summary": "The curated leaderboard, discovery platform, and launchpad for the internet's best SaaS products, AI tools, and developer utilities.",
+  "statistics": {
+    "categories_count": 28,
+    "primary_categories": [
+      "AI Tools",
+      "Developer Tools",
+      "Productivity",
+      "Design & UI",
+      "SaaS & Indie",
+      "Crypto & Web3",
+      "Marketing & SEO",
+      "Analytics & Data"
+    ],
+    "pricing_models": [
+      "Free",
+      "Freemium",
+      "Paid",
+      "Open Source"
+    ],
+    "features_supported": [
+      "Real-time Leaderboard",
+      "Upvoting System",
+      "Founder Offers & Coupons",
+      "Demo Videos",
+      "Screenshot Galleries",
+      "Dino Runner Score Verification",
+      "SaaS Startup Ideas Hub"
+    ]
+  },
+  "endpoints": {
+    "llms_overview": "https://topsaas.com/llms.txt",
+    "llms_full_spec": "https://topsaas.com/llms-full.txt",
+    "ai_permissions": "https://topsaas.com/ai.txt",
+    "markdown_catalog": "https://topsaas.com/catalog.md",
+    "openapi_specification": "https://topsaas.com/openapi.json",
+    "public_rest_feed": "https://topsaas.com/products.json",
+    "sitemap_xml": "https://topsaas.com/sitemap.xml",
+    "robots_txt": "https://topsaas.com/robots.txt"
+  },
+  "citation": {
+    "name": "TopSAAS Directory",
+    "url": "https://topsaas.com"
+  }
+}

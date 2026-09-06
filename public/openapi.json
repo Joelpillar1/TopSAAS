@@ -1,0 +1,153 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "TopSAAS Public REST & Discovery API",
+    "version": "2.0.0",
+    "description": "Public machine-readable REST discovery endpoints for TopSAAS, the curated SaaS and AI product leaderboard.",
+    "contact": {
+      "name": "TopSAAS Support",
+      "url": "https://topsaas.com",
+      "email": "admin@topsaas.com"
+    },
+    "license": {
+      "name": "Open Data & Public Indexing",
+      "url": "https://topsaas.com/ai.txt"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://topsaas.com",
+      "description": "Production Server"
+    }
+  ],
+  "paths": {
+    "/products.json": {
+      "get": {
+        "summary": "Fetch live SaaS products directory",
+        "description": "Retrieves the full array of curated SaaS products ranked by community engagement and upvotes.",
+        "operationId": "getProducts",
+        "responses": {
+          "200": {
+            "description": "Array of ranked products",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Product"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/catalog.md": {
+      "get": {
+        "summary": "Fetch Markdown product catalog",
+        "description": "Retrieves the directory formatted as a plain Markdown table for LLM RAG pipelines.",
+        "operationId": "getCatalogMarkdown",
+        "responses": {
+          "200": {
+            "description": "Markdown formatted directory table",
+            "content": {
+              "text/markdown": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai-snapshot.json": {
+      "get": {
+        "summary": "Fetch AI platform metadata snapshot",
+        "description": "Retrieves current directory statistics, active category taxonomy, and endpoint URLs.",
+        "operationId": "getAiSnapshot",
+        "responses": {
+          "200": {
+            "description": "Platform metadata snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Product": {
+        "type": "object",
+        "required": ["id", "rank", "name", "tagline", "url", "category", "upvotes", "pricingModel"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "prod-1"
+          },
+          "rank": {
+            "type": "integer",
+            "example": 1
+          },
+          "previousRank": {
+            "type": "integer",
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "example": "Cursor"
+          },
+          "tagline": {
+            "type": "string",
+            "example": "The AI code editor built for lightning software development"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "example": "https://cursor.com"
+          },
+          "logoUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "category": {
+            "type": "string",
+            "example": "AI Tools"
+          },
+          "upvotes": {
+            "type": "integer",
+            "example": 342
+          },
+          "pricingModel": {
+            "type": "string",
+            "enum": ["Free", "Freemium", "Paid", "Open Source"],
+            "example": "Freemium"
+          },
+          "targetAudience": {
+            "type": "string",
+            "example": "Developers & AI Engineers"
+          },
+          "offerDiscount": {
+            "type": "string",
+            "example": "20% OFF"
+          },
+          "offerCode": {
+            "type": "string",
+            "example": "TOPSAAS20"
+          },
+          "verified": {
+            "type": "boolean",
+            "example": true
+          }
+        }
+      }
+    }
+  }
+}

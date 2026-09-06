@@ -1,0 +1,12 @@
+{
+  "api_version": "1.0",
+  "name": "TopSAAS API Catalog",
+  "base_url": "https://topsaas.com",
+  "endpoints": [
+    { "name": "Catalog JSON", "path": "/products.json", "method": "GET", "format": "json" },
+    { "name": "Catalog Markdown", "path": "/catalog.md", "method": "GET", "format": "markdown" },
+    { "name": "OpenAPI Spec", "path": "/openapi.json", "method": "GET", "format": "json" },
+    { "name": "LLMs.txt", "path": "/llms.txt", "method": "GET", "format": "text" },
+    { "name": "Sitemap", "path": "/sitemap.xml", "method": "GET", "format": "xml" }
+  ]
+}
