@@ -6,7 +6,6 @@ import { GridPattern } from '@/components/ui/grid-pattern';
 interface HomeHeroProps {
   totalProducts: number;
   totalCategories: number;
-  totalVisits: number;
   searchQuery: string;
   onSearchChange: (value: string) => void;
   onOpenSubmit: () => void;
@@ -16,7 +15,6 @@ interface HomeHeroProps {
 export const HomeHero: React.FC<HomeHeroProps> = ({
   totalProducts,
   totalCategories,
-  totalVisits,
   searchQuery,
   onSearchChange,
   onOpenSubmit,
@@ -99,10 +97,6 @@ export const HomeHero: React.FC<HomeHeroProps> = ({
           <span className="text-neutral-700">·</span>
           <span>
             <span className="font-bold text-neutral-300 font-mono-num">{totalCategories}</span> categories
-          </span>
-          <span className="text-neutral-700">·</span>
-          <span>
-            <span className="font-bold text-neutral-300 font-mono-num">{totalVisits}</span> visits tracked
           </span>
         </div>
       </div>

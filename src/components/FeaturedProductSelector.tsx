@@ -19,7 +19,9 @@ export const FeaturedProductSelector: React.FC<FeaturedProductSelectorProps> = (
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const featured = products.find((p) => p.id === featuredId);
+  const isDefault = featuredId === null || featuredId === 'default';
+  const isEmpty = featuredId === '' || featuredId === 'empty';
+  const featured = !isDefault && !isEmpty ? products.find((p) => p.id === featuredId) : null;
 
   const filtered = products.filter((p) => {
     const q = query.toLowerCase();
@@ -53,15 +55,19 @@ export const FeaturedProductSelector: React.FC<FeaturedProductSelectorProps> = (
       >
         <Crown className="h-3 w-3 text-mint-500" />
         <span>
-          {featured ? `Featured: ${featured.name}` : 'Set Featured Product'}
+          {featured 
+            ? `Featured: ${featured.name}` 
+            : isEmpty 
+            ? 'Featured: Empty' 
+            : 'Featured: Default'}
         </span>
         <X
           className="h-3 w-3 text-neutral-400 hover:text-red-400"
           onClick={(e) => {
             e.stopPropagation();
-            onSelect('');
+            onSelect('empty');
           }}
-          title="Clear featured"
+          title="Clear featured (set to Empty)"
         />
       </button>
 
@@ -78,7 +84,8 @@ export const FeaturedProductSelector: React.FC<FeaturedProductSelectorProps> = (
               className="flex-1 bg-transparent text-xs text-neutral-100 placeholder:text-neutral-500 outline-none"
             />
           </div>
-          <div className="max-h-60 overflow-y-auto">              {/* Default & Empty options */}
+          <div className="max-h-60 overflow-y-auto">
+            {/* Default & Empty options */}
             <button
               type="button"
               onClick={() => {
@@ -87,7 +94,7 @@ export const FeaturedProductSelector: React.FC<FeaturedProductSelectorProps> = (
                 setQuery('');
               }}
               className={`flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-neutral-800/60 transition-colors cursor-pointer ${
-                featuredId === null ? 'bg-mint-500/15' : ''
+                isDefault ? 'bg-mint-500/15' : ''
               }`}
             >
               <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-amber-400 text-white">
@@ -97,19 +104,19 @@ export const FeaturedProductSelector: React.FC<FeaturedProductSelectorProps> = (
                 <div className="text-xs font-bold text-white">Default</div>
                 <div className="text-[10px] text-neutral-400">Show featured banner placeholder</div>
               </div>
-              {featuredId === null && (
+              {isDefault && (
                 <Crown className="h-3 w-3 text-mint-500 shrink-0 fill-mint-500" />
               )}
             </button>
             <button
               type="button"
               onClick={() => {
-                onSelect('');
+                onSelect('empty');
                 setOpen(false);
                 setQuery('');
               }}
               className={`flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-neutral-800/60 transition-colors cursor-pointer ${
-                featuredId === '' ? 'bg-mint-500/15' : ''
+                isEmpty ? 'bg-mint-500/15' : ''
               }`}
             >
               <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-neutral-700 text-neutral-300">
@@ -119,7 +126,7 @@ export const FeaturedProductSelector: React.FC<FeaturedProductSelectorProps> = (
                 <div className="text-xs font-bold text-white">Empty</div>
                 <div className="text-[10px] text-neutral-400">Clear featured, show no spotlight</div>
               </div>
-              {featuredId === '' && (
+              {isEmpty && (
                 <Crown className="h-3 w-3 text-mint-500 shrink-0 fill-mint-500" />
               )}
             </button>

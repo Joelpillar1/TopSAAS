@@ -9,6 +9,7 @@ export default defineConfig(() => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, 'src'),
+        'border-beam': path.resolve(__dirname, 'src/components/BorderBeam.tsx'),
       },
     },
     server: {

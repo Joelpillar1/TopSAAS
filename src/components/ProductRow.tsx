@@ -64,10 +64,10 @@ export const ProductRow: React.FC<ProductRowProps> = ({
           handleOpen();
         }
       }}
-      className={`group relative flex w-full items-center gap-3.5 bg-white p-3.5 text-left transition-all cursor-pointer sm:gap-4 sm:px-4 rounded-2xl border ${
+      className={`group relative flex w-full items-center gap-3.5 bg-white p-3.5 text-left transition-all duration-300 ease-out cursor-pointer hover:-translate-y-0.5 sm:gap-4 sm:px-4 rounded-2xl border ${
         isWinner
-          ? 'border-mint-400/60 shadow-[0_1px_2px_rgba(16,24,40,0.05),0_12px_28px_-20px_rgba(71,180,110,0.35)] hover:border-mint-400 hover:bg-mint-50/30'
-          : 'border-neutral-200/80 hover:border-neutral-300 hover:bg-neutral-50/70 hover:shadow-[0_6px_24px_-16px_rgba(16,24,40,0.18)]'
+          ? 'border-mint-400/60 shadow-[0_1px_2px_rgba(16,24,40,0.05),0_12px_28px_-20px_rgba(71,180,110,0.35)] hover:border-mint-400 hover:bg-mint-50/30 hover:shadow-[0_1px_2px_rgba(16,24,40,0.05),0_20px_32px_-12px_rgba(71,180,110,0.4)]'
+          : 'border-neutral-200/80 hover:border-neutral-300 hover:bg-neutral-50/70 hover:shadow-[0_8px_28px_-8px_rgba(16,24,40,0.2)]'
       }`}
     >
       {/* Rank chip */}

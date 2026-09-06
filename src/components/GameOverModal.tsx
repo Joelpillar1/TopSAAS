@@ -129,52 +129,74 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
 
         {/* Featured Spot Card Section (Matches Homepage Exactly: Chosen product / Empty / Default placeholder) */}
         <div className="mb-4">
-          {featuredProductId && featuredProduct ? (
-            <BorderBeam
-              duration={5}
-              size={260}
-              colorFrom="#ffaa40"
-              colorMid="#9c40ff"
-              colorTo="#00d2ff"
-            >
-              <HeroClaimBanner
-                topProduct={featuredProduct}
-                soundEnabled={soundEnabled}
-                onTrackClick={onTrackClick || (() => {})}
-              />
-            </BorderBeam>
-          ) : featuredProductId === '' ? (
-            /* Explicitly cleared by admin: empty */
-            null
-          ) : (
+          {(() => {
+            const isDefault = featuredProductId === null || featuredProductId === 'default';
+            const isEmpty = featuredProductId === '' || featuredProductId === 'empty';
+            const isCustomWebsite = !isDefault && !isEmpty && !!featuredProduct;
+
+            if (isCustomWebsite && featuredProduct) {
+              return (
+                <BorderBeam
+                  duration={5}
+                  size={260}
+                  colorFrom="#ffaa40"
+                  colorMid="#9c40ff"
+                  colorTo="#00d2ff"
+                >
+                  <HeroClaimBanner
+                    topProduct={featuredProduct}
+                    soundEnabled={soundEnabled}
+                    onTrackClick={onTrackClick || (() => {})}
+                  />
+                </BorderBeam>
+              );
+            }
+
+            if (isEmpty) {
+              /* Explicitly cleared by admin: empty */
+              return null;
+            }
+
             /* Default placeholder state: matches homepage card */
-            <BorderBeam
-              duration={5}
-              size={260}
-              colorFrom="#ffaa40"
-              colorMid="#9c40ff"
-              colorTo="#00d2ff"
-            >
-              <button
-                type="button"
-                onClick={() => {
-                  playSound('click', soundEnabled);
-                  onClose();
-                  onOpenFeaturedSpotModal?.();
-                }}
-                className="w-full rounded-xl border border-neutral-700 bg-[#2a2a2a] px-3 py-3.5 sm:px-4 sm:py-4 hover:border-neutral-500 hover:bg-[#303030] transition-all cursor-pointer text-left block"
+            return (
+              <BorderBeam
+                duration={5}
+                size={260}
+                colorFrom="#ffaa40"
+                colorMid="#9c40ff"
+                colorTo="#00d2ff"
               >
-                <div className="flex items-center gap-2.5">
-                  <Crown className="h-4 w-4 text-mint-400 shrink-0" />
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <p className="text-xs font-bold text-white">Featured spot</p>
-                    <span className="text-[10px] text-neutral-500">—</span>
-                    <p className="text-[11px] text-neutral-400 font-medium">Get featured for 30 days</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    playSound('click', soundEnabled);
+                    onClose();
+                    onOpenFeaturedSpotModal?.();
+                  }}
+                  className="w-full rounded-xl border border-neutral-700 bg-[#2a2a2a] px-3 py-3.5 sm:px-4 sm:py-4 hover:border-neutral-500 hover:bg-[#303030] transition-all cursor-pointer text-left block"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                      <div className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg bg-neutral-800 text-neutral-400">
+                        <Sparkles className="h-4 w-4 text-amber-400 animate-pulse" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs sm:text-sm font-bold text-white truncate">
+                          Claim this featured spot
+                        </p>
+                        <p className="text-[10px] sm:text-xs text-neutral-400 truncate">
+                          Put your product in front of thousands of founders
+                        </p>
+                      </div>
+                    </div>
+                    <span className="shrink-0 rounded-lg border border-neutral-700 bg-[#343434] px-2.5 py-1 text-[10px] sm:text-xs font-bold text-white">
+                      Reserve
+                    </span>
                   </div>
-                </div>
-              </button>
-            </BorderBeam>
-          )}
+                </button>
+              </BorderBeam>
+            );
+          })()}
         </div>
 
         {/* Action Buttons */}

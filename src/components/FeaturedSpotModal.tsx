@@ -19,8 +19,8 @@ interface FeaturedSpotModalProps {
 const FEATURED_PLAN = {
   id: '30days' as const,
   name: '30 Days',
-  price: 999,
-  perDay: 33.30,
+  price: 99,
+  perDay: 3.30,
   description: 'Top directory placement for 30 consecutive days',
   features: [
     'Pinned #1 featured banner at the top of the directory',
@@ -260,7 +260,7 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
           </>
         )}
 
-        {/* Step 2: Clean Pricing Card ($999 for 30 Days) */}
+        {/* Step 2: Clean Pricing Card ($99 for 30 Days) */}
         {step === 'plan' && selectedProduct && (
           <>
             <div className="text-center mb-5">
@@ -315,7 +315,7 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
           </>
         )}
 
-        {/* Step 3: Confirm & Pay ($999) */}
+        {/* Step 3: Confirm & Pay ($99) */}
         {step === 'confirm' && selectedProduct && (
           <>
             <div className="text-center mb-5">

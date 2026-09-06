@@ -1,5 +1,82 @@
 import { supabase } from './supabase';
-import { Product, Category, Comment } from '../types';
+import { Product, Category, Comment, WebsiteSubmission } from '../types';
+
+// ── Submissions ──
+
+/** Map a Supabase DB row to our WebsiteSubmission type */
+export const mapDbSubmission = (row: Record<string, unknown>): WebsiteSubmission => ({
+  id: row.id as string,
+  name: row.name as string,
+  tagline: row.tagline as string,
+  url: row.url as string,
+  logoUrl: (row.logo_url as string) || undefined,
+  screenshots: (row.screenshots as string[]) || undefined,
+  demoVideoUrl: (row.demo_video_url as string) || undefined,
+  twitterHandle: (row.twitter_handle as string) || undefined,
+  socials: (row.socials as WebsiteSubmission['socials']) || undefined,
+  creatorName: (row.creator_name as string) || undefined,
+  creatorUsername: (row.creator_username as string) || undefined,
+  creatorXHandle: (row.creator_x_handle as string) || undefined,
+  creatorAvatar: (row.creator_avatar as string) || undefined,
+  creatorRole: (row.creator_role as string) || undefined,
+  category: row.category as Category,
+  backerName: (row.backer_name as string) || 'Creator',
+  backerEmail: (row.backer_email as string) || undefined,
+  status: (row.status as WebsiteSubmission['status']) || 'under_review',
+  submittedAt: typeof row.submitted_at === 'number' ? row.submitted_at : Number(row.submitted_at) || Date.now(),
+  reviewedAt: typeof row.reviewed_at === 'number' ? row.reviewed_at : (row.reviewed_at ? Number(row.reviewed_at) : undefined),
+  rejectionReason: (row.rejection_reason as string) || undefined,
+  targetAudience: (row.target_audience as string) || undefined,
+  pricingModel: (row.pricing_model as string) || undefined,
+  submittedBy: (row.submitted_by as string) || undefined,
+  offerDiscount: (row.offer_discount as string) || undefined,
+  offerCode: (row.offer_code as string) || undefined,
+  offerUrl: (row.offer_url as string) || undefined,
+  offerDetails: (row.offer_details as string) || undefined,
+  description: (row.description as string) || undefined,
+  problemItSolves: (row.problem_it_solves as string) || undefined,
+  solution: (row.solution as string) || undefined,
+  uniqueSellingPoint: (row.unique_selling_point as string) || undefined,
+});
+
+/** Map a WebsiteSubmission to Supabase insert/update format */
+export const toDbSubmission = (sub: WebsiteSubmission) => {
+  const isUuid = sub.submittedBy && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sub.submittedBy);
+  return {
+    id: sub.id,
+    name: sub.name,
+    tagline: sub.tagline,
+    url: sub.url,
+    logo_url: sub.logoUrl || null,
+    screenshots: sub.screenshots || null,
+    demo_video_url: sub.demoVideoUrl || null,
+    twitter_handle: sub.twitterHandle || null,
+    socials: sub.socials || null,
+    creator_name: sub.creatorName || null,
+    creator_username: sub.creatorUsername || null,
+    creator_x_handle: sub.creatorXHandle || null,
+    creator_avatar: sub.creatorAvatar || null,
+    creator_role: sub.creatorRole || null,
+    category: sub.category,
+    backer_name: sub.backerName || 'Creator',
+    backer_email: sub.backerEmail || null,
+    status: sub.status || 'under_review',
+    submitted_at: sub.submittedAt || Date.now(),
+    reviewed_at: sub.reviewedAt || null,
+    rejection_reason: sub.rejectionReason || null,
+    target_audience: sub.targetAudience || null,
+    pricing_model: sub.pricingModel || null,
+    submitted_by: isUuid ? sub.submittedBy : null,
+    offer_discount: sub.offerDiscount || null,
+    offer_code: sub.offerCode || null,
+    offer_url: sub.offerUrl || null,
+    offer_details: sub.offerDetails || null,
+    description: sub.description || null,
+    problem_it_solves: sub.problemItSolves || null,
+    solution: sub.solution || null,
+    unique_selling_point: sub.uniqueSellingPoint || null,
+  };
+};
 
 // ── Products ──
 
@@ -39,45 +116,117 @@ export const mapDbProduct = (row: Record<string, unknown>): Product => ({
   pricingModel: (row.pricing_model as string) || undefined,
   keyHighlights: (row.key_highlights as Product['keyHighlights']) || undefined,
   bidHistory: (row.bid_history as Product['bidHistory']) || [],
+  offerDiscount: (row.offer_discount as string) || undefined,
+  offerCode: (row.offer_code as string) || undefined,
+  offerUrl: (row.offer_url as string) || undefined,
+  offerDetails: (row.offer_details as string) || undefined,
 });
 
 /** Map a Product to Supabase insert/update format */
-export const toDbProduct = (p: Product) => ({
-  id: p.id,
-  rank: p.rank,
-  previous_rank: p.previousRank || null,
-  name: p.name,
-  tagline: p.tagline,
-  url: p.url,
-  logo_url: p.logoUrl || null,
-  screenshots: p.screenshots || null,
-  demo_video_url: p.demoVideoUrl || null,
-  twitter_handle: p.twitterHandle || null,
-  socials: p.socials || null,
-  creator_name: p.creatorName || null,
-  creator_username: p.creatorUsername || null,
-  creator_x_handle: p.creatorXHandle || null,
-  creator_avatar: p.creatorAvatar || null,
-  creator_role: p.creatorRole || null,
-  category: p.category,
-  upvotes: p.upvotes ?? 0,
-  dino_score: p.dinoScore ?? 0,
-  total_bid: p.totalBid ?? 0,
-  clicks: p.clicks ?? 0,
-  created_at: p.createdAt,
-  updated_at: p.updatedAt,
-  is_user_owned: false,
-  submitted_by: p.submittedBy || null,
-  verified: p.verified || false,
-  description: p.description || null,
-  what_it_does: p.whatItDoes || null,
-  features: p.features || null,
-  use_cases: p.useCases || null,
-  target_audience: p.targetAudience || null,
-  pricing_model: p.pricingModel || null,
-  key_highlights: p.keyHighlights || null,
-  bid_history: p.bidHistory || [],
-});
+export const toDbProduct = (p: Product) => {
+  const isUuid = p.submittedBy && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(p.submittedBy);
+  return {
+    id: p.id,
+    rank: p.rank,
+    previous_rank: p.previousRank || null,
+    name: p.name,
+    tagline: p.tagline,
+    url: p.url,
+    logo_url: p.logoUrl || null,
+    screenshots: p.screenshots || null,
+    demo_video_url: p.demoVideoUrl || null,
+    twitter_handle: p.twitterHandle || null,
+    socials: p.socials || null,
+    creator_name: p.creatorName || null,
+    creator_username: p.creatorUsername || null,
+    creator_x_handle: p.creatorXHandle || null,
+    creator_avatar: p.creatorAvatar || null,
+    creator_role: p.creatorRole || null,
+    category: p.category,
+    upvotes: p.upvotes ?? 0,
+    dino_score: p.dinoScore ?? 0,
+    total_bid: p.totalBid ?? 0,
+    clicks: p.clicks ?? 0,
+    created_at: p.createdAt || Date.now(),
+    updated_at: p.updatedAt || Date.now(),
+    is_user_owned: false,
+    submitted_by: isUuid ? p.submittedBy : null,
+    verified: p.verified || false,
+    description: p.description || null,
+    what_it_does: p.whatItDoes || null,
+    features: p.features || null,
+    use_cases: p.useCases || null,
+    target_audience: p.targetAudience || null,
+    pricing_model: p.pricingModel || null,
+    key_highlights: p.keyHighlights || null,
+    bid_history: p.bidHistory || [],
+    offer_discount: p.offerDiscount || null,
+    offer_code: p.offerCode || null,
+    offer_url: p.offerUrl || null,
+    offer_details: p.offerDetails || null,
+  };
+};
+
+/** Convert a WebsiteSubmission to a live Product object */
+export function submissionToProduct(sub: WebsiteSubmission, rank: number = 1): Product {
+  const domain = sub.url.replace(/^https?:\/\//i, '').split('/')[0];
+  const favicon = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
+  const prodId = sub.id ? (sub.id.startsWith('prod-') ? sub.id : `prod-${sub.id}`) : `prod-${Date.now()}`;
+  return {
+    id: prodId,
+    rank,
+    previousRank: rank,
+    name: sub.name,
+    tagline: sub.tagline,
+    url: sub.url,
+    logoUrl: sub.logoUrl || favicon,
+    screenshots: sub.screenshots,
+    demoVideoUrl: sub.demoVideoUrl,
+    twitterHandle: sub.twitterHandle,
+    socials: sub.socials,
+    creatorName: sub.creatorName,
+    creatorUsername: sub.creatorUsername,
+    creatorXHandle: sub.creatorXHandle,
+    creatorAvatar: sub.creatorAvatar,
+    creatorRole: sub.creatorRole,
+    category: sub.category,
+    totalBid: 0,
+    dinoScore: 0,
+    upvotes: 0,
+    clicks: 0,
+    createdAt: sub.submittedAt || Date.now(),
+    updatedAt: Date.now(),
+    verified: true,
+    isUserOwned: false,
+    submittedBy: sub.submittedBy,
+    description: sub.description || `${sub.name} is a high-quality product in the ${sub.category} ecosystem. ${sub.tagline}.`,
+    whatItDoes: [
+      sub.problemItSolves ? `Problem: ${sub.problemItSolves}` : `Core Workflow Acceleration: Streamlines essential ${sub.category.toLowerCase()} tasks.`,
+      sub.solution ? `Solution: ${sub.solution}` : `Intuitive User Interface: Clean usability and keyboard-friendly navigation.`,
+      sub.uniqueSellingPoint ? `Advantage: ${sub.uniqueSellingPoint}` : `High Reliability & Speed: Designed for scale with secure cloud infrastructure.`,
+      `Integration Capabilities: Connects with your favorite web and developer workflows.`
+    ],
+    features: [
+      { title: 'Core Superpower', description: sub.solution || `Built with cutting-edge tech for ${sub.category.toLowerCase()} workflows.`, tag: 'Core Superpower' },
+      { title: 'Key Advantage', description: sub.uniqueSellingPoint || 'Get started in seconds with zero friction.', tag: 'Usability' }
+    ],
+    useCases: [
+      { title: 'Ideal Audience & Use Case', description: sub.targetAudience ? `Tailored for ${sub.targetAudience}` : `Empowers builders to achieve higher throughput in ${sub.category.toLowerCase()}.`, audience: sub.targetAudience || 'Builders & Teams' }
+    ],
+    targetAudience: sub.targetAudience || 'Makers, software builders, and modern digital teams.',
+    pricingModel: sub.pricingModel || 'Free tier / Flexible plans available',
+    offerDiscount: sub.offerDiscount,
+    offerCode: sub.offerCode,
+    offerUrl: sub.offerUrl,
+    offerDetails: sub.offerDetails,
+    keyHighlights: [
+      { label: 'Category', value: sub.category },
+      { label: 'Submitted By', value: sub.backerName || 'Community Creator' },
+      { label: 'Status', value: 'Live on Directory' }
+    ],
+    bidHistory: [],
+  };
+}
 
 /**
  * Whether the remote `products` table has the `screenshots` column yet.
@@ -127,7 +276,37 @@ export async function loadProducts(): Promise<Product[] | null> {
   return data.map(mapDbProduct);
 }
 
-/** Save all products to Supabase (full replace) */
+/** Guaranteed single-request batched rank updates in Supabase */
+export async function saveProductRanksDirect(products: Product[]): Promise<void> {
+  if (products.length === 0) return;
+  try {
+    const rankRows = products.map((p) => ({
+      id: p.id,
+      name: p.name,
+      tagline: p.tagline,
+      url: p.url,
+      category: p.category,
+      rank: p.rank,
+      previous_rank: p.previousRank || p.rank,
+      updated_at: Date.now(),
+    }));
+    const { error } = await supabase.from('products').upsert(rankRows, { onConflict: 'id' });
+    if (error) {
+      await Promise.all(
+        products.map((p) =>
+          supabase
+            .from('products')
+            .update({ rank: p.rank, previous_rank: p.previousRank || p.rank })
+            .eq('id', p.id)
+        )
+      );
+    }
+  } catch (err) {
+    console.warn('saveProductRanksDirect note:', err);
+  }
+}
+
+/** Save all products to Supabase in a single batched upsert */
 export async function saveAllProducts(products: Product[]): Promise<void> {
   if (products.length === 0) return;
   try {
@@ -146,12 +325,18 @@ export async function saveAllProducts(products: Product[]): Promise<void> {
       }
       return row;
     });
-    await supabase.from('products').upsert(rows, { onConflict: 'id' });
-  } catch {}
+    const { error } = await supabase.from('products').upsert(rows, { onConflict: 'id' });
+    if (error) {
+      await saveProductRanksDirect(products);
+    }
+  } catch (err) {
+    console.warn('saveAllProducts fallback to rank save:', err);
+    await saveProductRanksDirect(products);
+  }
 }
 
-/** Insert a single product (payload respects whether screenshots are supported yet) */
-export async function insertProductDirect(p: Product): Promise<void> {
+/** Insert a single product into Supabase with robust fallback */
+export async function insertProductDirect(p: Product): Promise<boolean> {
   try {
     const [includeScreenshots, includeSocials] = await Promise.all([
       screenshotsColumnAvailable(),
@@ -164,9 +349,42 @@ export async function insertProductDirect(p: Product): Promise<void> {
       delete row.creator_name;
       delete row.creator_username;
       delete row.creator_x_handle;
+      delete row.creator_avatar;
+      delete row.creator_role;
     }
-    await supabase.from('products').insert(row);
-  } catch {}
+    const { error } = await supabase.from('products').upsert(row, { onConflict: 'id' });
+    if (!error) return true;
+
+    // Fallback minimal insert
+    console.warn('insertProductDirect primary insert failed, retrying minimal:', error.message);
+    const minimal: Record<string, unknown> = {
+      id: p.id,
+      rank: p.rank,
+      name: p.name,
+      tagline: p.tagline,
+      url: p.url,
+      category: p.category,
+      upvotes: p.upvotes ?? 0,
+      dino_score: p.dinoScore ?? 0,
+      total_bid: p.totalBid ?? 0,
+      clicks: p.clicks ?? 0,
+      created_at: p.createdAt || Date.now(),
+      updated_at: p.updatedAt || Date.now(),
+      verified: true,
+      is_user_owned: false,
+    };
+    if (p.logoUrl && !p.logoUrl.startsWith('data:image')) minimal.logo_url = p.logoUrl;
+    if (p.twitterHandle) minimal.twitter_handle = p.twitterHandle;
+    if (p.description) minimal.description = p.description;
+    if (p.targetAudience) minimal.target_audience = p.targetAudience;
+    if (p.pricingModel) minimal.pricing_model = p.pricingModel;
+
+    const { error: fallbackError } = await supabase.from('products').upsert(minimal, { onConflict: 'id' });
+    return !fallbackError;
+  } catch (err) {
+    console.error('insertProductDirect failed:', err);
+    return false;
+  }
 }
 
 /** Update an existing product in Supabase */
@@ -294,7 +512,7 @@ export async function fetchComments(forceFresh = false): Promise<Comment[]> {
       return cache ? cache.data : [];
     }
 
-    const mapped: Comment[] = data.map((row) => ({
+    const mapped: Comment[] = (data || []).map((row) => ({
       id: row.id as string,
       productId: row.product_id as string,
       userName: row.user_name as string,
@@ -304,8 +522,17 @@ export async function fetchComments(forceFresh = false): Promise<Comment[]> {
       createdAt: Number(row.created_at) || Date.now(),
     }));
 
-    persistCommentsCache(mapped);
-    return mapped;
+    // Merge remote comments with any local/cached comments
+    const localComments = cache ? cache.data : [];
+    const merged = [...mapped];
+    for (const loc of localComments) {
+      if (!merged.some((m) => m.id === loc.id)) {
+        merged.push(loc);
+      }
+    }
+
+    persistCommentsCache(merged);
+    return merged;
   } catch {
     return cache ? cache.data : [];
   }
@@ -427,17 +654,22 @@ export async function getGlobalFeaturedProduct(): Promise<FeaturedProductConfig>
       const idRow = data.find((r) => r.key === 'featured_product_id');
       const expRow = data.find((r) => r.key === 'featured_expires_at');
 
-      const productId = idRow?.value || null;
+      const rawVal = idRow?.value;
       const expiresAt = expRow?.value ? parseInt(expRow.value, 10) : null;
+
+      if (rawVal === 'empty' || rawVal === '') {
+        return { productId: 'empty', expiresAt: null };
+      }
+      if (rawVal === 'default' || !rawVal) {
+        return { productId: null, expiresAt: null };
+      }
 
       // If expired, clear it
       if (expiresAt && expiresAt < Date.now()) {
         return { productId: null, expiresAt: null };
       }
 
-      if (productId) {
-        return { productId, expiresAt };
-      }
+      return { productId: rawVal, expiresAt };
     }
   } catch {}
 
@@ -446,12 +678,20 @@ export async function getGlobalFeaturedProduct(): Promise<FeaturedProductConfig>
     const localId = localStorage.getItem('topsaas_featured_product');
     const localExp = localStorage.getItem('topsaas_featured_expiry');
     const exp = localExp ? parseInt(localExp, 10) : null;
+
+    if (localId === 'empty' || localId === '') {
+      return { productId: 'empty', expiresAt: null };
+    }
+    if (localId === 'default' || !localId) {
+      return { productId: null, expiresAt: null };
+    }
+
     if (exp && exp < Date.now()) {
       localStorage.removeItem('topsaas_featured_product');
       localStorage.removeItem('topsaas_featured_expiry');
       return { productId: null, expiresAt: null };
     }
-    return { productId: localId || null, expiresAt: exp };
+    return { productId: localId, expiresAt: exp };
   } catch {
     return { productId: null, expiresAt: null };
   }
@@ -462,23 +702,30 @@ export async function setGlobalFeaturedProduct(
   productId: string | null,
   durationDays: number = 30
 ): Promise<void> {
-  const expiresAt = productId ? Date.now() + durationDays * 86400000 : 0;
+  const normalizedId = (!productId || productId === 'default') 
+    ? 'default' 
+    : (productId === 'empty' || productId === '') 
+    ? 'empty' 
+    : productId;
+
+  const isCustomProduct = normalizedId !== 'default' && normalizedId !== 'empty';
+  const expiresAt = isCustomProduct ? Date.now() + durationDays * 86400000 : 0;
 
   // 1. Sync to local storage
   try {
-    if (productId) {
-      localStorage.setItem('topsaas_featured_product', productId);
-      localStorage.setItem('topsaas_featured_expiry', expiresAt.toString());
-    } else {
+    if (normalizedId === 'default') {
       localStorage.removeItem('topsaas_featured_product');
       localStorage.removeItem('topsaas_featured_expiry');
+    } else {
+      localStorage.setItem('topsaas_featured_product', normalizedId);
+      localStorage.setItem('topsaas_featured_expiry', expiresAt.toString());
     }
   } catch {}
 
   // 2. Sync to Supabase site_settings
   try {
     await supabase.from('site_settings').upsert([
-      { key: 'featured_product_id', value: productId || '' },
+      { key: 'featured_product_id', value: normalizedId },
       { key: 'featured_expires_at', value: expiresAt.toString() },
     ]);
   } catch {}

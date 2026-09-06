@@ -24,7 +24,7 @@ export const SpotlightCard: React.FC<SpotlightCardProps> = ({ soundEnabled, onRe
       <div className="px-4 py-4 text-center">
         <div className="flex items-baseline justify-center gap-1">
           <span className="text-[11px] font-bold text-neutral-400">From</span>
-          <span className="font-mono-num text-[28px] font-black leading-none tracking-tight text-neutral-950">$999</span>
+          <span className="font-mono-num text-[28px] font-black leading-none tracking-tight text-neutral-950">$99</span>
           <span className="text-[10px] font-semibold text-neutral-400">/ 30 days</span>
         </div>
         <p className="mx-auto mt-2 max-w-[200px] text-[11px] font-medium leading-relaxed text-neutral-500">

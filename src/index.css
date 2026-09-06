@@ -137,4 +137,47 @@
   }
 }
 
+/* ── Bento Grid Tile Hover System ── */
+.bento-tile {
+  position: relative;
+  background-color: #2a2a2a;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
 
+.bento-tile:hover {
+  background-color: #353535 !important;
+  z-index: 20;
+  transform: translateY(-2px);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12), 0 8px 24px -4px rgba(0, 0, 0, 0.55);
+}
+
+.bento-tile-winner {
+  background-color: #2d2d2d;
+}
+
+.bento-tile-winner:hover {
+  background-color: #383838 !important;
+  z-index: 20;
+  transform: translateY(-2px);
+  box-shadow: 0 0 0 1px rgba(102, 204, 136, 0.6), 0 8px 24px -4px rgba(71, 180, 110, 0.2);
+}
+
+.bento-tile-sponsor:hover {
+  background-color: #363636 !important;
+  z-index: 20;
+  transform: translateY(-2px);
+  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.6), 0 8px 24px -4px rgba(245, 158, 11, 0.2);
+}
+
+/* ── Standalone Card Hover ── */
+.product-card-hover {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.product-card-hover:hover {
+  background-color: #333333 !important;
+  border-color: #555555 !important;
+  box-shadow: 0 8px 28px -4px rgba(0, 0, 0, 0.5);
+  transform: translateY(-2px);
+}

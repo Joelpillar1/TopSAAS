@@ -3,6 +3,7 @@ import { ShieldCheck, ExternalLink } from 'lucide-react';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
+import { BorderBeam } from './BorderBeam';
 
 interface HeroClaimBannerProps {
   topProduct?: Product;
@@ -23,14 +24,15 @@ export const HeroClaimBanner: React.FC<HeroClaimBannerProps> = ({
   };
 
   return (
-    <a
-      id="hero-claim-banner"
-      href={topProduct.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      onClick={handleClick}
-      className="group relative flex items-center justify-between overflow-hidden rounded-xl border-2 border-mint-500/50 bg-[#2a2a2a] px-3.5 py-3 sm:px-4 sm:py-3 shadow-xs hover:bg-[#333333] transition-all cursor-pointer text-left block"
-    >
+    <BorderBeam size="md" colorVariant="colorful" strength={0.7} className="w-full rounded-xl">
+      <a
+        id="hero-claim-banner"
+        href={topProduct.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={handleClick}
+        className="group relative flex items-center justify-between overflow-hidden rounded-xl border border-mint-500/40 bg-[#2a2a2a] px-3.5 py-3 sm:px-4 sm:py-3 shadow-xs hover:bg-[#333333] transition-all cursor-pointer text-left block w-full"
+      >
       {/* Left: Featured Product Info */}
       <div className="flex items-center gap-3 min-w-0 flex-1">
 
@@ -73,5 +75,6 @@ export const HeroClaimBanner: React.FC<HeroClaimBannerProps> = ({
         </div>
       </div>
     </a>
+    </BorderBeam>
   );
 };

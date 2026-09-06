@@ -20,7 +20,10 @@ import {
   User as UserIcon,
   Video,
   Play,
-  ChevronUp
+  ChevronUp,
+  Tag,
+  Copy,
+  Check
 } from 'lucide-react';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
@@ -130,18 +133,25 @@ export const ProductPage: React.FC<ProductPageProps> = ({
 }) => {
   const [commentText, setCommentText] = useState('');
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [copiedOffer, setCopiedOffer] = useState(false);
   const isRankOne = product.rank === 1;
+
+  const handleCopyOfferCode = (code: string) => {
+    playSound('click', soundEnabled);
+    try {
+      navigator.clipboard.writeText(code);
+    } catch {}
+    setCopiedOffer(true);
+    setTimeout(() => setCopiedOffer(false), 2000);
+  };
 
   // Filter related products (same category or neighboring ranks)
   const relatedProducts = allProducts
     .filter((p) => p.id !== product.id && (p.category === product.category || Math.abs(p.rank - product.rank) <= 2))
     .slice(0, 3);
 
-  // Top 5 websites sorted by rank for bottom sticky carousel
-  const topFiveWebsites = allProducts.slice(0, 5);
-
   return (
-    <div className="min-h-screen bg-[#222222] text-neutral-100 flex flex-col font-sans pb-28 sm:pb-28">
+    <div className="min-h-screen bg-[#222222] text-neutral-100 flex flex-col font-sans pb-12 sm:pb-16">
       {/* Top sticky navigation breadcrumb bar */}
       <div className="sticky top-0 z-40 border-b border-neutral-800 bg-[#222222]/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-3.5 py-2.5 sm:px-6 sm:py-3 gap-2">
@@ -360,6 +370,68 @@ export const ProductPage: React.FC<ProductPageProps> = ({
             </div>
           </div>
 
+          {/* Exclusive Offer / Viewer Deal Banner */}
+          {(product.offerDiscount || product.offerCode) && (
+            <div className="relative overflow-hidden rounded-2xl border-2 border-amber-500/50 bg-[#242424] p-4 sm:p-5 shadow-lg">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-start gap-3 min-w-0">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-400 text-black shadow-md">
+                    <Tag className="h-5 w-5 fill-black stroke-black" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="rounded-full bg-amber-400 text-black px-2 py-0.5 text-[10px] font-black uppercase tracking-wider shadow-2xs">
+                        Exclusive TopSAAS Deal
+                      </span>
+                      {product.offerDiscount && (
+                        <span className="text-sm sm:text-base font-black text-amber-300">
+                          {product.offerDiscount}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-neutral-300 mt-1 font-medium">
+                      {product.offerDetails || `Special discount available for TopSAAS viewers.`}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+                  {product.offerCode && (
+                    <button
+                      type="button"
+                      onClick={() => handleCopyOfferCode(product.offerCode!)}
+                      className="flex-1 sm:flex-initial flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-amber-400/80 bg-[#1a1a1a] px-3.5 py-2.5 text-xs font-mono font-bold text-amber-300 hover:bg-amber-400/10 hover:border-amber-300 transition-all cursor-pointer min-h-[40px]"
+                      title="Click to copy promo code"
+                    >
+                      <span>{product.offerCode}</span>
+                      {copiedOffer ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-sans font-black text-emerald-400 bg-emerald-500/20 px-1.5 py-0.5 rounded">
+                          <Check className="h-3 w-3" /> Copied!
+                        </span>
+                      ) : (
+                        <Copy className="h-3.5 w-3.5 text-neutral-400" />
+                      )}
+                    </button>
+                  )}
+
+                  <a
+                    href={product.offerUrl || product.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => {
+                      playSound('click', soundEnabled);
+                      onTrackClick(product.id, product.offerUrl || product.url);
+                    }}
+                    className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-400 px-4 py-2.5 text-xs font-black text-black hover:bg-amber-300 active:scale-95 transition-all shadow-md cursor-pointer min-h-[40px]"
+                  >
+                    <span>Redeem Deal</span>
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Metrics bar */}
           <div className="grid grid-cols-2 gap-3 pt-4 border-t border-neutral-800">
             <div className="rounded-xl border border-neutral-800 bg-[#222222] p-3 shadow-2xs">
@@ -576,7 +648,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
 
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {product.features.map((feat, idx) => (
-                    <div key={idx} className="rounded-xl border border-neutral-800 bg-[#222222] p-4 space-y-1.5">
+                    <div key={idx} className="rounded-xl border border-neutral-800 bg-[#222222] p-4 space-y-1.5 transition-all duration-200 hover:border-neutral-700 hover:bg-[#262626] hover:shadow-sm">
                       <div className="flex items-center justify-between gap-2">
                         <h3 className="text-xs font-black text-white">
                           {feat.title}
@@ -608,7 +680,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
 
                 <div className="space-y-3">
                   {product.useCases.map((uc, idx) => (
-                    <div key={idx} className="rounded-xl border border-neutral-800 bg-[#2a2a2a] p-4 space-y-1">
+                    <div key={idx} className="rounded-xl border border-neutral-800 bg-[#222222] p-4 space-y-1 transition-all duration-200 hover:border-neutral-700 hover:bg-[#262626] hover:shadow-sm">
                       <div className="flex items-center justify-between">
                         <h3 className="text-xs font-bold text-white">
                           {uc.title}
@@ -1055,62 +1127,6 @@ export const ProductPage: React.FC<ProductPageProps> = ({
           </span>
         </div>
       )}
-
-      {/* Sticky Bottom Infinite Scrolling Top 5 Websites Bar */}
-      <aside 
-        aria-label="Top Ranked Websites Live Feed"
-        className="fixed bottom-0 left-0 right-0 z-40 border-t border-neutral-800 bg-[#222222]/90 backdrop-blur-md py-2 shadow-lg"
-      >
-        <div className="mx-auto flex max-w-5xl items-center px-3 sm:px-6">
-          {/* Infinite scrolling marquee container */}
-          <div className="relative flex-1 overflow-hidden mask-fade-edges">
-            <div className="animate-marquee-infinite flex items-center gap-3">
-              {[...topFiveWebsites, ...topFiveWebsites].map((item, idx) => {
-                const isCurrentViewing = item.id === product.id;
-
-                return (
-                  <a
-                    key={`${item.id}-${idx}`}
-                    href={item.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => {
-                      playSound('click', soundEnabled);
-                      onTrackClick(item.id, item.url);
-                    }}
-                    className={`group inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-bold transition-all cursor-pointer shrink-0 ${
-                      isCurrentViewing
-                        ? 'border-2 border-mint-500 bg-[#2f2f2f] shadow-2xs'
-                        : 'border-neutral-700 bg-[#2a2a2a] hover:border-neutral-500 hover:bg-[#333333]'
-                    }`}
-                  >
-                    {/* Logo / Favicon */}
-                    <div className="flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-md border border-neutral-700 bg-[#222222] shadow-2xs">
-                      {item.logoUrl ? (
-                        <img
-                          src={item.logoUrl}
-                          alt={item.name}
-                          className="h-full w-full object-cover"
-                          referrerPolicy="no-referrer"
-                        />
-                      ) : (
-                        <span className="font-bold text-[10px] text-neutral-300">
-                          {item.name[0]}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Website Name */}
-                    <span className="text-white font-black whitespace-nowrap">
-                      {item.name}
-                    </span>
-                  </a>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </aside>
     </div>
   );
 };

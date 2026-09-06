@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import confetti from 'canvas-confetti';
-import { AlertCircle, Check, ChevronDown, Loader2, Search, Video, X } from 'lucide-react';
+import { AlertCircle, Check, ChevronDown, ChevronLeft, ChevronRight, Clock, Loader2, Search, Video, X, Tag, Percent, Gift, Sparkles, Trash2, GripVertical, Star } from 'lucide-react';
 import { Category, PricingModel, ProductSocial, SubmitProductDetails } from '../types';
 import { SUBMISSION_CATEGORIES } from './BidModal';
 import { getWebsiteFavicon } from '../utils/logo';
@@ -46,6 +46,10 @@ interface FormState {
   creatorXHandle: string;
   creatorAvatar: string;
   creatorRole: string;
+  offerDiscount: string;
+  offerCode: string;
+  offerUrl: string;
+  offerDetails: string;
 }
 
 type FieldKey = 'name' | 'tagline' | 'url' | 'category' | 'demoVideoUrl';
@@ -78,6 +82,10 @@ const EMPTY_FORM: FormState = {
   creatorXHandle: '',
   creatorAvatar: '',
   creatorRole: '',
+  offerDiscount: '',
+  offerCode: '',
+  offerUrl: '',
+  offerDetails: '',
 };
 
 function autoFormatUrl(raw: string): string {
@@ -471,6 +479,20 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
     }
   };
 
+  const [draggedScreenshotIndex, setDraggedScreenshotIndex] = useState<number | null>(null);
+  const [dragOverScreenshotIndex, setDragOverScreenshotIndex] = useState<number | null>(null);
+
+  const moveScreenshot = (fromIndex: number, toIndex: number) => {
+    if (toIndex < 0 || toIndex >= form.screenshots.length || fromIndex === toIndex) return;
+    setForm((prev) => {
+      const updated = [...prev.screenshots];
+      const [moved] = updated.splice(fromIndex, 1);
+      updated.splice(toIndex, 0, moved);
+      return { ...prev, screenshots: updated };
+    });
+    playSound('click', soundEnabled);
+  };
+
   const removeScreenshot = (index: number) => {
     set('screenshots', form.screenshots.filter((_, i) => i !== index));
     playSound('click', soundEnabled);
@@ -542,6 +564,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
       if (form.discord.trim()) socials.push({ platform: 'discord', url: cleanUrl(form.discord) });
       if (form.appStore.trim()) socials.push({ platform: 'app_store', url: cleanUrl(form.appStore) });
       if (form.playStore.trim()) socials.push({ platform: 'play_store', url: cleanUrl(form.playStore) });
+      if (form.chromeWebStore.trim()) socials.push({ platform: 'chrome_web_store', url: cleanUrl(form.chromeWebStore) });
       const finalCategory = form.categories.length > 0 ? (form.categories.join(', ') as Category) : form.category;
 
       const newId = await onSubmit({
@@ -564,6 +587,10 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
         problemItSolves: form.problemItSolves.trim() || undefined,
         solution: form.solution.trim() || undefined,
         uniqueSellingPoint: form.uniqueSellingPoint.trim() || undefined,
+        offerDiscount: form.offerDiscount.trim() || undefined,
+        offerCode: form.offerCode.trim() || undefined,
+        offerUrl: form.offerUrl.trim() ? autoFormatUrl(form.offerUrl) : undefined,
+        offerDetails: form.offerDetails.trim() || undefined,
       });
 
       if (!newId) {
@@ -601,41 +628,58 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
     requestAnimationFrame(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   };
 
-  // ── Success ──
+  // ── Success (Under Review) ──
   if (launched) {
     return (
       <div className="min-h-screen bg-[#222222] text-neutral-100 font-sans">
         <div className="mx-auto flex max-w-xl flex-col items-center px-4 py-20 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-[#0b0f14]">
-            <Check className="h-7 w-7" strokeWidth={3} />
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-400 shadow-lg">
+            <Clock className="h-8 w-8" strokeWidth={2.5} />
           </div>
-          <h1 className="mt-6 text-2xl font-black tracking-tight text-white">{launched.name} is listed</h1>
-          <p className="mt-2 max-w-sm text-sm leading-relaxed text-neutral-400">
-            Your product is now in the directory and part of this week&apos;s launch round.
+
+          <div className="mt-6 inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 px-3 py-1 text-xs font-bold text-amber-300">
+            <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
+            Pending Approval
+          </div>
+
+          <h1 className="mt-3 text-2xl sm:text-3xl font-black tracking-tight text-white">{launched.name} is submitted</h1>
+          <p className="mt-2 max-w-md text-xs sm:text-sm leading-relaxed text-neutral-400">
+            Your launch has been received and under review queue. Once approved your product will automatically appear live in the directory.
           </p>
+
+          <div className="mt-6 w-full rounded-2xl border border-neutral-800 bg-[#2a2a2a] p-4 text-left space-y-2.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-neutral-400">Review status</span>
+              <span className="font-bold text-amber-400 flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5" /> Pending Approval
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-xs border-t border-neutral-800 pt-2.5">
+              <span className="text-neutral-400">Turnaround time</span>
+              <span className="font-bold text-white">Usually reviewed within 24 hours</span>
+            </div>
+            <div className="flex items-center justify-between text-xs border-t border-neutral-800 pt-2.5">
+              <span className="text-neutral-400">Submitted URL</span>
+              <span className="font-bold text-neutral-300 truncate max-w-[240px]">{form.url || launched.name}</span>
+            </div>
+          </div>
+
           <div className="mt-7 flex flex-col w-full sm:w-auto sm:flex-row gap-2.5">
             <button
               type="button"
-              onClick={() => onViewListing(launched.id)}
-              className="rounded-xl bg-white px-5 py-3 text-xs font-black text-[#0b0f14] hover:bg-neutral-200 active:scale-[0.98] transition-all cursor-pointer"
-            >
-              View your listing
-            </button>
-            <button
-              type="button"
               onClick={onBack}
-              className="rounded-xl border border-neutral-700 bg-[#343434] px-5 py-3 text-xs font-bold text-neutral-200 hover:border-neutral-500 hover:text-white active:scale-[0.98] transition-all cursor-pointer"
+              className="rounded-xl bg-white px-6 py-3 text-xs font-black text-[#0b0f14] hover:bg-neutral-200 active:scale-[0.98] transition-all cursor-pointer shadow-md"
             >
               Back to directory
             </button>
+            <button
+              type="button"
+              onClick={handleStartOver}
+              className="rounded-xl border border-neutral-700 bg-[#343434] px-5 py-3 text-xs font-bold text-neutral-200 hover:border-neutral-500 hover:text-white active:scale-[0.98] transition-all cursor-pointer"
+            >
+              Submit another website
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={handleStartOver}
-            className="mt-3 text-[11px] font-semibold text-neutral-500 hover:text-white transition-colors cursor-pointer"
-          >
-            Submit another website
-          </button>
         </div>
       </div>
     );
@@ -885,27 +929,147 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
 
               {/* Feature screenshots gallery (up to 10) */}
               <div className="mt-6 border-t border-neutral-800 pt-6">
-                <div className="mb-3 flex items-baseline justify-between gap-2">
-                  <label className="text-sm font-bold text-neutral-200">Feature screenshots</label>
-                  <span className="font-mono-num text-[11px] font-semibold text-neutral-500">
+                <div className="mb-2 flex items-baseline justify-between gap-2">
+                  <div>
+                    <label className="text-sm font-bold text-neutral-200">Feature screenshots</label>
+                    <p className="text-[11px] text-neutral-400 mt-0.5">
+                      Drag to reorder or use the arrow buttons. The first image (#1) is your primary listing cover.
+                    </p>
+                  </div>
+                  <span className="font-mono-num text-[11px] font-bold text-neutral-400 bg-[#222222] px-2 py-0.5 rounded-md border border-neutral-700 shrink-0">
                     {form.screenshots.length}/10
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-                  {form.screenshots.map((src, i) => (
-                    <div key={i} className="group relative aspect-video overflow-hidden rounded-xl border border-neutral-700 bg-[#1f1f1f]">
-                      <img src={src} alt={`Screenshot ${i + 1} of ${form.name || 'your product'}`} className="h-full w-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => removeScreenshot(i)}
-                        aria-label={`Remove screenshot ${i + 1}`}
-                        className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-lg bg-black/70 text-[10px] font-black text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-3">
+                  {form.screenshots.map((src, i) => {
+                    const isFirst = i === 0;
+                    const isLast = i === form.screenshots.length - 1;
+                    const isDragging = draggedScreenshotIndex === i;
+                    const isDragOver = dragOverScreenshotIndex === i;
+
+                    return (
+                      <div
+                        key={i}
+                        draggable
+                        onDragStart={(e) => {
+                          setDraggedScreenshotIndex(i);
+                          e.dataTransfer.effectAllowed = 'move';
+                          e.dataTransfer.setData('text/plain', String(i));
+                        }}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.dataTransfer.dropEffect = 'move';
+                          if (dragOverScreenshotIndex !== i) {
+                            setDragOverScreenshotIndex(i);
+                          }
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          if (draggedScreenshotIndex !== null && draggedScreenshotIndex !== i) {
+                            moveScreenshot(draggedScreenshotIndex, i);
+                          }
+                          setDraggedScreenshotIndex(null);
+                          setDragOverScreenshotIndex(null);
+                        }}
+                        onDragEnd={() => {
+                          setDraggedScreenshotIndex(null);
+                          setDragOverScreenshotIndex(null);
+                        }}
+                        className={`group relative aspect-video overflow-hidden rounded-xl border bg-[#1f1f1f] shadow-sm transition-all duration-150 cursor-grab active:cursor-grabbing ${
+                          isDragOver
+                            ? 'border-mint-500 ring-2 ring-mint-500/50 scale-[1.03] z-10'
+                            : isDragging
+                            ? 'opacity-40 border-neutral-600'
+                            : isFirst
+                            ? 'border-mint-500/50 hover:border-mint-500/80'
+                            : 'border-neutral-700 hover:border-neutral-500'
+                        }`}
                       >
-                        X
-                      </button>
-                    </div>
-                  ))}
+                        <img
+                          src={src}
+                          alt={`Screenshot ${i + 1} of ${form.name || 'your product'}`}
+                          className="h-full w-full object-cover pointer-events-none select-none"
+                        />
+
+                        {/* Order / Cover Badge */}
+                        <div className="absolute left-2 top-2 z-10">
+                          {isFirst ? (
+                            <span className="inline-flex items-center gap-1 rounded-md bg-mint-500 px-2 py-0.5 text-[10px] font-black text-[#0b0f14] shadow-md">
+                              <Star className="h-3 w-3 fill-[#0b0f14]" />
+                              <span>#1 Cover</span>
+                            </span>
+                          ) : (
+                            <span className="rounded-md bg-black/80 backdrop-blur-xs border border-neutral-700/60 px-1.5 py-0.5 text-[10px] font-mono font-bold text-neutral-200 shadow-md">
+                              #{i + 1}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Delete Button (Top Right) */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeScreenshot(i);
+                          }}
+                          aria-label={`Remove screenshot ${i + 1}`}
+                          className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-lg bg-black/80 text-neutral-300 hover:bg-red-600 hover:text-white border border-neutral-700/60 hover:border-red-500 transition-all cursor-pointer shadow-md"
+                          title="Delete screenshot"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+
+                        {/* Bottom Overlay Controls: Move Left, Make Cover, Move Right */}
+                        <div className="absolute inset-x-0 bottom-0 z-10 flex items-center justify-between p-1.5 bg-gradient-to-t from-black/90 via-black/60 to-transparent">
+                          {/* Move Left Button */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              moveScreenshot(i, i - 1);
+                            }}
+                            disabled={isFirst}
+                            aria-label="Move left"
+                            className="flex h-6 w-6 items-center justify-center rounded-md bg-neutral-800/90 border border-neutral-700/60 text-white hover:bg-mint-500 hover:text-[#0b0f14] disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+                            title="Move earlier in gallery"
+                          >
+                            <ChevronLeft className="h-3.5 w-3.5" />
+                          </button>
+
+                          {/* Quick 'Set as Cover' button for non-cover images */}
+                          {!isFirst && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                moveScreenshot(i, 0);
+                              }}
+                              className="rounded-md bg-neutral-800/90 border border-neutral-700/60 px-2 py-0.5 text-[9px] font-bold text-neutral-300 hover:text-mint-300 hover:border-mint-500/60 transition-all cursor-pointer"
+                              title="Set this screenshot as main cover (#1)"
+                            >
+                              Set as Cover
+                            </button>
+                          )}
+
+                          {/* Move Right Button */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              moveScreenshot(i, i + 1);
+                            }}
+                            disabled={isLast}
+                            aria-label="Move right"
+                            className="flex h-6 w-6 items-center justify-center rounded-md bg-neutral-800/90 border border-neutral-700/60 text-white hover:bg-mint-500 hover:text-[#0b0f14] disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+                            title="Move later in gallery"
+                          >
+                            <ChevronRight className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
 
                   {form.screenshots.length < 10 && (
                     <button
@@ -942,7 +1106,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                   }}
                 />
                 <p className="mt-2 text-[11px] font-medium text-neutral-500">
-                  Optional — up to 10 screenshots, shown in a gallery on your listing page.
+                  Optional — up to 10 screenshots, shown in a gallery on your listing page in this exact order.
                 </p>
               </div>
 
@@ -1160,6 +1324,138 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                 <p className="mt-1.5 text-[11px] font-medium text-neutral-600">
                   Optional — shown on your listing page.
                 </p>
+              </div>
+
+              {/* Special Offer & Viewer Discount */}
+              <div className="border-t border-neutral-800 pt-5 space-y-3.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                      <Tag className="h-3.5 w-3.5" />
+                    </div>
+                    <div>
+                      <h3 className="text-xs font-bold text-white flex items-center gap-1.5">
+                        <span>Special Offer & Discount</span>
+                        <span className="rounded bg-mint-500/15 border border-mint-500/30 px-1.5 py-0.5 text-[9px] font-black text-mint-300 uppercase tracking-wider">
+                          Boosts Clicks
+                        </span>
+                      </h3>
+                      <p className="text-[11px] text-neutral-400">
+                        Offer TopSAAS viewers a discount code or promo to drive conversions and early customers.
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider">
+                    Optional
+                  </span>
+                </div>
+
+                <div className="rounded-xl border border-neutral-700/80 bg-[#222222] p-3.5 sm:p-4 space-y-3.5">
+                  {/* Preset chips for quick fill */}
+                  <div>
+                    <div className="text-[10px] font-bold text-neutral-400 mb-1.5 uppercase tracking-wider">
+                      Quick Discount Presets:
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {['10% OFF', '20% OFF', '30% OFF', '50% OFF', 'Free Trial', 'Lifetime Deal'].map((preset) => (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => {
+                            playSound('click', soundEnabled);
+                            set('offerDiscount', preset);
+                            if (!form.offerCode) {
+                              const num = preset.match(/\d+/)?.[0] || 'DEAL';
+                              set('offerCode', `TOPSAAS${num}`);
+                            }
+                          }}
+                          className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all cursor-pointer ${
+                            form.offerDiscount === preset
+                              ? 'bg-amber-400 text-black border border-amber-300 shadow-2xs'
+                              : 'bg-[#2a2a2a] text-neutral-300 border border-neutral-700 hover:border-neutral-500 hover:text-white'
+                          }`}
+                        >
+                          {preset}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className={labelClass}>
+                        Discount / Offer Headline
+                      </label>
+                      <input
+                        type="text"
+                        value={form.offerDiscount}
+                        maxLength={50}
+                        onChange={(e) => set('offerDiscount', e.target.value)}
+                        placeholder="e.g. 20% OFF or 50% Lifetime"
+                        className={inputClass(false)}
+                      />
+                      <p className="mt-1 text-[10px] text-neutral-500">
+                        Shown as a badge on directory cards & listing page.
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className={labelClass}>
+                        Promo / Coupon Code
+                      </label>
+                      <input
+                        type="text"
+                        value={form.offerCode}
+                        maxLength={30}
+                        onChange={(e) => set('offerCode', e.target.value.toUpperCase())}
+                        placeholder="e.g. TOPSAAS20"
+                        className={`${inputClass(false)} font-mono font-bold tracking-wider`}
+                      />
+                      <p className="mt-1 text-[10px] text-neutral-500">
+                        Visitors can copy this with one click on your listing.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <div>
+                      <label className={labelClass}>
+                        Offer Redemption URL
+                      </label>
+                      <input
+                        type="url"
+                        value={form.offerUrl}
+                        onChange={(e) => set('offerUrl', e.target.value)}
+                        onBlur={(e) => {
+                          const formatted = autoFormatUrl(e.target.value);
+                          if (formatted !== e.target.value) set('offerUrl', formatted);
+                        }}
+                        placeholder="e.g. https://yoursite.com/deal or checkout link"
+                        className={inputClass(false)}
+                      />
+                      <p className="mt-1 text-[10px] text-neutral-500">
+                        Optional — leave blank to use your main website URL.
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className={labelClass}>
+                        Offer Details / Terms
+                      </label>
+                      <input
+                        type="text"
+                        value={form.offerDetails}
+                        maxLength={100}
+                        onChange={(e) => set('offerDetails', e.target.value)}
+                        placeholder="e.g. Valid on first year of annual plans"
+                        className={inputClass(false)}
+                      />
+                      <p className="mt-1 text-[10px] text-neutral-500">
+                        Optional note displayed under the promo code.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Who it's for */}

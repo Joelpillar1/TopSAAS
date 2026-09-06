@@ -97,6 +97,10 @@ export interface Product {
   targetAudience?: string;
   pricingModel?: string;
   keyHighlights?: ProductHighlight[];
+  offerDiscount?: string;
+  offerCode?: string;
+  offerUrl?: string;
+  offerDetails?: string;
 }
 
 export interface Comment {
@@ -168,6 +172,10 @@ export interface SubmitProductDetails {
   problemItSolves?: string;
   solution?: string;
   uniqueSellingPoint?: string;
+  offerDiscount?: string;
+  offerCode?: string;
+  offerUrl?: string;
+  offerDetails?: string;
 }
 
 export interface WebsiteSubmission {
@@ -195,4 +203,12 @@ export interface WebsiteSubmission {
   targetAudience?: string;
   pricingModel?: string;
   submittedBy?: string; // user ID of the submitter
+  offerDiscount?: string;
+  offerCode?: string;
+  offerUrl?: string;
+  offerDetails?: string;
+  description?: string;
+  problemItSolves?: string;
+  solution?: string;
+  uniqueSellingPoint?: string;
 }

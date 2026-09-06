@@ -22,7 +22,7 @@ import { LegalPage } from './components/LegalPage';
 import { LegalTab } from './components/LegalModal';
 import { playSound } from './utils/sound';
 import { supabase } from './utils/supabase';
-import { loadProducts, debouncedSyncProducts, toggleUpvote, getUserUpvotes, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, insertProductDirect, fetchComments, addComment } from './utils/db';
+import { loadProducts, saveAllProducts, saveProductRanksDirect, debouncedSyncProducts, toggleUpvote, getUserUpvotes, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, insertProductDirect, fetchComments, addComment, getCachedCommentsSync, submissionToProduct } from './utils/db';
 import { getRecentWeeks, isInWeek } from './utils/weeks';
 import { getWebsiteFavicon } from './utils/logo';
 import { LayoutGrid, Table as TableIcon, Trophy, X, Plus, ShieldCheck, Loader2, Star, MessageCircle } from 'lucide-react';
@@ -56,41 +56,61 @@ const mapDbSubmission = (row: Record<string, unknown>): WebsiteSubmission => ({
   category: row.category as Category,
   backerName: (row.backer_name as string) || 'Creator',
   backerEmail: (row.backer_email as string) || undefined,
-  status: row.status as WebsiteSubmission['status'],
-  submittedAt: row.submitted_at as number,
-  reviewedAt: (row.reviewed_at as number) || undefined,
+  status: (row.status as WebsiteSubmission['status']) || 'under_review',
+  submittedAt: typeof row.submitted_at === 'number' ? row.submitted_at : Number(row.submitted_at) || Date.now(),
+  reviewedAt: typeof row.reviewed_at === 'number' ? row.reviewed_at : (row.reviewed_at ? Number(row.reviewed_at) : undefined),
   rejectionReason: (row.rejection_reason as string) || undefined,
   targetAudience: (row.target_audience as string) || undefined,
   pricingModel: (row.pricing_model as string) || undefined,
   submittedBy: (row.submitted_by as string) || undefined,
+  offerDiscount: (row.offer_discount as string) || undefined,
+  offerCode: (row.offer_code as string) || undefined,
+  offerUrl: (row.offer_url as string) || undefined,
+  offerDetails: (row.offer_details as string) || undefined,
+  description: (row.description as string) || undefined,
+  problemItSolves: (row.problem_it_solves as string) || undefined,
+  solution: (row.solution as string) || undefined,
+  uniqueSellingPoint: (row.unique_selling_point as string) || undefined,
 });
 
 // Map a WebsiteSubmission to Supabase insert/update format
-const toDbSubmission = (sub: WebsiteSubmission) => ({
-  id: sub.id,
-  name: sub.name,
-  tagline: sub.tagline,
-  url: sub.url,
-  logo_url: sub.logoUrl || null,
-  screenshots: sub.screenshots || null,
-  demo_video_url: sub.demoVideoUrl || null,
-  twitter_handle: sub.twitterHandle || null,
-  socials: sub.socials || null,
-  creator_name: sub.creatorName || null,
-  creator_username: sub.creatorUsername || null,
-  creator_x_handle: sub.creatorXHandle || null,
-  creator_avatar: sub.creatorAvatar || null,
-  creator_role: sub.creatorRole || null,
-  category: sub.category,
-  backer_name: sub.backerName,
-  backer_email: sub.backerEmail || null,
-  status: sub.status,
-  submitted_at: sub.submittedAt,
-  reviewed_at: sub.reviewedAt || null,
-  rejection_reason: sub.rejectionReason || null,
-  target_audience: sub.targetAudience || null,
-  pricing_model: sub.pricingModel || null,
-});
+const toDbSubmission = (sub: WebsiteSubmission) => {
+  const isUuid = sub.submittedBy && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sub.submittedBy);
+  return {
+    id: sub.id,
+    name: sub.name,
+    tagline: sub.tagline,
+    url: sub.url,
+    logo_url: sub.logoUrl || null,
+    screenshots: sub.screenshots || null,
+    demo_video_url: sub.demoVideoUrl || null,
+    twitter_handle: sub.twitterHandle || null,
+    socials: sub.socials || null,
+    creator_name: sub.creatorName || null,
+    creator_username: sub.creatorUsername || null,
+    creator_x_handle: sub.creatorXHandle || null,
+    creator_avatar: sub.creatorAvatar || null,
+    creator_role: sub.creatorRole || null,
+    category: sub.category,
+    backer_name: sub.backerName || 'Creator',
+    backer_email: sub.backerEmail || null,
+    status: sub.status || 'under_review',
+    submitted_at: sub.submittedAt || Date.now(),
+    reviewed_at: sub.reviewedAt || null,
+    rejection_reason: sub.rejectionReason || null,
+    target_audience: sub.targetAudience || null,
+    pricing_model: sub.pricingModel || null,
+    submitted_by: isUuid ? sub.submittedBy : null,
+    offer_discount: sub.offerDiscount || null,
+    offer_code: sub.offerCode || null,
+    offer_url: sub.offerUrl || null,
+    offer_details: sub.offerDetails || null,
+    description: sub.description || null,
+    problem_it_solves: sub.problemItSolves || null,
+    solution: sub.solution || null,
+    unique_selling_point: sub.uniqueSellingPoint || null,
+  };
+};
 
 let idCounter = 0;
 const generateUniqueId = (prefix: string = 'id') => {
@@ -110,8 +130,51 @@ const STORAGE_KEYS = {
   PRODUCTS: 'directory_free_products_v5',
   SOUND: 'directory_sound_enabled',
   SUBMISSIONS: 'directory_pending_submissions_v1',
+  DELETED_SUBMISSIONS: 'directory_deleted_submissions_v1',
   VIEW_LAYOUT: 'directory_view_layout',
 };
+
+/** Load the set of submission IDs that were explicitly deleted via the UI */
+function getDeletedSubmissionIds(): Set<string> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.DELETED_SUBMISSIONS);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) return new Set(arr);
+    }
+  } catch {}
+  return new Set();
+}
+
+/** Record a submission ID as permanently deleted so the merge won't re-add it */
+function markSubmissionDeleted(id: string) {
+  try {
+    const deleted = getDeletedSubmissionIds();
+    deleted.add(id);
+    deleted.add(id.toLowerCase().replace(/\/$/, ''));
+    localStorage.setItem(STORAGE_KEYS.DELETED_SUBMISSIONS, JSON.stringify([...deleted]));
+  } catch {}
+}
+
+/** Clear deleted state when a submission is created or resubmitted */
+function unmarkSubmissionDeleted(idOrUrl: string) {
+  try {
+    const deleted = getDeletedSubmissionIds();
+    const key = idOrUrl.toLowerCase().replace(/\/$/, '');
+    let changed = false;
+    if (deleted.has(idOrUrl)) {
+      deleted.delete(idOrUrl);
+      changed = true;
+    }
+    if (deleted.has(key)) {
+      deleted.delete(key);
+      changed = true;
+    }
+    if (changed) {
+      localStorage.setItem(STORAGE_KEYS.DELETED_SUBMISSIONS, JSON.stringify([...deleted]));
+    }
+  } catch {}
+}
 
 export default function App() {
   // Navigation / Route state (/ vs /accept)
@@ -149,11 +212,20 @@ export default function App() {
 
 
 
-  // Submissions queue (Under Review / Approved / Rejected)
-  const [submissions, setSubmissions] = useState<WebsiteSubmission[]>(INITIAL_SUBMISSIONS);
+  // Submissions queue (Pending Approval / Approved / Rejected)
+  const [submissions, setSubmissions] = useState<WebsiteSubmission[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.SUBMISSIONS);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return INITIAL_SUBMISSIONS;
+  });
   const [submissionsLoaded, setSubmissionsLoaded] = useState(false);
 
-  // Load submissions from Supabase on mount
+  // Load submissions from Supabase on mount (Supabase DB is the authoritative source of truth)
   useEffect(() => {
     async function loadSubmissions() {
       try {
@@ -161,8 +233,93 @@ export default function App() {
           .from('submissions')
           .select('*')
           .order('submitted_at', { ascending: false });
-        if (!error && data && data.length > 0) {
-          setSubmissions(data.map(mapDbSubmission));
+        if (!error && data) {
+          const dbSubs = data.map(mapDbSubmission);
+          const dbIdSet = new Set(dbSubs.map((s) => s.id));
+          const dbUrlSet = new Set(dbSubs.map((s) => s.url.toLowerCase().replace(/\/$/, '')));
+          const deletedIds = getDeletedSubmissionIds();
+
+          setSubmissions((prev) => {
+            // All database rows are authoritative and preserved with full up-to-date fields.
+            // Only keep un-synced pending items that were submitted locally and not yet in DB or deleted.
+            const unSyncedPending = prev.filter((localSub) => {
+              const urlKey = localSub.url.toLowerCase().replace(/\/$/, '');
+              const inDb = dbIdSet.has(localSub.id) || dbUrlSet.has(urlKey);
+              if (inDb) return false; // Already in DB -> use DB record!
+              const isDeleted = deletedIds.has(localSub.id) || deletedIds.has(urlKey);
+              if (isDeleted) return false;
+              return (localSub.status || 'under_review') === 'under_review';
+            });
+
+            const combined = [...dbSubs, ...unSyncedPending].sort(
+              (a, b) => (b.submittedAt ?? 0) - (a.submittedAt ?? 0)
+            );
+            saveSubmissionsToStorage(combined);
+
+            // Automatically ensure any approved submission exists in the live products directory and has all details
+            const approvedSubs = combined.filter((s) => s.status === 'approved');
+            if (approvedSubs.length > 0) {
+              setProducts((currProducts) => {
+                const existingUrls = new Set(currProducts.map((p) => p.url.toLowerCase().replace(/\/$/, '')));
+                const missingApprovedProds: Product[] = [];
+
+                // Enrich any existing products with rich metadata from approved submissions
+                const updatedExisting = currProducts.map((existingProd) => {
+                  const matchingSub = approvedSubs.find(
+                    (s) =>
+                      s.url.toLowerCase().replace(/\/$/, '') === existingProd.url.toLowerCase().replace(/\/$/, '') ||
+                      s.id === existingProd.id ||
+                      `prod-${s.id}` === existingProd.id
+                  );
+                  if (matchingSub) {
+                    return {
+                      ...existingProd,
+                      name: matchingSub.name || existingProd.name,
+                      tagline: matchingSub.tagline || existingProd.tagline,
+                      category: matchingSub.category || existingProd.category,
+                      description: matchingSub.description || existingProd.description,
+                      targetAudience: matchingSub.targetAudience || existingProd.targetAudience,
+                      pricingModel: matchingSub.pricingModel || existingProd.pricingModel,
+                      twitterHandle: matchingSub.twitterHandle || existingProd.twitterHandle,
+                      socials: matchingSub.socials && matchingSub.socials.length > 0 ? matchingSub.socials : existingProd.socials,
+                      screenshots: matchingSub.screenshots && matchingSub.screenshots.length > 0 ? matchingSub.screenshots : existingProd.screenshots,
+                      demoVideoUrl: matchingSub.demoVideoUrl || existingProd.demoVideoUrl,
+                      creatorName: matchingSub.creatorName || existingProd.creatorName,
+                      creatorUsername: matchingSub.creatorUsername || existingProd.creatorUsername,
+                      creatorXHandle: matchingSub.creatorXHandle || existingProd.creatorXHandle,
+                      creatorAvatar: matchingSub.creatorAvatar || existingProd.creatorAvatar,
+                      creatorRole: matchingSub.creatorRole || existingProd.creatorRole,
+                      offerDiscount: matchingSub.offerDiscount || existingProd.offerDiscount,
+                      offerCode: matchingSub.offerCode || existingProd.offerCode,
+                      offerUrl: matchingSub.offerUrl || existingProd.offerUrl,
+                      offerDetails: matchingSub.offerDetails || existingProd.offerDetails,
+                    };
+                  }
+                  return existingProd;
+                });
+
+                for (const appSub of approvedSubs) {
+                  const urlKey = appSub.url.toLowerCase().replace(/\/$/, '');
+                  if (!existingUrls.has(urlKey)) {
+                    const newProd = submissionToProduct(appSub, currProducts.length + missingApprovedProds.length + 1);
+                    missingApprovedProds.push(newProd);
+                    existingUrls.add(urlKey);
+                    // Silently sync to Supabase products table in background
+                    insertProductDirect(newProd);
+                  }
+                }
+
+                const next = [...updatedExisting, ...missingApprovedProds].map((p, idx) => ({ ...p, rank: p.rank ?? (idx + 1) }));
+                if (missingApprovedProds.length > 0 || JSON.stringify(next) !== JSON.stringify(currProducts)) {
+                  debouncedSyncProducts(next);
+                  return next;
+                }
+                return currProducts;
+              });
+            }
+
+            return combined;
+          });
         }
       } catch {}
       setSubmissionsLoaded(true);
@@ -170,7 +327,7 @@ export default function App() {
     loadSubmissions();
   }, []);
 
-  // Load persisted live products (only user-submitted ones; seed products are removed)
+  // Load persisted live products (sorted by rank)
   const [products, setProducts] = useState<Product[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
@@ -179,16 +336,15 @@ export default function App() {
         if (Array.isArray(parsed) && parsed.length > 0) {
           return parsed
             .filter((p) => !!p.submittedBy)
-            .map((p) => {
+            .sort((a, b) => (a.rank ?? 9999) - (b.rank ?? 9999))
+            .map((p, idx) => {
               const initial = INITIAL_PRODUCTS.find((init) => init.id === p.id);
               const resolvedLogo = initial?.logoUrl || (!p.logoUrl || p.logoUrl.includes('unsplash.com') ? getWebsiteFavicon(p.url) : p.logoUrl);
               return {
                 ...(initial || {}),
                 ...p,
+                rank: p.rank ?? (idx + 1),
                 logoUrl: resolvedLogo,
-                upvotes: 0,
-                totalBid: 0,
-                bidHistory: [],
               };
             });
         }
@@ -290,8 +446,17 @@ export default function App() {
   const weekPickedByUserRef = React.useRef(false);
 
   // Comments (discussion threads on product detail pages)
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
+  const [comments, setComments] = useState<Comment[]>(() => {
+    return getCachedCommentsSync();
+  });
+  const [commentCounts, setCommentCounts] = useState<Record<string, number>>(() => {
+    const cached = getCachedCommentsSync();
+    const counts: Record<string, number> = {};
+    for (const c of cached) {
+      counts[c.productId] = (counts[c.productId] ?? 0) + 1;
+    }
+    return counts;
+  });
 
   // Product detail route state — resolved from /product/:id
   const [productRouteId, setProductRouteId] = useState<string | null>(() => {
@@ -380,13 +545,31 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Persist State Changes (products + sound to localStorage, submissions to Supabase)
+  // Helper to safely persist submissions with quota-exceeded fallback
+  const saveSubmissionsToStorage = (list: WebsiteSubmission[]) => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.SUBMISSIONS, JSON.stringify(list));
+    } catch {
+      // Quota exceeded: retry saving without large base64 image data URLs
+      try {
+        const lightweight = list.map((s) => ({
+          ...s,
+          screenshots: s.screenshots?.filter((img) => !img.startsWith('data:image')),
+          logoUrl: s.logoUrl?.startsWith('data:image') ? undefined : s.logoUrl,
+        }));
+        localStorage.setItem(STORAGE_KEYS.SUBMISSIONS, JSON.stringify(lightweight));
+      } catch {}
+    }
+  };
+
+  // Persist State Changes (products + sound + submissions to localStorage)
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
       localStorage.setItem(STORAGE_KEYS.SOUND, soundEnabled.toString());
+      saveSubmissionsToStorage(submissions);
     } catch {}
-  }, [products, soundEnabled]);
+  }, [products, soundEnabled, submissions]);
 
   // Persist view layout preference
   useEffect(() => {
@@ -397,7 +580,7 @@ export default function App() {
 
   // Subscribe to realtime changes on submissions table only when on admin accept review page
   useEffect(() => {
-    if (!submissionsLoaded || !isAdmin || currentRoute !== 'accept') return;
+    if (!submissionsLoaded || !isAdmin || (currentRoute !== '/accept' && currentRoute !== 'accept')) return;
     const channel = supabase
       .channel('admin-submissions-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'submissions' }, (payload) => {
@@ -406,7 +589,7 @@ export default function App() {
           setSubmissions((prev) => {
             const mapped = mapDbSubmission(newRow);
             if (prev.some((s) => s.id === mapped.id)) return prev;
-            return [mapped, ...prev];
+            return [mapped, ...prev].sort((a, b) => (b.submittedAt ?? 0) - (a.submittedAt ?? 0));
           });
         } else if (payload.eventType === 'UPDATE') {
           const updated = payload.new as Record<string, unknown>;
@@ -415,6 +598,7 @@ export default function App() {
           );
         } else if (payload.eventType === 'DELETE') {
           const deleted = payload.old as Record<string, unknown>;
+          markSubmissionDeleted(deleted.id as string);
           setSubmissions((prev) => prev.filter((s) => s.id !== deleted.id));
         }
       })
@@ -440,15 +624,16 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Load products from Supabase on mount (only once, then local state is source of truth)
+  // Load products from Supabase on mount (preserving rank order)
   const productsLoadedRef = React.useRef(false);
   useEffect(() => {
     async function load() {
       if (productsLoadedRef.current) return;
       productsLoadedRef.current = true;
       const dbProducts = await loadProducts();
-      if (dbProducts !== null) {
-        setProducts(recomputeRanks(dbProducts));
+      if (dbProducts !== null && dbProducts.length > 0) {
+        const sorted = [...dbProducts].sort((a, b) => (a.rank ?? 9999) - (b.rank ?? 9999));
+        setProducts(sorted.map((p, idx) => ({ ...p, rank: p.rank ?? (idx + 1) })));
       }
       setProductsLoaded(true);
     }
@@ -497,6 +682,10 @@ export default function App() {
   // Submit now lives on its own page — every "New Launch" CTA routes there
   const handleOpenSubmit = () => {
     playSound('click', soundEnabled);
+    if (!user) {
+      setIsSignInModalOpen(true);
+      return;
+    }
     setCurrentRoute('/submit');
     try {
       window.history.pushState({}, 'Launch a product', '/submit');
@@ -553,12 +742,11 @@ export default function App() {
           }
           return p;
         });
-        const ranked = recomputeRanks(updated);
-        debouncedSyncProducts(ranked);
-        return ranked;
+        debouncedSyncProducts(updated);
+        return updated;
       });
     } else {
-      // Not logged in: simple local increment and re-rank
+      // Not logged in: simple local increment without destroying custom rank
       setProducts((prev) => {
         const updated = prev.map((p) => {
           if (p.id === product.id) {
@@ -566,86 +754,22 @@ export default function App() {
           }
           return p;
         });
-        const ranked = recomputeRanks(updated);
-        debouncedSyncProducts(ranked);
-        return ranked;
+        debouncedSyncProducts(updated);
+        return updated;
       });
     }
   };
 
-  // Handle User Submission — launched instantly from the /submit page
+  // Handle User Submission — queued under review for admin approval
   const handleConfirmSubmit = async (details: SubmitProductDetails): Promise<string | undefined> => {
     const now = Date.now();
     const subId = generateUniqueId('sub');
-    const newProdId = generateUniqueId('prod');
 
     const { name, tagline, url, category } = details;
     const logoUrl = details.logoUrl || getWebsiteFavicon(url);
-    const description =
-      details.description?.trim() || `${name} is a product in the ${category} ecosystem. ${tagline}.`;
-
-    // Story fields (problem / solution / uniqueness) render as "What it does" bullets on the profile
-    const whatItDoes: string[] = [];
-    if (details.problemItSolves?.trim()) whatItDoes.push(`The problem it solves: ${details.problemItSolves.trim()}`);
-    if (details.solution?.trim()) whatItDoes.push(`How it works: ${details.solution.trim()}`);
-    if (details.uniqueSellingPoint?.trim()) whatItDoes.push(`What makes it different: ${details.uniqueSellingPoint.trim()}`);
-
     const targetAudience = details.targetAudience?.trim() || undefined;
 
-    const newProd: Product = {
-      id: newProdId,
-      rank: products.length + 1,
-      previousRank: products.length + 1,
-      name,
-      tagline,
-      url,
-      logoUrl,
-      screenshots: details.screenshots && details.screenshots.length > 0 ? details.screenshots.slice(0, 10) : undefined,
-      demoVideoUrl: details.demoVideoUrl?.trim() || undefined,
-      twitterHandle: details.twitterHandle || undefined,
-      socials: details.socials && details.socials.length > 0 ? details.socials : undefined,
-      creatorName: details.creatorName || undefined,
-      creatorUsername: details.creatorUsername || undefined,
-      creatorXHandle: details.creatorXHandle || undefined,
-      creatorAvatar: details.creatorAvatar || undefined,
-      creatorRole: details.creatorRole || undefined,
-      category,
-      totalBid: 0,
-      dinoScore: 0,
-      upvotes: 0,
-      clicks: 0,
-      createdAt: now,
-      updatedAt: now,
-      verified: false,
-      isUserOwned: true,
-      submittedBy: user?.id || 'local_user',
-      description,
-      whatItDoes: whatItDoes.length > 0 ? whatItDoes : undefined,
-      features: [],
-      useCases: targetAudience
-        ? [{ title: `Who ${name} is for`, description: targetAudience, audience: 'Primary audience' }]
-        : [],
-      targetAudience,
-      pricingModel: details.pricingModel || undefined,
-      keyHighlights: [],
-      bidHistory: [],
-    };
-
-    setMyProductId(newProdId);
-    try {
-      localStorage.setItem('topsaas_my_product_id', newProdId);
-    } catch {}
-
-    setProducts((prev) => {
-      const next = recomputeRanks([...prev, newProd]);
-      debouncedSyncProducts(next);
-      try {
-        localStorage.setItem('topsaas_products_cache_v2', JSON.stringify(next));
-      } catch {}
-      return next;
-    });
-
-    // Also create an approved submission record (all submissions accepted instantly)
+    // Create a submission record with status: 'under_review'
     const newSubmission: WebsiteSubmission = {
       id: subId,
       name,
@@ -664,104 +788,141 @@ export default function App() {
       category,
       backerName: details.creatorName || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Creator',
       backerEmail: user?.email,
-      status: 'approved',
+      status: 'under_review',
       submittedAt: now,
-      reviewedAt: now,
       targetAudience,
       pricingModel: details.pricingModel || undefined,
       submittedBy: user?.id || 'local_user',
+      offerDiscount: details.offerDiscount?.trim() || undefined,
+      offerCode: details.offerCode?.trim() || undefined,
+      offerUrl: details.offerUrl?.trim() || undefined,
+      offerDetails: details.offerDetails?.trim() || undefined,
+      description: details.description?.trim() || undefined,
+      problemItSolves: details.problemItSolves?.trim() || undefined,
+      solution: details.solution?.trim() || undefined,
+      uniqueSellingPoint: details.uniqueSellingPoint?.trim() || undefined,
     };
-    setSubmissions((prev) => [...prev, newSubmission]);
-    setLiveFeed((prev) =>
-      [{ id: `listing-${now}`, productId: newProdId, name, kind: 'listing', time: now }, ...prev].slice(0, 14)
-    );
-    try {
-      await supabase.from('submissions').insert(toDbSubmission(newSubmission));
-      await insertProductDirect(newProd);
-    } catch {}
 
-    return newProdId;
+    // Clear any previous deletion record for this URL or ID so it is completely fresh
+    unmarkSubmissionDeleted(url);
+    unmarkSubmissionDeleted(subId);
+
+    setSubmissions((prev) => {
+      const filtered = prev.filter(
+        (s) => s.id !== subId && s.url.toLowerCase().replace(/\/$/, '') !== url.toLowerCase().replace(/\/$/, '')
+      );
+      const updated = [newSubmission, ...filtered].sort((a, b) => (b.submittedAt ?? 0) - (a.submittedAt ?? 0));
+      saveSubmissionsToStorage(updated);
+      return updated;
+    });
+
+    try {
+      const payload = toDbSubmission(newSubmission);
+      const { error } = await supabase.from('submissions').insert(payload);
+      if (error) {
+        console.warn('Initial Supabase insert note, trying fallback insert:', error.message || error);
+        // Fallback with minimal standard columns in case custom columns do not exist in remote DB table
+        const minimal: Record<string, unknown> = {
+          id: payload.id,
+          name: payload.name,
+          tagline: payload.tagline,
+          url: payload.url,
+          category: payload.category,
+          backer_name: payload.backer_name,
+          status: payload.status,
+          submitted_at: payload.submitted_at,
+        };
+        if (payload.logo_url && !String(payload.logo_url).startsWith('data:image')) {
+          minimal.logo_url = payload.logo_url;
+        }
+        if (payload.twitter_handle) minimal.twitter_handle = payload.twitter_handle;
+        if (payload.target_audience) minimal.target_audience = payload.target_audience;
+        if (payload.pricing_model) minimal.pricing_model = payload.pricing_model;
+        await supabase.from('submissions').insert(minimal);
+      }
+    } catch (err) {
+      console.warn('Error syncing submission to remote DB (stored locally):', err);
+    }
+
+    return subId;
   };
 
   // Admin Acceptance Pipeline: converts a submission into a live Product on the website
   const handleAcceptSubmission = async (sub: WebsiteSubmission) => {
     // 1. Update status to approved in submissions queue + Supabase
     const reviewedAt = Date.now();
-    setSubmissions((prev) =>
-      prev.map((s) =>
-        s.id === sub.id ? { ...s, status: 'approved', reviewedAt } : s
-      )
-    );
+    const approvedSub: WebsiteSubmission = { ...sub, status: 'approved', reviewedAt };
+
+    setSubmissions((prev) => {
+      const updated = prev.map((s) => (s.id === sub.id ? approvedSub : s));
+      saveSubmissionsToStorage(updated);
+      return updated;
+    });
+
     try {
       await supabase.from('submissions').update({ status: 'approved', reviewed_at: reviewedAt }).eq('id', sub.id);
     } catch {}
 
-    // 2. Add to live products (if not already existing by URL)
+    // 2. Add or update in live products
+    let productToSync: Product | null = null;
     setProducts((prev) => {
       const existingIndex = prev.findIndex(
         (p) => p.url.toLowerCase().replace(/\/$/, '') === sub.url.toLowerCase().replace(/\/$/, '')
       );
 
+      let nextProducts: Product[];
       if (existingIndex >= 0) {
-        return prev.map((p, idx) =>
+        nextProducts = prev.map((p, idx) =>
           idx === existingIndex
-            ? { ...p, name: sub.name, tagline: sub.tagline, category: sub.category, verified: true }
+            ? {
+                ...p,
+                name: sub.name,
+                tagline: sub.tagline,
+                category: sub.category,
+                verified: true,
+                description: sub.description || p.description,
+                targetAudience: sub.targetAudience || p.targetAudience,
+                pricingModel: sub.pricingModel || p.pricingModel,
+                twitterHandle: sub.twitterHandle || p.twitterHandle,
+                offerDiscount: sub.offerDiscount || p.offerDiscount,
+                offerCode: sub.offerCode || p.offerCode,
+                offerUrl: sub.offerUrl || p.offerUrl,
+                offerDetails: sub.offerDetails || p.offerDetails,
+                logoUrl: sub.logoUrl || p.logoUrl,
+                screenshots: sub.screenshots && sub.screenshots.length > 0 ? sub.screenshots : p.screenshots,
+                demoVideoUrl: sub.demoVideoUrl || p.demoVideoUrl,
+                creatorName: sub.creatorName || p.creatorName,
+                creatorUsername: sub.creatorUsername || p.creatorUsername,
+                creatorXHandle: sub.creatorXHandle || p.creatorXHandle,
+                creatorAvatar: sub.creatorAvatar || p.creatorAvatar,
+                creatorRole: sub.creatorRole || p.creatorRole,
+                socials: sub.socials && sub.socials.length > 0 ? sub.socials : p.socials,
+              }
             : p
         );
+        productToSync = nextProducts[existingIndex];
+      } else {
+        const newProd = submissionToProduct(approvedSub, prev.length + 1);
+        productToSync = newProd;
+        nextProducts = [...prev, newProd];
       }
-
-      const newProd: Product = {
-        id: generateUniqueId('prod'),
-        rank: prev.length + 1,
-        previousRank: prev.length + 1,
-        name: sub.name,
-        tagline: sub.tagline,
-        url: sub.url,
-        logoUrl: sub.logoUrl || getWebsiteFavicon(sub.url),
-        screenshots: sub.screenshots,
-        demoVideoUrl: sub.demoVideoUrl,
-        twitterHandle: sub.twitterHandle,
-        socials: sub.socials,
-        creatorName: sub.creatorName,
-        creatorUsername: sub.creatorUsername,
-        creatorXHandle: sub.creatorXHandle,
-        creatorAvatar: sub.creatorAvatar,
-        creatorRole: sub.creatorRole,
-        category: sub.category,
-        totalBid: 0,
-        upvotes: 0,
-        clicks: 1,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-        verified: true,
-        isUserOwned: false,
-        submittedBy: sub.submittedBy,
-        description: `${sub.name} is a high-quality product in the ${sub.category} ecosystem. ${sub.tagline}.`,
-        whatItDoes: [
-          `Core Workflow Acceleration: Streamlines essential ${sub.category.toLowerCase()} tasks.`,
-          `Intuitive User Interface: Clean usability and keyboard-friendly navigation.`,
-          `High Reliability & Speed: Designed for scale with secure cloud infrastructure.`,
-          `Integration Capabilities: Connects with your favorite web and developer workflows.`
-        ],
-        features: [
-          { title: 'Modern Web Architecture', description: `Built with cutting-edge tech for ${sub.category.toLowerCase()} workflows.`, tag: 'Core Superpower' },
-          { title: 'Instant Setup & Onboarding', description: 'Get started in seconds with zero friction.', tag: 'Usability' }
-        ],
-        useCases: [
-          { title: 'Productivity & Flow Optimization', description: `Empowers builders to achieve higher throughput in ${sub.category.toLowerCase()}.`, audience: 'Builders & Teams' }
-        ],
-        targetAudience: 'Makers, software builders, and modern digital teams.',
-        pricingModel: 'Free tier / Flexible plans available',
-        keyHighlights: [
-          { label: 'Category', value: sub.category },
-          { label: 'Submitted By', value: sub.backerName || 'Community Creator' },
-          { label: 'Status', value: 'Live on Directory' }
-        ],
-        bidHistory: [],
-      };
-
-      return recomputeRanks([...prev, newProd]);
+      debouncedSyncProducts(nextProducts);
+      try {
+        localStorage.setItem('topsaas_products_cache_v2', JSON.stringify(nextProducts));
+        localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(nextProducts));
+      } catch {}
+      return nextProducts;
     });
+
+    setLiveFeed((prev) =>
+      [{ id: `listing-${Date.now()}`, productId: productToSync?.id || sub.id, name: sub.name, kind: 'listing', time: Date.now() }, ...prev].slice(0, 14)
+    );
+
+    if (productToSync) {
+      try {
+        await insertProductDirect(productToSync);
+      } catch {}
+    }
   };
 
   // Admin Reject Pipeline
@@ -780,10 +941,33 @@ export default function App() {
 
   // Admin Delete Permanent
   const handleDeleteSubmission = async (submissionId: string) => {
-    setSubmissions((prev) => prev.filter((s) => s.id !== submissionId));
+    const targetSub = submissions.find((s) => s.id === submissionId);
+    markSubmissionDeleted(submissionId);
+    if (targetSub) {
+      markSubmissionDeleted(targetSub.url);
+      markSubmissionDeleted(targetSub.url.toLowerCase().replace(/\/$/, ''));
+    }
+    setSubmissions((prev) => {
+      const updated = prev.filter((s) => {
+        if (s.id === submissionId) return false;
+        if (targetSub && s.url.toLowerCase().replace(/\/$/, '') === targetSub.url.toLowerCase().replace(/\/$/, '')) {
+          return false;
+        }
+        return true;
+      });
+      saveSubmissionsToStorage(updated);
+      return updated;
+    });
+
     try {
       await supabase.from('submissions').delete().eq('id', submissionId);
-    } catch {}
+      if (targetSub) {
+        await supabase.from('submissions').delete().eq('url', targetSub.url);
+        await supabase.from('products').delete().eq('url', targetSub.url);
+      }
+    } catch (err) {
+      console.error('Error deleting submission from DB:', err);
+    }
   };
 
   // Admin Update Submission Details
@@ -842,12 +1026,33 @@ export default function App() {
     }
   };
 
-  // Delist a product — removes it from the live directory
-  const handleDelistProduct = (productId: string) => {
-    setProducts((prev) => prev.filter((p) => p.id !== productId));
+  // Delist a product — permanently removes it from live directory and DB
+  const handleDelistProduct = async (productId: string) => {
+    const targetProduct = products.find((p) => p.id === productId);
+    setProducts((prev) => {
+      const updated = prev.filter((p) => p.id !== productId);
+      try {
+        localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(updated));
+        localStorage.setItem('topsaas_products_cache_v2', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+
+    if (featuredProductId === productId) {
+      handleSetFeatured(null);
+    }
+
+    try {
+      await supabase.from('products').delete().eq('id', productId);
+      if (targetProduct) {
+        await supabase.from('products').delete().eq('url', targetProduct.url);
+      }
+    } catch (err) {
+      console.error('Error deleting product from DB:', err);
+    }
   };
 
-  // Manually assign a product to a specific rank (1-based)
+  // Manually assign a product to a specific rank (1-based) and immediately persist
   const handleAssignRank = (productId: string, newRank: number) => {
     setProducts((prev) => {
       const clampedRank = Math.max(1, Math.min(newRank, prev.length));
@@ -861,11 +1066,20 @@ export default function App() {
       withoutTarget.splice(insertIndex, 0, { ...target, rank: clampedRank });
 
       // Reassign all ranks sequentially
-      return withoutTarget.map((p, idx) => ({
+      const ranked = withoutTarget.map((p, idx) => ({
         ...p,
         previousRank: p.rank,
         rank: idx + 1,
       }));
+
+      // Immediately sync to both localStorage and Supabase
+      try {
+        localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(ranked));
+      } catch {}
+      saveAllProducts(ranked).catch(() => {});
+      debouncedSyncProducts(ranked);
+
+      return ranked;
     });
   };
 
@@ -884,7 +1098,41 @@ export default function App() {
     playSound('click', soundEnabled);
   };
 
-  const topProduct = (featuredProductId ? products.find((p) => p.id === featuredProductId) : null) || products[0] || null;
+  // Save full products order to local storage and remote DB
+  const handleSaveProductsOrder = async () => {
+    try {
+      const sorted = [...products].sort((a, b) => (a.rank ?? 9999) - (b.rank ?? 9999));
+      const reNumbered = sorted.map((p, idx) => ({ ...p, rank: idx + 1, previousRank: p.rank ?? (idx + 1) }));
+      setProducts(reNumbered);
+      localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(reNumbered));
+      localStorage.setItem('topsaas_products_cache_v2', JSON.stringify(reNumbered));
+      await saveProductRanksDirect(reNumbered);
+      await saveAllProducts(reNumbered);
+    } catch (err) {
+      console.error('Error saving products order:', err);
+    }
+  };
+
+  const isDefaultFeatured = featuredProductId === null || featuredProductId === 'default';
+  const isEmptyFeatured = featuredProductId === '' || featuredProductId === 'empty';
+  const explicitFeaturedProduct = (!isDefaultFeatured && !isEmptyFeatured && featuredProductId)
+    ? products.find((p) => p.id === featuredProductId) || null
+    : null;
+  // Automatic ranking comparator: (upvotes * 2) + comments, tie-broken by upvotes, comments, then recency
+  const compareProductsByRank = useCallback((a: Product, b: Product) => {
+    const scoreA = (a.upvotes ?? 0) * 2 + (commentCounts[a.id] ?? 0);
+    const scoreB = (b.upvotes ?? 0) * 2 + (commentCounts[b.id] ?? 0);
+    if (scoreB !== scoreA) return scoreB - scoreA;
+    const upvoteDiff = (b.upvotes ?? 0) - (a.upvotes ?? 0);
+    if (upvoteDiff !== 0) return upvoteDiff;
+    const commentDiff = (commentCounts[b.id] ?? 0) - (commentCounts[a.id] ?? 0);
+    if (commentDiff !== 0) return commentDiff;
+    return (b.createdAt ?? 0) - (a.createdAt ?? 0);
+  }, [commentCounts]);
+
+  const sortedByRankProducts = [...products].sort(compareProductsByRank);
+  const topProduct = explicitFeaturedProduct || sortedByRankProducts[0] || null;
+
   // Compute isUserOwned dynamically from submittedBy or myProductId
   const markOwnership = (p: Product) => ({
     ...p,
@@ -894,12 +1142,14 @@ export default function App() {
       p.isUserOwned
     ),
   });
-  const topThreeProducts = products.slice(0, 3).map(markOwnership);
+  const topThreeProducts = sortedByRankProducts.slice(0, 3).map((p, idx) => ({
+    ...markOwnership(p),
+    rank: idx + 1,
+  }));
 
   const pendingReviewCount = submissions.filter((s) => s.status === 'under_review').length;
 
   // Derived directory stats for the public homepage
-  const totalVisits = products.reduce((s, p) => s + (p.clicks ?? 0), 0);
   const newestListings = [...products].sort((a, b) => b.createdAt - a.createdAt).slice(0, 9);
 
   // Load comments from Supabase once on mount and derive per-product counts
@@ -987,7 +1237,7 @@ export default function App() {
     ? products.filter((p) => isInWeek(p.createdAt, selectedWeek))
     : products;
 
-  // Filter products by category and search query (within the selected week)
+  // Filter products by category and search query (within the selected week, strictly honoring rank order)
   const filteredProducts = weekScopedProducts
     .filter((p) => {
       const productCats = p.category ? p.category.split(',').map((c) => c.trim().toLowerCase()) : [];
@@ -1005,11 +1255,7 @@ export default function App() {
       return matchesCat && matchesQuery;
     })
     .map(markOwnership)
-    .sort((a, b) => {
-      const upvoteDiff = (b.upvotes ?? 0) - (a.upvotes ?? 0);
-      if (upvoteDiff !== 0) return upvoteDiff;
-      return (b.createdAt ?? 0) - (a.createdAt ?? 0);
-    });
+    .sort(compareProductsByRank);
 
   // Promoted / featured product used in the rails and mid-board banner
   const promotedProduct = featuredProductId
@@ -1193,7 +1439,6 @@ export default function App() {
         />
         <RichFooter
           totalProducts={products.length}
-          totalVisits={products.reduce((s, p) => s + (p.clicks ?? 0), 0)}
           soundEnabled={soundEnabled}
           onOpenSubmit={handleOpenSubmit}
           onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
@@ -1258,7 +1503,6 @@ export default function App() {
         />
         <RichFooter
           totalProducts={products.length}
-          totalVisits={products.reduce((s, p) => s + (p.clicks ?? 0), 0)}
           soundEnabled={soundEnabled}
           onOpenSubmit={handleOpenSubmit}
           onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
@@ -1322,6 +1566,7 @@ export default function App() {
           onToggleSound={() => setSoundEnabled(!soundEnabled)}
           featuredProductId={featuredProductId}
           onSetFeatured={handleSetFeatured}
+          onSaveProductsOrder={handleSaveProductsOrder}
         />
 
         <SignInModal
@@ -1344,7 +1589,6 @@ export default function App() {
           onBack={handleBackToLeaderboard}
           onOpenSubmit={handleOpenSubmit}
           totalProducts={products.length}
-          totalVisits={products.reduce((s, p) => s + (p.clicks ?? 0), 0)}
           soundEnabled={soundEnabled}
           onSelectCategory={setSelectedCategory}
           onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
@@ -1366,7 +1610,7 @@ export default function App() {
             topProducts={topThreeProducts}
             productsLoaded={productsLoaded}
             featuredProductId={featuredProductId}
-            featuredProduct={topProduct}
+            featuredProduct={explicitFeaturedProduct}
             commentCounts={commentCounts}
             onOpenFeaturedSpotModal={() => {
               if (!user) {
@@ -1387,7 +1631,6 @@ export default function App() {
         <HomeHero
           totalProducts={products.length}
           totalCategories={directoryCategories.length}
-          totalVisits={totalVisits}
           searchQuery={searchQuery}
           onSearchChange={(v) => {
             setSearchQuery(v);
@@ -1551,9 +1794,11 @@ export default function App() {
           <div className="space-y-4">
             {/* Bento-style grid of product tiles */}
             <div className="grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-800 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {currentPage === 1 && (
+              {currentPage === 1 && !isEmptyFeatured && (
                 <SponsorTile
                   soundEnabled={soundEnabled}
+                  product={explicitFeaturedProduct}
+                  onOpenProduct={handleOpenProduct}
                   onOpenFeaturedSpotModal={() => {
                     if (!user) {
                       setIsSignInModalOpen(true);
@@ -1780,7 +2025,6 @@ export default function App() {
       {/* Footer */}
       <RichFooter
         totalProducts={products.length}
-        totalVisits={products.reduce((s, p) => s + (p.clicks ?? 0), 0)}
         soundEnabled={soundEnabled}
         onOpenSubmit={handleOpenSubmit}
         onOpenHowItWorks={() => setIsHowItWorksOpen(true)}

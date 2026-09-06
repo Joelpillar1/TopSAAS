@@ -11,7 +11,6 @@ interface LegalPageProps {
   onBack: () => void;
   onOpenSubmit: () => void;
   totalProducts: number;
-  totalVisits: number;
   soundEnabled: boolean;
   onSelectCategory: (cat: Category) => void;
   onOpenHowItWorks: () => void;
@@ -22,7 +21,6 @@ export const LegalPage: React.FC<LegalPageProps> = ({
   onBack,
   onOpenSubmit,
   totalProducts,
-  totalVisits,
   soundEnabled,
   onSelectCategory,
   onOpenHowItWorks,
@@ -269,7 +267,6 @@ export const LegalPage: React.FC<LegalPageProps> = ({
 
       <RichFooter
         totalProducts={totalProducts}
-        totalVisits={totalVisits}
         soundEnabled={soundEnabled}
         onOpenSubmit={onOpenSubmit}
         onOpenHowItWorks={onOpenHowItWorks}

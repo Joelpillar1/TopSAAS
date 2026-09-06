@@ -5,6 +5,7 @@ import { formatStars } from '../utils/github';
 import { Product } from '../types';
 import { ProductCard } from './ProductCard';
 import { HeroClaimBanner } from './HeroClaimBanner';
+import { BorderBeam } from './BorderBeam';
 import { playSound } from '../utils/sound';
 import { GridFillerCell, useGridColumns } from './GridFiller';
 import { cn } from '@/lib/utils';
@@ -294,53 +295,66 @@ export const SaaSIdeas: React.FC<SaaSIdeasProps> = ({
         </div>
       </section>
 
-      {/* Featured Spot Section (Matches Homepage Exactly) */}
-      {featuredProductId && featuredProduct ? (
-        <section className="space-y-1.5">
-          <div className="flex items-center gap-2 px-1">
-            <span className="inline-flex items-center gap-1 rounded-md bg-mint-500/15 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-mint-300 ring-1 ring-inset ring-mint-500/40">
-              <Star className="h-2.5 w-2.5 fill-mint-300" />
-              Featured
-            </span>
-            <span className="text-[10px] font-semibold text-neutral-500">30-day spotlight · hand-selected by TopSAAS</span>
-          </div>
-          <HeroClaimBanner
-            topProduct={featuredProduct}
-            soundEnabled={soundEnabled}
-            onTrackClick={onTrackClick}
-          />
-        </section>
-      ) : featuredProductId === '' ? (
-        /* Empty state: admin cleared featured, show nothing */
-        null
-      ) : (
-        /* Default state: no featured assigned yet, show upsell */
-        <button
-          type="button"
-          onClick={() => {
-            playSound('click', soundEnabled);
-            onOpenFeaturedSpotModal?.();
-          }}
-          className="group flex w-full items-center justify-between gap-3 rounded-2xl border border-dashed border-neutral-700 bg-[#2a2a2a] px-4 py-3.5 sm:px-5 text-left transition-all hover:border-mint-500/50 hover:bg-[#333333] cursor-pointer"
-        >
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-neutral-800 text-neutral-400 group-hover:bg-mint-500 group-hover:text-[#0b0f14] transition-colors">
-              <Star className="h-4 w-4" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-bold text-neutral-300 group-hover:text-white transition-colors">
-                The featured spot is open
-              </p>
-              <p className="text-[11px] text-neutral-500 font-medium truncate">
-                Put your product at the top of TopSAAS for 30 days.
-              </p>
-            </div>
-          </div>
-          <span className="shrink-0 rounded-lg border border-neutral-700 bg-[#343434] px-3 py-1.5 text-[11px] font-bold text-white group-hover:border-mint-500 group-hover:text-mint-200 shadow-2xs">
-            Reserve spot
-          </span>
-        </button>
-      )}
+      {/* Featured Spot Section (Matches Homepage: Custom product / Empty / Default reserve spot placeholder) */}
+      {(() => {
+        const isDefault = featuredProductId === null || featuredProductId === 'default';
+        const isEmpty = featuredProductId === '' || featuredProductId === 'empty';
+        const isCustomWebsite = !isDefault && !isEmpty && !!featuredProduct;
+
+        if (isCustomWebsite && featuredProduct) {
+          return (
+            <section className="space-y-1.5">
+              <div className="flex items-center gap-2 px-1">
+                <span className="inline-flex items-center gap-1 rounded-md bg-mint-500/15 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-mint-300 ring-1 ring-inset ring-mint-500/40">
+                  <Star className="h-2.5 w-2.5 fill-mint-300" />
+                  Featured
+                </span>
+              </div>
+              <HeroClaimBanner
+                topProduct={featuredProduct}
+                soundEnabled={soundEnabled}
+                onTrackClick={onTrackClick}
+              />
+            </section>
+          );
+        }
+
+        if (isEmpty) {
+          /* Empty state: admin cleared featured, show nothing */
+          return null;
+        }
+
+        /* Default state: no featured assigned yet, show default reserve spot placeholder with BorderBeam */
+        return (
+          <BorderBeam size="md" colorVariant="colorful" strength={0.7} className="w-full rounded-2xl">
+            <button
+              type="button"
+              onClick={() => {
+                playSound('click', soundEnabled);
+                onOpenFeaturedSpotModal?.();
+              }}
+              className="group flex w-full items-center justify-between gap-3 rounded-2xl border border-dashed border-neutral-700 bg-[#2a2a2a] px-4 py-3.5 sm:px-5 text-left transition-all hover:border-mint-500/50 hover:bg-[#333333] cursor-pointer"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-neutral-800 text-neutral-400 group-hover:bg-mint-500 group-hover:text-[#0b0f14] transition-colors">
+                  <Star className="h-4 w-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-neutral-300 group-hover:text-white transition-colors">
+                    The featured spot is open
+                  </p>
+                  <p className="text-[11px] text-neutral-500 font-medium truncate">
+                    Put your product at the top of TopSAAS for 30 days.
+                  </p>
+                </div>
+              </div>
+              <span className="shrink-0 rounded-lg border border-neutral-700 bg-[#343434] px-3 py-1.5 text-[11px] font-bold text-white group-hover:border-mint-500 group-hover:text-mint-200 shadow-2xs">
+                Reserve spot
+              </span>
+            </button>
+          </BorderBeam>
+        );
+      })()}
 
       {/* Top 3 Featured Products */}
       {!productsLoaded && topProducts.length === 0 ? (
@@ -392,9 +406,9 @@ export const SaaSIdeas: React.FC<SaaSIdeasProps> = ({
               <ProductCard
                 key={product.id}
                 product={product}
-                rank={product.rank ?? index + 1}
+                rank={index + 1}
                 soundEnabled={soundEnabled}
-                showVerified={(product.rank ?? index + 1) <= 5}
+                showVerified={index < 5}
                 commentCount={commentCounts?.[product.id] ?? 0}
                 onShareProduct={onShareProduct}
                 onTrackClick={onTrackClick}
@@ -426,10 +440,10 @@ export const SaaSIdeas: React.FC<SaaSIdeasProps> = ({
             <button
               type="button"
               onClick={() => handleCategoryChange('All')}
-              className={`rounded-lg px-3 py-1 text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+              className={`rounded-lg px-3 py-1 text-[11px] font-bold transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0 active:scale-95 ${
                 selectedCategory === 'All'
                   ? 'bg-mint-500/15 text-mint-200 ring-1 ring-inset ring-mint-500/40'
-                  : 'bg-[#343434] text-neutral-400 hover:bg-[#3a3a3a] hover:text-white'
+                  : 'bg-[#343434] text-neutral-400 hover:bg-[#3a3a3a] hover:text-white hover:shadow-[0_2px_8px_-2px_rgba(0,0,0,0.4)]'
               }`}
             >
               All
@@ -438,16 +452,15 @@ export const SaaSIdeas: React.FC<SaaSIdeasProps> = ({
 
           {/* Horizontally Scrollable Categories (These move/scroll) */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mx-0.5 px-0.5 flex-1 scrollbar-none">
-            {CATEGORIES.filter((cat) => cat !== 'All').map((cat) => (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => handleCategoryChange(cat)}
-                className={`rounded-lg px-2.5 py-1 text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                  selectedCategory === cat
-                    ? 'bg-mint-500/15 text-mint-200 ring-1 ring-inset ring-mint-500/40'
-                    : 'bg-[#343434] text-neutral-400 hover:bg-[#3a3a3a] hover:text-white'
-                }`}
+            {CATEGORIES.filter((cat) => cat !== 'All').map((cat) => (                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => handleCategoryChange(cat)}
+                    className={`rounded-lg px-2.5 py-1 text-[11px] font-bold transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0 active:scale-95 ${
+                      selectedCategory === cat
+                        ? 'bg-mint-500/15 text-mint-200 ring-1 ring-inset ring-mint-500/40'
+                        : 'bg-[#343434] text-neutral-400 hover:bg-[#3a3a3a] hover:text-white hover:shadow-[0_2px_8px_-2px_rgba(0,0,0,0.4)]'
+                    }`}
               >
                 {cat}
               </button>
@@ -578,9 +591,9 @@ export const SaaSIdeas: React.FC<SaaSIdeasProps> = ({
                     const isTopThree = currentPage === 1 && idx < 3;
                     const rowHighlightClass = (() => {
                       if (currentPage === 1) {
-                        if (idx === 0) return 'bg-[#333333] font-medium hover:bg-[#333333]';
-                        if (idx === 1) return 'bg-[#303030] hover:bg-[#303030]';
-                        if (idx === 2) return 'bg-[#2d2d2d] hover:bg-[#2d2d2d]';
+                        if (idx === 0) return 'bg-[#333333] font-medium hover:bg-[#3a3a3a]';
+                        if (idx === 1) return 'bg-[#303030] hover:bg-[#353535]';
+                        if (idx === 2) return 'bg-[#2d2d2d] hover:bg-[#333333]';
                       }
                       return 'hover:bg-[#333333]';
                     })();
@@ -601,7 +614,7 @@ export const SaaSIdeas: React.FC<SaaSIdeasProps> = ({
                           playSound('click', soundEnabled);
                           window.open(repo.html_url, '_blank', 'noopener,noreferrer');
                         }}
-                        className={`group transition-colors cursor-pointer relative ${rowHighlightClass}`}
+                        className={`group transition-all duration-300 ease-out cursor-pointer relative hover:translate-x-0.5 ${rowHighlightClass}`}
                       >
                         {/* Repo Name & Owner with top 3 gradient accent */}
                         <td className="py-3 px-3.5 relative">
@@ -612,7 +625,7 @@ export const SaaSIdeas: React.FC<SaaSIdeasProps> = ({
                             <img
                               src={repo.owner.avatar_url}
                               alt={repo.owner.login}
-                              className="h-7 w-7 rounded-lg object-cover shrink-0 border border-neutral-800 shadow-2xs"
+                              className="h-7 w-7 rounded-lg object-cover shrink-0 border border-neutral-800 shadow-2xs transition-all duration-200 group-hover:border-neutral-600 group-hover:scale-110"
                               referrerPolicy="no-referrer"
                             />
                             <div className="min-w-0">
@@ -679,7 +692,7 @@ export const SaaSIdeas: React.FC<SaaSIdeasProps> = ({
                               e.stopPropagation();
                               playSound('click', soundEnabled);
                             }}
-                            className="inline-flex items-center gap-1 rounded-lg border border-neutral-700 bg-neutral-900 px-2.5 py-1 text-xs font-bold text-white hover:bg-mint-500 hover:text-[#0b0f14] hover:border-mint-500 transition-all shadow-2xs"
+                            className="inline-flex items-center gap-1 rounded-lg border border-neutral-700 bg-neutral-900 px-2.5 py-1 text-xs font-bold text-white hover:bg-mint-500 hover:text-[#0b0f14] hover:border-mint-500 hover:shadow-[0_4px_12px_-4px_rgba(71,180,110,0.5)] transition-all duration-200 shadow-2xs active:scale-95"
                           >
                             <span>View</span>
                             <ExternalLink className="h-3 w-3" />
@@ -701,7 +714,7 @@ export const SaaSIdeas: React.FC<SaaSIdeasProps> = ({
               type="button"
               onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
               disabled={currentPage === 1}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-700 bg-[#343434] text-neutral-400 transition-all hover:bg-[#3a3a3a] hover:border-neutral-500 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-700 bg-[#343434] text-neutral-400 transition-all duration-200 hover:bg-[#3a3a3a] hover:border-neutral-500 hover:scale-105 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -723,10 +736,10 @@ export const SaaSIdeas: React.FC<SaaSIdeasProps> = ({
                   key={page}
                   type="button"
                   onClick={() => handlePageChange(page)}
-                  className={`h-8 min-w-[2rem] rounded-lg px-2 text-xs font-bold transition-all cursor-pointer ${
+                  className={`h-8 min-w-[2rem] rounded-lg px-2 text-xs font-bold transition-all duration-200 cursor-pointer active:scale-95 ${
                     currentPage === page
-                      ? 'bg-mint-500 text-[#0b0f14] shadow-2xs'
-                      : 'border border-neutral-700 bg-[#343434] text-neutral-400 hover:bg-[#3a3a3a] hover:border-neutral-500'
+                      ? 'bg-mint-500 text-[#0b0f14] shadow-2xs hover:shadow-[0_4px_12px_-4px_rgba(71,180,110,0.5)]'
+                      : 'border border-neutral-700 bg-[#343434] text-neutral-400 hover:bg-[#3a3a3a] hover:border-neutral-500 hover:scale-105'
                   }`}
                 >
                   {page}
@@ -738,7 +751,7 @@ export const SaaSIdeas: React.FC<SaaSIdeasProps> = ({
               type="button"
               onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
               disabled={currentPage === totalPages}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-700 bg-[#343434] text-neutral-400 transition-all hover:bg-[#3a3a3a] hover:border-neutral-500 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-700 bg-[#343434] text-neutral-400 transition-all duration-200 hover:bg-[#3a3a3a] hover:border-neutral-500 hover:scale-105 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
@@ -759,11 +772,11 @@ const RepoCard: React.FC<{ repo: CuratedRepo }> = ({ repo }) => {
       href={repo.html_url}
       target="_blank"
       rel="noopener noreferrer"
-      className="group relative flex flex-col bg-[#2a2a2a] p-5 text-left transition-colors cursor-pointer hover:bg-[#333333] focus:outline-none focus-visible:ring-2 focus-visible:ring-mint-500/60"
+      className="group relative flex flex-col bg-[#2a2a2a] p-5 text-left transition-all duration-300 ease-out cursor-pointer hover:-translate-y-0.5 hover:bg-[#383838] hover:shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_8px_24px_-4px_rgba(0,0,0,0.55)] focus:outline-none focus-visible:ring-2 focus-visible:ring-mint-500/60"
     >
       {/* Icon + external link */}
       <div className="flex items-start justify-between gap-2.5">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-neutral-800 bg-[#222222] transition-colors group-hover:border-neutral-700">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-neutral-800 bg-[#222222] transition-all duration-200 group-hover:border-neutral-500 group-hover:scale-105 group-hover:shadow-md">
           <img
             src={repo.owner.avatar_url}
             alt={repo.owner.login}
@@ -771,39 +784,41 @@ const RepoCard: React.FC<{ repo: CuratedRepo }> = ({ repo }) => {
             referrerPolicy="no-referrer"
           />
         </div>
-        <ExternalLink className="h-3.5 w-3.5 shrink-0 text-neutral-600 opacity-0 group-hover:opacity-100 group-hover:text-white transition-opacity" />
+        <span className="flex h-6 w-6 items-center justify-center rounded-md border border-neutral-800 text-neutral-500 opacity-0 transition-all duration-200 group-hover:opacity-100 group-hover:border-neutral-600 group-hover:bg-neutral-800 group-hover:text-white group-hover:scale-105">
+          <ExternalLink className="h-3 w-3 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+        </span>
       </div>
 
       {/* Title + owner */}
-      <h3 className="mt-4 truncate text-[15px] font-bold tracking-tight text-white group-hover:underline">
+      <h3 className="mt-4 truncate text-[15px] font-bold tracking-tight text-white group-hover:text-mint-300 transition-colors">
         {repo.name}
       </h3>
-      <p className="mt-0.5 truncate text-[11px] font-medium text-neutral-500">
+      <p className="mt-0.5 truncate text-[11px] font-medium text-neutral-500 group-hover:text-neutral-400 transition-colors">
         {repo.owner.login}
       </p>
 
       {/* Description */}
       {repo.description && (
-        <p className="mt-1.5 flex-1 text-[12.5px] font-medium leading-relaxed text-neutral-400 line-clamp-2">
+        <p className="mt-1.5 flex-1 text-[12.5px] font-medium leading-relaxed text-neutral-400 group-hover:text-neutral-300 line-clamp-2 transition-colors">
           {repo.description}
         </p>
       )}
 
       {/* Footer */}
-      <div className="mt-4 flex items-center justify-between gap-2 border-t border-neutral-800 pt-3">
+      <div className="mt-4 flex items-center justify-between gap-2 border-t border-neutral-800/80 group-hover:border-neutral-700/80 pt-3 transition-colors">
         <div className="flex items-center gap-2.5 text-[11px] text-neutral-400">
-          <span className="inline-flex items-center gap-1">
+          <span className="inline-flex items-center gap-1 group-hover:text-amber-300 transition-colors">
             <Star className="h-3 w-3 text-amber-500 fill-amber-400" />
-            <span className="font-bold font-mono-num">{formatStars(repo.stargazers_count)}</span>
+            <span className="font-bold font-mono-num text-white">{formatStars(repo.stargazers_count)}</span>
           </span>
           <span className="inline-flex items-center gap-1">
-            <GitFork className="h-3 w-3 text-neutral-500" />
+            <GitFork className="h-3 w-3 text-neutral-500 group-hover:text-neutral-400 transition-colors" />
             <span className="font-mono-num">{repo.forks_count}</span>
           </span>
         </div>
         <div className="flex min-w-0 items-center gap-1.5">
           {repo.language && (
-            <span className="shrink-0 rounded-md bg-neutral-800 px-1.5 py-0.5 text-[10px] font-bold text-neutral-300">
+            <span className="shrink-0 rounded-md bg-neutral-800 border border-neutral-700/40 group-hover:border-neutral-600/60 px-1.5 py-0.5 text-[10px] font-bold text-neutral-300 transition-colors">
               {repo.language}
             </span>
           )}

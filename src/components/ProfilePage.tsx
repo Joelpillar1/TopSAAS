@@ -16,13 +16,14 @@ import {
   Sparkles, 
   Save, 
   Upload,
-  Plus
+  Plus,
+  Clock
 } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '../utils/supabase';
-import { Category, PricingModel, Product, ProductSocial, SocialPlatform } from '../types';
+import { Category, PricingModel, Product, ProductSocial, SocialPlatform, WebsiteSubmission } from '../types';
 import { getWebsiteFavicon } from '../utils/logo';
-import { mapDbProduct, updateProductDirect } from '../utils/db';
+import { mapDbProduct, mapDbSubmission, updateProductDirect } from '../utils/db';
 import { SUBMISSION_CATEGORIES } from './BidModal';
 import { ProductLogo } from './ProductLogo';
 import { playSound } from '../utils/sound';
@@ -82,6 +83,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   soundEnabled = true,
 }) => {
   const [products, setProducts] = useState<Product[]>([]);
+  const [submissions, setSubmissions] = useState<WebsiteSubmission[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -119,6 +121,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
     appStore: string;
     playStore: string;
     chromeWebStore: string;
+    offerDiscount: string;
+    offerCode: string;
+    offerUrl: string;
+    offerDetails: string;
   }>({
     name: '',
     tagline: '',
@@ -144,6 +150,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
     appStore: '',
     playStore: '',
     chromeWebStore: '',
+    offerDiscount: '',
+    offerCode: '',
+    offerUrl: '',
+    offerDetails: '',
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -151,18 +161,31 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   const screenshotsInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    async function fetchProducts() {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('submitted_by', user.id)
-        .order('created_at', { ascending: false });
-      if (!error && data) {
-        setProducts(data.map(mapDbProduct));
-      }
+    async function fetchData() {
+      try {
+        const [prodRes, subRes] = await Promise.all([
+          supabase
+            .from('products')
+            .select('*')
+            .eq('submitted_by', user.id)
+            .order('created_at', { ascending: false }),
+          supabase
+            .from('submissions')
+            .select('*')
+            .eq('submitted_by', user.id)
+            .order('submitted_at', { ascending: false }),
+        ]);
+
+        if (!prodRes.error && prodRes.data) {
+          setProducts(prodRes.data.map(mapDbProduct));
+        }
+        if (!subRes.error && subRes.data) {
+          setSubmissions(subRes.data.map(mapDbSubmission));
+        }
+      } catch {}
       setLoading(false);
     }
-    fetchProducts();
+    fetchData();
   }, [user.id]);
 
   const handleDelete = async (productId: string) => {
@@ -214,6 +237,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
       appStore: getSocial('app_store'),
       playStore: getSocial('play_store'),
       chromeWebStore: getSocial('chrome_web_store'),
+      offerDiscount: p.offerDiscount || '',
+      offerCode: p.offerCode || '',
+      offerUrl: p.offerUrl || '',
+      offerDetails: p.offerDetails || '',
     });
   };
 
@@ -279,6 +306,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
       creatorAvatar: editForm.creatorAvatar.trim() || undefined,
       twitterHandle: editForm.twitter.trim().replace(/^@/, '') || undefined,
       socials: socials.length > 0 ? socials : undefined,
+      offerDiscount: editForm.offerDiscount.trim() || undefined,
+      offerCode: editForm.offerCode.trim() || undefined,
+      offerUrl: editForm.offerUrl.trim() ? cleanUrl(editForm.offerUrl) : undefined,
+      offerDetails: editForm.offerDetails.trim() || undefined,
       updatedAt: Date.now(),
     };
 
@@ -434,15 +465,72 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         </div>
 
         {/* Stats */}
-        <div className="rounded-xl border border-neutral-800 bg-[#2a2a2a] p-3 text-center">
-          <div className="text-lg font-black text-white">{liveCount}</div>
-          <div className="text-[10px] font-bold text-neutral-400 uppercase">Live Products</div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-xl border border-neutral-800 bg-[#2a2a2a] p-3 text-center">
+            <div className="text-lg font-black text-white">{liveCount}</div>
+            <div className="text-[10px] font-bold text-neutral-400 uppercase">Live Products</div>
+          </div>
+          <div className="rounded-xl border border-neutral-800 bg-[#2a2a2a] p-3 text-center">
+            <div className="text-lg font-black text-amber-400">
+              {submissions.filter((s) => s.status === 'under_review').length}
+            </div>
+            <div className="text-[10px] font-bold text-neutral-400 uppercase">Pending Approval</div>
+          </div>
         </div>
 
-        {/* Products List */}
+        {/* Pending Approval Submissions Section */}
+        {submissions.filter((s) => s.status === 'under_review').length > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-black uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5" />
+                Pending Approval ({submissions.filter((s) => s.status === 'under_review').length})
+              </h3>
+              <span className="text-[10px] text-neutral-400">Awaiting approval</span>
+            </div>
+            {submissions
+              .filter((s) => s.status === 'under_review')
+              .map((sub) => (
+                <div
+                  key={sub.id}
+                  className="rounded-xl border border-amber-500/30 bg-[#2a2a2a] p-4 shadow-xs"
+                >
+                  <div className="flex items-start gap-3">
+                    <ProductLogo
+                      src={sub.logoUrl || getWebsiteFavicon(sub.url)}
+                      alt={sub.name}
+                      containerClassName="relative h-11 w-11 rounded-lg overflow-hidden border border-neutral-700 bg-neutral-900 shrink-0 flex items-center justify-center shadow-2xs"
+                      iconClassName="h-5 w-5 text-neutral-400 shrink-0"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-sm font-black text-white truncate">{sub.name}</h4>
+                        <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-300 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-full">
+                          <Clock className="h-2.5 w-2.5 animate-pulse" />
+                          Pending Approval
+                        </span>
+                      </div>
+                      <p className="text-xs text-neutral-400 truncate mt-0.5">{sub.tagline}</p>
+                      <div className="flex flex-wrap items-center gap-2 mt-2">
+                        <span className="inline-flex items-center gap-1 rounded-md bg-neutral-800 px-2 py-0.5 text-[10px] font-bold text-neutral-300">
+                          <Globe className="h-2.5 w-2.5" />
+                          {sub.category}
+                        </span>
+                        <span className="text-[10px] text-neutral-500">
+                          Submitted {new Date(sub.submittedAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+          </div>
+        )}
+
+        {/* Live Products List */}
         <div className="space-y-3">
           <h3 className="text-xs font-black uppercase tracking-wider text-neutral-400">
-            Products ({products.length})
+            Live Products ({products.length})
           </h3>
 
           {loading ? (
@@ -452,8 +540,12 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           ) : products.length === 0 ? (
             <div className="rounded-2xl border border-neutral-800 bg-[#2a2a2a] p-10 text-center">
               <Globe className="mx-auto h-8 w-8 text-neutral-600 mb-3" />
-              <p className="text-sm font-bold text-neutral-300">No products yet</p>
-              <p className="text-xs text-neutral-500 mt-1">Submit a website to see it here</p>
+              <p className="text-sm font-bold text-neutral-300">No live products yet</p>
+              <p className="text-xs text-neutral-500 mt-1">
+                {submissions.filter((s) => s.status === 'under_review').length > 0
+                  ? 'Your submission is pending approval and will appear here once approved.'
+                  : 'Submit a website to see it here.'}
+              </p>
             </div>
           ) : (
             products.map((product) => (
@@ -738,6 +830,66 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                       className={`${inputClass} resize-y`}
                       placeholder="Tell visitors what your product does and how it helps them."
                     />
+                  </div>
+
+                  {/* Special Offer & Discount */}
+                  <div className="rounded-xl border border-neutral-700/80 bg-[#1e1e1e] p-3.5 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-bold text-white">Special Offer / Viewer Discount</span>
+                        <span className="rounded bg-mint-500/15 border border-mint-500/30 px-1.5 py-0.2 text-[9px] font-black text-mint-300 uppercase">
+                          Optional
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div>
+                        <label className={labelClass}>Discount Text / Amount</label>
+                        <input
+                          type="text"
+                          value={editForm.offerDiscount}
+                          onChange={(e) => setEditForm((p) => ({ ...p, offerDiscount: e.target.value }))}
+                          className={inputClass}
+                          placeholder="e.g. 20% OFF or 50% Lifetime"
+                        />
+                      </div>
+
+                      <div>
+                        <label className={labelClass}>Promo / Coupon Code</label>
+                        <input
+                          type="text"
+                          value={editForm.offerCode}
+                          onChange={(e) => setEditForm((p) => ({ ...p, offerCode: e.target.value.toUpperCase() }))}
+                          className={`${inputClass} font-mono uppercase`}
+                          placeholder="e.g. TOPSAAS20"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div>
+                        <label className={labelClass}>Offer Redemption Link</label>
+                        <input
+                          type="url"
+                          value={editForm.offerUrl}
+                          onChange={(e) => setEditForm((p) => ({ ...p, offerUrl: e.target.value }))}
+                          className={inputClass}
+                          placeholder="https://yourwebsite.com/deal"
+                        />
+                      </div>
+
+                      <div>
+                        <label className={labelClass}>Offer Details / Terms</label>
+                        <input
+                          type="text"
+                          value={editForm.offerDetails}
+                          onChange={(e) => setEditForm((p) => ({ ...p, offerDetails: e.target.value }))}
+                          className={inputClass}
+                          placeholder="e.g. Valid on annual plans"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}

@@ -44,7 +44,7 @@ export const PaymentSuccess: React.FC<PaymentSuccessProps> = ({
   }, []);
 
   const planName = '30 Days';
-  const price = '$999';
+  const price = '$99';
 
   return (
     <div className="min-h-screen bg-[#222222] text-neutral-100 flex items-center justify-center font-sans px-4">
