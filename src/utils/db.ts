@@ -266,6 +266,97 @@ export function socialsColumnsAvailable(): Promise<boolean> {
   return socialsColumnsAvailablePromise;
 }
 
+/** Whether the remote `products` table has the offer discount/code columns yet (needs migration 019) */
+let offersColumnsAvailablePromise: Promise<boolean> | null = null;
+export function offersColumnsAvailable(): Promise<boolean> {
+  if (!offersColumnsAvailablePromise) {
+    offersColumnsAvailablePromise = (async () => {
+      try {
+        const { error } = await supabase
+          .from('products')
+          .select('offer_code')
+          .limit(1);
+        return !error;
+      } catch {
+        return false;
+      }
+    })();
+  }
+  return offersColumnsAvailablePromise;
+}
+
+/** Whether the remote `products` table has the demo_video_url column yet (needs migration 017) */
+let demoVideoColumnAvailablePromise: Promise<boolean> | null = null;
+export function demoVideoColumnAvailable(): Promise<boolean> {
+  if (!demoVideoColumnAvailablePromise) {
+    demoVideoColumnAvailablePromise = (async () => {
+      try {
+        const { error } = await supabase
+          .from('products')
+          .select('demo_video_url')
+          .limit(1);
+        return !error;
+      } catch {
+        return false;
+      }
+    })();
+  }
+  return demoVideoColumnAvailablePromise;
+}
+
+/** Whether the remote `products` table has the creator_avatar / creator_role columns yet (needs migration 016) */
+let creatorAvatarColumnAvailablePromise: Promise<boolean> | null = null;
+export function creatorAvatarColumnAvailable(): Promise<boolean> {
+  if (!creatorAvatarColumnAvailablePromise) {
+    creatorAvatarColumnAvailablePromise = (async () => {
+      try {
+        const { error } = await supabase
+          .from('products')
+          .select('creator_avatar,creator_role')
+          .limit(1);
+        return !error;
+      } catch {
+        return false;
+      }
+    })();
+  }
+  return creatorAvatarColumnAvailablePromise;
+}
+
+/** Prepares a DB product row by stripping fields whose columns don't yet exist on the remote database */
+export async function prepareDbProductRow(p: Product): Promise<Record<string, unknown>> {
+  const [includeScreenshots, includeSocials, includeOffers, includeDemoVideo, includeCreatorAvatar] = await Promise.all([
+    screenshotsColumnAvailable(),
+    socialsColumnsAvailable(),
+    offersColumnsAvailable(),
+    demoVideoColumnAvailable(),
+    creatorAvatarColumnAvailable(),
+  ]);
+
+  const row = { ...toDbProduct(p) } as Record<string, unknown>;
+  if (!includeScreenshots) delete row.screenshots;
+  if (!includeSocials) {
+    delete row.socials;
+    delete row.creator_name;
+    delete row.creator_username;
+    delete row.creator_x_handle;
+  }
+  if (!includeOffers) {
+    delete row.offer_discount;
+    delete row.offer_code;
+    delete row.offer_url;
+    delete row.offer_details;
+  }
+  if (!includeDemoVideo) {
+    delete row.demo_video_url;
+  }
+  if (!includeCreatorAvatar) {
+    delete row.creator_avatar;
+    delete row.creator_role;
+  }
+  return row;
+}
+
 /** Load all products from Supabase */
 export async function loadProducts(): Promise<Product[] | null> {
   const { data, error } = await supabase
@@ -310,21 +401,7 @@ export async function saveProductRanksDirect(products: Product[]): Promise<void>
 export async function saveAllProducts(products: Product[]): Promise<void> {
   if (products.length === 0) return;
   try {
-    const [includeScreenshots, includeSocials] = await Promise.all([
-      screenshotsColumnAvailable(),
-      socialsColumnsAvailable(),
-    ]);
-    const rows: Record<string, unknown>[] = products.map((p) => {
-      const row = { ...toDbProduct(p) } as Record<string, unknown>;
-      if (!includeScreenshots) delete row.screenshots;
-      if (!includeSocials) {
-        delete row.socials;
-        delete row.creator_name;
-        delete row.creator_username;
-        delete row.creator_x_handle;
-      }
-      return row;
-    });
+    const rows = await Promise.all(products.map((p) => prepareDbProductRow(p)));
     const { error } = await supabase.from('products').upsert(rows, { onConflict: 'id' });
     if (error) {
       await saveProductRanksDirect(products);
@@ -338,20 +415,7 @@ export async function saveAllProducts(products: Product[]): Promise<void> {
 /** Insert a single product into Supabase with robust fallback */
 export async function insertProductDirect(p: Product): Promise<boolean> {
   try {
-    const [includeScreenshots, includeSocials] = await Promise.all([
-      screenshotsColumnAvailable(),
-      socialsColumnsAvailable(),
-    ]);
-    const row = { ...toDbProduct(p) } as Record<string, unknown>;
-    if (!includeScreenshots) delete row.screenshots;
-    if (!includeSocials) {
-      delete row.socials;
-      delete row.creator_name;
-      delete row.creator_username;
-      delete row.creator_x_handle;
-      delete row.creator_avatar;
-      delete row.creator_role;
-    }
+    const row = await prepareDbProductRow(p);
     const { error } = await supabase.from('products').upsert(row, { onConflict: 'id' });
     if (!error) return true;
 
@@ -390,20 +454,7 @@ export async function insertProductDirect(p: Product): Promise<boolean> {
 /** Update an existing product in Supabase */
 export async function updateProductDirect(p: Product): Promise<boolean> {
   try {
-    const [includeScreenshots, includeSocials] = await Promise.all([
-      screenshotsColumnAvailable(),
-      socialsColumnsAvailable(),
-    ]);
-    const row = { ...toDbProduct(p) } as Record<string, unknown>;
-    if (!includeScreenshots) delete row.screenshots;
-    if (!includeSocials) {
-      delete row.socials;
-      delete row.creator_name;
-      delete row.creator_username;
-      delete row.creator_x_handle;
-      delete row.creator_avatar;
-      delete row.creator_role;
-    }
+    const row = await prepareDbProductRow(p);
     const { error } = await supabase.from('products').update(row).eq('id', p.id);
     return !error;
   } catch {

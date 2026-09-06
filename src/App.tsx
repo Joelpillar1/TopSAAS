@@ -634,7 +634,15 @@ export default function App() {
       if (dbProducts !== null && dbProducts.length > 0) {
         const sorted = [...dbProducts].sort((a, b) => (a.rank ?? 9999) - (b.rank ?? 9999));
         setProducts(sorted.map((p, idx) => ({ ...p, rank: p.rank ?? (idx + 1) })));
+      } else if (dbProducts !== null) {
+        // Supabase is reachable but returned zero products — clear stale localStorage
+        setProducts([]);
+        try {
+          localStorage.removeItem(STORAGE_KEYS.PRODUCTS);
+          localStorage.removeItem('topsaas_products_cache_v2');
+        } catch {}
       }
+      // If dbProducts is null (network/RLS error), keep localStorage as fallback
       setProductsLoaded(true);
     }
     load();
@@ -1043,12 +1051,39 @@ export default function App() {
     }
 
     try {
-      await supabase.from('products').delete().eq('id', productId);
+      const { error } = await supabase.from('products').delete().eq('id', productId);
+      if (error) {
+        console.error('Error deleting product from DB:', error.message);
+        // Revert — put the product back since DB delete failed
+        if (targetProduct) {
+          setProducts((prev) => {
+            const restored = [...prev, targetProduct].sort((a, b) => (a.rank ?? 9999) - (b.rank ?? 9999));
+            try {
+              localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(restored));
+              localStorage.setItem('topsaas_products_cache_v2', JSON.stringify(restored));
+            } catch {}
+            return restored;
+          });
+        }
+        return;
+      }
+      // Also delete by URL in case duplicates exist
       if (targetProduct) {
         await supabase.from('products').delete().eq('url', targetProduct.url);
       }
     } catch (err) {
       console.error('Error deleting product from DB:', err);
+      // Revert on network error too
+      if (targetProduct) {
+        setProducts((prev) => {
+          const restored = [...prev, targetProduct].sort((a, b) => (a.rank ?? 9999) - (b.rank ?? 9999));
+          try {
+            localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(restored));
+            localStorage.setItem('topsaas_products_cache_v2', JSON.stringify(restored));
+          } catch {}
+          return restored;
+        });
+      }
     }
   };
 

@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { Category } from '../types';
 import { playSound } from '../utils/sound';
+import { AiAgentsSection } from './AiAgentsSection';
 
 interface RichFooterProps {
   totalProducts: number;
@@ -190,6 +191,9 @@ export const RichFooter: React.FC<RichFooterProps> = ({
             </ul>
           </div>
         </div>
+
+        {/* AI & Agents Machine-Readable Hub */}
+        <AiAgentsSection soundEnabled={soundEnabled} />
       </div>
 
       {/* Bottom Bar */}
