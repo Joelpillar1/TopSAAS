@@ -18,17 +18,15 @@ export const AiAgentsSection: React.FC<AiAgentsSectionProps> = ({ soundEnabled =
   ];
 
   const agentLinks = [
-    { label: 'llms.txt', href: '/llms.txt', title: 'Machine-readable overview for LLMs' },
-    { label: 'llms-full.txt', href: '/llms-full.txt', title: 'Complete LLM documentation & schemas' },
-    { label: 'ai.txt', href: '/ai.txt', title: 'AI agent directives and permissions' },
-    { label: 'AI snapshot', href: '/ai-snapshot.json', title: 'Real-time JSON snapshot of directory state' },
+    { label: 'llms.txt', href: '/llms.txt', title: 'Machine-readable overview for LLMs (AEO/GEO standard)' },
+    { label: 'llms-full.txt', href: '/llms-full.txt', title: 'Comprehensive LLM documentation & directory schema' },
+    { label: 'ai.txt', href: '/ai.txt', title: 'AI agent crawler directives and citations' },
+    { label: 'AI snapshot', href: '/ai-snapshot.json', title: 'Real-time JSON metadata snapshot' },
     { label: 'Markdown catalog', href: '/catalog.md', title: 'Clean markdown directory table for LLM context' },
-    { label: 'API catalog', href: '/api-catalog.json', title: 'JSON catalog of public API endpoints' },
-    { label: 'OpenAPI', href: '/openapi.json', title: 'OpenAPI 3.1 REST specification' },
+    { label: 'OpenAPI', href: '/openapi.json', title: 'OpenAPI 3.1 REST API specification' },
     { label: 'Public REST', href: '/products.json', title: 'Public REST feed of directory products' },
-    { label: 'CLI', href: '/cli.md', title: 'Terminal and curl commands for agents' },
-    { label: 'auth.md', href: '/auth.md', title: 'Authentication and security architecture' },
-    { label: 'sitemap.xml', href: '/sitemap.xml', title: 'XML search sitemap' },
+    { label: 'sitemap.xml', href: '/sitemap.xml', title: 'XML search engine index' },
+    { label: 'robots.txt', href: '/robots.txt', title: 'Crawler access directives' },
   ];
 
   return (

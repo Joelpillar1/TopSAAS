@@ -49,12 +49,71 @@
     </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>TopSAAS — The curated SaaS directory. Find the best SaaS, or get yours found.</title>
-    <meta name="description" content="TopSAAS is the curated directory of the internet's best SaaS products. Founders list their software in minutes; real people discover and visit the best tools." />
+    <title>TopSAAS — The Curated SaaS Directory & Launchpad</title>
+    <meta name="description" content="TopSAAS is the curated directory of the internet's best SaaS products, AI tools, and developer software. Discover trending tools, compare pricing, and launch your product." />
+    <meta name="keywords" content="SaaS directory, top SaaS tools, best AI tools, developer software, product hunt alternative, software directory, startup launchpad" />
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+    <link rel="canonical" href="https://topsaas.com/" />
+    
+    <!-- OpenGraph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://topsaas.com/" />
+    <meta property="og:site_name" content="TopSAAS" />
+    <meta property="og:title" content="TopSAAS — The Curated SaaS Directory & Launchpad" />
+    <meta property="og:description" content="Discover the best curated SaaS products, AI tools, and indie software. Ranked by the community in real time." />
+    <meta property="og:image" content="https://topsaas.com/favicon.svg" />
+
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://topsaas.com/" />
+    <meta name="twitter:title" content="TopSAAS — Curated SaaS Leaderboard" />
+    <meta name="twitter:description" content="Discover top software tools, founder offers, and trending SaaS products." />
+    <meta name="twitter:image" content="https://topsaas.com/favicon.svg" />
+
+    <!-- Machine-Readable AI & Search Endpoints -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="alternate" type="text/plain" href="/llms.txt" title="LLMs.txt" />
+    <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Schema.org Structured Data (SEO / AEO / GEO Knowledge Graph) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "https://topsaas.com/#website",
+          "name": "TopSAAS",
+          "url": "https://topsaas.com/",
+          "description": "Curated SaaS leaderboard and discovery platform for software products and AI tools.",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://topsaas.com/?q={search_term_string}",
+            "query-input": "required name=search_term_string"
+          }
+        },
+        {
+          "@type": "Organization",
+          "@id": "https://topsaas.com/#organization",
+          "name": "TopSAAS",
+          "url": "https://topsaas.com/",
+          "logo": "https://topsaas.com/favicon.svg"
+        },
+        {
+          "@type": "CollectionPage",
+          "@id": "https://topsaas.com/#webpage",
+          "url": "https://topsaas.com/",
+          "name": "TopSAAS — The Curated SaaS Directory",
+          "isPartOf": { "@id": "https://topsaas.com/#website" },
+          "about": { "@id": "https://topsaas.com/#organization" },
+          "description": "Discover and launch top SaaS tools, AI applications, and developer software."
+        }
+      ]
+    }
+    </script>
   </head>
   <body class="bg-[#0d1117] text-neutral-200 antialiased selection:bg-mint-400/40 selection:text-neutral-950 min-h-screen">
     <div id="root"></div>
