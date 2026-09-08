@@ -1,10 +1,7 @@
-import React from 'react';
 import {
   ShieldCheck,
   Sparkles,
   Trophy,
-  Twitter,
-  Github,
   Globe,
   FileText,
   LayoutGrid,
@@ -66,27 +63,7 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                 <span className="text-neutral-500">products</span>
               </div>
             </div>
-            {/* Social Links */}
-            <div className="flex items-center gap-2 pt-1">
-              <a
-                href="https://twitter.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-700 bg-[#343434] text-neutral-400 hover:text-white hover:border-neutral-400 hover:bg-neutral-800 transition-all cursor-pointer"
-                title="Follow on Twitter / X"
-              >
-                <Twitter className="h-3.5 w-3.5" />
-              </a>
-              <a
-                href="https://github.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-700 bg-[#343434] text-neutral-400 hover:text-white hover:border-neutral-400 hover:bg-neutral-800 transition-all cursor-pointer"
-                title="View on GitHub"
-              >
-                <Github className="h-3.5 w-3.5" />
-              </a>
-            </div>
+
           </div>
 
           {/* Product Column */}

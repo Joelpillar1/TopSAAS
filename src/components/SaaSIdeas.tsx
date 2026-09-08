@@ -32,6 +32,7 @@ const CATEGORIES: RepoCategory[] = [
   'DevOps & Infra', 'UI Components', 'CMS & Content', 'Analytics',
   'Email & Communication', 'Deployment', 'Mobile', 'API & Backend',
   'Monitoring', 'Forms & Surveys', 'Search', 'File Storage', 'Design & UI',
+  'Productivity', 'Utilities', 'Privacy & Security', 'Education', 'Lists',
 ];
 
 const REPOS_PER_PAGE = 20;

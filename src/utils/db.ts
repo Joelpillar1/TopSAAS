@@ -109,6 +109,9 @@ export const mapDbProduct = (row: Record<string, unknown>): Product => ({
   submittedBy: (row.submitted_by as string) || undefined,
   verified: (row.verified as boolean) || false,
   description: (row.description as string) || undefined,
+  problemItSolves: (row.problem_it_solves as string) || undefined,
+  solution: (row.solution as string) || undefined,
+  uniqueSellingPoint: (row.unique_selling_point as string) || undefined,
   whatItDoes: (row.what_it_does as string[]) || undefined,
   features: (row.features as Product['features']) || undefined,
   useCases: (row.use_cases as Product['useCases']) || undefined,
@@ -153,6 +156,9 @@ export const toDbProduct = (p: Product) => {
     submitted_by: isUuid ? p.submittedBy : null,
     verified: p.verified || false,
     description: p.description || null,
+    problem_it_solves: p.problemItSolves || null,
+    solution: p.solution || null,
+    unique_selling_point: p.uniqueSellingPoint || null,
     what_it_does: p.whatItDoes || null,
     features: p.features || null,
     use_cases: p.useCases || null,
@@ -172,6 +178,23 @@ export function submissionToProduct(sub: WebsiteSubmission, rank: number = 1): P
   const domain = sub.url.replace(/^https?:\/\//i, '').split('/')[0];
   const favicon = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
   const prodId = sub.id ? (sub.id.startsWith('prod-') ? sub.id : `prod-${sub.id}`) : `prod-${Date.now()}`;
+
+  const whatItDoesList: string[] = [];
+  if (sub.problemItSolves) whatItDoesList.push(`Problem: ${sub.problemItSolves}`);
+  if (sub.solution) whatItDoesList.push(`Solution: ${sub.solution}`);
+  if (sub.uniqueSellingPoint) whatItDoesList.push(`Difference: ${sub.uniqueSellingPoint}`);
+
+  const featuresList = [];
+  if (sub.solution) {
+    featuresList.push({ title: 'Core Solution', description: sub.solution, tag: 'Superpower' });
+  }
+  if (sub.uniqueSellingPoint) {
+    featuresList.push({ title: 'Key Advantage', description: sub.uniqueSellingPoint, tag: 'Differentiator' });
+  }
+  if (sub.problemItSolves) {
+    featuresList.push({ title: 'Problem Solved', description: sub.problemItSolves, tag: 'Value' });
+  }
+
   return {
     id: prodId,
     rank,
@@ -180,15 +203,15 @@ export function submissionToProduct(sub: WebsiteSubmission, rank: number = 1): P
     tagline: sub.tagline,
     url: sub.url,
     logoUrl: sub.logoUrl || favicon,
-    screenshots: sub.screenshots,
-    demoVideoUrl: sub.demoVideoUrl,
-    twitterHandle: sub.twitterHandle,
-    socials: sub.socials,
-    creatorName: sub.creatorName,
-    creatorUsername: sub.creatorUsername,
-    creatorXHandle: sub.creatorXHandle,
-    creatorAvatar: sub.creatorAvatar,
-    creatorRole: sub.creatorRole,
+    screenshots: sub.screenshots && sub.screenshots.length > 0 ? sub.screenshots : undefined,
+    demoVideoUrl: sub.demoVideoUrl || undefined,
+    twitterHandle: sub.twitterHandle || undefined,
+    socials: sub.socials && sub.socials.length > 0 ? sub.socials : undefined,
+    creatorName: sub.creatorName || undefined,
+    creatorUsername: sub.creatorUsername || undefined,
+    creatorXHandle: sub.creatorXHandle || undefined,
+    creatorAvatar: sub.creatorAvatar || undefined,
+    creatorRole: sub.creatorRole || undefined,
     category: sub.category,
     totalBid: 0,
     dinoScore: 0,
@@ -200,27 +223,21 @@ export function submissionToProduct(sub: WebsiteSubmission, rank: number = 1): P
     isUserOwned: false,
     submittedBy: sub.submittedBy,
     description: sub.description || `${sub.name} is a high-quality product in the ${sub.category} ecosystem. ${sub.tagline}.`,
-    whatItDoes: [
-      sub.problemItSolves ? `Problem: ${sub.problemItSolves}` : `Core Workflow Acceleration: Streamlines essential ${sub.category.toLowerCase()} tasks.`,
-      sub.solution ? `Solution: ${sub.solution}` : `Intuitive User Interface: Clean usability and keyboard-friendly navigation.`,
-      sub.uniqueSellingPoint ? `Advantage: ${sub.uniqueSellingPoint}` : `High Reliability & Speed: Designed for scale with secure cloud infrastructure.`,
-      `Integration Capabilities: Connects with your favorite web and developer workflows.`
-    ],
-    features: [
-      { title: 'Core Superpower', description: sub.solution || `Built with cutting-edge tech for ${sub.category.toLowerCase()} workflows.`, tag: 'Core Superpower' },
-      { title: 'Key Advantage', description: sub.uniqueSellingPoint || 'Get started in seconds with zero friction.', tag: 'Usability' }
-    ],
-    useCases: [
-      { title: 'Ideal Audience & Use Case', description: sub.targetAudience ? `Tailored for ${sub.targetAudience}` : `Empowers builders to achieve higher throughput in ${sub.category.toLowerCase()}.`, audience: sub.targetAudience || 'Builders & Teams' }
-    ],
-    targetAudience: sub.targetAudience || 'Makers, software builders, and modern digital teams.',
-    pricingModel: sub.pricingModel || 'Free tier / Flexible plans available',
-    offerDiscount: sub.offerDiscount,
-    offerCode: sub.offerCode,
-    offerUrl: sub.offerUrl,
-    offerDetails: sub.offerDetails,
+    problemItSolves: sub.problemItSolves || undefined,
+    solution: sub.solution || undefined,
+    uniqueSellingPoint: sub.uniqueSellingPoint || undefined,
+    whatItDoes: whatItDoesList,
+    features: featuresList.length > 0 ? featuresList : undefined,
+    useCases: sub.targetAudience ? [
+      { title: 'Target Audience & Use Case', description: `Specially crafted for ${sub.targetAudience}`, audience: sub.targetAudience }
+    ] : undefined,
+    targetAudience: sub.targetAudience || undefined,
+    pricingModel: sub.pricingModel || undefined,
+    offerDiscount: sub.offerDiscount || undefined,
+    offerCode: sub.offerCode || undefined,
+    offerUrl: sub.offerUrl || undefined,
+    offerDetails: sub.offerDetails || undefined,
     keyHighlights: [
-      { label: 'Category', value: sub.category },
       { label: 'Submitted By', value: sub.backerName || 'Community Creator' },
       { label: 'Status', value: 'Live on Directory' }
     ],
@@ -323,14 +340,34 @@ export function creatorAvatarColumnAvailable(): Promise<boolean> {
   return creatorAvatarColumnAvailablePromise;
 }
 
+/** Whether the remote `products` table has problem_it_solves / solution / unique_selling_point columns */
+let detailsColumnsAvailablePromise: Promise<boolean> | null = null;
+export function detailsColumnsAvailable(): Promise<boolean> {
+  if (!detailsColumnsAvailablePromise) {
+    detailsColumnsAvailablePromise = (async () => {
+      try {
+        const { error } = await supabase
+          .from('products')
+          .select('problem_it_solves')
+          .limit(1);
+        return !error;
+      } catch {
+        return false;
+      }
+    })();
+  }
+  return detailsColumnsAvailablePromise;
+}
+
 /** Prepares a DB product row by stripping fields whose columns don't yet exist on the remote database */
 export async function prepareDbProductRow(p: Product): Promise<Record<string, unknown>> {
-  const [includeScreenshots, includeSocials, includeOffers, includeDemoVideo, includeCreatorAvatar] = await Promise.all([
+  const [includeScreenshots, includeSocials, includeOffers, includeDemoVideo, includeCreatorAvatar, includeDetails] = await Promise.all([
     screenshotsColumnAvailable(),
     socialsColumnsAvailable(),
     offersColumnsAvailable(),
     demoVideoColumnAvailable(),
     creatorAvatarColumnAvailable(),
+    detailsColumnsAvailable(),
   ]);
 
   const row = { ...toDbProduct(p) } as Record<string, unknown>;
@@ -354,6 +391,11 @@ export async function prepareDbProductRow(p: Product): Promise<Record<string, un
     delete row.creator_avatar;
     delete row.creator_role;
   }
+  if (!includeDetails) {
+    delete row.problem_it_solves;
+    delete row.solution;
+    delete row.unique_selling_point;
+  }
   return row;
 }
 
@@ -367,31 +409,74 @@ export async function loadProducts(): Promise<Product[] | null> {
   return data.map(mapDbProduct);
 }
 
-/** Guaranteed single-request batched rank updates in Supabase */
+/**
+ * Merge rich submission data into loaded products.
+ * This ensures that even if the products table row was saved before
+ * columns like problem_it_solves / offer_code / socials existed,
+ * the data from the submissions table (which always has it) gets applied.
+ */
+export async function enrichProductsFromSubmissions(products: Product[]): Promise<Product[]> {
+  if (products.length === 0) return products;
+  try {
+    const { data, error } = await supabase
+      .from('submissions')
+      .select('*')
+      .eq('status', 'approved');
+    if (error || !data || data.length === 0) return products;
+
+    const subs = data.map(mapDbSubmission);
+    return products.map((prod) => {
+      const match = subs.find(
+        (s) =>
+          s.url.toLowerCase().replace(/\/$/, '') === prod.url.toLowerCase().replace(/\/$/, '') ||
+          prod.id === s.id ||
+          prod.id === `prod-${s.id}`
+      );
+      if (!match) return prod;
+      // Merge: submission fields win when product row is missing them
+      return {
+        ...prod,
+        description: prod.description || match.description,
+        problemItSolves: prod.problemItSolves || match.problemItSolves,
+        solution: prod.solution || match.solution,
+        uniqueSellingPoint: prod.uniqueSellingPoint || match.uniqueSellingPoint,
+        targetAudience: prod.targetAudience || match.targetAudience,
+        pricingModel: prod.pricingModel || match.pricingModel,
+        offerDiscount: prod.offerDiscount || match.offerDiscount,
+        offerCode: prod.offerCode || match.offerCode,
+        offerUrl: prod.offerUrl || match.offerUrl,
+        offerDetails: prod.offerDetails || match.offerDetails,
+        socials: (prod.socials && prod.socials.length > 0) ? prod.socials : match.socials,
+        screenshots: (prod.screenshots && prod.screenshots.length > 0) ? prod.screenshots : match.screenshots,
+        demoVideoUrl: prod.demoVideoUrl || match.demoVideoUrl,
+        logoUrl: prod.logoUrl || match.logoUrl,
+        creatorName: prod.creatorName || match.creatorName,
+        creatorXHandle: prod.creatorXHandle || match.creatorXHandle,
+        creatorAvatar: prod.creatorAvatar || match.creatorAvatar,
+        creatorRole: prod.creatorRole || match.creatorRole,
+        twitterHandle: prod.twitterHandle || match.twitterHandle,
+        submittedBy: prod.submittedBy || match.submittedBy,
+      };
+    });
+  } catch {
+    return products;
+  }
+}
+
+
+/** Guaranteed single-request batched rank updates in Supabase — only touches rank columns */
 export async function saveProductRanksDirect(products: Product[]): Promise<void> {
   if (products.length === 0) return;
   try {
-    const rankRows = products.map((p) => ({
-      id: p.id,
-      name: p.name,
-      tagline: p.tagline,
-      url: p.url,
-      category: p.category,
-      rank: p.rank,
-      previous_rank: p.previousRank || p.rank,
-      updated_at: Date.now(),
-    }));
-    const { error } = await supabase.from('products').upsert(rankRows, { onConflict: 'id' });
-    if (error) {
-      await Promise.all(
-        products.map((p) =>
-          supabase
-            .from('products')
-            .update({ rank: p.rank, previous_rank: p.previousRank || p.rank })
-            .eq('id', p.id)
-        )
-      );
-    }
+    // Use individual UPDATEs so we never overwrite rich columns (problem, solution, offers, etc.)
+    await Promise.all(
+      products.map((p) =>
+        supabase
+          .from('products')
+          .update({ rank: p.rank, previous_rank: p.previousRank || p.rank, updated_at: Date.now() })
+          .eq('id', p.id)
+      )
+    );
   } catch (err) {
     console.warn('saveProductRanksDirect note:', err);
   }
@@ -419,7 +504,7 @@ export async function insertProductDirect(p: Product): Promise<boolean> {
     const { error } = await supabase.from('products').upsert(row, { onConflict: 'id' });
     if (!error) return true;
 
-    // Fallback minimal insert
+    // Fallback: insert with all possible rich fields (skip columns that don't exist yet)
     console.warn('insertProductDirect primary insert failed, retrying minimal:', error.message);
     const minimal: Record<string, unknown> = {
       id: p.id,
@@ -440,8 +525,23 @@ export async function insertProductDirect(p: Product): Promise<boolean> {
     if (p.logoUrl && !p.logoUrl.startsWith('data:image')) minimal.logo_url = p.logoUrl;
     if (p.twitterHandle) minimal.twitter_handle = p.twitterHandle;
     if (p.description) minimal.description = p.description;
+    if (p.problemItSolves) minimal.problem_it_solves = p.problemItSolves;
+    if (p.solution) minimal.solution = p.solution;
+    if (p.uniqueSellingPoint) minimal.unique_selling_point = p.uniqueSellingPoint;
     if (p.targetAudience) minimal.target_audience = p.targetAudience;
     if (p.pricingModel) minimal.pricing_model = p.pricingModel;
+    if (p.offerDiscount) minimal.offer_discount = p.offerDiscount;
+    if (p.offerCode) minimal.offer_code = p.offerCode;
+    if (p.offerUrl) minimal.offer_url = p.offerUrl;
+    if (p.offerDetails) minimal.offer_details = p.offerDetails;
+    if (p.creatorName) minimal.creator_name = p.creatorName;
+    if (p.creatorXHandle) minimal.creator_x_handle = p.creatorXHandle;
+    if (p.creatorAvatar) minimal.creator_avatar = p.creatorAvatar;
+    if (p.creatorRole) minimal.creator_role = p.creatorRole;
+    if (p.demoVideoUrl) minimal.demo_video_url = p.demoVideoUrl;
+    if (p.submittedBy && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(p.submittedBy)) {
+      minimal.submitted_by = p.submittedBy;
+    }
 
     const { error: fallbackError } = await supabase.from('products').upsert(minimal, { onConflict: 'id' });
     return !fallbackError;

@@ -101,6 +101,9 @@ export interface Product {
   offerCode?: string;
   offerUrl?: string;
   offerDetails?: string;
+  problemItSolves?: string;
+  solution?: string;
+  uniqueSellingPoint?: string;
 }
 
 export interface Comment {

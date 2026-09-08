@@ -33,7 +33,12 @@ export type RepoCategory =
   | 'Forms & Surveys'
   | 'Search'
   | 'File Storage'
-  | 'Design & UI';
+  | 'Design & UI'
+  | 'Productivity'
+  | 'Utilities'
+  | 'Privacy & Security'
+  | 'Education'
+  | 'Lists';
 
 let idCounter = 0;
 const repo = (

@@ -25,7 +25,6 @@ export const AiAgentsSection: React.FC<AiAgentsSectionProps> = ({ soundEnabled =
     { label: 'Markdown catalog', href: '/catalog.md', title: 'Clean markdown directory table for LLM context' },
     { label: 'OpenAPI', href: '/openapi.json', title: 'OpenAPI 3.1 REST API specification' },
     { label: 'Public REST', href: '/products.json', title: 'Public REST feed of directory products' },
-    { label: 'sitemap.xml', href: '/sitemap.xml', title: 'XML search engine index' },
     { label: 'robots.txt', href: '/robots.txt', title: 'Crawler access directives' },
   ];
 

@@ -30,10 +30,13 @@ import { playSound } from '../utils/sound';
 
 interface ProfilePageProps {
   user: User;
+  allProducts?: Product[];
+  allSubmissions?: WebsiteSubmission[];
   onBack: () => void;
   onSignOut?: () => void;
   onDeleteProduct?: (productId: string) => void;
   onUpdateProduct?: (product: Product) => void;
+  onSelectProduct?: (product: Product) => void;
   soundEnabled?: boolean;
 }
 
@@ -76,10 +79,13 @@ function processImageFile(
 
 export const ProfilePage: React.FC<ProfilePageProps> = ({
   user,
+  allProducts = [],
+  allSubmissions = [],
   onBack,
   onSignOut,
   onDeleteProduct,
   onUpdateProduct,
+  onSelectProduct,
   soundEnabled = true,
 }) => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -105,6 +111,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
     description: string;
     pricingModel: PricingModel | '';
     targetAudience: string;
+    problemItSolves: string;
+    solution: string;
+    uniqueSellingPoint: string;
     logoUrl: string;
     screenshots: string[];
     demoVideoUrl: string;
@@ -134,6 +143,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
     description: '',
     pricingModel: '',
     targetAudience: '',
+    problemItSolves: '',
+    solution: '',
+    uniqueSellingPoint: '',
     logoUrl: '',
     screenshots: [],
     demoVideoUrl: '',
@@ -161,9 +173,26 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   const screenshotsInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    let isMounted = true;
     async function fetchData() {
+      const userEmail = user.email?.trim().toLowerCase();
+
+      // Filter matching submissions and products strictly belonging to THIS user
+      const isUserMatch = (submittedBy?: string, backerEmail?: string) => {
+        if (submittedBy && submittedBy === user.id) return true;
+        if (backerEmail && userEmail && backerEmail.trim().toLowerCase() === userEmail) return true;
+        return false;
+      };
+
+      const matchedLocalSubs = allSubmissions.filter((s) =>
+        isUserMatch(s.submittedBy, s.backerEmail)
+      );
+      const matchedLocalProds = allProducts.filter((p) =>
+        isUserMatch(p.submittedBy)
+      );
+
       try {
-        const [prodRes, subRes] = await Promise.all([
+        const [prodRes, subResById, subResByEmail] = await Promise.all([
           supabase
             .from('products')
             .select('*')
@@ -174,19 +203,55 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             .select('*')
             .eq('submitted_by', user.id)
             .order('submitted_at', { ascending: false }),
+          user.email
+            ? supabase
+                .from('submissions')
+                .select('*')
+                .eq('backer_email', user.email)
+                .order('submitted_at', { ascending: false })
+            : Promise.resolve({ data: null, error: null }),
         ]);
 
-        if (!prodRes.error && prodRes.data) {
-          setProducts(prodRes.data.map(mapDbProduct));
+        const dbProds = !prodRes.error && prodRes.data ? prodRes.data.map(mapDbProduct) : [];
+        const dbSubs1 = !subResById.error && subResById.data ? subResById.data.map(mapDbSubmission) : [];
+        const dbSubs2 = !subResByEmail.error && subResByEmail.data ? subResByEmail.data.map(mapDbSubmission) : [];
+
+        if (isMounted) {
+          const isDbAvailable = !prodRes.error && !subResById.error;
+          if (isDbAvailable) {
+            // Supabase Database is authoritative: only display user's records that actually exist in DB
+            const combinedSubsMap = new Map<string, WebsiteSubmission>();
+            dbSubs1.forEach((s) => combinedSubsMap.set(s.id, s));
+            dbSubs2.forEach((s) => combinedSubsMap.set(s.id, s));
+
+            const finalSubs = Array.from(combinedSubsMap.values())
+              .filter((s) => isUserMatch(s.submittedBy, s.backerEmail))
+              .sort((a, b) => (b.submittedAt ?? 0) - (a.submittedAt ?? 0));
+
+            const finalProds = dbProds.filter((p) => isUserMatch(p.submittedBy));
+
+            setProducts(finalProds);
+            setSubmissions(finalSubs);
+          } else {
+            // Offline / error fallback only
+            setProducts(matchedLocalProds);
+            setSubmissions(matchedLocalSubs);
+          }
         }
-        if (!subRes.error && subRes.data) {
-          setSubmissions(subRes.data.map(mapDbSubmission));
+      } catch {
+        if (isMounted) {
+          setProducts(matchedLocalProds);
+          setSubmissions(matchedLocalSubs);
         }
-      } catch {}
-      setLoading(false);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
     }
     fetchData();
-  }, [user.id]);
+    return () => {
+      isMounted = false;
+    };
+  }, [user.id, user.email, allProducts, allSubmissions]);
 
   const handleDelete = async (productId: string) => {
     if (!window.confirm('Remove this product from the directory?')) return;
@@ -221,6 +286,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
       description: p.description || '',
       pricingModel: (p.pricingModel as PricingModel) || '',
       targetAudience: p.targetAudience || '',
+      problemItSolves: p.problemItSolves || '',
+      solution: p.solution || '',
+      uniqueSellingPoint: p.uniqueSellingPoint || '',
       logoUrl: p.logoUrl || '',
       screenshots: Array.isArray(p.screenshots) ? [...p.screenshots] : [],
       demoVideoUrl: p.demoVideoUrl || '',
@@ -295,6 +363,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
       url: cleanUrl(editForm.url),
       category: finalCategory,
       description: editForm.description.trim() || undefined,
+      problemItSolves: editForm.problemItSolves.trim() || undefined,
+      solution: editForm.solution.trim() || undefined,
+      uniqueSellingPoint: editForm.uniqueSellingPoint.trim() || undefined,
       pricingModel: editForm.pricingModel || undefined,
       targetAudience: editForm.targetAudience.trim() || undefined,
       logoUrl: editForm.logoUrl.trim() || undefined,
@@ -310,6 +381,16 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
       offerCode: editForm.offerCode.trim() || undefined,
       offerUrl: editForm.offerUrl.trim() ? cleanUrl(editForm.offerUrl) : undefined,
       offerDetails: editForm.offerDetails.trim() || undefined,
+      whatItDoes: (editForm.problemItSolves.trim() || editForm.solution.trim() || editForm.uniqueSellingPoint.trim()) ? [
+        ...(editForm.problemItSolves.trim() ? [`Problem: ${editForm.problemItSolves.trim()}`] : []),
+        ...(editForm.solution.trim() ? [`Solution: ${editForm.solution.trim()}`] : []),
+        ...(editForm.uniqueSellingPoint.trim() ? [`Difference: ${editForm.uniqueSellingPoint.trim()}`] : [])
+      ] : editingProduct.whatItDoes,
+      features: (editForm.solution.trim() || editForm.uniqueSellingPoint.trim()) ? [
+        ...(editForm.solution.trim() ? [{ title: 'Core Solution', description: editForm.solution.trim(), tag: 'Superpower' }] : []),
+        ...(editForm.uniqueSellingPoint.trim() ? [{ title: 'Key Advantage', description: editForm.uniqueSellingPoint.trim(), tag: 'Differentiator' }] : []),
+        ...(editForm.problemItSolves.trim() ? [{ title: 'Problem Solved', description: editForm.problemItSolves.trim(), tag: 'Value' }] : [])
+      ] : editingProduct.features,
       updatedAt: Date.now(),
     };
 
@@ -504,7 +585,16 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                     />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <h4 className="text-sm font-black text-white truncate">{sub.name}</h4>
+                        <h4
+                          onClick={() => {
+                            playSound('click', soundEnabled);
+                            if (onSelectProduct) onSelectProduct(submissionToProduct(sub));
+                          }}
+                          className="text-sm font-black text-white truncate hover:text-amber-300 hover:underline cursor-pointer transition-colors"
+                          title="Click to view details"
+                        >
+                          {sub.name}
+                        </h4>
                         <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-300 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-full">
                           <Clock className="h-2.5 w-2.5 animate-pulse" />
                           Pending Approval
@@ -562,7 +652,16 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                   />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <h4 className="text-sm font-black text-white truncate">{product.name}</h4>
+                      <h4
+                        onClick={() => {
+                          playSound('click', soundEnabled);
+                          if (onSelectProduct) onSelectProduct(product);
+                        }}
+                        className="text-sm font-black text-white truncate hover:text-mint-300 hover:underline cursor-pointer transition-colors"
+                        title="Click to view details"
+                      >
+                        {product.name}
+                      </h4>
                       <span className="text-[9px] font-bold text-mint-300 bg-mint-500/15 border border-mint-500/30 px-1.5 py-0.5 rounded">
                         Live
                       </span>
@@ -824,11 +923,44 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                   <div>
                     <label className={labelClass}>Description / Overview</label>
                     <textarea
-                      rows={4}
+                      rows={3}
                       value={editForm.description}
                       onChange={(e) => setEditForm((p) => ({ ...p, description: e.target.value }))}
                       className={`${inputClass} resize-y`}
                       placeholder="Tell visitors what your product does and how it helps them."
+                    />
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>Problem It Solves</label>
+                    <textarea
+                      rows={2}
+                      value={editForm.problemItSolves}
+                      onChange={(e) => setEditForm((p) => ({ ...p, problemItSolves: e.target.value }))}
+                      className={`${inputClass} resize-y`}
+                      placeholder="What pain point does it address?"
+                    />
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>Your Solution</label>
+                    <textarea
+                      rows={2}
+                      value={editForm.solution}
+                      onChange={(e) => setEditForm((p) => ({ ...p, solution: e.target.value }))}
+                      className={`${inputClass} resize-y`}
+                      placeholder="How does it solve that problem?"
+                    />
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>What Makes It Different</label>
+                    <textarea
+                      rows={2}
+                      value={editForm.uniqueSellingPoint}
+                      onChange={(e) => setEditForm((p) => ({ ...p, uniqueSellingPoint: e.target.value }))}
+                      className={`${inputClass} resize-y`}
+                      placeholder="What sets it apart from alternatives?"
                     />
                   </div>
 

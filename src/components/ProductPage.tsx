@@ -7,7 +7,6 @@ import {
   CheckCircle2, 
   Crown, 
   Layers, 
-  ShieldCheck, 
   Sparkles, 
   Globe, 
   ChevronRight, 
@@ -23,7 +22,7 @@ import {
   ChevronUp,
   Tag,
   Copy,
-  Check
+  Check,
 } from 'lucide-react';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
@@ -226,11 +225,6 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                       <span>Verified</span>
                     </span>
                   )}
-                  {product.category.split(',').map((cat) => cat.trim()).filter(Boolean).map((cat) => (
-                    <span key={cat} className="rounded-full bg-[#343434] border border-neutral-700 px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold text-neutral-400">
-                      {cat}
-                    </span>
-                  ))}
                 </div>
 
                 <p className="text-xs sm:text-base font-medium text-neutral-400 max-w-2xl leading-relaxed">
@@ -372,19 +366,19 @@ export const ProductPage: React.FC<ProductPageProps> = ({
 
           {/* Exclusive Offer / Viewer Deal Banner */}
           {(product.offerDiscount || product.offerCode) && (
-            <div className="relative overflow-hidden rounded-2xl border-2 border-amber-500/50 bg-[#242424] p-4 sm:p-5 shadow-lg">
+            <div className="relative overflow-hidden rounded-2xl border border-mint-500/40 bg-[#1a2a25] p-4 sm:p-5 shadow-lg">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="flex items-start gap-3 min-w-0">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-400 text-black shadow-md">
-                    <Tag className="h-5 w-5 fill-black stroke-black" />
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-mint-500 text-[#0b0f14] shadow-md">
+                    <Tag className="h-5 w-5 fill-[#0b0f14] stroke-[#0b0f14]" />
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="rounded-full bg-amber-400 text-black px-2 py-0.5 text-[10px] font-black uppercase tracking-wider shadow-2xs">
+                      <span className="rounded-full bg-mint-500 text-[#0b0f14] px-2 py-0.5 text-[10px] font-black uppercase tracking-wider shadow-2xs">
                         Exclusive TopSAAS Deal
                       </span>
                       {product.offerDiscount && (
-                        <span className="text-sm sm:text-base font-black text-amber-300">
+                        <span className="text-sm sm:text-base font-black text-mint-300">
                           {product.offerDiscount}
                         </span>
                       )}
@@ -400,16 +394,16 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                     <button
                       type="button"
                       onClick={() => handleCopyOfferCode(product.offerCode!)}
-                      className="flex-1 sm:flex-initial flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-amber-400/80 bg-[#1a1a1a] px-3.5 py-2.5 text-xs font-mono font-bold text-amber-300 hover:bg-amber-400/10 hover:border-amber-300 transition-all cursor-pointer min-h-[40px]"
+                      className="flex-1 sm:flex-initial flex items-center justify-center gap-2 rounded-xl border border-dashed border-mint-500/60 bg-[#0b0f14] px-3.5 py-2.5 text-xs font-mono font-bold text-mint-300 hover:bg-mint-500/10 hover:border-mint-400 transition-all cursor-pointer min-h-[40px]"
                       title="Click to copy promo code"
                     >
                       <span>{product.offerCode}</span>
                       {copiedOffer ? (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-sans font-black text-emerald-400 bg-emerald-500/20 px-1.5 py-0.5 rounded">
+                        <span className="inline-flex items-center gap-1 text-[10px] font-sans font-black text-mint-400 bg-mint-500/20 px-1.5 py-0.5 rounded">
                           <Check className="h-3 w-3" /> Copied!
                         </span>
                       ) : (
-                        <Copy className="h-3.5 w-3.5 text-neutral-400" />
+                        <Copy className="h-3.5 w-3.5 text-neutral-500" />
                       )}
                     </button>
                   )}
@@ -422,7 +416,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                       playSound('click', soundEnabled);
                       onTrackClick(product.id, product.offerUrl || product.url);
                     }}
-                    className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-400 px-4 py-2.5 text-xs font-black text-black hover:bg-amber-300 active:scale-95 transition-all shadow-md cursor-pointer min-h-[40px]"
+                    className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 rounded-xl bg-mint-500 px-4 py-2.5 text-xs font-black text-[#0b0f14] hover:bg-mint-400 active:scale-95 transition-all shadow-md cursor-pointer min-h-[40px]"
                   >
                     <span>Redeem Deal</span>
                     <ExternalLink className="h-3.5 w-3.5" />
@@ -451,10 +445,10 @@ export const ProductPage: React.FC<ProductPageProps> = ({
 
             <div className="rounded-xl border border-neutral-800 bg-[#222222] p-3 shadow-2xs">
               <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
-                Category
+                {product.pricingModel ? 'Pricing' : 'Category'}
               </div>
               <div className="text-xs font-bold text-white mt-1 truncate">
-                {product.category}
+                {product.pricingModel || product.category}
               </div>
             </div>
           </div>
@@ -570,7 +564,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                 </h2>
               </div>
 
-              <p className="text-sm sm:text-base leading-relaxed text-neutral-400 font-normal">
+              <p className="text-sm sm:text-base leading-relaxed text-neutral-300 font-normal">
                 {product.description || `${product.name} is a premier platform in the ${product.category} space. Engineered to deliver exceptional speed, polish, and reliable performance, it helps builders and teams streamline their workflows.`}
               </p>
 
@@ -584,89 +578,51 @@ export const ProductPage: React.FC<ProductPageProps> = ({
               )}
             </div>
 
-            {/* What It Does / Core Capabilities */}
-            <div className="rounded-2xl border border-neutral-800 bg-[#2a2a2a] p-6 shadow-xs space-y-4">
-              <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
-                <div className="flex items-center gap-2">
+
+            {/* Problem / Solution / What Makes It Different */}
+            {(product.problemItSolves || product.solution || product.uniqueSellingPoint) && (
+              <div className="rounded-2xl border border-neutral-800 bg-[#2a2a2a] p-6 shadow-xs space-y-4">
+                <div className="flex items-center gap-2 border-b border-neutral-800 pb-3">
                   <Layers className="h-4 w-4 text-mint-300" />
                   <h2 className="text-sm font-black uppercase tracking-wider text-white">
                     What {product.name} Does
                   </h2>
                 </div>
-                <span className="text-xs font-bold text-neutral-500">
-                  {product.whatItDoes ? product.whatItDoes.length : 4} Key Capabilities
-                </span>
-              </div>
 
-              <div className="space-y-3">
-                {product.whatItDoes && product.whatItDoes.length > 0 ? (
-                  product.whatItDoes.map((item, idx) => {
-                    const parts = item.split(':');
-                    const heading = parts.length > 1 ? parts[0] : null;
-                    const body = parts.length > 1 ? parts.slice(1).join(':') : item;
-
-                    return (
-                      <div key={idx} className="flex items-start gap-3 rounded-xl border border-neutral-800 bg-[#222222] p-3.5 hover:bg-[#343434] transition-colors">
-                        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-mint-500 text-[#0b0f14] text-[10px] font-black">
-                          {idx + 1}
-                        </div>
-                        <div className="text-xs sm:text-sm text-neutral-400 leading-relaxed">
-                          {heading && <strong className="font-bold text-white block mb-0.5">{heading}:</strong>}
-                          <span>{body}</span>
-                        </div>
+                <div className="space-y-3">
+                  {product.problemItSolves && (
+                    <div className="rounded-xl border border-neutral-800 bg-[#222222] p-4 space-y-1.5">
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="h-1.5 w-1.5 rounded-full bg-mint-400" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-mint-400">The Problem It Solves</span>
                       </div>
-                    );
-                  })
-                ) : (
-                  <div className="space-y-2 text-xs text-neutral-500">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-mint-500" />
-                      <span>Streamlines {product.category.toLowerCase()} workflows with intuitive controls and rapid turnaround.</span>
+                      <p className="text-xs sm:text-sm text-neutral-300 leading-relaxed">{product.problemItSolves}</p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-mint-500" />
-                      <span>Provides reliable infrastructure and modern developer-friendly APIs.</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-mint-500" />
-                      <span>Built for high availability and keyboard-driven efficiency.</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+                  )}
 
-            {/* Core Features Grid */}
-            {product.features && product.features.length > 0 && (
-              <div className="rounded-2xl border border-neutral-800 bg-[#2a2a2a] p-6 shadow-xs space-y-4">
-                <div className="flex items-center gap-2 border-b border-neutral-800 pb-3">
-                  <ShieldCheck className="h-4 w-4 text-mint-300" />
-                  <h2 className="text-sm font-black uppercase tracking-wider text-white">
-                    Key Features & Architecture
-                  </h2>
-                </div>
-
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {product.features.map((feat, idx) => (
-                    <div key={idx} className="rounded-xl border border-neutral-800 bg-[#222222] p-4 space-y-1.5 transition-all duration-200 hover:border-neutral-700 hover:bg-[#262626] hover:shadow-sm">
-                      <div className="flex items-center justify-between gap-2">
-                        <h3 className="text-xs font-black text-white">
-                          {feat.title}
-                        </h3>
-                        {feat.tag && (
-                          <span className="rounded-full bg-neutral-800 border border-neutral-700 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-neutral-300">
-                            {feat.tag}
-                          </span>
-                        )}
+                  {product.solution && (
+                    <div className="rounded-xl border border-neutral-800 bg-[#222222] p-4 space-y-1.5">
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="h-1.5 w-1.5 rounded-full bg-mint-400" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-mint-400">Our Solution</span>
                       </div>
-                      <p className="text-xs leading-relaxed text-neutral-400">
-                        {feat.description}
-                      </p>
+                      <p className="text-xs sm:text-sm text-neutral-300 leading-relaxed">{product.solution}</p>
                     </div>
-                  ))}
+                  )}
+
+                  {product.uniqueSellingPoint && (
+                    <div className="rounded-xl border border-neutral-800 bg-[#222222] p-4 space-y-1.5">
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="h-1.5 w-1.5 rounded-full bg-mint-400" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-mint-400">What Makes It Different</span>
+                      </div>
+                      <p className="text-xs sm:text-sm text-neutral-300 leading-relaxed">{product.uniqueSellingPoint}</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
+
 
             {/* Use Cases & Who Uses It */}
             {product.useCases && product.useCases.length > 0 && (
@@ -785,21 +741,6 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                   </div>
                 ))}
 
-                <div className="flex items-center justify-between pt-1 border-t border-neutral-800">
-                  <span className="text-neutral-500 font-medium">Upvotes</span>
-                  <span className="font-mono-num font-bold text-white flex items-center gap-1">
-                    <ChevronUp className="h-3.5 w-3.5 text-mint-400" />
-                    <span>{(product.upvotes ?? 0).toLocaleString()}</span>
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between pt-1 border-t border-neutral-800">
-                  <span className="text-neutral-500 font-medium">Comments</span>
-                  <span className="font-mono-num font-bold text-white flex items-center gap-1">
-                    <MessageCircle className="h-3.5 w-3.5 text-mint-400" />
-                    <span>{comments.length.toLocaleString()}</span>
-                  </span>
-                </div>
 
                 <div className="flex items-center justify-between pt-1 border-t border-neutral-800">
                   <span className="text-neutral-500 font-medium">Official Link</span>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { 
-  ArrowLeft, ArrowUpDown, Check, X, Clock, ExternalLink, ShieldCheck, Search, Trash2, Eye, RotateCcw, Globe, Twitter, User, Calendar, CheckCircle2, XCircle, AlertCircle, Edit3, Plus, Trophy, Crown, ChevronUp, Star, LayoutList, Mail, Flame, Tag, Play, Video, Copy, Image as ImageIcon, MessageSquareQuote, Target, Layers, Info
+  ArrowLeft, ArrowUpDown, Check, X, Clock, ExternalLink, ShieldCheck, Search, Trash2, Eye, RotateCcw, Globe, Twitter, User, Calendar, CheckCircle2, XCircle, AlertCircle, Edit3, Plus, Trophy, Crown, ChevronUp, ChevronDown, Star, LayoutList, Mail, Flame, Tag, Play, Video, Copy, Image as ImageIcon, MessageSquareQuote, Target, Layers, Info, Sparkles
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { WebsiteSubmission, Category, Product } from '../types';
@@ -51,6 +51,9 @@ interface AdminAcceptPageProps {
   onUpdateSubmission: (updated: WebsiteSubmission) => void;
   onRestoreSubmission: (submissionId: string) => void;
   onDelistProduct: (productId: string) => void;
+  onAssignRank?: (productId: string, newRank: number) => void;
+  onAutoRankByUpvotes?: () => void;
+  onSaveProductsOrder?: () => void;
   onBackToDirectory: () => void;
   onOpenSubmitModal: () => void;
   onSeedSampleSubmissions: () => void;
@@ -69,6 +72,8 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
   onUpdateSubmission,
   onRestoreSubmission,
   onDelistProduct,
+  onAssignRank,
+  onAutoRankByUpvotes,
   onBackToDirectory,
   onOpenSubmitModal,
   onSeedSampleSubmissions,
@@ -169,6 +174,22 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
   const featuredProduct = (!isDefaultFeatured && !isEmptyFeatured && featuredProductId)
     ? products.find((p) => p.id === featuredProductId) || null
     : null;
+
+  const handleMoveUp = (product: Product) => {
+    if (!onAssignRank) return;
+    const currentIndex = sortedProducts.findIndex((p) => p.id === product.id);
+    if (currentIndex <= 0) return;
+    playSound('click', soundEnabled);
+    onAssignRank(product.id, currentIndex);
+  };
+
+  const handleMoveDown = (product: Product) => {
+    if (!onAssignRank) return;
+    const currentIndex = sortedProducts.findIndex((p) => p.id === product.id);
+    if (currentIndex < 0 || currentIndex >= sortedProducts.length - 1) return;
+    playSound('click', soundEnabled);
+    onAssignRank(product.id, currentIndex + 2);
+  };
 
   const handleAccept = (sub: WebsiteSubmission) => {
     playSound('success', soundEnabled);
@@ -812,9 +833,24 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                     <span className="font-normal text-neutral-500">({filteredProducts.length})</span>
                   </h2>
                   <p className="text-[11px] text-neutral-500 hidden sm:block mt-0.5">
-                    Products are ranked automatically by upvotes and comments.
+                    Products ranked sequentially. Use ▲/▼ buttons to reorder rankings directly on the live leaderboard.
                   </p>
                 </div>
+                {onAutoRankByUpvotes && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm('Re-rank all products sequentially based on community upvotes and comments?')) {
+                        onAutoRankByUpvotes();
+                      }
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-700 bg-[#343434] px-3 py-1.5 text-xs font-bold text-neutral-200 hover:border-mint-500/50 hover:text-white transition-colors cursor-pointer"
+                    title="Automatically re-index all products based on upvote standings"
+                  >
+                    <ArrowUpDown className="h-3.5 w-3.5 text-mint-400" />
+                    <span>Auto-Rank by Upvotes</span>
+                  </button>
+                )}
               </div>
               {filteredProducts.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-neutral-700 bg-[#2a2a2a] p-8 sm:p-12 text-center space-y-3">
@@ -835,19 +871,59 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                     const productRow = (
                       <div
                         key={product.id}
-                        className="rounded-xl border border-neutral-800 bg-[#2a2a2a] p-4 transition-all"
+                        className="rounded-xl border border-neutral-800 bg-[#2a2a2a] p-4 transition-all hover:border-neutral-700"
                       >
                         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                          {/* Rank Badge */}
-                          <div className="flex items-center gap-2 shrink-0">
-                            {product.rank === 1 || product.rank === 2 || product.rank === 3 ? (
-                              <RankMedal rank={product.rank as 1 | 2 | 3} className="h-9 w-9" />
-                            ) : (
-                              <div className="flex h-9 w-9 items-center justify-center rounded-lg font-black text-sm shadow-2xs bg-neutral-800 text-neutral-300">
-                                #{product.rank}
+                          {/* Rank Badge + Move Up/Down Controls */}
+                          {(() => {
+                            const currentIndex = sortedProducts.findIndex((p) => p.id === product.id);
+                            const displayRank = product.rank || (currentIndex >= 0 ? currentIndex + 1 : 1);
+                            const canMoveUp = currentIndex > 0;
+                            const canMoveDown = currentIndex >= 0 && currentIndex < sortedProducts.length - 1;
+
+                            return (
+                              <div className="flex items-center gap-2 shrink-0">
+                                {displayRank === 1 || displayRank === 2 || displayRank === 3 ? (
+                                  <RankMedal rank={displayRank as 1 | 2 | 3} className="h-9 w-9" />
+                                ) : (
+                                  <div className="flex h-9 w-9 items-center justify-center rounded-lg font-black text-sm shadow-2xs bg-neutral-800 text-neutral-300">
+                                    #{displayRank}
+                                  </div>
+                                )}
+
+                                {onAssignRank && (
+                                  <div className="flex flex-col gap-0.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleMoveUp(product)}
+                                      disabled={!canMoveUp}
+                                      className={`rounded p-1 text-xs transition-colors cursor-pointer ${
+                                        !canMoveUp
+                                          ? 'text-neutral-600 cursor-not-allowed'
+                                          : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'
+                                      }`}
+                                      title="Move Up in Rank"
+                                    >
+                                      <ChevronUp className="h-3.5 w-3.5" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleMoveDown(product)}
+                                      disabled={!canMoveDown}
+                                      className={`rounded p-1 text-xs transition-colors cursor-pointer ${
+                                        !canMoveDown
+                                          ? 'text-neutral-600 cursor-not-allowed'
+                                          : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'
+                                      }`}
+                                      title="Move Down in Rank"
+                                    >
+                                      <ChevronDown className="h-3.5 w-3.5" />
+                                    </button>
+                                  </div>
+                                )}
                               </div>
-                            )}
-                          </div>
+                            );
+                          })()}
 
                           {/* Product Info */}
                           <div className="flex items-center gap-3 min-w-0 flex-1">

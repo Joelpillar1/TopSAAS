@@ -22,7 +22,7 @@ import { LegalPage } from './components/LegalPage';
 import { LegalTab } from './components/LegalModal';
 import { playSound } from './utils/sound';
 import { supabase } from './utils/supabase';
-import { loadProducts, saveAllProducts, saveProductRanksDirect, debouncedSyncProducts, toggleUpvote, getUserUpvotes, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, insertProductDirect, fetchComments, addComment, getCachedCommentsSync, submissionToProduct } from './utils/db';
+import { loadProducts, enrichProductsFromSubmissions, saveAllProducts, saveProductRanksDirect, debouncedSyncProducts, toggleUpvote, getUserUpvotes, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, insertProductDirect, fetchComments, addComment, getCachedCommentsSync, submissionToProduct } from './utils/db';
 import { getRecentWeeks, isInWeek } from './utils/weeks';
 import { getWebsiteFavicon } from './utils/logo';
 import { LayoutGrid, Table as TableIcon, Trophy, X, Plus, ShieldCheck, Loader2, Star, MessageCircle } from 'lucide-react';
@@ -218,7 +218,15 @@ export default function App() {
       const saved = localStorage.getItem(STORAGE_KEYS.SUBMISSIONS);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Filter out legacy dummy/sample items
+          return parsed.filter(
+            (s) =>
+              s &&
+              s.id &&
+              !['midjourney.com', 'ollama.com', 'resend.com', 'ollama.ai'].some((d) => s.url?.toLowerCase().includes(d))
+          );
+        }
       }
     } catch {}
     return INITIAL_SUBMISSIONS;
@@ -235,91 +243,77 @@ export default function App() {
           .order('submitted_at', { ascending: false });
         if (!error && data) {
           const dbSubs = data.map(mapDbSubmission);
-          const dbIdSet = new Set(dbSubs.map((s) => s.id));
-          const dbUrlSet = new Set(dbSubs.map((s) => s.url.toLowerCase().replace(/\/$/, '')));
-          const deletedIds = getDeletedSubmissionIds();
-
-          setSubmissions((prev) => {
-            // All database rows are authoritative and preserved with full up-to-date fields.
-            // Only keep un-synced pending items that were submitted locally and not yet in DB or deleted.
-            const unSyncedPending = prev.filter((localSub) => {
-              const urlKey = localSub.url.toLowerCase().replace(/\/$/, '');
-              const inDb = dbIdSet.has(localSub.id) || dbUrlSet.has(urlKey);
-              if (inDb) return false; // Already in DB -> use DB record!
-              const isDeleted = deletedIds.has(localSub.id) || deletedIds.has(urlKey);
-              if (isDeleted) return false;
-              return (localSub.status || 'under_review') === 'under_review';
-            });
-
-            const combined = [...dbSubs, ...unSyncedPending].sort(
-              (a, b) => (b.submittedAt ?? 0) - (a.submittedAt ?? 0)
-            );
-            saveSubmissionsToStorage(combined);
-
-            // Automatically ensure any approved submission exists in the live products directory and has all details
-            const approvedSubs = combined.filter((s) => s.status === 'approved');
-            if (approvedSubs.length > 0) {
-              setProducts((currProducts) => {
-                const existingUrls = new Set(currProducts.map((p) => p.url.toLowerCase().replace(/\/$/, '')));
-                const missingApprovedProds: Product[] = [];
-
-                // Enrich any existing products with rich metadata from approved submissions
-                const updatedExisting = currProducts.map((existingProd) => {
-                  const matchingSub = approvedSubs.find(
-                    (s) =>
-                      s.url.toLowerCase().replace(/\/$/, '') === existingProd.url.toLowerCase().replace(/\/$/, '') ||
-                      s.id === existingProd.id ||
-                      `prod-${s.id}` === existingProd.id
-                  );
-                  if (matchingSub) {
-                    return {
-                      ...existingProd,
-                      name: matchingSub.name || existingProd.name,
-                      tagline: matchingSub.tagline || existingProd.tagline,
-                      category: matchingSub.category || existingProd.category,
-                      description: matchingSub.description || existingProd.description,
-                      targetAudience: matchingSub.targetAudience || existingProd.targetAudience,
-                      pricingModel: matchingSub.pricingModel || existingProd.pricingModel,
-                      twitterHandle: matchingSub.twitterHandle || existingProd.twitterHandle,
-                      socials: matchingSub.socials && matchingSub.socials.length > 0 ? matchingSub.socials : existingProd.socials,
-                      screenshots: matchingSub.screenshots && matchingSub.screenshots.length > 0 ? matchingSub.screenshots : existingProd.screenshots,
-                      demoVideoUrl: matchingSub.demoVideoUrl || existingProd.demoVideoUrl,
-                      creatorName: matchingSub.creatorName || existingProd.creatorName,
-                      creatorUsername: matchingSub.creatorUsername || existingProd.creatorUsername,
-                      creatorXHandle: matchingSub.creatorXHandle || existingProd.creatorXHandle,
-                      creatorAvatar: matchingSub.creatorAvatar || existingProd.creatorAvatar,
-                      creatorRole: matchingSub.creatorRole || existingProd.creatorRole,
-                      offerDiscount: matchingSub.offerDiscount || existingProd.offerDiscount,
-                      offerCode: matchingSub.offerCode || existingProd.offerCode,
-                      offerUrl: matchingSub.offerUrl || existingProd.offerUrl,
-                      offerDetails: matchingSub.offerDetails || existingProd.offerDetails,
-                    };
-                  }
-                  return existingProd;
-                });
-
-                for (const appSub of approvedSubs) {
-                  const urlKey = appSub.url.toLowerCase().replace(/\/$/, '');
-                  if (!existingUrls.has(urlKey)) {
-                    const newProd = submissionToProduct(appSub, currProducts.length + missingApprovedProds.length + 1);
-                    missingApprovedProds.push(newProd);
-                    existingUrls.add(urlKey);
-                    // Silently sync to Supabase products table in background
-                    insertProductDirect(newProd);
-                  }
-                }
-
-                const next = [...updatedExisting, ...missingApprovedProds].map((p, idx) => ({ ...p, rank: p.rank ?? (idx + 1) }));
-                if (missingApprovedProds.length > 0 || JSON.stringify(next) !== JSON.stringify(currProducts)) {
-                  debouncedSyncProducts(next);
-                  return next;
-                }
-                return currProducts;
-              });
+          setSubmissions(dbSubs);
+          // Persist to localStorage inline (saveSubmissionsToStorage declared later)
+          try {
+            if (dbSubs.length === 0) {
+              localStorage.removeItem(STORAGE_KEYS.SUBMISSIONS);
+            } else {
+              localStorage.setItem(STORAGE_KEYS.SUBMISSIONS, JSON.stringify(dbSubs));
             }
+          } catch {}
 
-            return combined;
-          });
+          // Enrich live products with approved submission metadata
+          const approvedSubs = dbSubs.filter((s) => s.status === 'approved');
+          if (approvedSubs.length > 0) {
+            setProducts((currProducts) => {
+              const existingUrls = new Set(currProducts.map((p) => p.url.toLowerCase().replace(/\/$/, '')));
+              const missingApprovedProds: Product[] = [];
+
+              const updatedExisting = currProducts.map((existingProd) => {
+                const matchingSub = approvedSubs.find(
+                  (s) =>
+                    s.url.toLowerCase().replace(/\/$/, '') === existingProd.url.toLowerCase().replace(/\/$/, '') ||
+                    s.id === existingProd.id ||
+                    `prod-${s.id}` === existingProd.id
+                );
+                if (!matchingSub) return existingProd;
+                return {
+                  ...existingProd,
+                  name: matchingSub.name || existingProd.name,
+                  tagline: matchingSub.tagline || existingProd.tagline,
+                  category: matchingSub.category || existingProd.category,
+                  logoUrl: matchingSub.logoUrl || existingProd.logoUrl,
+                  description: matchingSub.description || existingProd.description,
+                  problemItSolves: matchingSub.problemItSolves || existingProd.problemItSolves,
+                  solution: matchingSub.solution || existingProd.solution,
+                  uniqueSellingPoint: matchingSub.uniqueSellingPoint || existingProd.uniqueSellingPoint,
+                  targetAudience: matchingSub.targetAudience || existingProd.targetAudience,
+                  pricingModel: matchingSub.pricingModel || existingProd.pricingModel,
+                  twitterHandle: matchingSub.twitterHandle || existingProd.twitterHandle,
+                  socials: matchingSub.socials && matchingSub.socials.length > 0 ? matchingSub.socials : existingProd.socials,
+                  screenshots: matchingSub.screenshots && matchingSub.screenshots.length > 0 ? matchingSub.screenshots : existingProd.screenshots,
+                  demoVideoUrl: matchingSub.demoVideoUrl || existingProd.demoVideoUrl,
+                  creatorName: matchingSub.creatorName || existingProd.creatorName,
+                  creatorUsername: matchingSub.creatorUsername || existingProd.creatorUsername,
+                  creatorXHandle: matchingSub.creatorXHandle || existingProd.creatorXHandle,
+                  creatorAvatar: matchingSub.creatorAvatar || existingProd.creatorAvatar,
+                  creatorRole: matchingSub.creatorRole || existingProd.creatorRole,
+                  offerDiscount: matchingSub.offerDiscount || existingProd.offerDiscount,
+                  offerCode: matchingSub.offerCode || existingProd.offerCode,
+                  offerUrl: matchingSub.offerUrl || existingProd.offerUrl,
+                  offerDetails: matchingSub.offerDetails || existingProd.offerDetails,
+                };
+              });
+
+              for (const appSub of approvedSubs) {
+                const urlKey = appSub.url.toLowerCase().replace(/\/$/, '');
+                if (!existingUrls.has(urlKey)) {
+                  const newProd = submissionToProduct(appSub, currProducts.length + missingApprovedProds.length + 1);
+                  missingApprovedProds.push(newProd);
+                  existingUrls.add(urlKey);
+                  insertProductDirect(newProd);
+                }
+              }
+
+              const next = [...updatedExisting, ...missingApprovedProds].map((p, idx) => ({ ...p, rank: idx + 1 }));
+              if (missingApprovedProds.length > 0 || JSON.stringify(next) !== JSON.stringify(currProducts)) {
+                debouncedSyncProducts(next);
+                return next;
+              }
+              return currProducts;
+            });
+          }
         }
       } catch {}
       setSubmissionsLoaded(true);
@@ -335,7 +329,6 @@ export default function App() {
         const parsed: Product[] = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
           return parsed
-            .filter((p) => !!p.submittedBy)
             .sort((a, b) => (a.rank ?? 9999) - (b.rank ?? 9999))
             .map((p, idx) => {
               const initial = INITIAL_PRODUCTS.find((init) => init.id === p.id);
@@ -343,7 +336,7 @@ export default function App() {
               return {
                 ...(initial || {}),
                 ...p,
-                rank: p.rank ?? (idx + 1),
+                rank: idx + 1,
                 logoUrl: resolvedLogo,
               };
             });
@@ -624,6 +617,38 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // When user is signed in, automatically claim any submissions matching the user's email
+  useEffect(() => {
+    if (!user) return;
+    setSubmissions((prev) => {
+      let changed = false;
+      const updated = prev.map((s) => {
+        const isEmailMatch = s.backerEmail && user.email && s.backerEmail.trim().toLowerCase() === user.email.trim().toLowerCase();
+        if (isEmailMatch && s.submittedBy !== user.id) {
+          changed = true;
+          return {
+            ...s,
+            submittedBy: user.id,
+            backerEmail: s.backerEmail || user.email,
+          };
+        }
+        return s;
+      });
+      if (changed) {
+        saveSubmissionsToStorage(updated);
+        updated.forEach((sub) => {
+          if (sub.submittedBy === user.id) {
+            try {
+              supabase.from('submissions').update({ submitted_by: user.id, backer_email: user.email }).eq('id', sub.id);
+            } catch {}
+          }
+        });
+        return updated;
+      }
+      return prev;
+    });
+  }, [user]);
+
   // Load products from Supabase on mount (preserving rank order)
   const productsLoadedRef = React.useRef(false);
   useEffect(() => {
@@ -632,8 +657,63 @@ export default function App() {
       productsLoadedRef.current = true;
       const dbProducts = await loadProducts();
       if (dbProducts !== null && dbProducts.length > 0) {
-        const sorted = [...dbProducts].sort((a, b) => (a.rank ?? 9999) - (b.rank ?? 9999));
-        setProducts(sorted.map((p, idx) => ({ ...p, rank: p.rank ?? (idx + 1) })));
+        let cachedSubs: WebsiteSubmission[] = [];
+        try {
+          const raw = localStorage.getItem(STORAGE_KEYS.SUBMISSIONS);
+          if (raw) cachedSubs = JSON.parse(raw);
+        } catch {}
+
+        const sorted = [...dbProducts].sort((a, b) => {
+          const rA = a.rank ?? 9999;
+          const rB = b.rank ?? 9999;
+          if (rA !== rB) return rA - rB;
+          const upvoteDiff = (b.upvotes ?? 0) - (a.upvotes ?? 0);
+          if (upvoteDiff !== 0) return upvoteDiff;
+          return (a.createdAt ?? 0) - (b.createdAt ?? 0);
+        });
+
+        const normalized = sorted.map((p, idx) => {
+          const matchingSub = cachedSubs.find(
+            (s) =>
+              s.url.toLowerCase().replace(/\/$/, '') === p.url.toLowerCase().replace(/\/$/, '') ||
+              s.id === p.id ||
+              `prod-${s.id}` === p.id
+          );
+          if (!matchingSub) return { ...p, rank: idx + 1 };
+          return {
+            ...p,
+            rank: idx + 1,
+            name: p.name || matchingSub.name,
+            tagline: p.tagline || matchingSub.tagline,
+            category: p.category || matchingSub.category,
+            logoUrl: p.logoUrl || matchingSub.logoUrl,
+            description: p.description || matchingSub.description,
+            problemItSolves: p.problemItSolves || matchingSub.problemItSolves,
+            solution: p.solution || matchingSub.solution,
+            uniqueSellingPoint: p.uniqueSellingPoint || matchingSub.uniqueSellingPoint,
+            targetAudience: p.targetAudience || matchingSub.targetAudience,
+            pricingModel: p.pricingModel || matchingSub.pricingModel,
+            twitterHandle: p.twitterHandle || matchingSub.twitterHandle,
+            socials: p.socials && p.socials.length > 0 ? p.socials : matchingSub.socials,
+            screenshots: p.screenshots && p.screenshots.length > 0 ? p.screenshots : matchingSub.screenshots,
+            demoVideoUrl: p.demoVideoUrl || matchingSub.demoVideoUrl,
+            creatorName: p.creatorName || matchingSub.creatorName,
+            creatorUsername: p.creatorUsername || matchingSub.creatorUsername,
+            creatorXHandle: p.creatorXHandle || matchingSub.creatorXHandle,
+            creatorAvatar: p.creatorAvatar || matchingSub.creatorAvatar,
+            creatorRole: p.creatorRole || matchingSub.creatorRole,
+            offerDiscount: p.offerDiscount || matchingSub.offerDiscount,
+            offerCode: p.offerCode || matchingSub.offerCode,
+            offerUrl: p.offerUrl || matchingSub.offerUrl,
+            offerDetails: p.offerDetails || matchingSub.offerDetails,
+          };
+        });
+
+        setProducts(normalized);
+        try {
+          localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(normalized));
+          localStorage.setItem('topsaas_products_cache_v2', JSON.stringify(normalized));
+        } catch {}
       } else if (dbProducts !== null) {
         // Supabase is reachable but returned zero products — clear stale localStorage
         setProducts([]);
@@ -644,6 +724,20 @@ export default function App() {
       }
       // If dbProducts is null (network/RLS error), keep localStorage as fallback
       setProductsLoaded(true);
+
+      // Second pass: enrich products from the submissions table to restore any
+      // fields that weren't saved to the products table (problem, solution, offers, socials…)
+      if (dbProducts && dbProducts.length > 0) {
+        const enriched = await enrichProductsFromSubmissions(dbProducts.sort((a, b) => (a.rank ?? 9999) - (b.rank ?? 9999)));
+        if (enriched && enriched.length > 0) {
+          const finalEnriched = enriched.map((p, idx) => ({ ...p, rank: idx + 1 }));
+          setProducts(finalEnriched);
+          try {
+            localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(finalEnriched));
+            localStorage.setItem('topsaas_products_cache_v2', JSON.stringify(finalEnriched));
+          } catch {}
+        }
+      }
     }
     load();
   }, []);
@@ -707,24 +801,20 @@ export default function App() {
     if (error) console.error('Sign out error:', error.message);
   };
 
-  // Re-rank helper: dynamically sorts and ranks products by upvotes descending
-  // (Higher upvotes = higher rank (#1, #2, #3...). Products overtake others whenever they receive more upvotes)
-  const recomputeRanks = useCallback((productList: Product[]): Product[] => {
-    return [...productList]
-      .sort((a, b) => {
-        const upvoteDiff = (b.upvotes ?? 0) - (a.upvotes ?? 0);
-        if (upvoteDiff !== 0) return upvoteDiff;
-        return (b.createdAt ?? 0) - (a.createdAt ?? 0);
-      })
-      .map((p, index) => {
-        const newRank = index + 1;
-        return {
-          ...p,
-          previousRank: p.rank !== newRank ? (p.rank ?? newRank) : p.previousRank ?? newRank,
-          rank: newRank,
-        };
-      });
-  }, []);
+  // Automatic ranking comparator: (upvotes * 2) + comments, tie-broken by upvotes, comments, assigned rank, then oldest first
+  const compareProductsByRank = useCallback((a: Product, b: Product) => {
+    const scoreA = (a.upvotes ?? 0) * 2 + (commentCounts[a.id] ?? 0);
+    const scoreB = (b.upvotes ?? 0) * 2 + (commentCounts[b.id] ?? 0);
+    if (scoreB !== scoreA) return scoreB - scoreA;
+    const upvoteDiff = (b.upvotes ?? 0) - (a.upvotes ?? 0);
+    if (upvoteDiff !== 0) return upvoteDiff;
+    const commentDiff = (commentCounts[b.id] ?? 0) - (commentCounts[a.id] ?? 0);
+    if (commentDiff !== 0) return commentDiff;
+    const rankA = a.rank ?? 999999;
+    const rankB = b.rank ?? 999999;
+    if (rankA !== rankB) return rankA - rankB;
+    return (a.createdAt ?? 0) - (b.createdAt ?? 0);
+  }, [commentCounts]);
 
   // Upvote a product (uses Supabase RPC for per-user tracking and dynamically updates ranks)
   const handleUpvote = async (product: Product) => {
@@ -750,11 +840,16 @@ export default function App() {
           }
           return p;
         });
-        debouncedSyncProducts(updated);
-        return updated;
+        const reRanked = [...updated].sort(compareProductsByRank).map((p, idx) => ({
+          ...p,
+          previousRank: p.rank !== (idx + 1) ? (p.rank ?? (idx + 1)) : p.previousRank,
+          rank: idx + 1,
+        }));
+        debouncedSyncProducts(reRanked);
+        return reRanked;
       });
     } else {
-      // Not logged in: simple local increment without destroying custom rank
+      // Not logged in: simple local increment with dynamic re-ranking
       setProducts((prev) => {
         const updated = prev.map((p) => {
           if (p.id === product.id) {
@@ -762,8 +857,13 @@ export default function App() {
           }
           return p;
         });
-        debouncedSyncProducts(updated);
-        return updated;
+        const reRanked = [...updated].sort(compareProductsByRank).map((p, idx) => ({
+          ...p,
+          previousRank: p.rank !== (idx + 1) ? (p.rank ?? (idx + 1)) : p.previousRank,
+          rank: idx + 1,
+        }));
+        debouncedSyncProducts(reRanked);
+        return reRanked;
       });
     }
   };
@@ -800,7 +900,7 @@ export default function App() {
       submittedAt: now,
       targetAudience,
       pricingModel: details.pricingModel || undefined,
-      submittedBy: user?.id || 'local_user',
+      submittedBy: user?.id || undefined,
       offerDiscount: details.offerDiscount?.trim() || undefined,
       offerCode: details.offerCode?.trim() || undefined,
       offerUrl: details.offerUrl?.trim() || undefined,
@@ -875,7 +975,11 @@ export default function App() {
     let productToSync: Product | null = null;
     setProducts((prev) => {
       const existingIndex = prev.findIndex(
-        (p) => p.url.toLowerCase().replace(/\/$/, '') === sub.url.toLowerCase().replace(/\/$/, '')
+        (p) =>
+          p.id === sub.id ||
+          p.id === `prod-${sub.id}` ||
+          `prod-${p.id}` === sub.id ||
+          p.url.toLowerCase().replace(/\/$/, '') === sub.url.toLowerCase().replace(/\/$/, '')
       );
 
       let nextProducts: Product[];
@@ -888,7 +992,11 @@ export default function App() {
                 tagline: sub.tagline,
                 category: sub.category,
                 verified: true,
+                logoUrl: sub.logoUrl || p.logoUrl,
                 description: sub.description || p.description,
+                problemItSolves: sub.problemItSolves || p.problemItSolves,
+                solution: sub.solution || p.solution,
+                uniqueSellingPoint: sub.uniqueSellingPoint || p.uniqueSellingPoint,
                 targetAudience: sub.targetAudience || p.targetAudience,
                 pricingModel: sub.pricingModel || p.pricingModel,
                 twitterHandle: sub.twitterHandle || p.twitterHandle,
@@ -896,7 +1004,6 @@ export default function App() {
                 offerCode: sub.offerCode || p.offerCode,
                 offerUrl: sub.offerUrl || p.offerUrl,
                 offerDetails: sub.offerDetails || p.offerDetails,
-                logoUrl: sub.logoUrl || p.logoUrl,
                 screenshots: sub.screenshots && sub.screenshots.length > 0 ? sub.screenshots : p.screenshots,
                 demoVideoUrl: sub.demoVideoUrl || p.demoVideoUrl,
                 creatorName: sub.creatorName || p.creatorName,
@@ -905,6 +1012,16 @@ export default function App() {
                 creatorAvatar: sub.creatorAvatar || p.creatorAvatar,
                 creatorRole: sub.creatorRole || p.creatorRole,
                 socials: sub.socials && sub.socials.length > 0 ? sub.socials : p.socials,
+                whatItDoes: (sub.problemItSolves || sub.solution || sub.uniqueSellingPoint) ? [
+                  ...(sub.problemItSolves ? [`Problem: ${sub.problemItSolves}`] : []),
+                  ...(sub.solution ? [`Solution: ${sub.solution}`] : []),
+                  ...(sub.uniqueSellingPoint ? [`Difference: ${sub.uniqueSellingPoint}`] : [])
+                ] : p.whatItDoes,
+                features: (sub.solution || sub.uniqueSellingPoint) ? [
+                  ...(sub.solution ? [{ title: 'Core Solution', description: sub.solution, tag: 'Superpower' }] : []),
+                  ...(sub.uniqueSellingPoint ? [{ title: 'Key Advantage', description: sub.uniqueSellingPoint, tag: 'Differentiator' }] : []),
+                  ...(sub.problemItSolves ? [{ title: 'Problem Solved', description: sub.problemItSolves, tag: 'Value' }] : [])
+                ] : p.features,
               }
             : p
         );
@@ -914,7 +1031,15 @@ export default function App() {
         productToSync = newProd;
         nextProducts = [...prev, newProd];
       }
+
+      // Re-normalize all ranks sequentially 1..N to guarantee no duplicates or gaps
+      nextProducts = nextProducts.map((p, idx) => ({
+        ...p,
+        rank: idx + 1,
+      }));
+
       debouncedSyncProducts(nextProducts);
+      saveAllProducts(nextProducts).catch(() => {});
       try {
         localStorage.setItem('topsaas_products_cache_v2', JSON.stringify(nextProducts));
         localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(nextProducts));
@@ -1038,11 +1163,18 @@ export default function App() {
   const handleDelistProduct = async (productId: string) => {
     const targetProduct = products.find((p) => p.id === productId);
     setProducts((prev) => {
-      const updated = prev.filter((p) => p.id !== productId);
+      const updated = prev
+        .filter((p) => p.id !== productId)
+        .map((p, idx) => ({
+          ...p,
+          rank: idx + 1,
+        }));
       try {
         localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(updated));
         localStorage.setItem('topsaas_products_cache_v2', JSON.stringify(updated));
       } catch {}
+      debouncedSyncProducts(updated);
+      saveAllProducts(updated).catch(() => {});
       return updated;
     });
 
@@ -1098,22 +1230,42 @@ export default function App() {
       const sorted = [...prev].sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0));
       const withoutTarget = sorted.filter((p) => p.id !== productId);
       const insertIndex = Math.max(0, Math.min(clampedRank - 1, withoutTarget.length));
-      withoutTarget.splice(insertIndex, 0, { ...target, rank: clampedRank });
+      withoutTarget.splice(insertIndex, 0, target);
 
       // Reassign all ranks sequentially
       const ranked = withoutTarget.map((p, idx) => ({
         ...p,
-        previousRank: p.rank,
+        previousRank: p.rank !== (idx + 1) ? (p.rank ?? (idx + 1)) : p.previousRank,
         rank: idx + 1,
       }));
 
       // Immediately sync to both localStorage and Supabase
       try {
         localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(ranked));
+        localStorage.setItem('topsaas_products_cache_v2', JSON.stringify(ranked));
       } catch {}
       saveAllProducts(ranked).catch(() => {});
       debouncedSyncProducts(ranked);
 
+      return ranked;
+    });
+  };
+
+  // Automatically re-rank all products sequentially based on current community upvotes & comments
+  const handleAutoRankByUpvotes = () => {
+    setProducts((prev) => {
+      const sorted = [...prev].sort(compareProductsByRank);
+      const ranked = sorted.map((p, idx) => ({
+        ...p,
+        previousRank: p.rank !== (idx + 1) ? (p.rank ?? (idx + 1)) : p.previousRank,
+        rank: idx + 1,
+      }));
+      try {
+        localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(ranked));
+        localStorage.setItem('topsaas_products_cache_v2', JSON.stringify(ranked));
+      } catch {}
+      saveAllProducts(ranked).catch(() => {});
+      debouncedSyncProducts(ranked);
       return ranked;
     });
   };
@@ -1153,17 +1305,6 @@ export default function App() {
   const explicitFeaturedProduct = (!isDefaultFeatured && !isEmptyFeatured && featuredProductId)
     ? products.find((p) => p.id === featuredProductId) || null
     : null;
-  // Automatic ranking comparator: (upvotes * 2) + comments, tie-broken by upvotes, comments, then recency
-  const compareProductsByRank = useCallback((a: Product, b: Product) => {
-    const scoreA = (a.upvotes ?? 0) * 2 + (commentCounts[a.id] ?? 0);
-    const scoreB = (b.upvotes ?? 0) * 2 + (commentCounts[b.id] ?? 0);
-    if (scoreB !== scoreA) return scoreB - scoreA;
-    const upvoteDiff = (b.upvotes ?? 0) - (a.upvotes ?? 0);
-    if (upvoteDiff !== 0) return upvoteDiff;
-    const commentDiff = (commentCounts[b.id] ?? 0) - (commentCounts[a.id] ?? 0);
-    if (commentDiff !== 0) return commentDiff;
-    return (b.createdAt ?? 0) - (a.createdAt ?? 0);
-  }, [commentCounts]);
 
   const sortedByRankProducts = [...products].sort(compareProductsByRank);
   const topProduct = explicitFeaturedProduct || sortedByRankProducts[0] || null;
@@ -1394,10 +1535,13 @@ export default function App() {
         {globalHeader}
         <ProfilePage
           user={user}
+          allProducts={products}
+          allSubmissions={submissions}
           onBack={handleBackToLeaderboard}
           onSignOut={handleSignOut}
           onDeleteProduct={(productId) => setProducts((prev) => prev.filter((p) => p.id !== productId))}
           onUpdateProduct={(updated) => setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))}
+          onSelectProduct={handleOpenProduct}
           soundEnabled={soundEnabled}
         />
       </>
@@ -1406,8 +1550,82 @@ export default function App() {
 
   // 1.5 PRODUCT DETAIL ROUTE (/product/:id)
   if (currentRoute === 'product') {
-    const rawProduct = (productRouteId ? products.find((p) => p.id === productRouteId) : null) || null;
-    const dynamicRank = rawProduct ? products.findIndex((p) => p.id === rawProduct.id) + 1 : 1;
+    let rawProduct = (productRouteId ? products.find((p) => p.id === productRouteId || p.url.toLowerCase().replace(/\/$/, '') === productRouteId.toLowerCase().replace(/\/$/, '')) : null) || null;
+
+    // Check if matching submission exists in state or local storage to enrich fields
+    let matchingSub: WebsiteSubmission | undefined;
+    if (productRouteId) {
+      matchingSub = submissions.find(
+        (s) =>
+          s.id === productRouteId ||
+          `prod-${s.id}` === productRouteId ||
+          s.url.toLowerCase().replace(/\/$/, '') === productRouteId.toLowerCase().replace(/\/$/, '')
+      );
+      if (!matchingSub && rawProduct) {
+        matchingSub = submissions.find(
+          (s) =>
+            s.url.toLowerCase().replace(/\/$/, '') === rawProduct!.url.toLowerCase().replace(/\/$/, '') ||
+            s.id === rawProduct!.id ||
+            `prod-${s.id}` === rawProduct!.id
+        );
+      }
+    }
+
+    if (!rawProduct && matchingSub) {
+      // If product hasn't synced into products array yet, generate live product preview from submission!
+      rawProduct = submissionToProduct(matchingSub, products.length + 1);
+    } else if (rawProduct && matchingSub) {
+      // Merge rich submission fields into rawProduct
+      rawProduct = {
+        ...rawProduct,
+        name: rawProduct.name || matchingSub.name,
+        tagline: rawProduct.tagline || matchingSub.tagline,
+        category: rawProduct.category || matchingSub.category,
+        logoUrl: rawProduct.logoUrl || matchingSub.logoUrl,
+        description: rawProduct.description || matchingSub.description,
+        problemItSolves: rawProduct.problemItSolves || matchingSub.problemItSolves,
+        solution: rawProduct.solution || matchingSub.solution,
+        uniqueSellingPoint: rawProduct.uniqueSellingPoint || matchingSub.uniqueSellingPoint,
+        targetAudience: rawProduct.targetAudience || matchingSub.targetAudience,
+        pricingModel: rawProduct.pricingModel || matchingSub.pricingModel,
+        twitterHandle: rawProduct.twitterHandle || matchingSub.twitterHandle,
+        socials: rawProduct.socials && rawProduct.socials.length > 0 ? rawProduct.socials : matchingSub.socials,
+        screenshots: rawProduct.screenshots && rawProduct.screenshots.length > 0 ? rawProduct.screenshots : matchingSub.screenshots,
+        demoVideoUrl: rawProduct.demoVideoUrl || matchingSub.demoVideoUrl,
+        creatorName: rawProduct.creatorName || matchingSub.creatorName,
+        creatorUsername: rawProduct.creatorUsername || matchingSub.creatorUsername,
+        creatorXHandle: rawProduct.creatorXHandle || matchingSub.creatorXHandle,
+        creatorAvatar: rawProduct.creatorAvatar || matchingSub.creatorAvatar,
+        creatorRole: rawProduct.creatorRole || matchingSub.creatorRole,
+        offerDiscount: rawProduct.offerDiscount || matchingSub.offerDiscount,
+        offerCode: rawProduct.offerCode || matchingSub.offerCode,
+        offerUrl: rawProduct.offerUrl || matchingSub.offerUrl,
+        offerDetails: rawProduct.offerDetails || matchingSub.offerDetails,
+        whatItDoes: (rawProduct.whatItDoes && rawProduct.whatItDoes.length > 0) ? rawProduct.whatItDoes : (
+          (matchingSub.problemItSolves || matchingSub.solution || matchingSub.uniqueSellingPoint) ? [
+            ...(matchingSub.problemItSolves ? [`Problem: ${matchingSub.problemItSolves}`] : []),
+            ...(matchingSub.solution ? [`Solution: ${matchingSub.solution}`] : []),
+            ...(matchingSub.uniqueSellingPoint ? [`Difference: ${matchingSub.uniqueSellingPoint}`] : [])
+          ] : undefined
+        ),
+        features: (rawProduct.features && rawProduct.features.length > 0) ? rawProduct.features : (
+          (matchingSub.solution || matchingSub.uniqueSellingPoint) ? [
+            ...(matchingSub.solution ? [{ title: 'Core Solution', description: matchingSub.solution, tag: 'Superpower' }] : []),
+            ...(matchingSub.uniqueSellingPoint ? [{ title: 'Key Advantage', description: matchingSub.uniqueSellingPoint, tag: 'Differentiator' }] : []),
+            ...(matchingSub.problemItSolves ? [{ title: 'Problem Solved', description: matchingSub.problemItSolves, tag: 'Value' }] : [])
+          ] : undefined
+        ),
+      };
+    }
+
+    const rankIndex = sortedByRankProducts.findIndex(
+      (p) =>
+        p.id === rawProduct.id ||
+        p.id === `prod-${rawProduct.id}` ||
+        `prod-${p.id}` === rawProduct.id ||
+        p.url.toLowerCase().replace(/\/$/, '') === rawProduct.url.toLowerCase().replace(/\/$/, '')
+    );
+    const dynamicRank = rankIndex >= 0 ? rankIndex + 1 : (rawProduct.rank || 1);
     const product = rawProduct ? { ...rawProduct, rank: dynamicRank } : null;
     if (!product) {
       if (!productsLoaded) {
@@ -1447,7 +1665,7 @@ export default function App() {
         <ProductPage
           product={product}
           topProduct={topProduct || product}
-          allProducts={products.map(markOwnership)}
+          allProducts={sortedByRankProducts.map((p, idx) => ({ ...markOwnership(p), rank: idx + 1 }))}
           comments={comments.filter((c) => c.productId === product.id)}
           soundEnabled={soundEnabled}
           isSignedIn={!!user}
@@ -1594,6 +1812,7 @@ export default function App() {
           onRestoreSubmission={handleRestoreSubmission}
           onDelistProduct={handleDelistProduct}
           onAssignRank={handleAssignRank}
+          onAutoRankByUpvotes={handleAutoRankByUpvotes}
           onBackToDirectory={handleBackToLeaderboard}
           onOpenSubmitModal={handleOpenSubmit}
           onSeedSampleSubmissions={handleSeedSampleSubmissions}
