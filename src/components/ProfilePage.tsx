@@ -17,7 +17,8 @@ import {
   Save, 
   Upload,
   Plus,
-  Clock
+  Clock,
+  Code2
 } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '../utils/supabase';
@@ -27,6 +28,7 @@ import { mapDbProduct, mapDbSubmission, updateProductDirect } from '../utils/db'
 import { SUBMISSION_CATEGORIES } from './BidModal';
 import { ProductLogo } from './ProductLogo';
 import { playSound } from '../utils/sound';
+import { EmbedBadgeModal } from './EmbedBadgeModal';
 
 interface ProfilePageProps {
   user: User;
@@ -100,6 +102,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
   const [isAddingShots, setIsAddingShots] = useState(false);
+  const [badgeProduct, setBadgeProduct] = useState<Product | null>(null);
 
   // Form State for editing
   const [editForm, setEditForm] = useState<{
@@ -684,8 +687,20 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                     </div>
                   </div>
 
-                  {/* Actions: Edit & Delete */}
+                  {/* Actions: Embed Badge, Edit & Delete */}
                   <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playSound('click', soundEnabled);
+                        setBadgeProduct(product);
+                      }}
+                      className="flex items-center gap-1 rounded-lg border border-neutral-700 bg-[#343434] px-2.5 py-1.5 text-xs font-bold text-mint-300 hover:border-mint-500/60 hover:text-white transition-all cursor-pointer shadow-2xs"
+                      title="Get Embeddable Badge"
+                    >
+                      <Code2 className="h-3 w-3 text-mint-400" />
+                      <span className="hidden sm:inline">Badge</span>
+                    </button>
                     <button
                       type="button"
                       onClick={() => handleOpenEdit(product)}
@@ -1467,6 +1482,16 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Embed Founder Badge Modal */}
+      {badgeProduct && (
+        <EmbedBadgeModal
+          isOpen={!!badgeProduct}
+          onClose={() => setBadgeProduct(null)}
+          product={badgeProduct}
+          soundEnabled={soundEnabled}
+        />
       )}
     </div>
   );

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Search, Command } from 'lucide-react';
+import { Search, Command, Flame } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { GridPattern } from '@/components/ui/grid-pattern';
 
@@ -10,6 +10,9 @@ interface HomeHeroProps {
   onSearchChange: (value: string) => void;
   onOpenSubmit: () => void;
   soundEnabled: boolean;
+  dealsCount?: number;
+  stealsOnly?: boolean;
+  onToggleSteals?: () => void;
 }
 
 export const HomeHero: React.FC<HomeHeroProps> = ({
@@ -19,6 +22,9 @@ export const HomeHero: React.FC<HomeHeroProps> = ({
   onSearchChange,
   onOpenSubmit,
   soundEnabled,
+  dealsCount = 0,
+  stealsOnly = false,
+  onToggleSteals,
 }) => {
   const inputRef = useRef<HTMLInputElement | null>(null);
 
@@ -98,6 +104,32 @@ export const HomeHero: React.FC<HomeHeroProps> = ({
           <span>
             <span className="font-bold text-neutral-300 font-mono-num">{totalCategories}</span> categories
           </span>
+          {dealsCount > 0 && onToggleSteals && (
+            <>
+              <span className="text-neutral-700">·</span>
+              <button
+                type="button"
+                onClick={() => {
+                  onToggleSteals();
+                  const section = document.getElementById('leaderboard-section');
+                  if (section) section.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className={`inline-flex items-center gap-1.5 text-[11px] font-semibold transition-colors cursor-pointer ${
+                  stealsOnly ? 'text-amber-300' : 'text-neutral-500 hover:text-amber-300'
+                }`}
+                title={stealsOnly ? 'Turn off Steals Only filter' : 'Show only tools with exclusive discounts'}
+              >
+                <Flame className={`h-3.5 w-3.5 ${stealsOnly ? 'text-amber-300 fill-amber-300/30 animate-pulse' : 'text-amber-400'}`} />
+                <span className={`font-bold font-mono-num ${stealsOnly ? 'text-amber-200' : 'text-neutral-300'}`}>{dealsCount}</span>
+                <span>{dealsCount === 1 ? 'steal' : 'steals'}</span>
+                {stealsOnly && (
+                  <span className="text-[9px] font-black uppercase tracking-wider text-amber-300">
+                    (active)
+                  </span>
+                )}
+              </button>
+            </>
+          )}
         </div>
       </div>
     </section>

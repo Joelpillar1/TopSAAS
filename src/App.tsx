@@ -21,13 +21,15 @@ import { SaaSIdeas } from './components/SaaSIdeas';
 import { LegalPage } from './components/LegalPage';
 import { LegalTab } from './components/LegalModal';
 import { playSound } from './utils/sound';
+import confetti from 'canvas-confetti';
 import { supabase } from './utils/supabase';
 import { loadProducts, enrichProductsFromSubmissions, saveAllProducts, saveProductRanksDirect, debouncedSyncProducts, toggleUpvote, getUserUpvotes, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, insertProductDirect, fetchComments, addComment, getCachedCommentsSync, submissionToProduct, isProductUpvoted, getGuestUpvotes, saveGuestUpvotes, incrementProductUpvotesDirect } from './utils/db';
 import { getRecentWeeks, isInWeek } from './utils/weeks';
 import { getWebsiteFavicon } from './utils/logo';
-import { LayoutGrid, Table as TableIcon, Trophy, X, Plus, ShieldCheck, Loader2, Star, MessageCircle } from 'lucide-react';
+import { LayoutGrid, Table as TableIcon, Trophy, X, Plus, ShieldCheck, Loader2, Star, MessageCircle, Flame } from 'lucide-react';
 import { FeaturedSpotModal } from './components/FeaturedSpotModal';
 import { ProductPage } from './components/ProductPage';
+import { BadgeRoute } from './components/BadgeRoute';
 import { SkeletonGrid } from './components/SkeletonCard';
 import { SkeletonTable } from './components/SkeletonTable';
 import { timeAgo } from './components/ProductRow';
@@ -184,6 +186,9 @@ export default function App() {
       const hash = window.location.hash;
       if (/^\/product\//.test(path)) {
         return 'product';
+      }
+      if (/^\/badge\//.test(path)) {
+        return 'badge';
       }
       if (path === '/accept' || hash === '#accept' || hash === '#/accept') {
         return '/accept';
@@ -414,6 +419,8 @@ export default function App() {
   // Search and Category filtering state
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<Category>('All');
+  // One-Click Deals filter state ("Steals Only")
+  const [stealsOnly, setStealsOnly] = useState<boolean>(false);
 
   // Pagination state for homepage (50 list per page)
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -451,10 +458,10 @@ export default function App() {
     return counts;
   });
 
-  // Product detail route state — resolved from /product/:id
+  // Product detail route state — resolved from /product/:id or /badge/:id
   const [productRouteId, setProductRouteId] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
-      const m = window.location.pathname.match(/^\/product\/(.+)$/);
+      const m = window.location.pathname.match(/^\/(?:product|badge)\/(.+)$/);
       if (m) return decodeURIComponent(m[1]);
     }
     return null;
@@ -474,8 +481,12 @@ export default function App() {
       const path = window.location.pathname;
       const hash = window.location.hash;
 
+      const badgeMatch = path.match(/^\/badge\/(.+)$/);
       const productMatch = path.match(/^\/product\/(.+)$/);
-      if (productMatch) {
+      if (badgeMatch) {
+        setCurrentRoute('badge');
+        setProductRouteId(decodeURIComponent(badgeMatch[1]));
+      } else if (productMatch) {
         setCurrentRoute('product');
         setProductRouteId(decodeURIComponent(productMatch[1]));
       } else if (path === '/accept' || hash === '#accept' || hash === '#/accept') {
@@ -1448,7 +1459,20 @@ export default function App() {
     ? products.filter((p) => isInWeek(p.createdAt, selectedWeek))
     : products;
 
-  // Filter products by category and search query (within the selected week, strictly honoring rank order)
+  // Helper to determine if a product has an active deal/discount/promo code
+  const isProductDeal = (p: Product) =>
+    Boolean(
+      (p.offerDiscount && p.offerDiscount.trim().length > 0) ||
+      (p.offerCode && p.offerCode.trim().length > 0) ||
+      (p.offerDetails && p.offerDetails.trim().length > 0)
+    );
+
+  // Total exclusive deals across all live products
+  const totalDealsCount = React.useMemo(() => {
+    return products.filter(isProductDeal).length;
+  }, [products]);
+
+  // Filter products by category, search query, and deals filter (within the selected week, strictly honoring rank order)
   const filteredProducts = weekScopedProducts
     .filter((p) => {
       const productCats = p.category ? p.category.split(',').map((c) => c.trim().toLowerCase()) : [];
@@ -1463,7 +1487,8 @@ export default function App() {
         p.tagline.toLowerCase().includes(query) ||
         p.category.toLowerCase().includes(query) ||
         (p.description && p.description.toLowerCase().includes(query));
-      return matchesCat && matchesQuery;
+      const matchesSteals = !stealsOnly || isProductDeal(p);
+      return matchesCat && matchesQuery && matchesSteals;
     })
     .map(markOwnership)
     .sort(compareProductsByRank);
@@ -1486,7 +1511,7 @@ export default function App() {
   // Reset page to 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedCategory]);
+  }, [searchQuery, selectedCategory, stealsOnly]);
 
   // Pagination calculation (50 per page on filtered list)
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / pageSize));
@@ -1580,6 +1605,17 @@ export default function App() {
           soundEnabled={soundEnabled}
         />
       </>
+    );
+  }
+
+  // 1.0 STANDALONE SVG BADGE ROUTE (/badge/:id)
+  if (currentRoute === 'badge') {
+    return (
+      <BadgeRoute
+        productId={productRouteId || ''}
+        products={products}
+        submissions={submissions}
+      />
     );
   }
 
@@ -1932,6 +1968,13 @@ export default function App() {
           }}
           onOpenSubmit={handleOpenSubmit}
           soundEnabled={soundEnabled}
+          dealsCount={totalDealsCount}
+          stealsOnly={stealsOnly}
+          onToggleSteals={() => {
+            playSound('click', soundEnabled);
+            setStealsOnly((prev) => !prev);
+            setCurrentPage(1);
+          }}
         />
 
         {/* ── Directory board: side rails + ranked center column ── */}
@@ -1976,33 +2019,104 @@ export default function App() {
 
           {/* Center column */}
           <div className="min-w-0 space-y-3.5">
-        {/* Category chips */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none" role="navigation" aria-label="Browse by category">
-          {(['All', ...(selectedCategory !== 'All' && !directoryCategories.includes(selectedCategory) ? [selectedCategory] : []), ...directoryCategories] as Category[]).map((cat) => {
-            const count = cat === 'All' ? products.length : products.filter((p) => p.category === cat).length;
-            const active = selectedCategory === cat;
-            return (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => {
-                  playSound('click', soundEnabled);
-                  setSelectedCategory(cat);
-                  setCurrentPage(1);
-                }}
-                className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-bold transition-all cursor-pointer ${
-                  active
-                    ? 'border-mint-500/60 bg-mint-500/15 text-mint-200'
-                    : 'border-neutral-800 bg-[#2a2a2a] text-neutral-400 hover:border-neutral-600 hover:text-white'
+        {/* Category bar + Steals Only toggle on the same line (right-side edge) */}
+        <div className="flex items-center justify-between gap-2.5">
+          {/* Category chips */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none min-w-0 flex-1" role="navigation" aria-label="Browse by category">
+            {(['All', ...(selectedCategory !== 'All' && !directoryCategories.includes(selectedCategory) ? [selectedCategory] : []), ...directoryCategories] as Category[]).map((cat) => {
+              const count = cat === 'All' ? products.length : products.filter((p) => p.category === cat).length;
+              const active = selectedCategory === cat;
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => {
+                    playSound('click', soundEnabled);
+                    setSelectedCategory(cat);
+                    setCurrentPage(1);
+                  }}
+                  className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-bold transition-all cursor-pointer ${
+                    active
+                      ? 'border-mint-500/60 bg-mint-500/15 text-mint-200'
+                      : 'border-neutral-800 bg-[#2a2a2a] text-neutral-400 hover:border-neutral-600 hover:text-white'
+                  }`}
+                >
+                  <span>{cat}</span>
+                  <span className={`rounded-full px-1.5 py-px text-[9px] font-black font-mono-num ${active ? 'bg-mint-500/20 text-mint-200' : 'bg-neutral-800 text-neutral-400'}`}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Steals Only dedicated toggle on the right edge */}
+          <div className="shrink-0 flex items-center pl-1">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={stealsOnly}
+              onClick={(e) => {
+                playSound('click', soundEnabled);
+                if (!stealsOnly) {
+                  try {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const x = (rect.left + rect.width / 2) / window.innerWidth;
+                    const y = (rect.top + rect.height / 2) / window.innerHeight;
+                    confetti({
+                      particleCount: 24,
+                      spread: 50,
+                      origin: { x, y },
+                      colors: ['#66cc88', '#f59e0b', '#38bdf8', '#fbbf24'],
+                      ticks: 120,
+                      gravity: 1.1,
+                      scalar: 0.8,
+                      disableForReducedMotion: true,
+                    });
+                  } catch {}
+                }
+                setStealsOnly((prev) => !prev);
+                setCurrentPage(1);
+              }}
+              title={stealsOnly ? 'Turn off Steals Only filter' : 'Show only tools with exclusive discounts (50% OFF, lifetime deals, promo codes)'}
+              className={`group inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-bold transition-all cursor-pointer select-none ${
+                stealsOnly
+                  ? 'border-amber-400/60 bg-gradient-to-r from-amber-500/20 to-amber-500/10 text-amber-200 shadow-[0_0_16px_rgba(245,158,11,0.18)] ring-1 ring-amber-400/30'
+                  : 'border-neutral-800 bg-[#2a2a2a] text-neutral-400 hover:border-neutral-700 hover:text-neutral-200'
+              }`}
+            >
+              <Flame
+                className={`h-3.5 w-3.5 transition-transform duration-200 ${
+                  stealsOnly ? 'text-amber-300 fill-amber-300/30 scale-110 animate-pulse' : 'text-neutral-500 group-hover:text-amber-400'
+                }`}
+              />
+              <span className="text-[11px] font-bold tracking-tight whitespace-nowrap">
+                Steals Only
+              </span>
+              {totalDealsCount > 0 && (
+                <span
+                  className={`rounded-full px-1.5 py-px text-[9px] font-black font-mono-num ${
+                    stealsOnly ? 'bg-amber-400/30 text-amber-100' : 'bg-neutral-800 text-neutral-500 group-hover:text-neutral-300'
+                  }`}
+                >
+                  {totalDealsCount}
+                </span>
+              )}
+
+              {/* Sliding switch track & knob */}
+              <span
+                className={`relative inline-flex h-4 w-7 shrink-0 items-center rounded-full p-0.5 transition-colors duration-200 ${
+                  stealsOnly ? 'bg-amber-400' : 'bg-neutral-700 group-hover:bg-neutral-600'
                 }`}
               >
-                <span>{cat}</span>
-                <span className={`rounded-full px-1.5 py-px text-[9px] font-black font-mono-num ${active ? 'bg-mint-500/20 text-mint-200' : 'bg-neutral-800 text-neutral-400'}`}>
-                  {count}
-                </span>
-              </button>
-            );
-          })}
+                <span
+                  className={`inline-block h-3 w-3 transform rounded-full bg-white shadow-xs transition-transform duration-200 ease-out ${
+                    stealsOnly ? 'translate-x-3 bg-neutral-950' : 'translate-x-0'
+                  }`}
+                />
+              </span>
+            </button>
+          </div>
         </div>
 
         {/* Leaderboard Rendering */}
@@ -2045,6 +2159,46 @@ export default function App() {
                     <Plus className="h-3.5 w-3.5" />
                     <span>Launch your SaaS</span>
                   </button>
+                </div>
+              </>
+            ) : stealsOnly ? (
+              <>
+                <Flame className="mx-auto h-10 w-10 text-amber-400 mb-3 animate-pulse" />
+                <h3 className="text-lg font-bold text-white">No exclusive deals found</h3>
+                <p className="text-xs text-neutral-400 max-w-md mx-auto mt-1 mb-5 font-medium">
+                  {searchQuery.trim()
+                    ? `No tools with exclusive discounts match "${searchQuery}". Try searching for another term or turn off Steals Only.`
+                    : selectedCategory !== 'All'
+                    ? `No tools in "${selectedCategory}" have active promo codes or discounts right now. Check back soon or turn off Steals Only.`
+                    : 'No tools with active discounts match your current filters.'}
+                </p>
+                <div className="flex items-center justify-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playSound('click', soundEnabled);
+                      setStealsOnly(false);
+                      setCurrentPage(1);
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-amber-500/50 bg-amber-500/15 px-4 py-2 text-xs font-bold text-amber-300 hover:bg-amber-500/25 transition-colors cursor-pointer"
+                  >
+                    <span>Turn off Steals Only</span>
+                  </button>
+                  {(searchQuery || selectedCategory !== 'All') && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playSound('click', soundEnabled);
+                        setSearchQuery('');
+                        setSelectedCategory('All');
+                        setCurrentPage(1);
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-700 bg-transparent px-3.5 py-2 text-xs font-bold text-neutral-200 hover:border-neutral-500 hover:text-white transition-colors cursor-pointer"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                      <span>Clear Filters</span>
+                    </button>
+                  )}
                 </div>
               </>
             ) : (

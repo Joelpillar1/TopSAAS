@@ -63,7 +63,6 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                 <span className="text-neutral-500">products</span>
               </div>
             </div>
-
           </div>
 
           {/* Product Column */}

@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import confetti from 'canvas-confetti';
-import { AlertCircle, Check, ChevronDown, ChevronLeft, ChevronRight, Clock, Loader2, Search, Video, X, Tag, Percent, Gift, Sparkles, Trash2, GripVertical, Star } from 'lucide-react';
-import { Category, PricingModel, ProductSocial, SubmitProductDetails } from '../types';
+import { AlertCircle, Check, ChevronDown, ChevronLeft, ChevronRight, Clock, Loader2, Search, Video, X, Tag, Percent, Gift, Sparkles, Trash2, GripVertical, Star, ShieldCheck, CheckCircle2, Lock, RefreshCw, Copy, Code2 } from 'lucide-react';
+import { Category, PricingModel, Product, ProductSocial, SubmitProductDetails } from '../types';
 import { SUBMISSION_CATEGORIES } from './BidModal';
 import { getWebsiteFavicon } from '../utils/logo';
 import { playSound } from '../utils/sound';
+import { BadgeStyle, BadgeTheme, BadgeFormat, generateBadgeSvg, generateBadgeSnippet } from '../utils/badgeSvg';
 
 const DRAFT_KEY = 'topsaas_launch_draft_v1';
 const STEP_KEY = 'topsaas_launch_step_v1';
@@ -16,7 +17,7 @@ const PRICING_OPTIONS: { value: PricingModel; hint: string }[] = [
   { value: 'Open Source', hint: 'Source code available' },
 ];
 
-const STEPS = ['Website', 'Media', 'Details', 'Founder'] as const;
+const STEPS = ['Website', 'Media', 'Details', 'Founder', 'Badge'] as const;
 
 interface FormState {
   url: string;
@@ -52,7 +53,7 @@ interface FormState {
   offerDetails: string;
 }
 
-type FieldKey = 'name' | 'tagline' | 'url' | 'category' | 'demoVideoUrl';
+type FieldKey = 'name' | 'tagline' | 'url' | 'category' | 'demoVideoUrl' | 'badge';
 
 const EMPTY_FORM: FormState = {
   url: '',
@@ -121,7 +122,7 @@ function loadSavedStep(): number {
     const raw = localStorage.getItem(STEP_KEY);
     if (!raw) return 0;
     const parsed = parseInt(raw, 10);
-    return Number.isFinite(parsed) && parsed >= 0 && parsed <= 3 ? parsed : 0;
+    return Number.isFinite(parsed) && parsed >= 0 && parsed <= 4 ? parsed : 0;
   } catch {
     return 0;
   }
@@ -289,6 +290,16 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
 
   const [launched, setLaunched] = useState<{ id: string; name: string } | null>(null);
 
+  // ── Badge Verification States ──
+  const [isBadgeVerified, setIsBadgeVerified] = useState(false);
+  const [isVerifyingBadge, setIsVerifyingBadge] = useState(false);
+  const [badgeVerificationError, setBadgeVerificationError] = useState<string | null>(null);
+  const [badgeVerificationSuccess, setBadgeVerificationSuccess] = useState<string | null>(null);
+  const [badgeStyle, setBadgeStyle] = useState<BadgeStyle>('featured');
+  const [badgeTheme, setBadgeTheme] = useState<BadgeTheme>('dark');
+  const [badgeFormat, setBadgeFormat] = useState<BadgeFormat>('html');
+  const [copiedBadge, setCopiedBadge] = useState(false);
+
   const categoryRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -307,7 +318,12 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
-    if ((key === 'name' || key === 'tagline' || key === 'url' || key === 'category') && value) {
+    if (key === 'url') {
+      setIsBadgeVerified(false);
+      setBadgeVerificationSuccess(null);
+      setBadgeVerificationError(null);
+    }
+    if ((key === 'name' || key === 'tagline' || key === 'url' || key === 'category' || key === 'badge') && value) {
       setErrors((prev) => ({ ...prev, [key]: undefined }));
     }
   };
@@ -370,6 +386,10 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
       if (form.categories.length === 0 && !form.category.trim()) {
         out.category = 'Choose at least one category for your listing.';
       }
+    } else if (i === 4) {
+      if (!isBadgeVerified) {
+        out.badge = 'Please verify the TopSAAS badge on your website before submitting.';
+      }
     }
     return out;
   };
@@ -392,6 +412,9 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
     }
     if (i === 3) {
       return isStepComplete(0) && isStepComplete(2);
+    }
+    if (i === 4) {
+      return isStepComplete(3) && isBadgeVerified;
     }
     return false;
   };
@@ -524,18 +547,148 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
     }
   };
 
+  // ── Badge Helpers & Verification ──
+  const previewProduct: Product = {
+    id: `sub-${encodeURIComponent((form.name || 'product').toLowerCase().replace(/[^a-z0-9]+/g, '-'))}`,
+    name: form.name.trim() || 'Your Product',
+    tagline: form.tagline.trim() || 'Featured on TopSAAS',
+    url: normalizeUrl(form.url).value || 'https://yourproduct.com',
+    category: (form.categories[0] || form.category || 'Developer Tools') as Category,
+    rank: 1,
+    upvotes: 1,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  };
+
+  const badgeEmbedSnippet = generateBadgeSnippet(previewProduct, badgeStyle, badgeTheme, badgeFormat);
+
+  const handleCopyBadgeSnippet = async () => {
+    playSound('click', soundEnabled);
+    try {
+      await navigator.clipboard.writeText(badgeEmbedSnippet);
+    } catch {}
+    setCopiedBadge(true);
+    setTimeout(() => setCopiedBadge(false), 2000);
+  };
+
+  const handleVerifyBadge = async () => {
+    setIsVerifyingBadge(true);
+    setBadgeVerificationError(null);
+    setBadgeVerificationSuccess(null);
+    playSound('click', soundEnabled);
+
+    const check = normalizeUrl(form.url);
+    if (!check.ok || !check.value) {
+      setBadgeVerificationError('Please provide a valid website URL in Step 1 first.');
+      setIsVerifyingBadge(false);
+      return;
+    }
+
+    const targetUrl = check.value;
+
+    try {
+      // Check if it's a localhost or internal IP address
+      const isLocalOrPrivate = /localhost|127\.0\.0\.1|192\.168\.|10\.|::1/i.test(targetUrl);
+
+      if (isLocalOrPrivate) {
+        // Local dev environments cannot be reached by external scraper proxies
+        setIsBadgeVerified(true);
+        setBadgeVerificationSuccess(`Local development environment (${targetUrl}) detected. Badge verified.`);
+        playSound('success', soundEnabled);
+        confetti({ particleCount: 45, spread: 60, origin: { y: 0.7 } });
+        setIsVerifyingBadge(false);
+        return;
+      }
+
+      // Live Web Inspection for public URLs via proxies
+      const proxies = [
+        `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`,
+        `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
+      ];
+
+      let htmlContent = '';
+      let fetched = false;
+
+      // First attempt direct fetch
+      try {
+        const directRes = await fetch(targetUrl, { method: 'GET', mode: 'cors' });
+        if (directRes.ok) {
+          htmlContent = await directRes.text();
+          fetched = true;
+        }
+      } catch {
+        // Cross-origin restriction expected; fallback to proxies
+      }
+
+      if (!fetched) {
+        for (const proxyUrl of proxies) {
+          try {
+            const res = await fetch(proxyUrl);
+            if (res.ok) {
+              const data = await res.json();
+              htmlContent = data.contents || (typeof data === 'string' ? data : '');
+              if (htmlContent) {
+                fetched = true;
+                break;
+              }
+            }
+          } catch {
+            // Try next proxy
+          }
+        }
+      }
+
+      // Check for TopSAAS badge indicators in page HTML
+      const hasTopSaasLink = /topsaas\.org|localhost:3000/i.test(htmlContent);
+      const hasBadgeImg = /badge\/|\/badge|Featured on TopSAAS/i.test(htmlContent);
+      const hasTopSaasMention = /topsaas/i.test(htmlContent);
+
+      if (fetched && (hasTopSaasLink || hasBadgeImg || hasTopSaasMention)) {
+        setIsBadgeVerified(true);
+        setBadgeVerificationSuccess(`TopSAAS badge detected on ${targetUrl}! Verification complete.`);
+        playSound('success', soundEnabled);
+        confetti({ particleCount: 50, spread: 70, origin: { y: 0.7 } });
+      } else if (fetched) {
+        setBadgeVerificationError(
+          `We loaded ${targetUrl}, but could not find the TopSAAS badge code. Please ensure you have added the snippet to your page and published your changes, then try again.`
+        );
+        playSound('error', soundEnabled);
+      } else {
+        // If web fetch failed due to Cloudflare / bot protection / firewall
+        setBadgeVerificationError(
+          `Could not reach ${targetUrl} to inspect the HTML. If your site has bot protection or is behind authentication, please ensure it is publicly reachable, or click the manual confirmation below.`
+        );
+        playSound('error', soundEnabled);
+      }
+    } catch (err) {
+      setBadgeVerificationError(
+        `Verification check failed: ${err instanceof Error ? err.message : 'Network error'}. Please ensure your website is online and try again.`
+      );
+      playSound('error', soundEnabled);
+    } finally {
+      setIsVerifyingBadge(false);
+    }
+  };
+
   // ── Launch ──
   const handleLaunch = async () => {
     // Validate every step; jump to the first one with a problem
     const missing: number[] = [];
     for (let i = 0; i < STEPS.length; i++) {
-      if (Object.keys(validateStep(i)).length > 0) missing.push(i);
+      if (Object.keys(validateStep(i)).length > 0 || !isStepComplete(i)) missing.push(i);
     }
     if (missing.length > 0) {
       const first = missing[0];
       setErrors(validateStep(first));
-      setBanner('Some required fields are still empty — they are marked below.');
+      setBanner(first === 4 ? 'Please verify the TopSAAS badge on your website before submitting.' : 'Some required fields are still empty — they are marked below.');
       setStep(first);
+      requestAnimationFrame(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+      return;
+    }
+
+    if (!isBadgeVerified) {
+      setBanner('Please verify the TopSAAS badge on your website before submitting.');
+      setStep(4);
       requestAnimationFrame(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
       return;
     }
@@ -704,7 +857,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
           <div className="mb-5 pt-1">
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">Submit your website</h1>
             <p className="mt-1 text-[13px] sm:text-sm font-medium text-neutral-400">
-              Four quick steps: website details, media & video, directory specs, and founder profile.
+              Five quick steps: website details, media & video, directory specs, founder profile, and badge verification.
             </p>
           </div>
 
@@ -729,7 +882,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
           )}
 
           {/* ── Step tabs ── */}
-          <div className="mb-5 grid grid-cols-4 gap-1 rounded-2xl border border-neutral-800 bg-[#2a2a2a] p-1" role="tablist" aria-label="Submission steps">
+          <div className="mb-5 grid grid-cols-5 gap-1 rounded-2xl border border-neutral-800 bg-[#2a2a2a] p-1" role="tablist" aria-label="Submission steps">
             {STEPS.map((label, i) => {
               const active = step === i;
               const isCompleted = isStepComplete(i) && step > i;
@@ -1800,6 +1953,266 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
               </div>
             </section>
           )}
+
+          {/* ── Step 4: Embed Badge & Verification ── */}
+          {step === 4 && (
+            <section className="space-y-6 animate-in fade-in-50 duration-200">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 border-b border-neutral-800 pb-5">
+                <div>
+                  <h2 className="text-base sm:text-lg font-black text-white">Embed Founder Badge</h2>
+                  <p className="mt-1 text-xs text-neutral-400 max-w-xl leading-relaxed">
+                    Embed the official TopSAAS badge on your website so visitors can support your launch and discover your directory listing.
+                  </p>
+                </div>
+
+                <div className={`shrink-0 self-start sm:self-auto flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+                  isBadgeVerified
+                    ? 'bg-mint-500/15 border-mint-500/40 text-mint-300'
+                    : 'bg-amber-500/15 border-amber-500/30 text-amber-300'
+                }`}>
+                  {isBadgeVerified ? (
+                    <>
+                      <CheckCircle2 className="h-4 w-4 text-mint-400" />
+                      <span>Badge Verified</span>
+                    </>
+                  ) : (
+                    <>
+                      <AlertCircle className="h-4 w-4 text-amber-400" />
+                      <span>Not Yet Verified</span>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* 1. Customizer & Live Preview */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-xs font-bold text-neutral-400">
+                  <span>1. CHOOSE BADGE STYLE & THEME</span>
+                  <span className="text-mint-400 font-medium">Live SVG Preview</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Style */}
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider block">
+                      Badge Style
+                    </label>
+                    <div className="grid grid-cols-3 gap-1 rounded-xl bg-[#2a2a2a] p-1 border border-neutral-800">
+                      <button
+                        type="button"
+                        onClick={() => { playSound('click', soundEnabled); setBadgeStyle('featured'); }}
+                        className={`py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                          badgeStyle === 'featured'
+                            ? 'bg-mint-500 text-[#0b0f14]'
+                            : 'text-neutral-400 hover:text-white'
+                        }`}
+                        title="Featured with mint chevron button"
+                      >
+                        Featured
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { playSound('click', soundEnabled); setBadgeStyle('classic'); }}
+                        className={`py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                          badgeStyle === 'classic'
+                            ? 'bg-mint-500 text-[#0b0f14]'
+                            : 'text-neutral-400 hover:text-white'
+                        }`}
+                        title="Classic DanielLaunches style"
+                      >
+                        Classic
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { playSound('click', soundEnabled); setBadgeStyle('rank'); }}
+                        className={`py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                          badgeStyle === 'rank'
+                            ? 'bg-mint-500 text-[#0b0f14]'
+                            : 'text-neutral-400 hover:text-white'
+                        }`}
+                        title="Directory Leaderboard Rank"
+                      >
+                        Rank
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Theme */}
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider block">
+                      Theme
+                    </label>
+                    <div className="grid grid-cols-2 gap-1 rounded-xl bg-[#2a2a2a] p-1 border border-neutral-800">
+                      <button
+                        type="button"
+                        onClick={() => { playSound('click', soundEnabled); setBadgeTheme('dark'); }}
+                        className={`py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                          badgeTheme === 'dark'
+                            ? 'bg-neutral-800 text-white border border-neutral-700 shadow-xs'
+                            : 'text-neutral-400 hover:text-white'
+                        }`}
+                      >
+                        Dark Mode
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { playSound('click', soundEnabled); setBadgeTheme('light'); }}
+                        className={`py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                          badgeTheme === 'light'
+                            ? 'bg-neutral-800 text-white border border-neutral-700 shadow-xs'
+                            : 'text-neutral-400 hover:text-white'
+                        }`}
+                      >
+                        Light Mode
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Badge visual box */}
+                <div
+                  className={`flex items-center justify-center rounded-2xl p-6 border transition-all ${
+                    badgeTheme === 'dark'
+                      ? 'bg-[#121214] border-neutral-800'
+                      : 'bg-[#f4f4f5] border-neutral-300'
+                  }`}
+                >
+                  <div
+                    dangerouslySetInnerHTML={{
+                      __html: generateBadgeSvg(previewProduct, { style: badgeStyle, theme: badgeTheme }),
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* 2. Copy Code Snippet */}
+              <div className="space-y-2 border-t border-neutral-800 pt-5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-neutral-300">2. COPY SNIPPET TO YOUR WEBSITE</span>
+                  <div className="flex items-center gap-1 bg-[#2a2a2a] p-0.5 rounded-lg border border-neutral-800 text-[11px]">
+                    <button
+                      type="button"
+                      onClick={() => setBadgeFormat('html')}
+                      className={`px-2 py-0.5 rounded font-bold transition-all cursor-pointer ${badgeFormat === 'html' ? 'bg-neutral-700 text-white' : 'text-neutral-400 hover:text-white'}`}
+                    >
+                      HTML
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBadgeFormat('markdown')}
+                      className={`px-2 py-0.5 rounded font-bold transition-all cursor-pointer ${badgeFormat === 'markdown' ? 'bg-neutral-700 text-white' : 'text-neutral-400 hover:text-white'}`}
+                    >
+                      Markdown
+                    </button>
+                  </div>
+                </div>
+
+                <div className="relative rounded-xl border border-neutral-800 bg-[#17171a] p-3 font-mono text-[11px] text-neutral-300 leading-relaxed overflow-x-auto">
+                  <pre className="whitespace-pre-wrap break-all pr-16">{badgeEmbedSnippet}</pre>
+                  <button
+                    type="button"
+                    onClick={handleCopyBadgeSnippet}
+                    className={`absolute top-2.5 right-2.5 inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-bold transition-all cursor-pointer shadow-xs ${
+                      copiedBadge ? 'bg-mint-500 text-[#0b0f14]' : 'bg-[#2a2a2a] text-white hover:bg-neutral-700 border border-neutral-700'
+                    }`}
+                  >
+                    {copiedBadge ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                    <span>{copiedBadge ? 'Copied' : 'Copy'}</span>
+                  </button>
+                </div>
+                <p className="text-[11px] text-neutral-500">
+                  Tip: Place this badge into your landing page footer, hero, or README. Visitors can click it directly to discover and upvote your product.
+                </p>
+              </div>
+
+              {/* 3. Verification Action Panel */}
+              <div className="rounded-2xl border border-neutral-800 bg-[#2a2a2a] p-5 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
+                      <span>3. Verify Badge Deployment</span>
+                      {isBadgeVerified && <CheckCircle2 className="h-4 w-4 text-mint-400" />}
+                    </h3>
+                    <p className="text-xs text-neutral-400 mt-0.5">
+                      Target Website: <span className="font-mono text-neutral-200 underline font-semibold">{form.url || 'None entered in Step 1'}</span>
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleVerifyBadge}
+                    disabled={isVerifyingBadge || !form.url.trim()}
+                    className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-black transition-all cursor-pointer shadow-sm min-h-[40px] shrink-0 ${
+                      isBadgeVerified
+                        ? 'bg-mint-500/20 text-mint-300 border border-mint-500/40 hover:bg-mint-500/30'
+                        : 'bg-mint-500 text-[#0b0f14] hover:bg-mint-400 active:scale-95'
+                    }`}
+                  >
+                    {isVerifyingBadge ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Verifying website…</span>
+                      </>
+                    ) : isBadgeVerified ? (
+                      <>
+                        <RefreshCw className="h-3.5 w-3.5" />
+                        <span>Re-verify Badge</span>
+                      </>
+                    ) : (
+                      <>
+                        <ShieldCheck className="h-4 w-4" />
+                        <span>Verify Badge on Website</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Verification Feedback Messages */}
+                {badgeVerificationSuccess && (
+                  <div className="rounded-xl border border-mint-500/40 bg-mint-500/10 p-3.5 text-xs text-mint-300 flex items-start gap-2.5">
+                    <CheckCircle2 className="h-4 w-4 text-mint-400 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold">Badge Successfully Verified!</p>
+                      <p className="text-[11px] text-mint-200/80 mt-0.5">{badgeVerificationSuccess}</p>
+                      <p className="text-[11px] text-mint-400 font-semibold mt-1">You may now submit your product for review.</p>
+                    </div>
+                  </div>
+                )}
+
+                {badgeVerificationError && (
+                  <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-3.5 text-xs text-red-300 flex items-start gap-2.5">
+                    <AlertCircle className="h-4 w-4 text-red-400 shrink-0 mt-0.5" />
+                    <div className="space-y-1.5 flex-1">
+                      <p className="font-bold">Verification Incomplete</p>
+                      <p className="text-[11px] text-red-200/90 leading-relaxed">{badgeVerificationError}</p>
+                      <div className="pt-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsBadgeVerified(true);
+                            setBadgeVerificationSuccess('Manually verified for testing/staging environment.');
+                            setBadgeVerificationError(null);
+                            playSound('success', soundEnabled);
+                            confetti({ particleCount: 35, spread: 50, origin: { y: 0.7 } });
+                          }}
+                          className="text-[11px] font-bold text-neutral-400 hover:text-white underline transition-colors cursor-pointer"
+                        >
+                          Running in localhost or private dev environment? Click here to confirm manual verification.
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {!badgeVerificationSuccess && !badgeVerificationError && (
+                  <div className="rounded-xl border border-neutral-800/80 bg-[#1e1e1e] p-3 text-[11.5px] text-neutral-400 flex items-center gap-2">
+                    <Lock className="h-4 w-4 text-amber-400 shrink-0" />
+                    <span>The &ldquo;Submit website&rdquo; button will unlock once badge verification passes.</span>
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
         </div>
       </main>
 
@@ -1837,16 +2250,29 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
               <button
                 type="button"
                 onClick={handleLaunch}
-                disabled={isSubmitting}
-                className="rounded-xl bg-white px-5 py-2.5 text-xs font-black text-[#0b0f14] hover:bg-neutral-200 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                disabled={isSubmitting || !isBadgeVerified}
+                className={`rounded-xl px-5 py-2.5 text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 shadow-sm ${
+                  isBadgeVerified
+                    ? 'bg-mint-500 text-[#0b0f14] hover:bg-mint-400 active:scale-[0.98]'
+                    : 'bg-neutral-800 text-neutral-500 cursor-not-allowed border border-neutral-700 opacity-60'
+                }`}
+                title={isBadgeVerified ? 'Submit website for review' : 'You must verify the TopSAAS badge on your website before submitting'}
               >
                 {isSubmitting ? (
                   <span className="inline-flex items-center gap-1.5">
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     Submitting…
                   </span>
+                ) : !isBadgeVerified ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    <Lock className="h-3.5 w-3.5 text-neutral-400" />
+                    Verify badge to submit
+                  </span>
                 ) : (
-                  'Submit website'
+                  <span className="inline-flex items-center gap-1.5">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-[#0b0f14]" />
+                    Submit website
+                  </span>
                 )}
               </button>
             ) : (
