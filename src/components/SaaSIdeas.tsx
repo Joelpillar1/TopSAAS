@@ -7,6 +7,7 @@ import { ProductCard } from './ProductCard';
 import { HeroClaimBanner } from './HeroClaimBanner';
 import { BorderBeam } from './BorderBeam';
 import { playSound } from '../utils/sound';
+import { isProductUpvoted } from '../utils/db';
 import { GridFillerCell, useGridColumns } from './GridFiller';
 import { cn } from '@/lib/utils';
 import { GridPattern } from '@/components/ui/grid-pattern';
@@ -415,7 +416,7 @@ export const SaaSIdeas: React.FC<SaaSIdeasProps> = ({
                 onTrackClick={onTrackClick}
                 onOpenDetail={onOpenDetail}
                 onUpvote={onUpvote}
-                upvoted={!!upvotedIds?.has(product.id)}
+                upvoted={isProductUpvoted(product.id, upvotedIds)}
               />
             ))}
           </div>

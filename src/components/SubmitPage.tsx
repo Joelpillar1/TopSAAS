@@ -1330,7 +1330,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
               <div className="border-t border-neutral-800 pt-5 space-y-3.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                    <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-mint-500/15 text-mint-400 border border-mint-500/30">
                       <Tag className="h-3.5 w-3.5" />
                     </div>
                     <div>
@@ -1371,7 +1371,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                           }}
                           className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all cursor-pointer ${
                             form.offerDiscount === preset
-                              ? 'bg-amber-400 text-black border border-amber-300 shadow-2xs'
+                              ? 'bg-mint-500 text-[#0b0f14] border border-mint-400 shadow-2xs'
                               : 'bg-[#2a2a2a] text-neutral-300 border border-neutral-700 hover:border-neutral-500 hover:text-white'
                           }`}
                         >

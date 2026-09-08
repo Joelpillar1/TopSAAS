@@ -36,7 +36,7 @@ export const SignInModal: React.FC<SignInModalProps> = ({
           Sign in to continue
         </h3>
         <p className="text-xs text-neutral-400 mb-6 max-w-[260px] mx-auto leading-relaxed">
-          You need an account to submit a website to the directory. It's free and takes seconds.
+          You need an account to upvote, submit websites, and participate. It's free and takes seconds.
         </p>
 
         {/* Google Sign In Button */}

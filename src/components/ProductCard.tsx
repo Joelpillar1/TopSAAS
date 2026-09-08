@@ -76,7 +76,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               <ShieldCheck className="h-3.5 w-3.5 text-mint-500 shrink-0" title="Verified listing" />
             )}
             {product.offerDiscount && (
-              <span className="rounded bg-amber-500/15 border border-amber-500/40 px-1.5 py-px text-[9px] font-black text-amber-300 shrink-0">
+              <span className="rounded bg-mint-500/15 border border-mint-500/40 px-1.5 py-px text-[9px] font-black text-mint-300 shrink-0">
                 {product.offerDiscount}
               </span>
             )}

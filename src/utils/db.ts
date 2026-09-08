@@ -473,7 +473,12 @@ export async function saveProductRanksDirect(products: Product[]): Promise<void>
       products.map((p) =>
         supabase
           .from('products')
-          .update({ rank: p.rank, previous_rank: p.previousRank || p.rank, updated_at: Date.now() })
+          .update({
+            rank: p.rank,
+            previous_rank: p.previousRank || p.rank,
+            upvotes: p.upvotes ?? 0,
+            updated_at: Date.now()
+          })
           .eq('id', p.id)
       )
     );
@@ -597,7 +602,12 @@ export async function submitVerifiedGameScore(
 /** Toggle upvote via Supabase RPC (returns true if upvoted, false if un-upvoted) */
 export async function toggleUpvote(productId: string): Promise<boolean | null> {
   const { data, error } = await supabase.rpc('toggle_upvote', { p_product_id: productId });
-  if (error) return null;
+  if (error) {
+    const altId = productId.startsWith('prod-') ? productId.replace(/^prod-/, '') : `prod-${productId}`;
+    const retry = await supabase.rpc('toggle_upvote', { p_product_id: altId });
+    if (!retry.error) return retry.data as boolean;
+    return null;
+  }
   return data as boolean;
 }
 
@@ -605,7 +615,90 @@ export async function toggleUpvote(productId: string): Promise<boolean | null> {
 export async function getUserUpvotes(): Promise<Set<string>> {
   const { data, error } = await supabase.rpc('get_user_upvotes');
   if (error || !data) return new Set();
-  return new Set(data as string[]);
+  const set = new Set<string>();
+  for (const id of data as string[]) {
+    set.add(id);
+    if (id.startsWith('prod-')) {
+      set.add(id.replace(/^prod-/, ''));
+    } else {
+      set.add(`prod-${id}`);
+    }
+  }
+  return set;
+}
+
+/** Check if a product is upvoted, taking into account potential 'prod-' prefix variations */
+export function isProductUpvoted(productId?: string | null, upvotedSet?: Set<string> | null): boolean {
+  if (!upvotedSet || !productId) return false;
+  if (upvotedSet.has(productId)) return true;
+  if (productId.startsWith('prod-') && upvotedSet.has(productId.replace(/^prod-/, ''))) return true;
+  if (!productId.startsWith('prod-') && upvotedSet.has(`prod-${productId}`)) return true;
+  return false;
+}
+
+const GUEST_UPVOTES_KEY = 'topsaas_guest_upvotes';
+
+/** Retrieve guest upvotes from localStorage */
+export function getGuestUpvotes(): Set<string> {
+  try {
+    const raw = localStorage.getItem(GUEST_UPVOTES_KEY);
+    if (!raw) return new Set();
+    const arr = JSON.parse(raw);
+    if (Array.isArray(arr)) {
+      const set = new Set<string>();
+      for (const id of arr) {
+        if (typeof id === 'string') {
+          set.add(id);
+          if (id.startsWith('prod-')) {
+            set.add(id.replace(/^prod-/, ''));
+          } else {
+            set.add(`prod-${id}`);
+          }
+        }
+      }
+      return set;
+    }
+  } catch {}
+  return new Set();
+}
+
+/** Persist guest upvotes to localStorage */
+export function saveGuestUpvotes(upvotes: Set<string>): void {
+  try {
+    const list = Array.from(upvotes);
+    localStorage.setItem(GUEST_UPVOTES_KEY, JSON.stringify(list));
+  } catch {}
+}
+
+/** Direct increment or decrement of product upvotes in Supabase (fallback or guest) */
+export async function incrementProductUpvotesDirect(productId: string, delta: number): Promise<boolean> {
+  try {
+    const { error: rpcError } = await supabase.rpc('increment_product_upvotes', {
+      p_product_id: productId,
+      p_delta: delta
+    });
+    if (!rpcError) return true;
+
+    // Fallback: fetch current upvotes and update directly
+    const { data: current } = await supabase
+      .from('products')
+      .select('id, upvotes')
+      .or(`id.eq.${productId},id.eq.prod-${productId}`)
+      .limit(1)
+      .maybeSingle();
+
+    if (current) {
+      const nextCount = Math.max(0, (current.upvotes ?? 0) + delta);
+      const { error: updateError } = await supabase
+        .from('products')
+        .update({ upvotes: nextCount, updated_at: Date.now() })
+        .eq('id', current.id);
+      return !updateError;
+    }
+    return false;
+  } catch {
+    return false;
+  }
 }
 
 // ── Comments (with Caching & DB Sync) ──

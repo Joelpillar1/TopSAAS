@@ -2,6 +2,7 @@ import React from 'react';
 import { Crown, ShieldCheck, Share2, ExternalLink, ChevronUp } from 'lucide-react';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
+import { isProductUpvoted } from '../utils/db';
 import { ProductLogo } from './ProductLogo';
 
 interface LeaderboardTableProps {
@@ -63,7 +64,7 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                 window.open(product.url, '_blank', 'noopener,noreferrer');
               };
 
-              const isUpvoted = !!upvotedIds?.has(product.id);
+              const isUpvoted = isProductUpvoted(product.id, upvotedIds);
 
               return (
                 <tr

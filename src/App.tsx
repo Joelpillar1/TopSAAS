@@ -22,7 +22,7 @@ import { LegalPage } from './components/LegalPage';
 import { LegalTab } from './components/LegalModal';
 import { playSound } from './utils/sound';
 import { supabase } from './utils/supabase';
-import { loadProducts, enrichProductsFromSubmissions, saveAllProducts, saveProductRanksDirect, debouncedSyncProducts, toggleUpvote, getUserUpvotes, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, insertProductDirect, fetchComments, addComment, getCachedCommentsSync, submissionToProduct } from './utils/db';
+import { loadProducts, enrichProductsFromSubmissions, saveAllProducts, saveProductRanksDirect, debouncedSyncProducts, toggleUpvote, getUserUpvotes, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, insertProductDirect, fetchComments, addComment, getCachedCommentsSync, submissionToProduct, isProductUpvoted, getGuestUpvotes, saveGuestUpvotes, incrementProductUpvotesDirect } from './utils/db';
 import { getRecentWeeks, isInWeek } from './utils/weeks';
 import { getWebsiteFavicon } from './utils/logo';
 import { LayoutGrid, Table as TableIcon, Trophy, X, Plus, ShieldCheck, Loader2, Star, MessageCircle } from 'lucide-react';
@@ -747,10 +747,13 @@ export default function App() {
     if (!user) {
       setIsAdmin(false);
       setUserUpvotes(new Set());
+      try { localStorage.removeItem('topsaas_guest_upvotes'); } catch {}
       return;
     }
     checkIsAdmin().then(setIsAdmin);
-    getUserUpvotes().then(setUserUpvotes);
+    getUserUpvotes().then((dbVotes) => {
+      setUserUpvotes(dbVotes);
+    });
   }, [user]);
 
   // Save user profile to Supabase profiles table
@@ -816,56 +819,88 @@ export default function App() {
     return (a.createdAt ?? 0) - (b.createdAt ?? 0);
   }, [commentCounts]);
 
-  // Upvote a product (uses Supabase RPC for per-user tracking and dynamically updates ranks)
+  // Upvote a product (requires an account)
   const handleUpvote = async (product: Product) => {
+    if (!user) {
+      playSound('click', soundEnabled);
+      setIsSignInModalOpen(true);
+      return;
+    }
+
     playSound('upvote', soundEnabled);
 
-    if (user) {
-      // Logged in: use Supabase RPC (one upvote per user per product)
-      const result = await toggleUpvote(product.id);
-      if (result === null) return; // error
+    const currentlyUpvoted = isProductUpvoted(product.id, userUpvotes);
+    const willBeUpvoted = !currentlyUpvoted;
+    const delta = willBeUpvoted ? 1 : -1;
+    const altId = product.id.startsWith('prod-') ? product.id.replace(/^prod-/, '') : `prod-${product.id}`;
 
-      // Update local state based on RPC result
-      setUserUpvotes((prev) => {
-        const next = new Set(prev);
-        if (result) next.add(product.id); else next.delete(product.id);
-        return next;
+    // 1. Instant optimistic update for userUpvotes state
+    setUserUpvotes((prev) => {
+      const next = new Set(prev);
+      if (willBeUpvoted) {
+        next.add(product.id);
+        next.add(altId);
+      } else {
+        next.delete(product.id);
+        next.delete(altId);
+      }
+      return next;
+    });
+
+    // 2. Instant optimistic update of products count & live dynamic re-ranking
+    let reRankedProducts: Product[] = [];
+    setProducts((prev) => {
+      const updated = prev.map((p) => {
+        const isMatch =
+          p.id === product.id ||
+          p.id === altId ||
+          (product.url && p.url && p.url.toLowerCase().replace(/\/$/, '') === product.url.toLowerCase().replace(/\/$/, ''));
+        if (isMatch) {
+          const nextUpvotes = Math.max(0, (p.upvotes ?? 0) + delta);
+          return { ...p, upvotes: nextUpvotes, updatedAt: Date.now() };
+        }
+        return p;
       });
 
-      setProducts((prev) => {
-        const updated = prev.map((p) => {
-          if (p.id === product.id) {
-            const nextUpvotes = Math.max(0, (p.upvotes ?? 0) + (result ? 1 : -1));
-            return { ...p, upvotes: nextUpvotes, updatedAt: Date.now() };
-          }
-          return p;
+      const reRanked = [...updated].sort(compareProductsByRank).map((p, idx) => ({
+        ...p,
+        previousRank: p.rank !== (idx + 1) ? (p.rank ?? (idx + 1)) : p.previousRank,
+        rank: idx + 1,
+      }));
+      reRankedProducts = reRanked;
+
+      try {
+        localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(reRanked));
+        localStorage.setItem('topsaas_products_cache_v2', JSON.stringify(reRanked));
+      } catch {}
+
+      return reRanked;
+    });
+
+    // 3. Background persistence to Supabase via toggleUpvote RPC
+    toggleUpvote(product.id).then((rpcResult) => {
+      if (rpcResult === null) {
+        // If RPC returned null (e.g. constraints/network), fallback to direct increment or debounced sync
+        incrementProductUpvotesDirect(product.id, delta).catch(() => {
+          debouncedSyncProducts(reRankedProducts);
         });
-        const reRanked = [...updated].sort(compareProductsByRank).map((p, idx) => ({
-          ...p,
-          previousRank: p.rank !== (idx + 1) ? (p.rank ?? (idx + 1)) : p.previousRank,
-          rank: idx + 1,
-        }));
-        debouncedSyncProducts(reRanked);
-        return reRanked;
-      });
-    } else {
-      // Not logged in: simple local increment with dynamic re-ranking
-      setProducts((prev) => {
-        const updated = prev.map((p) => {
-          if (p.id === product.id) {
-            return { ...p, upvotes: (p.upvotes ?? 0) + 1, updatedAt: Date.now() };
+      } else if (rpcResult !== willBeUpvoted) {
+        // Reconcile state if remote RPC returned opposite
+        setUserUpvotes((prev) => {
+          const synced = new Set(prev);
+          if (rpcResult) {
+            synced.add(product.id);
+            synced.add(altId);
+          } else {
+            synced.delete(product.id);
+            synced.delete(altId);
           }
-          return p;
+          return synced;
         });
-        const reRanked = [...updated].sort(compareProductsByRank).map((p, idx) => ({
-          ...p,
-          previousRank: p.rank !== (idx + 1) ? (p.rank ?? (idx + 1)) : p.previousRank,
-          rank: idx + 1,
-        }));
-        debouncedSyncProducts(reRanked);
-        return reRanked;
-      });
-    }
+      }
+    }).catch(() => {
+      debouncedSyncProducts(reRankedProducts);
+    });
   };
 
   // Handle User Submission — queued under review for admin approval
@@ -1550,7 +1585,12 @@ export default function App() {
 
   // 1.5 PRODUCT DETAIL ROUTE (/product/:id)
   if (currentRoute === 'product') {
-    let rawProduct = (productRouteId ? products.find((p) => p.id === productRouteId || p.url.toLowerCase().replace(/\/$/, '') === productRouteId.toLowerCase().replace(/\/$/, '')) : null) || null;
+    let rawProduct = (productRouteId ? products.find((p) =>
+      p.id === productRouteId ||
+      p.id === `prod-${productRouteId}` ||
+      `prod-${p.id}` === productRouteId ||
+      p.url.toLowerCase().replace(/\/$/, '') === productRouteId.toLowerCase().replace(/\/$/, '')
+    ) : null) || null;
 
     // Check if matching submission exists in state or local storage to enrich fields
     let matchingSub: WebsiteSubmission | undefined;
@@ -1688,7 +1728,7 @@ export default function App() {
           onShare={(p) => setShareProduct(p)}
           onTrackClick={handleTrackClick}
           onUpvote={handleUpvote}
-          isUpvoted={userUpvotes.has(product.id)}
+          isUpvoted={isProductUpvoted(product.id, userUpvotes)}
         />
         <RichFooter
           totalProducts={products.length}
@@ -2074,7 +2114,7 @@ export default function App() {
                     commentCount={commentCounts[p.id] ?? 0}
                     onOpen={handleOpenProduct}
                     onUpvote={handleUpvote}
-                    upvoted={userUpvotes.has(p.id)}
+                    upvoted={isProductUpvoted(p.id, userUpvotes)}
                   />
                 );
               })}

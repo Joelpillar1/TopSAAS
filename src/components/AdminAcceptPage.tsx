@@ -597,10 +597,10 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                 </span>
 
                                 {sub.offerDiscount && (
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 border border-amber-500/40 px-2 py-0.5 text-[10px] font-bold text-amber-300">
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-mint-500/15 border border-mint-500/40 px-2 py-0.5 text-[10px] font-bold text-mint-300">
                                     <Tag className="h-3 w-3" />
                                     <span>Offer: {sub.offerDiscount}</span>
-                                    {sub.offerCode && <span className="font-mono text-amber-200">({sub.offerCode})</span>}
+                                    {sub.offerCode && <span className="font-mono text-mint-200">({sub.offerCode})</span>}
                                   </span>
                                 )}
                               </div>
@@ -1551,14 +1551,14 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
 
                 {/* 2. Special Promo Offer / Discount Deal */}
                 {(sub.offerDiscount || sub.offerCode || sub.offerUrl || sub.offerDetails) && (
-                  <div className="rounded-xl border border-amber-500/40 bg-amber-950/20 p-4 sm:p-5 space-y-3">
-                    <div className="flex items-center justify-between border-b border-amber-500/30 pb-2.5">
+                  <div className="rounded-xl border border-mint-500/40 bg-[#1a2a25] p-4 sm:p-5 space-y-3">
+                    <div className="flex items-center justify-between border-b border-mint-500/30 pb-2.5">
                       <div className="flex items-center gap-2">
-                        <Tag className="h-4 w-4 text-amber-400" />
-                        <h3 className="text-xs font-black uppercase tracking-wider text-amber-300">Exclusive TopSAAS Offer</h3>
+                        <Tag className="h-4 w-4 text-mint-400" />
+                        <h3 className="text-xs font-black uppercase tracking-wider text-mint-300">Exclusive TopSAAS Offer</h3>
                       </div>
                       {sub.offerDiscount && (
-                        <span className="rounded-full bg-amber-400 text-black px-2.5 py-0.5 text-xs font-black">
+                        <span className="rounded-full bg-mint-500 text-[#0b0f14] px-2.5 py-0.5 text-xs font-black">
                           {sub.offerDiscount}
                         </span>
                       )}
@@ -1571,7 +1571,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                           <button
                             type="button"
                             onClick={() => handleCopyOfferCode(sub.offerCode!)}
-                            className="w-full flex items-center justify-between gap-2 rounded-lg border-2 border-dashed border-amber-400/80 bg-[#1a1a1a] px-3 py-2 text-xs font-mono font-bold text-amber-300 hover:bg-amber-400/10 transition-all cursor-pointer"
+                            className="w-full flex items-center justify-between gap-2 rounded-lg border-2 border-dashed border-mint-400/80 bg-[#1a1a1a] px-3 py-2 text-xs font-mono font-bold text-mint-300 hover:bg-mint-400/10 transition-all cursor-pointer"
                           >
                             <span>{sub.offerCode}</span>
                             {copiedOfferCode ? (

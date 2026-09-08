@@ -309,7 +309,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                       ? 'bg-mint-500 border-mint-400 text-[#0b0f14]'
                       : 'bg-[#2a2a2a] border-neutral-700 text-neutral-200 hover:border-neutral-500 hover:text-white'
                   }`}
-                  title={isUpvoted ? 'Remove upvote' : 'Upvote product'}
+                  title={!isSignedIn ? 'Sign in to upvote' : (isUpvoted ? 'Remove upvote' : 'Upvote product')}
                 >
                   <ChevronUp className="h-4 w-4" />
                   <span className="font-mono-num font-black text-sm">{(product.upvotes ?? 0).toLocaleString()}</span>
