@@ -8,7 +8,6 @@ import {
   Crown, 
   Layers, 
   Sparkles, 
-  Globe, 
   ChevronRight, 
   ChevronLeft, 
   X, 
@@ -252,61 +251,51 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                   </div>
                 )}
 
-                {/* External URL & Social Links */}
-                <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 pt-1 text-xs">
-                  <a
-                    href={product.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => onTrackClick(product.id, product.url)}
-                    className="inline-flex items-center gap-1 font-bold text-mint-300 underline underline-offset-4 hover:text-mint-200 transition-colors"
-                  >
-                    <Globe className="h-3.5 w-3.5" />
-                    <span className="truncate max-w-[180px] sm:max-w-none">{product.url.replace(/^https?:\/\//, '')}</span>
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
-
-                  {product.twitterHandle && !product.socials?.some((s) => s.platform === 'x') && (
-                    <a
-                      href={`https://x.com/${product.twitterHandle.replace('@', '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 rounded-md border border-neutral-700 bg-[#343434] px-2 py-0.5 text-[11px] font-semibold text-neutral-300 hover:border-neutral-500 hover:text-white transition-colors"
-                    >
-                      <span>X {product.twitterHandle.startsWith('@') ? product.twitterHandle : `@${product.twitterHandle}`}</span>
-                    </a>
-                  )}
-
-                  {product.socials?.map((s, idx) => {
-                    const name = (() => {
-                      switch (s.platform) {
-                        case 'x': return 'X (Twitter)';
-                        case 'linkedin': return 'LinkedIn';
-                        case 'youtube': return 'YouTube';
-                        case 'reddit': return 'Reddit';
-                        case 'product_hunt': return 'Product Hunt';
-                        case 'github': return 'GitHub';
-                        case 'discord': return 'Discord';
-                        case 'app_store': return 'App Store';
-                        case 'play_store': return 'Google Play';
-                        case 'chrome_web_store': return 'Chrome Extension';
-                        default: return s.platform;
-                      }
-                    })();
-                    return (
+                {/* Social Links */}
+                {(product.twitterHandle || (product.socials && product.socials.length > 0)) && (
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 pt-1 text-xs">
+                    {product.twitterHandle && !product.socials?.some((s) => s.platform === 'x') && (
                       <a
-                        key={`${s.platform}-${idx}`}
-                        href={s.url}
+                        href={`https://x.com/${product.twitterHandle.replace('@', '')}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 rounded-md border border-neutral-700 bg-[#343434] px-2 py-0.5 text-[11px] font-semibold text-neutral-300 hover:border-neutral-500 hover:text-white transition-colors"
                       >
-                        <span>{name}</span>
-                        <ExternalLink className="h-2.5 w-2.5 opacity-60" />
+                        <span>X {product.twitterHandle.startsWith('@') ? product.twitterHandle : `@${product.twitterHandle}`}</span>
                       </a>
-                    );
-                  })}
-                </div>
+                    )}
+
+                    {product.socials?.map((s, idx) => {
+                      const name = (() => {
+                        switch (s.platform) {
+                          case 'x': return 'X (Twitter)';
+                          case 'linkedin': return 'LinkedIn';
+                          case 'youtube': return 'YouTube';
+                          case 'reddit': return 'Reddit';
+                          case 'product_hunt': return 'Product Hunt';
+                          case 'github': return 'GitHub';
+                          case 'discord': return 'Discord';
+                          case 'app_store': return 'App Store';
+                          case 'play_store': return 'Google Play';
+                          case 'chrome_web_store': return 'Chrome Extension';
+                          default: return s.platform;
+                        }
+                      })();
+                      return (
+                        <a
+                          key={`${s.platform}-${idx}`}
+                          href={s.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 rounded-md border border-neutral-700 bg-[#343434] px-2 py-0.5 text-[11px] font-semibold text-neutral-300 hover:border-neutral-500 hover:text-white transition-colors"
+                        >
+                          <span>{name}</span>
+                          <ExternalLink className="h-2.5 w-2.5 opacity-60" />
+                        </a>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
             {/* Action Buttons */}
@@ -315,7 +304,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                 <button
                   type="button"
                   onClick={() => onUpvote(product)}
-                  className={`inline-flex items-center gap-2 rounded-xl px-4 py-3 text-xs font-bold transition-all cursor-pointer active:scale-95 border min-h-[44px] sm:min-h-[38px] ${
+                  className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-3 text-xs font-bold transition-all cursor-pointer active:scale-95 border min-h-[44px] sm:min-h-[38px] ${
                     isUpvoted
                       ? 'bg-mint-500 border-mint-400 text-[#0b0f14]'
                       : 'bg-[#2a2a2a] border-neutral-700 text-neutral-200 hover:border-neutral-500 hover:text-white'
@@ -324,13 +313,11 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                 >
                   <ChevronUp className="h-4 w-4" />
                   <span className="font-mono-num font-black text-sm">{(product.upvotes ?? 0).toLocaleString()}</span>
-                  <span>{isUpvoted ? 'Upvoted' : 'Upvote'}</span>
                 </button>
               ) : (
                 <div className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-700 bg-[#2a2a2a] px-3.5 py-3 text-xs font-bold text-neutral-200 min-h-[44px] sm:min-h-[38px]">
                   <ChevronUp className="h-4 w-4 text-mint-400" />
-                  <span className="font-mono-num font-black">{(product.upvotes ?? 0).toLocaleString()}</span>
-                  <span className="text-neutral-400">Upvotes</span>
+                  <span className="font-mono-num font-black text-sm">{(product.upvotes ?? 0).toLocaleString()}</span>
                 </div>
               )}
 
@@ -340,12 +327,11 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                   const el = document.getElementById('product-discussion-section');
                   if (el) el.scrollIntoView({ behavior: 'smooth' });
                 }}
-                className="inline-flex items-center gap-2 rounded-xl border border-neutral-700 bg-[#2a2a2a] px-4 py-3 text-xs font-bold text-neutral-200 hover:border-neutral-500 hover:text-white transition-all cursor-pointer min-h-[44px] sm:min-h-[38px]"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-700 bg-[#2a2a2a] px-3.5 py-3 text-xs font-bold text-neutral-200 hover:border-neutral-500 hover:text-white transition-all cursor-pointer min-h-[44px] sm:min-h-[38px]"
                 title="Jump to discussion"
               >
                 <MessageCircle className="h-4 w-4 text-mint-400" />
                 <span className="font-mono-num font-black text-sm">{comments.length.toLocaleString()}</span>
-                <span>Comments</span>
               </button>
 
               <a
