@@ -186,8 +186,7 @@ export const RichFooter: React.FC<RichFooterProps> = ({
               <img
                 src="https://spacerrapps.com/badge/topsaas.svg?v=2&theme=dark"
                 alt="TopSAAS is featured on Spacerr"
-                width={192}
-                height={54}
+                className="h-8 w-auto"
               />
             </a>
             {/* Add more badges below */}
