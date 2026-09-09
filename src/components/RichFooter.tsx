@@ -172,6 +172,29 @@ export const RichFooter: React.FC<RichFooterProps> = ({
         <AiAgentsSection soundEnabled={soundEnabled} />
       </div>
 
+      {/* Featured Badges */}
+      <div className="border-t border-neutral-800">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 py-5">
+          <h4 className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-3 text-center">Featured On</h4>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <a
+              href="https://spacerrapps.com/apps/topsaas?utm_source=badge&utm_medium=referral&utm_campaign=featured"
+              target="_blank"
+              rel="noopener"
+              className="transition-opacity hover:opacity-80"
+            >
+              <img
+                src="https://spacerrapps.com/badge/topsaas.svg?v=2&theme=dark"
+                alt="TopSAAS is featured on Spacerr"
+                width={192}
+                height={54}
+              />
+            </a>
+            {/* Add more badges below */}
+          </div>
+        </div>
+      </div>
+
       {/* Bottom Bar */}
       <div className="border-t border-neutral-800">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
