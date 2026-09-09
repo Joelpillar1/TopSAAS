@@ -189,6 +189,18 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                 className="h-8 w-auto"
               />
             </a>
+            <a
+              href="https://launchit.fast"
+              target="_blank"
+              rel="noopener"
+              className="transition-opacity hover:opacity-80"
+            >
+              <img
+                src="https://launchit.fast/img/launching.svg"
+                alt="Featured on LaunchIt"
+                className="h-8 w-auto"
+              />
+            </a>
             {/* Add more badges below */}
           </div>
         </div>
