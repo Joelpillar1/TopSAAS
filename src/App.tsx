@@ -4,6 +4,7 @@ import { INITIAL_PRODUCTS } from './data/initialProducts';
 import { INITIAL_SUBMISSIONS } from './data/initialSubmissions';
 import { Category, Product, WebsiteSubmission, Comment, SubmitProductDetails } from './types';
 import { HeroClaimBanner } from './components/HeroClaimBanner';
+import { BorderBeam } from './components/BorderBeam';
 import { HomeHero } from './components/HomeHero';
 import { LeaderboardTable } from './components/LeaderboardTable';
 import { ProductCard } from './components/ProductCard';
@@ -26,7 +27,7 @@ import { supabase } from './utils/supabase';
 import { loadProducts, enrichProductsFromSubmissions, saveAllProducts, saveProductRanksDirect, debouncedSyncProducts, toggleUpvote, getUserUpvotes, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, insertProductDirect, fetchComments, addComment, getCachedCommentsSync, submissionToProduct, isProductUpvoted, getGuestUpvotes, saveGuestUpvotes, incrementProductUpvotesDirect } from './utils/db';
 import { getRecentWeeks, isInWeek } from './utils/weeks';
 import { getWebsiteFavicon } from './utils/logo';
-import { LayoutGrid, Table as TableIcon, Trophy, X, Plus, ShieldCheck, Loader2, Star, MessageCircle, Flame } from 'lucide-react';
+import { LayoutGrid, List, Table as TableIcon, Trophy, X, Plus, ShieldCheck, Loader2, Star, MessageCircle, Flame } from 'lucide-react';
 import { FeaturedSpotModal } from './components/FeaturedSpotModal';
 import { ProductPage } from './components/ProductPage';
 import { BadgeRoute } from './components/BadgeRoute';
@@ -411,7 +412,7 @@ export default function App() {
   const [viewLayout, setViewLayout] = useState<'cards' | 'table'>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.VIEW_LAYOUT);
-      if (saved === 'cards') return saved;
+      if (saved === 'cards' || saved === 'table') return saved;
     } catch {}
     return 'cards';
   });
@@ -2050,8 +2051,8 @@ export default function App() {
             })}
           </div>
 
-          {/* Steals Only dedicated toggle on the right edge */}
-          <div className="shrink-0 flex items-center pl-1">
+          {/* Controls on the right edge: Steals Only + Card/List view switcher */}
+          <div className="shrink-0 flex items-center gap-2 pl-1">
             <button
               type="button"
               role="switch"
@@ -2116,6 +2117,42 @@ export default function App() {
                 />
               </span>
             </button>
+
+            {/* View Layout Switcher (Card vs List) */}
+            <div className="flex items-center gap-1 bg-[#2a2a2a] p-1 rounded-full border border-neutral-800 shadow-2xs">
+              <button
+                type="button"
+                onClick={() => {
+                  playSound('click', soundEnabled);
+                  setViewLayout('cards');
+                }}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                  viewLayout === 'cards'
+                    ? 'bg-[#3a3a3a] text-white shadow-2xs'
+                    : 'text-neutral-400 hover:text-white'
+                }`}
+                title="Card View"
+              >
+                <LayoutGrid className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Card</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  playSound('click', soundEnabled);
+                  setViewLayout('table');
+                }}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                  viewLayout === 'table'
+                    ? 'bg-[#3a3a3a] text-white shadow-2xs'
+                    : 'text-neutral-400 hover:text-white'
+                }`}
+                title="List View"
+              >
+                <List className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">List</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -2236,6 +2273,50 @@ export default function App() {
                   </button>
                 </div>
               </>
+            )}
+          </div>
+        ) : viewLayout === 'table' ? (
+          <div className="space-y-4">
+            <LeaderboardTable
+              products={paginatedProducts}
+              soundEnabled={soundEnabled}
+              featuredProductId={featuredProductId}
+              onShareProduct={(p) => setShareProduct(p)}
+              onTrackClick={handleTrackClick}
+              onOpenDetail={handleOpenProduct}
+              onUpvote={handleUpvote}
+              upvotedIds={userUpvotes}
+              startIndex={startIndex}
+              commentCounts={commentCounts}
+              showSponsor={currentPage === 1 && !isEmptyFeatured}
+              sponsorProduct={explicitFeaturedProduct}
+              onOpenFeaturedSpotModal={() => {
+                if (!user) {
+                  setIsSignInModalOpen(true);
+                } else {
+                  setIsFeaturedSpotModalOpen(true);
+                }
+              }}
+            />
+
+            {/* Homepage Pagination */}
+            {totalPages > 1 && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={filteredProducts.length}
+                pageSize={pageSize}
+                onPageChange={(page) => {
+                  setCurrentPage(page);
+                  const tableSection = document.getElementById('leaderboard-section');
+                  if (tableSection) {
+                    tableSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  } else {
+                    window.scrollTo({ top: 380, behavior: 'smooth' });
+                  }
+                }}
+                soundEnabled={soundEnabled}
+              />
             )}
           </div>
         ) : (

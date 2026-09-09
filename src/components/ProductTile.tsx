@@ -1,5 +1,6 @@
 import React from 'react';
-import { ShieldCheck, ChevronUp, MessageCircle } from 'lucide-react';
+import { ChevronUp, MessageCircle } from 'lucide-react';
+import { VerifiedBadge } from './VerifiedBadge';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
@@ -75,7 +76,7 @@ export const ProductTile: React.FC<ProductTileProps> = ({
       {/* Title */}
       <h3 className="mt-4 flex items-center gap-1.5 text-[15px] font-bold tracking-tight text-white group-hover:text-mint-300 transition-colors duration-200">
         <span className="truncate">{product.name}</span>
-        {verified && <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-mint-500" title="Verified listing" />}
+        {verified && <VerifiedBadge className="h-3.5 w-3.5 shrink-0" title="Verified Startup" />}
         {product.offerDiscount && (
           <span className="rounded bg-mint-500/15 border border-mint-500/40 px-1.5 py-px text-[9px] font-black text-mint-300 shrink-0">
             {product.offerDiscount}
