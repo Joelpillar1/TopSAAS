@@ -14,6 +14,7 @@ interface LegalPageProps {
   soundEnabled: boolean;
   onSelectCategory: (cat: Category) => void;
   onOpenHowItWorks: () => void;
+  onOpenPricing?: () => void;
 }
 
 export const LegalPage: React.FC<LegalPageProps> = ({
@@ -24,6 +25,7 @@ export const LegalPage: React.FC<LegalPageProps> = ({
   soundEnabled,
   onSelectCategory,
   onOpenHowItWorks,
+  onOpenPricing,
 }) => {
   const [activeDoc, setActiveDoc] = useState<LegalDocType>(initialDoc);
 
@@ -273,6 +275,7 @@ export const LegalPage: React.FC<LegalPageProps> = ({
         onSelectCategory={onSelectCategory}
         onOpenPrivacy={() => handleDocSwitch('privacy')}
         onOpenTerms={() => handleDocSwitch('terms')}
+        onOpenPricing={onOpenPricing}
       />
     </div>
   );

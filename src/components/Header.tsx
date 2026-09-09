@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Trophy, Plus, LayoutGrid, Sparkles, Menu, X, User as UserIcon } from 'lucide-react';
+import { Trophy, Plus, LayoutGrid, Sparkles, Menu, X, User as UserIcon, Zap } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 
-export type DirectoryTab = 'directory' | 'saas-ideas';
+export type DirectoryTab = 'directory' | 'saas-ideas' | 'pricing';
 
 interface HeaderProps {
   onGoHome?: () => void;
@@ -10,7 +10,7 @@ interface HeaderProps {
   onSignIn?: () => void;
   onGoToProfile?: () => void;
   user?: User | null;
-  /** Active top-nav section (Directory / SaaS Ideas) */
+  /** Active top-nav section (Directory / SaaS Ideas / Pricing) */
   activeTab?: DirectoryTab;
   onTabChange?: (tab: DirectoryTab) => void;
 }

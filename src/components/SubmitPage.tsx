@@ -323,7 +323,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
       setBadgeVerificationSuccess(null);
       setBadgeVerificationError(null);
     }
-    if ((key === 'name' || key === 'tagline' || key === 'url' || key === 'category' || key === 'badge') && value) {
+    if ((key === 'name' || key === 'tagline' || key === 'url' || key === 'category') && value) {
       setErrors((prev) => ({ ...prev, [key]: undefined }));
     }
   };
@@ -556,6 +556,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
     category: (form.categories[0] || form.category || 'Developer Tools') as Category,
     rank: 1,
     upvotes: 1,
+    clicks: 0,
     createdAt: Date.now(),
     updatedAt: Date.now(),
   };

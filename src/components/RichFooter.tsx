@@ -1,3 +1,4 @@
+import React from 'react';
 import {
   ShieldCheck,
   Sparkles,
@@ -5,6 +6,7 @@ import {
   Globe,
   FileText,
   LayoutGrid,
+  Zap,
 } from 'lucide-react';
 import { Category } from '../types';
 import { playSound } from '../utils/sound';
@@ -18,6 +20,8 @@ interface RichFooterProps {
   onSelectCategory: (cat: Category) => void;
   onOpenPrivacy?: () => void;
   onOpenTerms?: () => void;
+  onOpenPricing?: () => void;
+  className?: string;
 }
 
 export const RichFooter: React.FC<RichFooterProps> = ({
@@ -28,6 +32,8 @@ export const RichFooter: React.FC<RichFooterProps> = ({
   onSelectCategory,
   onOpenPrivacy,
   onOpenTerms,
+  onOpenPricing,
+  className,
 }) => {
   const currentYear = new Date().getFullYear();
 
@@ -38,7 +44,7 @@ export const RichFooter: React.FC<RichFooterProps> = ({
   };
 
   return (
-    <footer className="mt-10 border-t border-neutral-800 bg-[#1c1c1c]">
+    <footer className={className || "mt-10 border-t border-neutral-800 bg-[#1c1c1c]"}>
       <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-12 pb-8">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-8 lg:gap-6">
           {/* Brand Column */}
@@ -187,6 +193,8 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                 src="https://spacerrapps.com/badge/topsaas.svg?v=2&theme=dark"
                 alt="TopSAAS is featured on Spacerr"
                 className="h-8 w-auto"
+                loading="lazy"
+                onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
               />
             </a>
             <a
@@ -199,6 +207,8 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                 src="https://launchit.fast/img/launching.svg"
                 alt="Featured on LaunchIt"
                 className="h-8 w-auto"
+                loading="lazy"
+                onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
               />
             </a>
             {/* Add more badges below */}

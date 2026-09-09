@@ -28,6 +28,7 @@ export const BadgeRoute: React.FC<BadgeRouteProps> = ({ productId, products, sub
     category: 'Developer Tools' as Product['category'],
     rank: 1,
     upvotes: 0,
+    clicks: 0,
     createdAt: Date.now(),
     updatedAt: Date.now(),
   };

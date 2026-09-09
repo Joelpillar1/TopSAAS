@@ -16,7 +16,7 @@ function getAudioContext(): AudioContext | null {
   return audioCtx;
 }
 
-export type SoundType = 'click' | 'bid' | 'outbid' | 'claim1' | 'hover' | 'upvote' | 'success';
+export type SoundType = 'click' | 'bid' | 'outbid' | 'claim1' | 'hover' | 'upvote' | 'success' | 'error';
 
 export function playSound(type: SoundType, enabled = true) {
   if (!enabled) return;
@@ -97,6 +97,18 @@ export function playSound(type: SoundType, enabled = true) {
       osc2.start(now + 0.08);
       osc1.stop(now + 0.28);
       osc2.stop(now + 0.28);
+    } else if (type === 'error') {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(180, now);
+      osc.frequency.exponentialRampToValueAtTime(110, now + 0.15);
+      gain.gain.setValueAtTime(0.08, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.15);
     }
   } catch {
     // Ignore audio context errors

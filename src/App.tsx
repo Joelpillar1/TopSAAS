@@ -20,11 +20,12 @@ import { PaymentSuccess } from './components/PaymentSuccess';
 import { SubmitPage } from './components/SubmitPage';
 import { SaaSIdeas } from './components/SaaSIdeas';
 import { LegalPage } from './components/LegalPage';
+import { PricingPage } from './components/PricingPage';
 import { LegalTab } from './components/LegalModal';
 import { playSound } from './utils/sound';
 import confetti from 'canvas-confetti';
 import { supabase } from './utils/supabase';
-import { loadProducts, enrichProductsFromSubmissions, saveAllProducts, saveProductRanksDirect, debouncedSyncProducts, toggleUpvote, getUserUpvotes, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, insertProductDirect, fetchComments, addComment, getCachedCommentsSync, submissionToProduct, isProductUpvoted, getGuestUpvotes, saveGuestUpvotes, incrementProductUpvotesDirect } from './utils/db';
+import { loadProducts, enrichProductsFromSubmissions, saveAllProducts, saveProductRanksDirect, debouncedSyncProducts, toggleUpvote, getUserUpvotes, getUpvoteCounts, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, insertProductDirect, fetchComments, addComment, getCachedCommentsSync, submissionToProduct, isProductUpvoted, getGuestUpvotes, saveGuestUpvotes, incrementProductUpvotesDirect } from './utils/db';
 import { getRecentWeeks, isInWeek } from './utils/weeks';
 import { getWebsiteFavicon } from './utils/logo';
 import { LayoutGrid, List, Table as TableIcon, Trophy, X, Plus, ShieldCheck, Loader2, Star, MessageCircle, Flame } from 'lucide-react';
@@ -206,6 +207,9 @@ export default function App() {
       if (path === '/ideas' || hash === '#ideas' || hash === '#/ideas') {
         return '/ideas';
       }
+      if (path === '/pricing' || hash === '#pricing' || hash === '#/pricing') {
+        return '/pricing';
+      }
       if (path === '/privacy' || hash === '#privacy' || hash === '#/privacy') {
         return '/privacy';
       }
@@ -262,6 +266,8 @@ export default function App() {
           // Enrich live products with approved submission metadata
           const approvedSubs = dbSubs.filter((s) => s.status === 'approved');
           if (approvedSubs.length > 0) {
+            // Real upvote counts so freshly converted submissions never show 0
+            const upvoteCounts = await getUpvoteCounts();
             setProducts((currProducts) => {
               const existingUrls = new Set(currProducts.map((p) => p.url.toLowerCase().replace(/\/$/, '')));
               const missingApprovedProds: Product[] = [];
@@ -313,9 +319,14 @@ export default function App() {
               }
 
               const next = [...updatedExisting, ...missingApprovedProds].map((p, idx) => ({ ...p, rank: idx + 1 }));
-              if (missingApprovedProds.length > 0 || JSON.stringify(next) !== JSON.stringify(currProducts)) {
-                debouncedSyncProducts(next);
-                return next;
+              // Apply real upvote counts from the upvotes table
+              const reconciled = next.map((p) => {
+                const real = upvoteCounts.get(p.id);
+                return real !== undefined ? { ...p, upvotes: real } : p;
+              });
+              if (missingApprovedProds.length > 0 || JSON.stringify(reconciled) !== JSON.stringify(currProducts)) {
+                debouncedSyncProducts(reconciled);
+                return reconciled;
               }
               return currProducts;
             });
@@ -405,8 +416,9 @@ export default function App() {
     return false; // OFF by default as requested
   });
 
-  // Active tab: derived from currentRoute so /ideas survives reload
-  const activeTab: 'directory' | 'saas-ideas' = currentRoute === '/ideas' ? 'saas-ideas' : 'directory';
+  // Active tab: derived from currentRoute so /ideas and /pricing survive reload
+  const activeTab: DirectoryTab =
+    currentRoute === '/ideas' ? 'saas-ideas' : currentRoute === '/pricing' ? 'pricing' : 'directory';
 
   // View layout
   const [viewLayout, setViewLayout] = useState<'cards' | 'table'>(() => {
@@ -668,6 +680,37 @@ export default function App() {
       if (productsLoadedRef.current) return;
       productsLoadedRef.current = true;
       const dbProducts = await loadProducts();
+      // Real upvote counts from the upvotes table (source of truth) — the stored
+      // products.upvotes count can lag or be wiped by stale client syncs.
+      const upvoteCounts = await getUpvoteCounts();
+
+      // Repair the products table whenever a stored count is lower than reality.
+      // Uses the security-definer increment RPC so even anonymous visitors can heal
+      // counts (direct UPDATEs are RLS-restricted to signed-in users).
+      const repairStoredUpvoteCounts = async (list: Product[]) => {
+        for (const p of list) {
+          const real = upvoteCounts.get(p.id);
+          const stored = p.upvotes ?? 0;
+          if (real === undefined || real <= stored) continue;
+          try {
+            const { error: rpcError } = await supabase.rpc('increment_product_upvotes', {
+              p_product_id: p.id,
+              p_delta: real - stored,
+            });
+            if (rpcError) {
+              await supabase.from('products').update({ upvotes: real, updated_at: Date.now() }).eq('id', p.id);
+            }
+          } catch {}
+        }
+      };
+
+      // The upvotes table is the authoritative record — display its count directly
+      const applyRealUpvoteCounts = (list: Product[]): Product[] =>
+        list.map((p) => {
+          const real = upvoteCounts.get(p.id);
+          return real !== undefined ? { ...p, upvotes: real } : p;
+        });
+
       if (dbProducts !== null && dbProducts.length > 0) {
         let cachedSubs: WebsiteSubmission[] = [];
         try {
@@ -721,10 +764,12 @@ export default function App() {
           };
         });
 
-        setProducts(normalized);
+        const normalizedWithCounts = applyRealUpvoteCounts(normalized);
+        repairStoredUpvoteCounts(normalized); // heal DB rows whose stored counts lag reality
+        setProducts(normalizedWithCounts);
         try {
-          localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(normalized));
-          localStorage.setItem('topsaas_products_cache_v2', JSON.stringify(normalized));
+          localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(normalizedWithCounts));
+          localStorage.setItem('topsaas_products_cache_v2', JSON.stringify(normalizedWithCounts));
         } catch {}
       } else if (dbProducts !== null) {
         // Supabase is reachable but returned zero products — clear stale localStorage
@@ -742,7 +787,7 @@ export default function App() {
       if (dbProducts && dbProducts.length > 0) {
         const enriched = await enrichProductsFromSubmissions(dbProducts.sort((a, b) => (a.rank ?? 9999) - (b.rank ?? 9999)));
         if (enriched && enriched.length > 0) {
-          const finalEnriched = enriched.map((p, idx) => ({ ...p, rank: idx + 1 }));
+          const finalEnriched = applyRealUpvoteCounts(enriched.map((p, idx) => ({ ...p, rank: idx + 1 })));
           setProducts(finalEnriched);
           try {
             localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(finalEnriched));
@@ -1561,15 +1606,25 @@ export default function App() {
   // Global top navigation — rendered above every route
   const handleTabChange = (tab: DirectoryTab) => {
     playSound('click', soundEnabled);
-    const nextRoute = tab === 'saas-ideas' ? '/ideas' : '/';
+    const nextRoute = tab === 'saas-ideas' ? '/ideas' : tab === 'pricing' ? '/pricing' : '/';
     setCurrentRoute(nextRoute);
     try {
-      window.history.pushState({}, tab === 'saas-ideas' ? 'SaaS Ideas' : 'Directory', nextRoute);
+      window.history.pushState({}, tab === 'saas-ideas' ? 'SaaS Ideas' : tab === 'pricing' ? 'Pricing' : 'Directory', nextRoute);
     } catch {}
     if (tab === 'directory') {
       setSelectedCategory('All');
     }
     setCurrentPage(1);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleOpenPricing = () => {
+    handleTabChange('pricing');
+  };
+
+  const handleNavigateLegal = (doc: 'privacy' | 'terms') => {
+    setCurrentRoute(`/${doc}`);
+    try { window.history.pushState('', document.title, `/${doc}`); } catch {}
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -1598,6 +1653,33 @@ export default function App() {
         }}
       />
       </>
+    );
+  }
+
+  // 0.2 PRICING PAGE ROUTE (/pricing)
+  if (currentRoute === '/pricing') {
+    return (
+      <div className="min-h-screen bg-[#222222] text-neutral-100 flex flex-col justify-between selection:bg-mint-500 selection:text-[#0b0f14] font-sans">
+        {globalHeader}
+        <PricingPage
+          onOpenSubmit={(plan) => {
+            handleOpenSubmit();
+          }}
+          onGoHome={handleBackToLeaderboard}
+          soundEnabled={soundEnabled}
+        />
+        <RichFooter
+          totalProducts={products.length}
+          soundEnabled={soundEnabled}
+          onOpenSubmit={handleOpenSubmit}
+          onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
+          onSelectCategory={setSelectedCategory}
+          onOpenPrivacy={() => handleNavigateLegal('privacy')}
+          onOpenTerms={() => handleNavigateLegal('terms')}
+          onOpenPricing={handleOpenPricing}
+          className="border-t border-neutral-800 bg-[#1c1c1c]"
+        />
+      </div>
     );
   }
 
@@ -1951,6 +2033,7 @@ export default function App() {
           soundEnabled={soundEnabled}
           onSelectCategory={setSelectedCategory}
           onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
+          onOpenPricing={handleOpenPricing}
         />
       </>
     );
@@ -2596,6 +2679,7 @@ export default function App() {
           try { window.history.pushState('', document.title, '/terms'); } catch {}
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
+        onOpenPricing={handleOpenPricing}
       />
 
       <SignInModal

@@ -468,15 +468,18 @@ export async function enrichProductsFromSubmissions(products: Product[]): Promis
 export async function saveProductRanksDirect(products: Product[]): Promise<void> {
   if (products.length === 0) return;
   try {
+    // Keep the real DB upvote counts — never write stale client zeros over them
+    const rankRows = products.map((p) => ({ id: p.id, upvotes: p.upvotes ?? 0 }));
+    await preserveExistingCounters(rankRows);
     // Use individual UPDATEs so we never overwrite rich columns (problem, solution, offers, etc.)
     await Promise.all(
-      products.map((p) =>
+      products.map((p, i) =>
         supabase
           .from('products')
           .update({
             rank: p.rank,
             previous_rank: p.previousRank || p.rank,
-            upvotes: p.upvotes ?? 0,
+            upvotes: rankRows[i].upvotes,
             updated_at: Date.now()
           })
           .eq('id', p.id)
@@ -492,6 +495,8 @@ export async function saveAllProducts(products: Product[]): Promise<void> {
   if (products.length === 0) return;
   try {
     const rows = await Promise.all(products.map((p) => prepareDbProductRow(p)));
+    // Preserve existing engagement counters so stale client state can't wipe them
+    await preserveExistingCounters(rows);
     const { error } = await supabase.from('products').upsert(rows, { onConflict: 'id' });
     if (error) {
       await saveProductRanksDirect(products);
@@ -506,6 +511,8 @@ export async function saveAllProducts(products: Product[]): Promise<void> {
 export async function insertProductDirect(p: Product): Promise<boolean> {
   try {
     const row = await prepareDbProductRow(p);
+    // Never clobber existing engagement counters (upvotes, clicks, bids, dino score)
+    await preserveExistingCounters([row]);
     const { error } = await supabase.from('products').upsert(row, { onConflict: 'id' });
     if (!error) return true;
 
@@ -548,6 +555,7 @@ export async function insertProductDirect(p: Product): Promise<boolean> {
       minimal.submitted_by = p.submittedBy;
     }
 
+    await preserveExistingCounters([minimal]);
     const { error: fallbackError } = await supabase.from('products').upsert(minimal, { onConflict: 'id' });
     return !fallbackError;
   } catch (err) {
@@ -634,6 +642,57 @@ export function isProductUpvoted(productId?: string | null, upvotedSet?: Set<str
   if (productId.startsWith('prod-') && upvotedSet.has(productId.replace(/^prod-/, ''))) return true;
   if (!productId.startsWith('prod-') && upvotedSet.has(`prod-${productId}`)) return true;
   return false;
+}
+
+/**
+ * Real upvote counts per product, derived from the `upvotes` table (the source
+ * of truth for who actually upvoted). Keys are indexed under both 'prod-'
+ * prefixed and raw id forms so lookups never miss due to prefix variations.
+ */
+export async function getUpvoteCounts(): Promise<Map<string, number>> {
+  const counts = new Map<string, number>();
+  try {
+    const { data, error } = await supabase.from('upvotes').select('product_id');
+    if (error || !data) return counts;
+    for (const row of data) {
+      const pid = (row as { product_id?: string }).product_id;
+      if (!pid) continue;
+      const n = (counts.get(pid) ?? 0) + 1;
+      counts.set(pid, n);
+      const alt = pid.startsWith('prod-') ? pid.replace(/^prod-/, '') : `prod-${pid}`;
+      counts.set(alt, n);
+    }
+  } catch {}
+  return counts;
+}
+
+/**
+ * Preserve existing DB counters (upvotes, clicks, dino_score, total_bid) when
+ * upserting product rows, so stale client state can never wipe real engagement
+ * data. Uses max() because these counters only ever grow in the DB via their
+ * RPC paths — decrements (un-upvotes) are applied directly by toggle_upvote.
+ */
+async function preserveExistingCounters(rows: Record<string, unknown>[]): Promise<void> {
+  if (rows.length === 0) return;
+  const ids = rows.map((r) => r.id as string).filter(Boolean);
+  if (ids.length === 0) return;
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select('id, upvotes, clicks, dino_score, total_bid')
+      .in('id', ids);
+    if (error || !data) return;
+    const existing = new Map<string, Record<string, unknown>>();
+    for (const r of data) existing.set(r.id as string, r);
+    for (const row of rows) {
+      const cur = existing.get(row.id as string);
+      if (!cur) continue;
+      row.upvotes = Math.max((cur.upvotes as number) ?? 0, (row.upvotes as number) ?? 0);
+      row.clicks = Math.max((cur.clicks as number) ?? 0, (row.clicks as number) ?? 0);
+      row.dino_score = Math.max((cur.dino_score as number) ?? 0, (row.dino_score as number) ?? 0);
+      row.total_bid = Math.max((cur.total_bid as number) ?? 0, (row.total_bid as number) ?? 0);
+    }
+  } catch {}
 }
 
 const GUEST_UPVOTES_KEY = 'topsaas_guest_upvotes';

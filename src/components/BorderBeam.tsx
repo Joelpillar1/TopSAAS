@@ -496,7 +496,7 @@ export const BorderBeam = forwardRef<HTMLDivElement, BorderBeamProps>(function B
     [onActivate, onDeactivate, onAnimationEnd]
   );
 
-  const resolvedTheme: 'light' | 'dark' = theme === 'auto' ? 'dark' : theme;
+  const resolvedTheme: 'light' | 'dark' = theme === 'light' ? 'light' : 'dark';
   const themePreset = sizeThemePresets[size][resolvedTheme];
   const sizePreset = sizePresets[size];
 
@@ -516,7 +516,7 @@ export const BorderBeam = forwardRef<HTMLDivElement, BorderBeamProps>(function B
         innerOpacity: themePreset.innerOpacity,
         bloomOpacity: themePreset.bloomOpacity,
         innerShadow: themePreset.innerShadow,
-        colorVariant,
+        colorVariant: (colorVariant as BeamColorVariant) || 'colorful',
         staticColors,
         brightness: effBrightness,
         saturation: effSaturation,
@@ -552,8 +552,7 @@ export const BorderBeam = forwardRef<HTMLDivElement, BorderBeamProps>(function B
 
   const computedStyle: CSSProperties = {
     ...style,
-    // @ts-expect-error custom css variable
-    '--beam-strength': Math.max(0, Math.min(1, strength)),
+    ['--beam-strength' as string]: Math.max(0, Math.min(1, strength)),
   };
 
   return (

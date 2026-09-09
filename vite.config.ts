@@ -26,6 +26,7 @@ function badgeServerPlugin(): Plugin {
               category: 'Developer Tools' as const,
               rank: 1,
               upvotes: 3,
+              clicks: 0,
               createdAt: Date.now(),
               updatedAt: Date.now(),
             };
