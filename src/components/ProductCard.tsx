@@ -1,5 +1,6 @@
 import React from 'react';
-import { ShieldCheck, ChevronUp, MessageCircle } from 'lucide-react';
+import { ChevronUp, MessageCircle } from 'lucide-react';
+import { VerifiedBadge } from './VerifiedBadge';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
@@ -73,7 +74,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               {product.name}
             </span>
             {showVerified && product.verified && (
-              <ShieldCheck className="h-3.5 w-3.5 text-mint-500 shrink-0" title="Verified listing" />
+              <VerifiedBadge className="h-3.5 w-3.5 shrink-0" title="Verified Startup" />
             )}
             {product.offerDiscount && (
               <span className="rounded bg-mint-500/15 border border-mint-500/40 px-1.5 py-px text-[9px] font-black text-mint-300 shrink-0">

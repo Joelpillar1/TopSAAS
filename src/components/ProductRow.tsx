@@ -1,5 +1,6 @@
 import React from 'react';
-import { ArrowUpRight, ShieldCheck, ChevronUp, Crown, MessageCircle } from 'lucide-react';
+import { ArrowUpRight, ChevronUp, Crown, MessageCircle } from 'lucide-react';
+import { VerifiedBadge } from './VerifiedBadge';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
@@ -102,7 +103,7 @@ export const ProductRow: React.FC<ProductRowProps> = ({
             {product.name}
           </h3>
           {showVerified && product.verified && (
-            <ShieldCheck className="h-4 w-4 shrink-0 text-mint-600" title="Verified listing" />
+            <VerifiedBadge className="h-4 w-4 shrink-0" title="Verified Startup" />
           )}
         </div>
         <p className="mt-0.5 line-clamp-2 text-xs font-medium leading-relaxed text-neutral-500 sm:text-[13px] sm:max-w-2xl">

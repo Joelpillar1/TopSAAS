@@ -1266,6 +1266,33 @@ export default function App() {
     }
   };
 
+  // Toggle verified badge status for any website / product
+  const handleToggleVerifiedProduct = async (productId: string, verified: boolean) => {
+    playSound('click', soundEnabled);
+    setProducts((prev) => {
+      const updated = prev.map((p) => (p.id === productId ? { ...p, verified } : p));
+      try {
+        localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(updated));
+        localStorage.setItem('topsaas_products_cache_v2', JSON.stringify(updated));
+      } catch {}
+      debouncedSyncProducts(updated);
+      saveAllProducts(updated).catch(() => {});
+      return updated;
+    });
+
+    try {
+      const { error } = await supabase
+        .from('products')
+        .update({ verified })
+        .eq('id', productId);
+      if (error) {
+        console.error('Error updating product verified status in DB:', error.message);
+      }
+    } catch (err) {
+      console.error('Error toggling product verified status:', err);
+    }
+  };
+
   // Manually assign a product to a specific rank (1-based) and immediately persist
   const handleAssignRank = (productId: string, newRank: number) => {
     setProducts((prev) => {
@@ -1898,6 +1925,7 @@ export default function App() {
           featuredProductId={featuredProductId}
           onSetFeatured={handleSetFeatured}
           onSaveProductsOrder={handleSaveProductsOrder}
+          onToggleVerified={handleToggleVerifiedProduct}
         />
 
         <SignInModal
@@ -2345,7 +2373,7 @@ export default function App() {
                     product={{ ...p, rank: calculatedRank }}
                     rank={calculatedRank}
                     soundEnabled={soundEnabled}
-                    verified={p.verified && (calculatedRank <= 5 || p.id === featuredProductId)}
+                    verified={Boolean(p.verified)}
                     commentCount={commentCounts[p.id] ?? 0}
                     onOpen={handleOpenProduct}
                     onUpvote={handleUpvote}

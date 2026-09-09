@@ -1,5 +1,6 @@
 import React from 'react';
-import { X, Crown, ExternalLink, ShieldCheck, Share2, Trophy, ChevronUp } from 'lucide-react';
+import { X, Crown, ExternalLink, Share2, Trophy, ChevronUp } from 'lucide-react';
+import { VerifiedBadge } from './VerifiedBadge';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
@@ -67,7 +68,7 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
                   {product.name}
                 </h3>
                 {product.verified && (
-                  <ShieldCheck className="h-4 w-4 text-black shrink-0" title="Verified" />
+                  <VerifiedBadge className="h-4 w-4 shrink-0" title="Verified Startup" />
                 )}
               </div>
               <div className="flex items-center gap-2 mt-0.5">

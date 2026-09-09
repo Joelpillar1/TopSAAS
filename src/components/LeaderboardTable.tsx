@@ -170,8 +170,8 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                           <span className="font-bold text-white group-hover:text-mint-300 transition-colors text-sm truncate">
                             {product.name}
                           </span>
-                          {product.verified && (rank <= 5 || product.id === featuredProductId) && (
-                            <ShieldCheck className="h-3.5 w-3.5 text-mint-500 shrink-0" title="Verified listing" />
+                          {product.verified && (
+                            <VerifiedBadge className="h-3.5 w-3.5" title="Verified Startup" />
                           )}
                           {product.offerDiscount && (
                             <span className="rounded bg-mint-500/15 border border-mint-500/40 px-1.5 py-px text-[9px] font-black text-mint-300 shrink-0">

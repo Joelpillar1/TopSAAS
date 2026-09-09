@@ -1,5 +1,6 @@
 import React from 'react';
-import { ShieldCheck, ExternalLink } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
+import { VerifiedBadge } from './VerifiedBadge';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
@@ -51,7 +52,7 @@ export const HeroClaimBanner: React.FC<HeroClaimBannerProps> = ({
               {topProduct.name}
             </span>
             {topProduct.verified && (
-              <ShieldCheck className="h-3.5 w-3.5 text-mint-500 shrink-0" title="Verified Website" />
+              <VerifiedBadge className="h-3.5 w-3.5 shrink-0" title="Verified Startup" />
             )}
             <span className="text-[11px] text-neutral-500 hidden sm:inline truncate max-w-md">
               — {topProduct.tagline}

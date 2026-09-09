@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { 
-  ArrowLeft, ArrowUpDown, Check, X, Clock, ExternalLink, ShieldCheck, Search, Trash2, Eye, RotateCcw, Globe, Twitter, User, Calendar, CheckCircle2, XCircle, AlertCircle, Edit3, Plus, Trophy, Crown, ChevronUp, ChevronDown, Star, LayoutList, Mail, Flame, Tag, Play, Video, Copy, Image as ImageIcon, MessageSquareQuote, Target, Layers, Info, Sparkles
+  ArrowLeft, ArrowUpDown, Check, X, Clock, ExternalLink, ShieldCheck, Search, Trash2, Eye, RotateCcw, Globe, Twitter, User, Calendar, CheckCircle2, XCircle, AlertCircle, Edit3, Plus, Trophy, Crown, ChevronUp, ChevronDown, Star, LayoutList, Mail, Flame, Tag, Play, Video, Copy, Image as ImageIcon, MessageSquareQuote, Target, Layers, Info, Sparkles, BadgeCheck
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { WebsiteSubmission, Category, Product } from '../types';
@@ -9,6 +9,7 @@ import { getWebsiteFavicon } from '../utils/logo';
 import { FeaturedProductSelector } from './FeaturedProductSelector';
 import { ProductLogo } from './ProductLogo';
 import { RankMedal } from './RankMedal';
+import { VerifiedBadge } from './VerifiedBadge';
 
 function getVideoEmbedUrl(url?: string): { type: 'iframe' | 'video' | 'link'; embedUrl: string } | null {
   if (!url) return null;
@@ -61,6 +62,7 @@ interface AdminAcceptPageProps {
   onToggleSound: () => void;
   featuredProductId: string | null;
   onSetFeatured: (productId: string | null) => void;
+  onToggleVerified?: (productId: string, verified: boolean) => void;
 }
 
 export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
@@ -80,6 +82,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
   soundEnabled,
   featuredProductId,
   onSetFeatured,
+  onToggleVerified,
 }) => {
   // Counts
   const pendingCount = submissions.filter((s) => (s.status || 'under_review') === 'under_review').length;
@@ -104,6 +107,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
   // Products management state
   const [productSearchQuery, setProductSearchQuery] = useState('');
   const [productCategoryFilter, setProductCategoryFilter] = useState<string>('All');
+  const [productVerifiedFilter, setProductVerifiedFilter] = useState<'all' | 'verified' | 'unverified'>('all');
   
   // Edit modal state
   const [editingSubmission, setEditingSubmission] = useState<WebsiteSubmission | null>(null);
@@ -157,6 +161,8 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
   // Filtered products
   const filteredProducts = sortedProducts.filter((p) => {
     if (productCategoryFilter !== 'All' && p.category !== productCategoryFilter) return false;
+    if (productVerifiedFilter === 'verified' && !p.verified) return false;
+    if (productVerifiedFilter === 'unverified' && p.verified) return false;
     if (productSearchQuery.trim()) {
       const q = productSearchQuery.toLowerCase();
       const matchName = p.name.toLowerCase().includes(q);
@@ -753,7 +759,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
         {activeView === 'products' && (
           <>
             {/* Products Metrics */}
-            <div className="grid grid-cols-3 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
               <div className="rounded-xl border border-neutral-800 bg-[#2a2a2a] p-4 shadow-2xs">
                 <div className="flex items-center justify-between text-xs font-bold text-amber-400 mb-1">
                   <span>Top 3</span>
@@ -763,12 +769,22 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                 <p className="text-[11px] text-neutral-400 mt-1">Top 3 ranking products</p>
               </div>
               <div className="rounded-xl border border-neutral-800 bg-[#2a2a2a] p-4 shadow-2xs">
-                <div className="flex items-center justify-between text-xs font-bold text-emerald-700 mb-1">
+                <div className="flex items-center justify-between text-xs font-bold text-emerald-500 mb-1">
                   <span>Live Products</span>
                   <CheckCircle2 className="h-4 w-4" />
                 </div>
                 <div className="text-2xl sm:text-3xl font-black text-white">{products.length}</div>
                 <p className="text-[11px] text-neutral-400 mt-1">In the directory</p>
+              </div>
+              <div className="rounded-xl border border-neutral-800 bg-[#2a2a2a] p-4 shadow-2xs">
+                <div className="flex items-center justify-between text-xs font-bold text-mint-400 mb-1">
+                  <span>Verified Startups</span>
+                  <VerifiedBadge className="h-4 w-4" />
+                </div>
+                <div className="text-2xl sm:text-3xl font-black text-mint-300">
+                  {products.filter((p) => p.verified).length}
+                </div>
+                <p className="text-[11px] text-neutral-400 mt-1">Verified with badge</p>
               </div>
               <div className="rounded-xl border border-neutral-800 bg-[#2a2a2a] p-4 shadow-2xs">
                 <div className="flex items-center justify-between text-xs font-bold text-neutral-400 mb-1">
@@ -790,23 +806,65 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
             />
 
             {/* Products Search & Filter */}
-            <div className="rounded-xl border border-neutral-800 bg-[#2a2a2a] p-3.5 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-              <div className="relative w-full sm:w-80">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400" />
-                <input
-                  type="text"
-                  value={productSearchQuery}
-                  onChange={(e) => setProductSearchQuery(e.target.value)}
-                  placeholder="Search live products by name, category, or URL..."
-                  className="w-full rounded-lg border border-neutral-700 bg-[#343434] pl-8.5 pr-3 py-1.5 text-xs text-neutral-100 placeholder-neutral-500 focus:border-mint-500/70 focus:bg-[#343434] focus:outline-none focus:ring-1 focus:ring-mint-500/30"
-                />
-                {productSearchQuery && (
-                  <button type="button" onClick={() => setProductSearchQuery('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white">
-                    <X className="h-3 w-3" />
+            <div className="rounded-xl border border-neutral-800 bg-[#2a2a2a] p-3.5 sm:p-4 flex flex-col gap-3">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="relative w-full sm:w-80">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400" />
+                  <input
+                    type="text"
+                    value={productSearchQuery}
+                    onChange={(e) => setProductSearchQuery(e.target.value)}
+                    placeholder="Search live products by name, category, or URL..."
+                    className="w-full rounded-lg border border-neutral-700 bg-[#343434] pl-8.5 pr-3 py-1.5 text-xs text-neutral-100 placeholder-neutral-500 focus:border-mint-500/70 focus:bg-[#343434] focus:outline-none focus:ring-1 focus:ring-mint-500/30"
+                  />
+                  {productSearchQuery && (
+                    <button type="button" onClick={() => setProductSearchQuery('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white">
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Verified Filter Toggles */}
+                <div className="flex items-center gap-1 w-full sm:w-auto shrink-0 rounded-lg bg-neutral-800 p-1 border border-neutral-700/60 overflow-x-auto">
+                  <button
+                    type="button"
+                    onClick={() => setProductVerifiedFilter('all')}
+                    className={`rounded-md px-2.5 py-1 text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                      productVerifiedFilter === 'all'
+                        ? 'bg-[#343434] text-white shadow-xs'
+                        : 'text-neutral-400 hover:text-white'
+                    }`}
+                  >
+                    All ({products.length})
                   </button>
-                )}
+                  <button
+                    type="button"
+                    onClick={() => setProductVerifiedFilter('verified')}
+                    className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                      productVerifiedFilter === 'verified'
+                        ? 'bg-mint-500 text-[#0b0f14] shadow-xs'
+                        : 'text-neutral-400 hover:text-white'
+                    }`}
+                  >
+                    <VerifiedBadge className="h-3 w-3" />
+                    <span>Verified ({products.filter((p) => p.verified).length})</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setProductVerifiedFilter('unverified')}
+                    className={`rounded-md px-2.5 py-1 text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                      productVerifiedFilter === 'unverified'
+                        ? 'bg-[#343434] text-white shadow-xs'
+                        : 'text-neutral-400 hover:text-white'
+                    }`}
+                  >
+                    Unverified ({products.filter((p) => !p.verified).length})
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
+
+              {/* Categories */}
+              <div className="flex items-center gap-1.5 w-full overflow-x-auto pb-1 sm:pb-0">
                 {(['All', 'AI Tools', 'Developer Tools', 'Productivity', 'Design & UI', 'SaaS & Indie', 'Crypto & Web3'] as const).map((cat) => (
                   <button
                     key={cat}
@@ -936,7 +994,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2">
                                 <h3 className="text-sm font-black text-white tracking-tight truncate">{product.name}</h3>
-                                {product.verified && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />}
+                                {product.verified && <VerifiedBadge className="h-4 w-4 shrink-0" title="Verified Startup" />}
                                 {isTopThree && (
                                   <span className="rounded-md bg-white/10 border border-white/30 px-1.5 py-0.5 text-[9px] font-bold text-white shrink-0">
                                     Top {product.rank}
@@ -960,8 +1018,32 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                             </div>
                           </div>
 
-                          {/* Delist Button */}
-                          <div className="flex items-center gap-1.5 shrink-0">
+                          {/* Actions */}
+                          <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+                            {onToggleVerified && (
+                              <button
+                                type="button"
+                                onClick={() => onToggleVerified(product.id, !product.verified)}
+                                className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition-all cursor-pointer ${
+                                  product.verified
+                                    ? 'border-mint-500/50 bg-mint-500/10 text-mint-300 hover:bg-mint-500/20 hover:border-mint-400 shadow-2xs'
+                                    : 'border-neutral-700 bg-[#343434] text-neutral-400 hover:border-mint-500/60 hover:text-white'
+                                }`}
+                                title={product.verified ? `"${product.name}" is verified — click to remove verification` : `Click to verify "${product.name}"`}
+                              >
+                                {product.verified ? (
+                                  <>
+                                    <VerifiedBadge className="h-3.5 w-3.5 shrink-0" />
+                                    <span>Verified</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <BadgeCheck className="h-3.5 w-3.5 text-neutral-500 shrink-0" />
+                                    <span>Verify</span>
+                                  </>
+                                )}
+                              </button>
+                            )}
                             <a
                               href={product.url}
                               target="_blank"
@@ -1409,6 +1491,30 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
 
                   {isApproved && (
                     <>
+                      {liveProduct && onToggleVerified && (
+                        <button
+                          type="button"
+                          onClick={() => onToggleVerified(liveProduct.id, !liveProduct.verified)}
+                          className={`inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-bold transition-all cursor-pointer ${
+                            liveProduct.verified
+                              ? 'border-mint-500/50 bg-mint-500/10 text-mint-300 hover:bg-mint-500/20 shadow-2xs'
+                              : 'border-neutral-700 bg-[#2a2a2a] text-neutral-300 hover:border-mint-500/50 hover:text-white'
+                          }`}
+                          title={liveProduct.verified ? 'Verified Startup — click to remove verification' : 'Click to mark as Verified Startup'}
+                        >
+                          {liveProduct.verified ? (
+                            <>
+                              <VerifiedBadge className="h-4 w-4 shrink-0" />
+                              <span>Verified Startup</span>
+                            </>
+                          ) : (
+                            <>
+                              <BadgeCheck className="h-4 w-4 text-neutral-400 shrink-0" />
+                              <span>Mark Verified</span>
+                            </>
+                          )}
+                        </button>
+                      )}
                       <a
                         href={`/product/${liveProduct?.id || sub.id}`}
                         target="_blank"

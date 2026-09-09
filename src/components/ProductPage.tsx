@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
+import { VerifiedBadge } from './VerifiedBadge';
 import { timeAgo } from './ProductRow';
 
 function getVideoEmbedUrl(url?: string): { type: 'iframe' | 'video' | 'link'; embedUrl: string } | null {
@@ -219,9 +220,9 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                     {product.name}
                   </h1>
                   {product.verified && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-mint-500/15 border border-mint-500/40 px-2 py-0.5 text-[10px] sm:text-[11px] font-bold text-mint-300">
-                      <CheckCircle2 className="h-3 w-3 fill-mint-500 text-[#0b0f14]" />
-                      <span>Verified</span>
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-mint-500/15 border border-mint-500/40 px-2 py-0.5 text-[10px] sm:text-[11px] font-bold text-mint-300">
+                      <VerifiedBadge className="h-3.5 w-3.5" title="Verified Startup" />
+                      <span>Verified Startup</span>
                     </span>
                   )}
                 </div>
