@@ -173,11 +173,21 @@ export const toDbProduct = (p: Product) => {
   };
 };
 
+/**
+ * Deterministic published-listing id: an approved submission always owns exactly
+ * one product row, `prod-<submissionId>`. Both sides deliberate this id so no
+ * URL matching or duplicate reconciliation is ever needed.
+ */
+export function publishedProductId(submissionId: string): string {
+  if (!submissionId) return `prod-${Date.now()}`;
+  return submissionId.startsWith('prod-') ? submissionId : `prod-${submissionId}`;
+}
+
 /** Convert a WebsiteSubmission to a live Product object */
 export function submissionToProduct(sub: WebsiteSubmission, rank: number = 1): Product {
   const domain = sub.url.replace(/^https?:\/\//i, '').split('/')[0];
   const favicon = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
-  const prodId = sub.id ? (sub.id.startsWith('prod-') ? sub.id : `prod-${sub.id}`) : `prod-${Date.now()}`;
+  const prodId = publishedProductId(sub.id);
 
   const whatItDoesList: string[] = [];
   if (sub.problemItSolves) whatItDoesList.push(`Problem: ${sub.problemItSolves}`);
@@ -246,158 +256,10 @@ export function submissionToProduct(sub: WebsiteSubmission, rank: number = 1): P
 }
 
 /**
- * Whether the remote `products` table has the `screenshots` column yet.
- * Probed once so the app keeps working until the 013 migration is applied.
+ * Products are written through the single `toDbProduct` mapper above. A submission
+ * is published exactly once, with every column present, so there is no schema
+ * probing or field-stripping to do before a write.
  */
-let screenshotsColumnAvailablePromise: Promise<boolean> | null = null;
-export function screenshotsColumnAvailable(): Promise<boolean> {
-  if (!screenshotsColumnAvailablePromise) {
-    screenshotsColumnAvailablePromise = (async () => {
-      try {
-        const { error } = await supabase.from('products').select('screenshots').limit(1);
-        return !error;
-      } catch {
-        return false;
-      }
-    })();
-  }
-  return screenshotsColumnAvailablePromise;
-}
-
-/** Whether the remote `products` table has the socials / creator columns yet (needs migration 014) */
-let socialsColumnsAvailablePromise: Promise<boolean> | null = null;
-export function socialsColumnsAvailable(): Promise<boolean> {
-  if (!socialsColumnsAvailablePromise) {
-    socialsColumnsAvailablePromise = (async () => {
-      try {
-        const { error } = await supabase
-          .from('products')
-          .select('socials,creator_name,creator_username,creator_x_handle')
-          .limit(1);
-        return !error;
-      } catch {
-        return false;
-      }
-    })();
-  }
-  return socialsColumnsAvailablePromise;
-}
-
-/** Whether the remote `products` table has the offer discount/code columns yet (needs migration 019) */
-let offersColumnsAvailablePromise: Promise<boolean> | null = null;
-export function offersColumnsAvailable(): Promise<boolean> {
-  if (!offersColumnsAvailablePromise) {
-    offersColumnsAvailablePromise = (async () => {
-      try {
-        const { error } = await supabase
-          .from('products')
-          .select('offer_code')
-          .limit(1);
-        return !error;
-      } catch {
-        return false;
-      }
-    })();
-  }
-  return offersColumnsAvailablePromise;
-}
-
-/** Whether the remote `products` table has the demo_video_url column yet (needs migration 017) */
-let demoVideoColumnAvailablePromise: Promise<boolean> | null = null;
-export function demoVideoColumnAvailable(): Promise<boolean> {
-  if (!demoVideoColumnAvailablePromise) {
-    demoVideoColumnAvailablePromise = (async () => {
-      try {
-        const { error } = await supabase
-          .from('products')
-          .select('demo_video_url')
-          .limit(1);
-        return !error;
-      } catch {
-        return false;
-      }
-    })();
-  }
-  return demoVideoColumnAvailablePromise;
-}
-
-/** Whether the remote `products` table has the creator_avatar / creator_role columns yet (needs migration 016) */
-let creatorAvatarColumnAvailablePromise: Promise<boolean> | null = null;
-export function creatorAvatarColumnAvailable(): Promise<boolean> {
-  if (!creatorAvatarColumnAvailablePromise) {
-    creatorAvatarColumnAvailablePromise = (async () => {
-      try {
-        const { error } = await supabase
-          .from('products')
-          .select('creator_avatar,creator_role')
-          .limit(1);
-        return !error;
-      } catch {
-        return false;
-      }
-    })();
-  }
-  return creatorAvatarColumnAvailablePromise;
-}
-
-/** Whether the remote `products` table has problem_it_solves / solution / unique_selling_point columns */
-let detailsColumnsAvailablePromise: Promise<boolean> | null = null;
-export function detailsColumnsAvailable(): Promise<boolean> {
-  if (!detailsColumnsAvailablePromise) {
-    detailsColumnsAvailablePromise = (async () => {
-      try {
-        const { error } = await supabase
-          .from('products')
-          .select('problem_it_solves')
-          .limit(1);
-        return !error;
-      } catch {
-        return false;
-      }
-    })();
-  }
-  return detailsColumnsAvailablePromise;
-}
-
-/** Prepares a DB product row by stripping fields whose columns don't yet exist on the remote database */
-export async function prepareDbProductRow(p: Product): Promise<Record<string, unknown>> {
-  const [includeScreenshots, includeSocials, includeOffers, includeDemoVideo, includeCreatorAvatar, includeDetails] = await Promise.all([
-    screenshotsColumnAvailable(),
-    socialsColumnsAvailable(),
-    offersColumnsAvailable(),
-    demoVideoColumnAvailable(),
-    creatorAvatarColumnAvailable(),
-    detailsColumnsAvailable(),
-  ]);
-
-  const row = { ...toDbProduct(p) } as Record<string, unknown>;
-  if (!includeScreenshots) delete row.screenshots;
-  if (!includeSocials) {
-    delete row.socials;
-    delete row.creator_name;
-    delete row.creator_username;
-    delete row.creator_x_handle;
-  }
-  if (!includeOffers) {
-    delete row.offer_discount;
-    delete row.offer_code;
-    delete row.offer_url;
-    delete row.offer_details;
-  }
-  if (!includeDemoVideo) {
-    delete row.demo_video_url;
-  }
-  if (!includeCreatorAvatar) {
-    delete row.creator_avatar;
-    delete row.creator_role;
-  }
-  if (!includeDetails) {
-    delete row.problem_it_solves;
-    delete row.solution;
-    delete row.unique_selling_point;
-  }
-  return row;
-}
 
 /** Load all products from Supabase */
 export async function loadProducts(): Promise<Product[] | null> {
@@ -408,61 +270,6 @@ export async function loadProducts(): Promise<Product[] | null> {
   if (error || !data) return null;
   return data.map(mapDbProduct);
 }
-
-/**
- * Merge rich submission data into loaded products.
- * This ensures that even if the products table row was saved before
- * columns like problem_it_solves / offer_code / socials existed,
- * the data from the submissions table (which always has it) gets applied.
- */
-export async function enrichProductsFromSubmissions(products: Product[]): Promise<Product[]> {
-  if (products.length === 0) return products;
-  try {
-    const { data, error } = await supabase
-      .from('submissions')
-      .select('*')
-      .eq('status', 'approved');
-    if (error || !data || data.length === 0) return products;
-
-    const subs = data.map(mapDbSubmission);
-    return products.map((prod) => {
-      const match = subs.find(
-        (s) =>
-          s.url.toLowerCase().replace(/\/$/, '') === prod.url.toLowerCase().replace(/\/$/, '') ||
-          prod.id === s.id ||
-          prod.id === `prod-${s.id}`
-      );
-      if (!match) return prod;
-      // Merge: submission fields win when product row is missing them
-      return {
-        ...prod,
-        description: prod.description || match.description,
-        problemItSolves: prod.problemItSolves || match.problemItSolves,
-        solution: prod.solution || match.solution,
-        uniqueSellingPoint: prod.uniqueSellingPoint || match.uniqueSellingPoint,
-        targetAudience: prod.targetAudience || match.targetAudience,
-        pricingModel: prod.pricingModel || match.pricingModel,
-        offerDiscount: prod.offerDiscount || match.offerDiscount,
-        offerCode: prod.offerCode || match.offerCode,
-        offerUrl: prod.offerUrl || match.offerUrl,
-        offerDetails: prod.offerDetails || match.offerDetails,
-        socials: (prod.socials && prod.socials.length > 0) ? prod.socials : match.socials,
-        screenshots: (prod.screenshots && prod.screenshots.length > 0) ? prod.screenshots : match.screenshots,
-        demoVideoUrl: prod.demoVideoUrl || match.demoVideoUrl,
-        logoUrl: prod.logoUrl || match.logoUrl,
-        creatorName: prod.creatorName || match.creatorName,
-        creatorXHandle: prod.creatorXHandle || match.creatorXHandle,
-        creatorAvatar: prod.creatorAvatar || match.creatorAvatar,
-        creatorRole: prod.creatorRole || match.creatorRole,
-        twitterHandle: prod.twitterHandle || match.twitterHandle,
-        submittedBy: prod.submittedBy || match.submittedBy,
-      };
-    });
-  } catch {
-    return products;
-  }
-}
-
 
 /** Guaranteed single-request batched rank updates in Supabase — only touches rank columns */
 export async function saveProductRanksDirect(products: Product[]): Promise<void> {
@@ -494,7 +301,7 @@ export async function saveProductRanksDirect(products: Product[]): Promise<void>
 export async function saveAllProducts(products: Product[]): Promise<void> {
   if (products.length === 0) return;
   try {
-    const rows = await Promise.all(products.map((p) => prepareDbProductRow(p)));
+    const rows = products.map((p) => toDbProduct(p));
     // Preserve existing engagement counters so stale client state can't wipe them
     await preserveExistingCounters(rows);
     const { error } = await supabase.from('products').upsert(rows, { onConflict: 'id' });
@@ -510,7 +317,7 @@ export async function saveAllProducts(products: Product[]): Promise<void> {
 /** Insert a single product into Supabase with robust fallback */
 export async function insertProductDirect(p: Product): Promise<boolean> {
   try {
-    const row = await prepareDbProductRow(p);
+    const row = toDbProduct(p);
     // Never clobber existing engagement counters (upvotes, clicks, bids, dino score)
     await preserveExistingCounters([row]);
     const { error } = await supabase.from('products').upsert(row, { onConflict: 'id' });
@@ -567,7 +374,7 @@ export async function insertProductDirect(p: Product): Promise<boolean> {
 /** Update an existing product in Supabase */
 export async function updateProductDirect(p: Product): Promise<boolean> {
   try {
-    const row = await prepareDbProductRow(p);
+    const row = toDbProduct(p);
     const { error } = await supabase.from('products').update(row).eq('id', p.id);
     return !error;
   } catch {

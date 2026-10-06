@@ -6,6 +6,7 @@ import { SUBMISSION_CATEGORIES } from './BidModal';
 import { getWebsiteFavicon } from '../utils/logo';
 import { playSound } from '../utils/sound';
 import { BadgeStyle, BadgeTheme, BadgeFormat, generateBadgeSvg, generateBadgeSnippet } from '../utils/badgeSvg';
+import { verifyBadgeViaEdge, fetchHtmlBestEffort, containsBadge } from '../utils/badgeVerify';
 
 const DRAFT_KEY = 'topsaas_launch_draft_v1';
 const STEP_KEY = 'topsaas_launch_step_v1';
@@ -587,77 +588,43 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
 
     const targetUrl = check.value;
 
-    try {
-      // Check if it's a localhost or internal IP address
-      const isLocalOrPrivate = /localhost|127\.0\.0\.1|192\.168\.|10\.|::1/i.test(targetUrl);
+    const markVerified = (message: string) => {
+      setIsBadgeVerified(true);
+      setBadgeVerificationSuccess(message);
+      playSound('success', soundEnabled);
+      confetti({ particleCount: 50, spread: 70, origin: { y: 0.7 } });
+    };
 
-      if (isLocalOrPrivate) {
-        // Local dev environments cannot be reached by external scraper proxies
-        setIsBadgeVerified(true);
-        setBadgeVerificationSuccess(`Local development environment (${targetUrl}) detected. Badge verified.`);
-        playSound('success', soundEnabled);
-        confetti({ particleCount: 45, spread: 60, origin: { y: 0.7 } });
-        setIsVerifyingBadge(false);
+    try {
+      // Local / private dev environments are not reachable by any verifier.
+      if (/localhost|127\.0\.0\.1|192\.168\.|10\.|::1/i.test(targetUrl)) {
+        markVerified(`Local development environment (${targetUrl}) detected. Badge verified.`);
         return;
       }
 
-      // Live Web Inspection for public URLs via proxies
-      const proxies = [
-        `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`,
-        `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
-      ];
+      // 1. Server-side check — no CORS, real user agent, no third-party proxies.
+      const edge = await verifyBadgeViaEdge(targetUrl);
+      let fetched = edge.fetched;
+      let verified = edge.verified;
 
-      let htmlContent = '';
-      let fetched = false;
-
-      // First attempt direct fetch
-      try {
-        const directRes = await fetch(targetUrl, { method: 'GET', mode: 'cors' });
-        if (directRes.ok) {
-          htmlContent = await directRes.text();
-          fetched = true;
-        }
-      } catch {
-        // Cross-origin restriction expected; fallback to proxies
-      }
-
+      // 2. Browser fetch, only when the server could not reach the page (for
+      //    example the verify-badge function has not been deployed yet).
       if (!fetched) {
-        for (const proxyUrl of proxies) {
-          try {
-            const res = await fetch(proxyUrl);
-            if (res.ok) {
-              const data = await res.json();
-              htmlContent = data.contents || (typeof data === 'string' ? data : '');
-              if (htmlContent) {
-                fetched = true;
-                break;
-              }
-            }
-          } catch {
-            // Try next proxy
-          }
-        }
+        const client = await fetchHtmlBestEffort(targetUrl);
+        fetched = client.fetched;
+        verified = fetched && containsBadge(client.html);
       }
 
-      // Check for TopSAAS badge indicators in page HTML
-      const hasTopSaasLink = /topsaas\.org|localhost:3000/i.test(htmlContent);
-      const hasBadgeImg = /badge\/|\/badge|Featured on TopSAAS/i.test(htmlContent);
-      const hasTopSaasMention = /topsaas/i.test(htmlContent);
-
-      if (fetched && (hasTopSaasLink || hasBadgeImg || hasTopSaasMention)) {
-        setIsBadgeVerified(true);
-        setBadgeVerificationSuccess(`TopSAAS badge detected on ${targetUrl}! Verification complete.`);
-        playSound('success', soundEnabled);
-        confetti({ particleCount: 50, spread: 70, origin: { y: 0.7 } });
+      if (verified) {
+        markVerified(`TopSAAS badge detected on ${targetUrl}! Verification complete.`);
       } else if (fetched) {
         setBadgeVerificationError(
-          `We loaded ${targetUrl}, but could not find the TopSAAS badge code. Please ensure you have added the snippet to your page and published your changes, then try again.`
+          `We loaded ${targetUrl}, but could not find the TopSAAS badge code. Make sure the snippet is in the page's raw HTML — badges injected only by client-side JavaScript will not be seen — then re-publish and try again.`
         );
         playSound('error', soundEnabled);
       } else {
-        // If web fetch failed due to Cloudflare / bot protection / firewall
         setBadgeVerificationError(
-          `Could not reach ${targetUrl} to inspect the HTML. If your site has bot protection or is behind authentication, please ensure it is publicly reachable, or click the manual confirmation below.`
+          `Could not reach ${targetUrl} to inspect the HTML. If your site has bot protection or is behind authentication, make sure it is publicly reachable, then retry — or use the manual confirmation below.`
         );
         playSound('error', soundEnabled);
       }

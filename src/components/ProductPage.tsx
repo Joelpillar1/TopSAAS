@@ -163,12 +163,12 @@ export const ProductPage: React.FC<ProductPageProps> = ({
               className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-700 bg-[#343434] px-3 py-2 sm:py-1.5 text-xs font-bold text-neutral-100 shadow-2xs hover:bg-neutral-800 hover:border-neutral-500 active:scale-95 transition-all cursor-pointer shrink-0 min-h-[38px]"
             >
               <ArrowLeft className="h-4 w-4" />
-              <span>Back to Directory</span>
+              <span>Back to Home</span>
             </button>
 
             {/* Breadcrumb path */}
             <div className="hidden md:flex items-center gap-1.5 text-xs text-neutral-500 font-medium truncate">
-              <span className="cursor-pointer hover:text-white" onClick={onBack}>Directory</span>
+              <span className="cursor-pointer hover:text-white" onClick={onBack}>Home</span>
               <span>/</span>
               <span className="text-neutral-400">{product.category}</span>
               <span>/</span>
@@ -949,7 +949,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                 onClick={onBack}
                 className="text-xs font-bold text-neutral-500 hover:text-white flex items-center gap-1 cursor-pointer"
               >
-                <span>View Full Directory</span>
+                <span>Back to Home</span>
                 <ChevronRight className="h-3.5 w-3.5" />
               </button>
             </div>

@@ -231,7 +231,16 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
               .filter((s) => isUserMatch(s.submittedBy, s.backerEmail))
               .sort((a, b) => (b.submittedAt ?? 0) - (a.submittedAt ?? 0));
 
-            const finalProds = dbProds.filter((p) => isUserMatch(p.submittedBy));
+            // A listing is owned when its own submitted_by matches, or when it is the
+            // published listing (`prod-<id>`) of one of this user's submissions — the
+            // latter covers listings approved before the owner signed in and claimed.
+            const ownedSubmissionIds = new Set(finalSubs.map((s) => s.id));
+            const finalProds = dbProds.filter(
+              (p) =>
+                isUserMatch(p.submittedBy) ||
+                ownedSubmissionIds.has(p.id) ||
+                ownedSubmissionIds.has(p.id.replace(/^prod-/, ''))
+            );
 
             setProducts(finalProds);
             setSubmissions(finalSubs);

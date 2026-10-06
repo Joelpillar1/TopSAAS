@@ -136,7 +136,7 @@ export const PaymentSuccess: React.FC<PaymentSuccessProps> = ({
               className="w-full flex items-center justify-center gap-2 rounded-xl bg-white py-3 px-4 text-sm font-black text-black shadow-2xs hover:bg-neutral-200 transition-all cursor-pointer"
             >
               <ArrowLeft className="h-4 w-4" />
-              <span>Back to Directory</span>
+              <span>Back to Home</span>
             </button>
             <a
               href="/"

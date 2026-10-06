@@ -3,9 +3,7 @@ import {
   ShieldCheck,
   Sparkles,
   Trophy,
-  Globe,
   FileText,
-  LayoutGrid,
   Zap,
 } from 'lucide-react';
 import { Category } from '../types';
@@ -37,16 +35,10 @@ export const RichFooter: React.FC<RichFooterProps> = ({
 }) => {
   const currentYear = new Date().getFullYear();
 
-  const handleCategoryClick = (cat: Category) => {
-    playSound('click', soundEnabled);
-    onSelectCategory(cat);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
   return (
     <footer className={className || "mt-10 border-t border-neutral-800 bg-[#1c1c1c]"}>
       <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-12 pb-8">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-8 lg:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-8 lg:gap-6">
           {/* Brand Column */}
           <div className="col-span-2 sm:col-span-3 lg:col-span-2 space-y-4">
             <div className="flex items-center gap-2.5">
@@ -59,16 +51,6 @@ export const RichFooter: React.FC<RichFooterProps> = ({
               The curated directory of the internet&apos;s best SaaS products. Founders list their
               software, real people discover it, and the best rise to the top.
             </p>
-            {/* Mini Stats */}
-            <div className="flex items-center gap-4 pt-1">
-              <div className="flex items-center gap-1.5 text-xs">
-                <div className="flex h-5 w-5 items-center justify-center rounded-md bg-neutral-800">
-                  <Globe className="h-3 w-3 text-neutral-300" />
-                </div>
-                <span className="font-bold text-white font-mono-num">{totalProducts}</span>
-                <span className="text-neutral-500">products</span>
-              </div>
-            </div>
           </div>
 
           {/* Product Column */}
@@ -118,23 +100,7 @@ export const RichFooter: React.FC<RichFooterProps> = ({
           </div>
 
           {/* Categories Column */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-black uppercase tracking-wider text-neutral-200">Categories</h4>
-            <ul className="space-y-2.5">
-              {(['AI Tools', 'Developer Tools', 'Productivity', 'Design & UI', 'SaaS & Indie', 'Crypto & Web3'] as const).map((cat) => (
-                <li key={cat}>
-                  <button
-                    type="button"
-                    onClick={() => handleCategoryClick(cat)}
-                    className="text-xs text-neutral-500 hover:text-white transition-colors cursor-pointer flex items-center gap-1.5"
-                  >
-                    <LayoutGrid className="h-3 w-3 text-neutral-600" />
-                    {cat}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {/* Categories column removed with the Directory section */}
 
           {/* Resources Column */}
           <div className="space-y-3">
@@ -237,9 +203,6 @@ export const RichFooter: React.FC<RichFooterProps> = ({
             >
               Terms of Service
             </button>
-          </div>
-          <div className="flex items-center gap-3 text-[11px] text-neutral-500">
-            <span className="font-mono-num">{totalProducts} products indexed</span>
           </div>
         </div>
       </div>

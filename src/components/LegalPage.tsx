@@ -57,7 +57,7 @@ export const LegalPage: React.FC<LegalPageProps> = ({
             className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-700 bg-[#2a2a2a] px-3 py-1.5 text-xs font-bold text-neutral-300 hover:border-mint-500/60 hover:text-white transition-all cursor-pointer shadow-2xs"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            <span>Back to Directory</span>
+            <span>Back to Home</span>
           </button>
 
           <div className="flex items-center gap-1.5 text-[11px] text-neutral-400 font-medium">
@@ -262,7 +262,7 @@ export const LegalPage: React.FC<LegalPageProps> = ({
             }}
             className="font-bold text-white hover:underline cursor-pointer"
           >
-            ← Back to Directory
+            ← Back to Home
           </button>
         </div>
       </main>

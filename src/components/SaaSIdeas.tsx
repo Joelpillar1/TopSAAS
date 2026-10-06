@@ -1,13 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Star, GitFork, ExternalLink, Code2, Trophy, Filter, ChevronLeft, ChevronRight, LayoutGrid, Table as TableIcon, Search, Command, X } from 'lucide-react';
+import { Star, GitFork, ExternalLink, ArrowRight, Code2, Filter, ChevronLeft, ChevronRight, LayoutGrid, Table as TableIcon, Search, Command, X } from 'lucide-react';
 import { CURATED_REPOS, CuratedRepo, RepoCategory } from '../data/curatedRepos';
 import { formatStars } from '../utils/github';
 import { Product } from '../types';
-import { ProductCard } from './ProductCard';
 import { HeroClaimBanner } from './HeroClaimBanner';
 import { BorderBeam } from './BorderBeam';
 import { playSound } from '../utils/sound';
-import { isProductUpvoted } from '../utils/db';
 import { GridFillerCell, useGridColumns } from './GridFiller';
 import { cn } from '@/lib/utils';
 import { GridPattern } from '@/components/ui/grid-pattern';
@@ -25,12 +23,13 @@ interface SaaSIdeasProps {
   onTrackClick: (productId: string, url: string) => void;
   onUpvote: (product: Product) => void;
   onOpenDetail?: (product: Product) => void;
+  onOpenRepo?: (repo: CuratedRepo) => void;
   upvotedIds?: Set<string>;
 }
 
 const CATEGORIES: RepoCategory[] = [
   'All', 'SaaS Starters', 'Auth & Identity', 'Databases', 'AI & ML',
-  'DevOps & Infra', 'UI Components', 'CMS & Content', 'Analytics',
+  'DevOps & Infra', 'UI Components', 'CMS & Content', 'Payments & Billing', 'Analytics',
   'Email & Communication', 'Deployment', 'Mobile', 'API & Backend',
   'Monitoring', 'Forms & Surveys', 'Search', 'File Storage', 'Design & UI',
   'Productivity', 'Utilities', 'Privacy & Security', 'Education', 'Lists',
@@ -116,6 +115,7 @@ export const SaaSIdeas: React.FC<SaaSIdeasProps> = ({
   onTrackClick,
   onUpvote,
   onOpenDetail,
+  onOpenRepo,
   upvotedIds,
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<RepoCategory>('All');
@@ -358,79 +358,12 @@ export const SaaSIdeas: React.FC<SaaSIdeasProps> = ({
         );
       })()}
 
-      {/* Top 3 Featured Products */}
-      {!productsLoaded && topProducts.length === 0 ? (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 px-1">
-            <div className="flex h-5 w-5 items-center justify-center rounded-md bg-mint-500/15 text-mint-300">
-              <Trophy className="h-3 w-3 fill-mint-300 stroke-mint-300" />
-            </div>
-            <h2 className="text-xs font-black uppercase tracking-wider text-white">
-              Top 3 on TopSAAS
-            </h2>
-            <span className="rounded-md bg-neutral-800 px-1.5 py-0.5 text-[10px] font-mono font-bold text-neutral-300">
-              curated ranking
-            </span>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-44 rounded-2xl border border-neutral-800 bg-[#2a2a2a] p-4 animate-pulse flex flex-col justify-between">
-                <div className="flex items-start gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-neutral-800" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-4 w-28 rounded bg-neutral-800" />
-                    <div className="h-3 w-44 rounded bg-neutral-800" />
-                  </div>
-                </div>
-                <div className="flex items-center justify-between border-t border-neutral-800 pt-3">
-                  <div className="h-3.5 w-16 rounded bg-neutral-800" />
-                  <div className="h-6 w-14 rounded-full bg-neutral-800" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : topProducts.length > 0 ? (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 px-1">
-            <div className="flex h-5 w-5 items-center justify-center rounded-md bg-mint-500/15 text-mint-300">
-              <Trophy className="h-3 w-3 fill-mint-300 stroke-mint-300" />
-            </div>
-            <h2 className="text-xs font-black uppercase tracking-wider text-white">
-              Top 3 on TopSAAS
-            </h2>
-            <span className="rounded-md bg-neutral-800 px-1.5 py-0.5 text-[10px] font-mono font-bold text-neutral-300">
-              curated ranking
-            </span>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3">
-            {topProducts.slice(0, 3).map((product, index) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                rank={index + 1}
-                soundEnabled={soundEnabled}
-                showVerified={index < 5}
-                commentCount={commentCounts?.[product.id] ?? 0}
-                onShareProduct={onShareProduct}
-                onTrackClick={onTrackClick}
-                onOpenDetail={onOpenDetail}
-                onUpvote={onUpvote}
-                upvoted={isProductUpvoted(product.id, upvotedIds)}
-              />
-            ))}
-          </div>
-        </div>
-      ) : null}
-
       {/* Divider */}
-      {(topProducts.length > 0 || !productsLoaded) && (
-        <div className="flex items-center gap-3 px-1">
-          <div className="h-px flex-1 bg-neutral-800" />
-          <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Open Source Ideas</span>
-          <div className="h-px flex-1 bg-neutral-800" />
-        </div>
-      )}
+      <div className="flex items-center gap-3 px-1">
+        <div className="h-px flex-1 bg-neutral-800" />
+        <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Open Source Ideas</span>
+        <div className="h-px flex-1 bg-neutral-800" />
+      </div>
 
       {/* Category Filters & View Toggle */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -567,7 +500,7 @@ export const SaaSIdeas: React.FC<SaaSIdeasProps> = ({
           /* Cards View */
           <div className="grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-800 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {paginatedRepos.map((repo) => (
-              <RepoCard key={repo.id} repo={repo} />
+              <RepoCard key={repo.id} repo={repo} onOpen={onOpenRepo} soundEnabled={soundEnabled} />
             ))}
             {Array.from({ length: gridFillerCount }).map((_, i) => (
               <GridFillerCell key={`grid-filler-${i}`} />
@@ -612,9 +545,9 @@ export const SaaSIdeas: React.FC<SaaSIdeasProps> = ({
                         key={repo.id}
                         onClick={(e) => {
                           const target = e.target as HTMLElement;
-                          if (target.closest('button')) return;
+                          if (target.closest('button, a')) return;
                           playSound('click', soundEnabled);
-                          window.open(repo.html_url, '_blank', 'noopener,noreferrer');
+                          onOpenRepo?.(repo);
                         }}
                         className={`group transition-all duration-300 ease-out cursor-pointer relative hover:translate-x-0.5 ${rowHighlightClass}`}
                       >
@@ -632,10 +565,13 @@ export const SaaSIdeas: React.FC<SaaSIdeasProps> = ({
                             />
                             <div className="min-w-0">
                               <a
-                                href={repo.html_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={(e) => e.stopPropagation()}
+                                href={`/repo/${repo.full_name}`}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  playSound('click', soundEnabled);
+                                  onOpenRepo?.(repo);
+                                }}
                                 className="font-bold text-white hover:underline truncate block"
                               >
                                 {repo.name}
@@ -696,7 +632,7 @@ export const SaaSIdeas: React.FC<SaaSIdeasProps> = ({
                             }}
                             className="inline-flex items-center gap-1 rounded-lg border border-neutral-700 bg-neutral-900 px-2.5 py-1 text-xs font-bold text-white hover:bg-mint-500 hover:text-[#0b0f14] hover:border-mint-500 hover:shadow-[0_4px_12px_-4px_rgba(71,180,110,0.5)] transition-all duration-200 shadow-2xs active:scale-95"
                           >
-                            <span>View</span>
+                            <span>GitHub</span>
                             <ExternalLink className="h-3 w-3" />
                           </a>
                         </td>
@@ -768,12 +704,20 @@ export const SaaSIdeas: React.FC<SaaSIdeasProps> = ({
   );
 };
 
-const RepoCard: React.FC<{ repo: CuratedRepo }> = ({ repo }) => {
+const RepoCard: React.FC<{
+  repo: CuratedRepo;
+  onOpen?: (repo: CuratedRepo) => void;
+  soundEnabled: boolean;
+}> = ({ repo, onOpen, soundEnabled }) => {
   return (
     <a
-      href={repo.html_url}
-      target="_blank"
-      rel="noopener noreferrer"
+      href={`/repo/${repo.full_name}`}
+      onClick={(e) => {
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+        e.preventDefault();
+        playSound('click', soundEnabled);
+        onOpen?.(repo);
+      }}
       className="group relative flex flex-col bg-[#2a2a2a] p-5 text-left transition-all duration-300 ease-out cursor-pointer hover:-translate-y-0.5 hover:bg-[#383838] hover:shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_8px_24px_-4px_rgba(0,0,0,0.55)] focus:outline-none focus-visible:ring-2 focus-visible:ring-mint-500/60"
     >
       {/* Icon + external link */}
@@ -787,7 +731,7 @@ const RepoCard: React.FC<{ repo: CuratedRepo }> = ({ repo }) => {
           />
         </div>
         <span className="flex h-6 w-6 items-center justify-center rounded-md border border-neutral-800 text-neutral-500 opacity-0 transition-all duration-200 group-hover:opacity-100 group-hover:border-neutral-600 group-hover:bg-neutral-800 group-hover:text-white group-hover:scale-105">
-          <ExternalLink className="h-3 w-3 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+          <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
         </span>
       </div>
 

@@ -1,70 +1,21 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Trophy, Plus, LayoutGrid, Sparkles, Menu, X, User as UserIcon, Zap } from 'lucide-react';
+import { Trophy, Menu, X, User as UserIcon, Zap } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 
 export type DirectoryTab = 'directory' | 'saas-ideas' | 'pricing';
 
 interface HeaderProps {
   onGoHome?: () => void;
-  onOpenSubmit?: () => void;
   onSignIn?: () => void;
   onGoToProfile?: () => void;
   user?: User | null;
-  /** Active top-nav section (Directory / SaaS Ideas / Pricing) */
-  activeTab?: DirectoryTab;
-  onTabChange?: (tab: DirectoryTab) => void;
 }
-
-interface TabSwitcherProps {
-  activeTab: DirectoryTab;
-  onTabChange: (tab: DirectoryTab) => void;
-}
-
-const TABS: { key: DirectoryTab; label: string; icon: React.ReactNode }[] = [
-  {
-    key: 'directory',
-    label: 'Directory',
-    icon: <LayoutGrid className="h-3.5 w-3.5" />,
-  },
-  {
-    key: 'saas-ideas',
-    label: 'SaaS Ideas',
-    icon: <Sparkles className="h-3.5 w-3.5" />,
-  },
-];
-
-const TabSwitcher: React.FC<TabSwitcherProps> = ({ activeTab, onTabChange }) => {
-  return (
-    <nav className="flex items-center gap-1" aria-label="Browse sections">
-      {TABS.map((t) => {
-        const active = activeTab === t.key;
-        return (
-          <button
-            key={t.key}
-            type="button"
-            onClick={() => onTabChange(t.key)}
-            aria-current={active ? 'page' : undefined}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] transition-colors cursor-pointer ${
-              active ? 'font-bold text-white' : 'font-semibold text-neutral-400 hover:text-white'
-            }`}
-          >
-            {t.icon}
-            <span>{t.label}</span>
-          </button>
-        );
-      })}
-    </nav>
-  );
-};
 
 export const Header: React.FC<HeaderProps> = ({
   onGoHome,
-  onOpenSubmit,
   onSignIn,
   onGoToProfile,
   user,
-  activeTab = 'directory',
-  onTabChange,
 }) => {
   // Mobile hamburger menu state
   const [menuOpen, setMenuOpen] = useState(false);
@@ -109,26 +60,8 @@ export const Header: React.FC<HeaderProps> = ({
             </span>
           </button>
 
-          {/* Center: Top-nav sections (desktop only — mobile lives in the hamburger menu) */}
-          {onTabChange && (
-            <div className="hidden flex-1 justify-center sm:flex">
-              <TabSwitcher activeTab={activeTab} onTabChange={onTabChange} />
-            </div>
-          )}
-
           {/* Right: Actions */}
           <div className="flex items-center gap-2.5 shrink-0">
-            {/* New Launch */}
-            <button
-              type="button"
-              onClick={onOpenSubmit}
-              className="flex items-center gap-1.5 rounded-lg bg-white px-3.5 py-2 text-xs font-bold text-black hover:bg-neutral-200 transition-all cursor-pointer shadow-2xs active:scale-[0.98]"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">New Launch</span>
-              <span className="sm:hidden">Launch</span>
-            </button>
-
             {/* Auth: Sign in or User Avatar (desktop only — mobile lives in the hamburger menu) */}
             <div className="hidden sm:flex items-center gap-2">
               {user ? (
@@ -193,34 +126,6 @@ export const Header: React.FC<HeaderProps> = ({
                   id="mobile-nav-menu"
                   className="absolute right-0 top-full mt-2 w-60 rounded-xl border border-neutral-800 bg-[#2a2a2a] p-1.5 shadow-2xl"
                 >
-                  {onTabChange && (
-                    <>
-                      {TABS.map((t) => {
-                        const active = activeTab === t.key;
-                        return (
-                          <button
-                            key={t.key}
-                            type="button"
-                            onClick={() => {
-                              onTabChange(t.key);
-                              closeMenu();
-                            }}
-                            aria-current={active ? 'page' : undefined}
-                            className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] transition-colors cursor-pointer ${
-                              active
-                                ? 'font-bold text-mint-200 bg-mint-500/15'
-                                : 'font-semibold text-neutral-300 hover:bg-neutral-800 hover:text-white'
-                            }`}
-                          >
-                            {t.icon}
-                            <span>{t.label}</span>
-                          </button>
-                        );
-                      })}
-                      <div className="my-1.5 h-px bg-neutral-800" />
-                    </>
-                  )}
-
                   {user ? (
                     <button
                       type="button"

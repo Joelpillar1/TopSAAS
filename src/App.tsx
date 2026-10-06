@@ -25,12 +25,14 @@ import { LegalTab } from './components/LegalModal';
 import { playSound } from './utils/sound';
 import confetti from 'canvas-confetti';
 import { supabase } from './utils/supabase';
-import { loadProducts, enrichProductsFromSubmissions, saveAllProducts, saveProductRanksDirect, debouncedSyncProducts, toggleUpvote, getUserUpvotes, getUpvoteCounts, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, insertProductDirect, fetchComments, addComment, getCachedCommentsSync, submissionToProduct, isProductUpvoted, getGuestUpvotes, saveGuestUpvotes, incrementProductUpvotesDirect } from './utils/db';
+import { loadProducts, saveAllProducts, saveProductRanksDirect, debouncedSyncProducts, toggleUpvote, getUserUpvotes, getUpvoteCounts, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, insertProductDirect, fetchComments, addComment, getCachedCommentsSync, submissionToProduct, publishedProductId, isProductUpvoted, getGuestUpvotes, saveGuestUpvotes, incrementProductUpvotesDirect } from './utils/db';
 import { getRecentWeeks, isInWeek } from './utils/weeks';
 import { getWebsiteFavicon } from './utils/logo';
 import { LayoutGrid, List, Table as TableIcon, Trophy, X, Plus, ShieldCheck, Loader2, Star, MessageCircle, Flame } from 'lucide-react';
 import { FeaturedSpotModal } from './components/FeaturedSpotModal';
 import { ProductPage } from './components/ProductPage';
+import { RepoDetailPage } from './components/RepoDetailPage';
+import { CURATED_REPOS, CuratedRepo } from './data/curatedRepos';
 import { BadgeRoute } from './components/BadgeRoute';
 import { SkeletonGrid } from './components/SkeletonCard';
 import { SkeletonTable } from './components/SkeletonTable';
@@ -186,6 +188,9 @@ export default function App() {
     if (typeof window !== 'undefined') {
       const path = window.location.pathname;
       const hash = window.location.hash;
+      if (/^\/repo\//.test(path)) {
+        return 'repo';
+      }
       if (/^\/product\//.test(path)) {
         return 'product';
       }
@@ -247,6 +252,11 @@ export default function App() {
   useEffect(() => {
     async function loadSubmissions() {
       try {
+        // Ensure the stored session is attached before querying. Submissions are
+        // RLS-scoped: anonymous visitors only see approved listings, while owners
+        // and admins see their pending/rejected rows (migration 025). Without this
+        // await the very first query can fire before the token is restored.
+        await supabase.auth.getSession();
         const { data, error } = await supabase
           .from('submissions')
           .select('*')
@@ -263,74 +273,6 @@ export default function App() {
             }
           } catch {}
 
-          // Enrich live products with approved submission metadata
-          const approvedSubs = dbSubs.filter((s) => s.status === 'approved');
-          if (approvedSubs.length > 0) {
-            // Real upvote counts so freshly converted submissions never show 0
-            const upvoteCounts = await getUpvoteCounts();
-            setProducts((currProducts) => {
-              const existingUrls = new Set(currProducts.map((p) => p.url.toLowerCase().replace(/\/$/, '')));
-              const missingApprovedProds: Product[] = [];
-
-              const updatedExisting = currProducts.map((existingProd) => {
-                const matchingSub = approvedSubs.find(
-                  (s) =>
-                    s.url.toLowerCase().replace(/\/$/, '') === existingProd.url.toLowerCase().replace(/\/$/, '') ||
-                    s.id === existingProd.id ||
-                    `prod-${s.id}` === existingProd.id
-                );
-                if (!matchingSub) return existingProd;
-                return {
-                  ...existingProd,
-                  name: matchingSub.name || existingProd.name,
-                  tagline: matchingSub.tagline || existingProd.tagline,
-                  category: matchingSub.category || existingProd.category,
-                  logoUrl: matchingSub.logoUrl || existingProd.logoUrl,
-                  description: matchingSub.description || existingProd.description,
-                  problemItSolves: matchingSub.problemItSolves || existingProd.problemItSolves,
-                  solution: matchingSub.solution || existingProd.solution,
-                  uniqueSellingPoint: matchingSub.uniqueSellingPoint || existingProd.uniqueSellingPoint,
-                  targetAudience: matchingSub.targetAudience || existingProd.targetAudience,
-                  pricingModel: matchingSub.pricingModel || existingProd.pricingModel,
-                  twitterHandle: matchingSub.twitterHandle || existingProd.twitterHandle,
-                  socials: matchingSub.socials && matchingSub.socials.length > 0 ? matchingSub.socials : existingProd.socials,
-                  screenshots: matchingSub.screenshots && matchingSub.screenshots.length > 0 ? matchingSub.screenshots : existingProd.screenshots,
-                  demoVideoUrl: matchingSub.demoVideoUrl || existingProd.demoVideoUrl,
-                  creatorName: matchingSub.creatorName || existingProd.creatorName,
-                  creatorUsername: matchingSub.creatorUsername || existingProd.creatorUsername,
-                  creatorXHandle: matchingSub.creatorXHandle || existingProd.creatorXHandle,
-                  creatorAvatar: matchingSub.creatorAvatar || existingProd.creatorAvatar,
-                  creatorRole: matchingSub.creatorRole || existingProd.creatorRole,
-                  offerDiscount: matchingSub.offerDiscount || existingProd.offerDiscount,
-                  offerCode: matchingSub.offerCode || existingProd.offerCode,
-                  offerUrl: matchingSub.offerUrl || existingProd.offerUrl,
-                  offerDetails: matchingSub.offerDetails || existingProd.offerDetails,
-                };
-              });
-
-              for (const appSub of approvedSubs) {
-                const urlKey = appSub.url.toLowerCase().replace(/\/$/, '');
-                if (!existingUrls.has(urlKey)) {
-                  const newProd = submissionToProduct(appSub, currProducts.length + missingApprovedProds.length + 1);
-                  missingApprovedProds.push(newProd);
-                  existingUrls.add(urlKey);
-                  insertProductDirect(newProd);
-                }
-              }
-
-              const next = [...updatedExisting, ...missingApprovedProds].map((p, idx) => ({ ...p, rank: idx + 1 }));
-              // Apply real upvote counts from the upvotes table
-              const reconciled = next.map((p) => {
-                const real = upvoteCounts.get(p.id);
-                return real !== undefined ? { ...p, upvotes: real } : p;
-              });
-              if (missingApprovedProds.length > 0 || JSON.stringify(reconciled) !== JSON.stringify(currProducts)) {
-                debouncedSyncProducts(reconciled);
-                return reconciled;
-              }
-              return currProducts;
-            });
-          }
         }
       } catch {}
       setSubmissionsLoaded(true);
@@ -416,9 +358,9 @@ export default function App() {
     return false; // OFF by default as requested
   });
 
-  // Active tab: derived from currentRoute so /ideas and /pricing survive reload
-  const activeTab: DirectoryTab =
-    currentRoute === '/ideas' ? 'saas-ideas' : currentRoute === '/pricing' ? 'pricing' : 'directory';
+  // Active tab: derived from currentRoute so /ideas and /pricing survive reload.
+  // The Directory section is hidden for now — every non-pricing route lands on SaaS Ideas.
+  const activeTab: DirectoryTab = currentRoute === '/pricing' ? 'pricing' : 'saas-ideas';
 
   // View layout
   const [viewLayout, setViewLayout] = useState<'cards' | 'table'>(() => {
@@ -479,6 +421,14 @@ export default function App() {
     }
     return null;
   });
+  // Repo detail route state — resolved from /repo/:owner/:name
+  const [repoRouteId, setRepoRouteId] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      const m = window.location.pathname.match(/^\/repo\/(.+)$/);
+      if (m) return decodeURIComponent(m[1]);
+    }
+    return null;
+  });
   // User's submitted product ID tracking (persists even if not signed in)
   const [myProductId, setMyProductId] = useState<string | null>(() => {
     try {
@@ -496,12 +446,16 @@ export default function App() {
 
       const badgeMatch = path.match(/^\/badge\/(.+)$/);
       const productMatch = path.match(/^\/product\/(.+)$/);
+      const repoMatch = path.match(/^\/repo\/(.+)$/);
       if (badgeMatch) {
         setCurrentRoute('badge');
         setProductRouteId(decodeURIComponent(badgeMatch[1]));
       } else if (productMatch) {
         setCurrentRoute('product');
         setProductRouteId(decodeURIComponent(productMatch[1]));
+      } else if (repoMatch) {
+        setCurrentRoute('repo');
+        setRepoRouteId(decodeURIComponent(repoMatch[1]));
       } else if (path === '/accept' || hash === '#accept' || hash === '#/accept') {
         setCurrentRoute('/accept');
       } else if (path === '/payment-success' || hash === '#payment-success' || hash === '#/payment-success') {
@@ -549,6 +503,16 @@ export default function App() {
     } catch {
       window.location.hash = 'profile';
     }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Navigate to a repo's detail page (/repo/:owner/:name)
+  const handleOpenRepo = (repo: CuratedRepo) => {
+    setCurrentRoute('repo');
+    setRepoRouteId(repo.full_name);
+    try {
+      window.history.pushState({}, repo.name, `/repo/${repo.full_name}`);
+    } catch {}
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -660,13 +624,10 @@ export default function App() {
       });
       if (changed) {
         saveSubmissionsToStorage(updated);
-        updated.forEach((sub) => {
-          if (sub.submittedBy === user.id) {
-            try {
-              supabase.from('submissions').update({ submitted_by: user.id, backer_email: user.email }).eq('id', sub.id);
-            } catch {}
-          }
-        });
+        // One narrow RPC instead of a per-row UPDATE: it attaches this account to
+        // any of its unclaimed submissions (matched by verified email) without
+        // needing write access to protected columns like `status` (migration 026).
+        supabase.rpc('claim_submissions').then(() => {}, () => {});
         return updated;
       }
       return prev;
@@ -712,12 +673,9 @@ export default function App() {
         });
 
       if (dbProducts !== null && dbProducts.length > 0) {
-        let cachedSubs: WebsiteSubmission[] = [];
-        try {
-          const raw = localStorage.getItem(STORAGE_KEYS.SUBMISSIONS);
-          if (raw) cachedSubs = JSON.parse(raw);
-        } catch {}
-
+        // Products ARE the published listing and already carry every field from the
+        // submission they were published from, so nothing is merged in here — the
+        // submissions table is never consulted on this path.
         const sorted = [...dbProducts].sort((a, b) => {
           const rA = a.rank ?? 9999;
           const rB = b.rank ?? 9999;
@@ -727,49 +685,13 @@ export default function App() {
           return (a.createdAt ?? 0) - (b.createdAt ?? 0);
         });
 
-        const normalized = sorted.map((p, idx) => {
-          const matchingSub = cachedSubs.find(
-            (s) =>
-              s.url.toLowerCase().replace(/\/$/, '') === p.url.toLowerCase().replace(/\/$/, '') ||
-              s.id === p.id ||
-              `prod-${s.id}` === p.id
-          );
-          if (!matchingSub) return { ...p, rank: idx + 1 };
-          return {
-            ...p,
-            rank: idx + 1,
-            name: p.name || matchingSub.name,
-            tagline: p.tagline || matchingSub.tagline,
-            category: p.category || matchingSub.category,
-            logoUrl: p.logoUrl || matchingSub.logoUrl,
-            description: p.description || matchingSub.description,
-            problemItSolves: p.problemItSolves || matchingSub.problemItSolves,
-            solution: p.solution || matchingSub.solution,
-            uniqueSellingPoint: p.uniqueSellingPoint || matchingSub.uniqueSellingPoint,
-            targetAudience: p.targetAudience || matchingSub.targetAudience,
-            pricingModel: p.pricingModel || matchingSub.pricingModel,
-            twitterHandle: p.twitterHandle || matchingSub.twitterHandle,
-            socials: p.socials && p.socials.length > 0 ? p.socials : matchingSub.socials,
-            screenshots: p.screenshots && p.screenshots.length > 0 ? p.screenshots : matchingSub.screenshots,
-            demoVideoUrl: p.demoVideoUrl || matchingSub.demoVideoUrl,
-            creatorName: p.creatorName || matchingSub.creatorName,
-            creatorUsername: p.creatorUsername || matchingSub.creatorUsername,
-            creatorXHandle: p.creatorXHandle || matchingSub.creatorXHandle,
-            creatorAvatar: p.creatorAvatar || matchingSub.creatorAvatar,
-            creatorRole: p.creatorRole || matchingSub.creatorRole,
-            offerDiscount: p.offerDiscount || matchingSub.offerDiscount,
-            offerCode: p.offerCode || matchingSub.offerCode,
-            offerUrl: p.offerUrl || matchingSub.offerUrl,
-            offerDetails: p.offerDetails || matchingSub.offerDetails,
-          };
-        });
-
-        const normalizedWithCounts = applyRealUpvoteCounts(normalized);
-        repairStoredUpvoteCounts(normalized); // heal DB rows whose stored counts lag reality
-        setProducts(normalizedWithCounts);
+        const ranked = sorted.map((p, idx) => ({ ...p, rank: idx + 1 }));
+        const withCounts = applyRealUpvoteCounts(ranked);
+        repairStoredUpvoteCounts(ranked); // heal DB rows whose stored counts lag reality
+        setProducts(withCounts);
         try {
-          localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(normalizedWithCounts));
-          localStorage.setItem('topsaas_products_cache_v2', JSON.stringify(normalizedWithCounts));
+          localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(withCounts));
+          localStorage.setItem('topsaas_products_cache_v2', JSON.stringify(withCounts));
         } catch {}
       } else if (dbProducts !== null) {
         // Supabase is reachable but returned zero products — clear stale localStorage
@@ -781,20 +703,6 @@ export default function App() {
       }
       // If dbProducts is null (network/RLS error), keep localStorage as fallback
       setProductsLoaded(true);
-
-      // Second pass: enrich products from the submissions table to restore any
-      // fields that weren't saved to the products table (problem, solution, offers, socials…)
-      if (dbProducts && dbProducts.length > 0) {
-        const enriched = await enrichProductsFromSubmissions(dbProducts.sort((a, b) => (a.rank ?? 9999) - (b.rank ?? 9999)));
-        if (enriched && enriched.length > 0) {
-          const finalEnriched = applyRealUpvoteCounts(enriched.map((p, idx) => ({ ...p, rank: idx + 1 })));
-          setProducts(finalEnriched);
-          try {
-            localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(finalEnriched));
-            localStorage.setItem('topsaas_products_cache_v2', JSON.stringify(finalEnriched));
-          } catch {}
-        }
-      }
     }
     load();
   }, []);
@@ -807,7 +715,40 @@ export default function App() {
       try { localStorage.removeItem('topsaas_guest_upvotes'); } catch {}
       return;
     }
-    checkIsAdmin().then(setIsAdmin);
+    checkIsAdmin().then((admin) => {
+      setIsAdmin(admin);
+      if (!admin) return;
+      // Submissions are RLS-scoped (migration 025): a visitor who signs in after
+      // mounting still holds the anonymous, approved-only view in state, so an
+      // admin must refetch to populate the full moderation queue.
+      supabase
+        .from('submissions')
+        .select('*')
+        .order('submitted_at', { ascending: false })
+        .then(({ data, error }) => {
+          if (error || !data) return;
+          const rows = data.map(mapDbSubmission);
+          setSubmissions(rows);
+
+          // Idempotent publish catch-up: an approved submission whose listing is
+          // missing (for example its insert failed at approval time) is published
+          // now. This is decided purely by the deterministic id, so it can never
+          // create a duplicate listing.
+          setProducts((prev) => {
+            const publishedIds = new Set(prev.map((p) => p.id));
+            const missing = rows.filter(
+              (s) => s.status === 'approved' && !publishedIds.has(publishedProductId(s.id))
+            );
+            if (missing.length === 0) return prev;
+
+            const additions = missing.map((s, i) => submissionToProduct(s, prev.length + i + 1));
+            const next = [...prev, ...additions];
+            additions.forEach((p) => { insertProductDirect(p).catch(() => {}); });
+            saveAllProducts(next).catch(() => {});
+            return next;
+          });
+        });
+    });
     getUserUpvotes().then((dbVotes) => {
       setUserUpvotes(dbVotes);
     });
@@ -908,10 +849,7 @@ export default function App() {
     let reRankedProducts: Product[] = [];
     setProducts((prev) => {
       const updated = prev.map((p) => {
-        const isMatch =
-          p.id === product.id ||
-          p.id === altId ||
-          (product.url && p.url && p.url.toLowerCase().replace(/\/$/, '') === product.url.toLowerCase().replace(/\/$/, ''));
+        const isMatch = p.id === product.id || p.id === altId;
         if (isMatch) {
           const nextUpvotes = Math.max(0, (p.upvotes ?? 0) + delta);
           return { ...p, upvotes: nextUpvotes, updatedAt: Date.now() };
@@ -1047,9 +985,9 @@ export default function App() {
     return subId;
   };
 
-  // Admin Acceptance Pipeline: converts a submission into a live Product on the website
+  // Admin Acceptance Pipeline: publishes a submission as its live listing, exactly once.
   const handleAcceptSubmission = async (sub: WebsiteSubmission) => {
-    // 1. Update status to approved in submissions queue + Supabase
+    // 1. Mark the submission approved (queue + Supabase)
     const reviewedAt = Date.now();
     const approvedSub: WebsiteSubmission = { ...sub, status: 'approved', reviewedAt };
 
@@ -1063,72 +1001,35 @@ export default function App() {
       await supabase.from('submissions').update({ status: 'approved', reviewed_at: reviewedAt }).eq('id', sub.id);
     } catch {}
 
-    // 2. Add or update in live products
+    // 2. Publish the listing at its deterministic id. The id alone decides create
+    //    vs. refresh — no URL matching, no reconciliation against submissions.
+    const listingId = publishedProductId(sub.id);
     let productToSync: Product | null = null;
+
     setProducts((prev) => {
-      const existingIndex = prev.findIndex(
-        (p) =>
-          p.id === sub.id ||
-          p.id === `prod-${sub.id}` ||
-          `prod-${p.id}` === sub.id ||
-          p.url.toLowerCase().replace(/\/$/, '') === sub.url.toLowerCase().replace(/\/$/, '')
-      );
+      const existing = prev.find((p) => p.id === listingId);
+      const fresh = submissionToProduct(approvedSub, existing?.rank ?? prev.length + 1);
 
-      let nextProducts: Product[];
-      if (existingIndex >= 0) {
-        nextProducts = prev.map((p, idx) =>
-          idx === existingIndex
-            ? {
-                ...p,
-                name: sub.name,
-                tagline: sub.tagline,
-                category: sub.category,
-                verified: true,
-                logoUrl: sub.logoUrl || p.logoUrl,
-                description: sub.description || p.description,
-                problemItSolves: sub.problemItSolves || p.problemItSolves,
-                solution: sub.solution || p.solution,
-                uniqueSellingPoint: sub.uniqueSellingPoint || p.uniqueSellingPoint,
-                targetAudience: sub.targetAudience || p.targetAudience,
-                pricingModel: sub.pricingModel || p.pricingModel,
-                twitterHandle: sub.twitterHandle || p.twitterHandle,
-                offerDiscount: sub.offerDiscount || p.offerDiscount,
-                offerCode: sub.offerCode || p.offerCode,
-                offerUrl: sub.offerUrl || p.offerUrl,
-                offerDetails: sub.offerDetails || p.offerDetails,
-                screenshots: sub.screenshots && sub.screenshots.length > 0 ? sub.screenshots : p.screenshots,
-                demoVideoUrl: sub.demoVideoUrl || p.demoVideoUrl,
-                creatorName: sub.creatorName || p.creatorName,
-                creatorUsername: sub.creatorUsername || p.creatorUsername,
-                creatorXHandle: sub.creatorXHandle || p.creatorXHandle,
-                creatorAvatar: sub.creatorAvatar || p.creatorAvatar,
-                creatorRole: sub.creatorRole || p.creatorRole,
-                socials: sub.socials && sub.socials.length > 0 ? sub.socials : p.socials,
-                whatItDoes: (sub.problemItSolves || sub.solution || sub.uniqueSellingPoint) ? [
-                  ...(sub.problemItSolves ? [`Problem: ${sub.problemItSolves}`] : []),
-                  ...(sub.solution ? [`Solution: ${sub.solution}`] : []),
-                  ...(sub.uniqueSellingPoint ? [`Difference: ${sub.uniqueSellingPoint}`] : [])
-                ] : p.whatItDoes,
-                features: (sub.solution || sub.uniqueSellingPoint) ? [
-                  ...(sub.solution ? [{ title: 'Core Solution', description: sub.solution, tag: 'Superpower' }] : []),
-                  ...(sub.uniqueSellingPoint ? [{ title: 'Key Advantage', description: sub.uniqueSellingPoint, tag: 'Differentiator' }] : []),
-                  ...(sub.problemItSolves ? [{ title: 'Problem Solved', description: sub.problemItSolves, tag: 'Value' }] : [])
-                ] : p.features,
-              }
-            : p
-        );
-        productToSync = nextProducts[existingIndex];
-      } else {
-        const newProd = submissionToProduct(approvedSub, prev.length + 1);
-        productToSync = newProd;
-        nextProducts = [...prev, newProd];
-      }
+      const nextProducts = existing
+        ? prev.map((p) =>
+            p.id === listingId
+              ? {
+                  ...fresh,
+                  // A republish must never reset engagement or the creation date.
+                  rank: p.rank,
+                  previousRank: p.previousRank ?? p.rank,
+                  upvotes: p.upvotes,
+                  clicks: p.clicks,
+                  dinoScore: p.dinoScore,
+                  totalBid: p.totalBid,
+                  bidHistory: p.bidHistory,
+                  createdAt: p.createdAt,
+                }
+              : p
+          )
+        : [...prev, fresh].map((p, idx) => ({ ...p, rank: idx + 1 }));
 
-      // Re-normalize all ranks sequentially 1..N to guarantee no duplicates or gaps
-      nextProducts = nextProducts.map((p, idx) => ({
-        ...p,
-        rank: idx + 1,
-      }));
+      productToSync = nextProducts.find((p) => p.id === listingId) ?? fresh;
 
       debouncedSyncProducts(nextProducts);
       saveAllProducts(nextProducts).catch(() => {});
@@ -1140,7 +1041,7 @@ export default function App() {
     });
 
     setLiveFeed((prev) =>
-      [{ id: `listing-${Date.now()}`, productId: productToSync?.id || sub.id, name: sub.name, kind: 'listing', time: Date.now() }, ...prev].slice(0, 14)
+      [{ id: `listing-${Date.now()}`, productId: productToSync?.id || listingId, name: sub.name, kind: 'listing', time: Date.now() }, ...prev].slice(0, 14)
     );
 
     if (productToSync) {
@@ -1187,8 +1088,10 @@ export default function App() {
     try {
       await supabase.from('submissions').delete().eq('id', submissionId);
       if (targetSub) {
+        // Still sweep duplicate submissions that share this URL (moderation cleanup).
         await supabase.from('submissions').delete().eq('url', targetSub.url);
-        await supabase.from('products').delete().eq('url', targetSub.url);
+        // The listing id is deterministic — no need to hunt for it by URL.
+        await supabase.from('products').delete().eq('id', publishedProductId(submissionId));
       }
     } catch (err) {
       console.error('Error deleting submission from DB:', err);
@@ -1291,10 +1194,8 @@ export default function App() {
         }
         return;
       }
-      // Also delete by URL in case duplicates exist
-      if (targetProduct) {
-        await supabase.from('products').delete().eq('url', targetProduct.url);
-      }
+      // Listings are keyed by their deterministic id, so the delete above is the
+      // whole job — there are no duplicate rows to sweep up by URL.
     } catch (err) {
       console.error('Error deleting product from DB:', err);
       // Revert on network error too
@@ -1631,12 +1532,9 @@ export default function App() {
   const globalHeader = (
     <Header
       onGoHome={handleBackToLeaderboard}
-      onOpenSubmit={handleOpenSubmit}
       onSignIn={handleSignIn}
       onGoToProfile={handleGoToProfile}
       user={user}
-      activeTab={activeTab}
-      onTabChange={handleTabChange}
     />
   );
 
@@ -1731,87 +1629,29 @@ export default function App() {
 
   // 1.5 PRODUCT DETAIL ROUTE (/product/:id)
   if (currentRoute === 'product') {
-    let rawProduct = (productRouteId ? products.find((p) =>
-      p.id === productRouteId ||
-      p.id === `prod-${productRouteId}` ||
-      `prod-${p.id}` === productRouteId ||
-      p.url.toLowerCase().replace(/\/$/, '') === productRouteId.toLowerCase().replace(/\/$/, '')
-    ) : null) || null;
+    // Listings are addressed by their deterministic id. Both the published
+    // `prod-<id>` form and the bare id resolve, so old links keep working.
+    const routeId = productRouteId || '';
+    const bareRouteId = routeId.startsWith('prod-') ? routeId.replace(/^prod-/, '') : routeId;
+    const canonicalId = routeId ? publishedProductId(bareRouteId) : '';
 
-    // Check if matching submission exists in state or local storage to enrich fields
-    let matchingSub: WebsiteSubmission | undefined;
-    if (productRouteId) {
-      matchingSub = submissions.find(
-        (s) =>
-          s.id === productRouteId ||
-          `prod-${s.id}` === productRouteId ||
-          s.url.toLowerCase().replace(/\/$/, '') === productRouteId.toLowerCase().replace(/\/$/, '')
-      );
-      if (!matchingSub && rawProduct) {
-        matchingSub = submissions.find(
-          (s) =>
-            s.url.toLowerCase().replace(/\/$/, '') === rawProduct!.url.toLowerCase().replace(/\/$/, '') ||
-            s.id === rawProduct!.id ||
-            `prod-${s.id}` === rawProduct!.id
-        );
-      }
+    let rawProduct = routeId
+      ? products.find((p) => p.id === routeId || p.id === canonicalId || p.id === bareRouteId) || null
+      : null;
+
+    // A submission with no published listing yet (for example an owner previewing
+    // their own pending entry) renders straight from the submission.
+    if (!rawProduct && routeId) {
+      const matchingSub = submissions.find((s) => s.id === bareRouteId);
+      if (matchingSub) rawProduct = submissionToProduct(matchingSub, products.length + 1);
     }
 
-    if (!rawProduct && matchingSub) {
-      // If product hasn't synced into products array yet, generate live product preview from submission!
-      rawProduct = submissionToProduct(matchingSub, products.length + 1);
-    } else if (rawProduct && matchingSub) {
-      // Merge rich submission fields into rawProduct
-      rawProduct = {
-        ...rawProduct,
-        name: rawProduct.name || matchingSub.name,
-        tagline: rawProduct.tagline || matchingSub.tagline,
-        category: rawProduct.category || matchingSub.category,
-        logoUrl: rawProduct.logoUrl || matchingSub.logoUrl,
-        description: rawProduct.description || matchingSub.description,
-        problemItSolves: rawProduct.problemItSolves || matchingSub.problemItSolves,
-        solution: rawProduct.solution || matchingSub.solution,
-        uniqueSellingPoint: rawProduct.uniqueSellingPoint || matchingSub.uniqueSellingPoint,
-        targetAudience: rawProduct.targetAudience || matchingSub.targetAudience,
-        pricingModel: rawProduct.pricingModel || matchingSub.pricingModel,
-        twitterHandle: rawProduct.twitterHandle || matchingSub.twitterHandle,
-        socials: rawProduct.socials && rawProduct.socials.length > 0 ? rawProduct.socials : matchingSub.socials,
-        screenshots: rawProduct.screenshots && rawProduct.screenshots.length > 0 ? rawProduct.screenshots : matchingSub.screenshots,
-        demoVideoUrl: rawProduct.demoVideoUrl || matchingSub.demoVideoUrl,
-        creatorName: rawProduct.creatorName || matchingSub.creatorName,
-        creatorUsername: rawProduct.creatorUsername || matchingSub.creatorUsername,
-        creatorXHandle: rawProduct.creatorXHandle || matchingSub.creatorXHandle,
-        creatorAvatar: rawProduct.creatorAvatar || matchingSub.creatorAvatar,
-        creatorRole: rawProduct.creatorRole || matchingSub.creatorRole,
-        offerDiscount: rawProduct.offerDiscount || matchingSub.offerDiscount,
-        offerCode: rawProduct.offerCode || matchingSub.offerCode,
-        offerUrl: rawProduct.offerUrl || matchingSub.offerUrl,
-        offerDetails: rawProduct.offerDetails || matchingSub.offerDetails,
-        whatItDoes: (rawProduct.whatItDoes && rawProduct.whatItDoes.length > 0) ? rawProduct.whatItDoes : (
-          (matchingSub.problemItSolves || matchingSub.solution || matchingSub.uniqueSellingPoint) ? [
-            ...(matchingSub.problemItSolves ? [`Problem: ${matchingSub.problemItSolves}`] : []),
-            ...(matchingSub.solution ? [`Solution: ${matchingSub.solution}`] : []),
-            ...(matchingSub.uniqueSellingPoint ? [`Difference: ${matchingSub.uniqueSellingPoint}`] : [])
-          ] : undefined
-        ),
-        features: (rawProduct.features && rawProduct.features.length > 0) ? rawProduct.features : (
-          (matchingSub.solution || matchingSub.uniqueSellingPoint) ? [
-            ...(matchingSub.solution ? [{ title: 'Core Solution', description: matchingSub.solution, tag: 'Superpower' }] : []),
-            ...(matchingSub.uniqueSellingPoint ? [{ title: 'Key Advantage', description: matchingSub.uniqueSellingPoint, tag: 'Differentiator' }] : []),
-            ...(matchingSub.problemItSolves ? [{ title: 'Problem Solved', description: matchingSub.problemItSolves, tag: 'Value' }] : [])
-          ] : undefined
-        ),
-      };
-    }
-
-    const rankIndex = sortedByRankProducts.findIndex(
-      (p) =>
-        p.id === rawProduct.id ||
-        p.id === `prod-${rawProduct.id}` ||
-        `prod-${p.id}` === rawProduct.id ||
-        p.url.toLowerCase().replace(/\/$/, '') === rawProduct.url.toLowerCase().replace(/\/$/, '')
-    );
-    const dynamicRank = rankIndex >= 0 ? rankIndex + 1 : (rawProduct.rank || 1);
+    const rankIndex = rawProduct
+      ? sortedByRankProducts.findIndex(
+          (p) => p.id === rawProduct!.id || p.id === publishedProductId(rawProduct!.id)
+        )
+      : -1;
+    const dynamicRank = rawProduct ? (rankIndex >= 0 ? rankIndex + 1 : (rawProduct.rank || 1)) : 1;
     const product = rawProduct ? { ...rawProduct, rank: dynamicRank } : null;
     if (!product) {
       if (!productsLoaded) {
@@ -1838,7 +1678,7 @@ export default function App() {
               }}
               className="mt-2 rounded-xl bg-white text-black px-4 py-2 text-xs font-bold cursor-pointer"
             >
-                Back to Directory
+                Back to Home
               </button>
             </div>
           </div>
@@ -1903,6 +1743,96 @@ export default function App() {
           isOpen={isSignInModalOpen}
           onClose={() => setIsSignInModalOpen(false)}
           onSignIn={handleSignIn}
+        />
+      </div>
+    );
+  }
+
+  // 1.6 REPO DETAIL ROUTE (/repo/:owner/:name)
+  if (currentRoute === 'repo') {
+    const repoId = repoRouteId || '';
+    const repo =
+      CURATED_REPOS.find((r) => r.full_name.toLowerCase() === repoId.toLowerCase()) || null;
+
+    const backToIdeas = () => {
+      setCurrentRoute('/ideas');
+      try {
+        window.history.pushState('', document.title, '/ideas');
+      } catch {}
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    if (!repo) {
+      return (
+        <>
+          {globalHeader}
+          <div className="min-h-screen bg-[#222222] text-neutral-100 flex items-center justify-center font-sans">
+            <div className="text-center space-y-3">
+              <h2 className="text-lg font-bold">Repository not found</h2>
+              <p className="text-sm text-neutral-400">
+                This repo may have been removed from the collection.
+              </p>
+              <button
+                onClick={backToIdeas}
+                className="mt-2 rounded-xl bg-white text-black px-4 py-2 text-xs font-bold cursor-pointer"
+              >
+                Back to SaaS Ideas
+              </button>
+            </div>
+          </div>
+        </>
+      );
+    }
+
+    return (
+      <div className="min-h-screen bg-[#222222] text-neutral-100 flex flex-col justify-between font-sans">
+        {globalHeader}
+        <RepoDetailPage
+          repo={repo}
+          soundEnabled={soundEnabled}
+          onBack={backToIdeas}
+          onSelectRepo={handleOpenRepo}
+          onOpenFeatured={() => {
+            if (!user) {
+              setIsSignInModalOpen(true);
+            } else {
+              setIsFeaturedSpotModalOpen(true);
+            }
+          }}
+        />
+        <RichFooter
+          totalProducts={products.length}
+          soundEnabled={soundEnabled}
+          onOpenSubmit={handleOpenSubmit}
+          onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
+          onSelectCategory={setSelectedCategory}
+          onOpenPrivacy={() => {
+            setCurrentRoute('/privacy');
+            try { window.history.pushState('', document.title, '/privacy'); } catch {}
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          onOpenTerms={() => {
+            setCurrentRoute('/terms');
+            try { window.history.pushState('', document.title, '/terms'); } catch {}
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          onOpenPricing={handleOpenPricing}
+        />
+        <SignInModal
+          isOpen={isSignInModalOpen}
+          onClose={() => setIsSignInModalOpen(false)}
+          onSignIn={handleSignIn}
+        />
+        <FeaturedSpotModal
+          isOpen={isFeaturedSpotModalOpen}
+          onClose={() => setIsFeaturedSpotModalOpen(false)}
+          products={products}
+          user={user}
+          soundEnabled={soundEnabled}
+          onOpenSubmitModal={() => {
+            setIsFeaturedSpotModalOpen(false);
+            handleOpenSubmit();
+          }}
         />
       </div>
     );
@@ -1978,7 +1908,7 @@ export default function App() {
               <ShieldCheck className="mx-auto h-10 w-10 text-neutral-500" />
             <h2 className="text-lg font-bold">Admin Access Required</h2>
             <p className="text-sm text-neutral-400">You don't have admin privileges.</p>
-            <button onClick={handleBackToLeaderboard} className="mt-2 rounded-xl bg-white text-black px-4 py-2 text-xs font-bold cursor-pointer">Back to Directory</button>
+            <button onClick={handleBackToLeaderboard} className="mt-2 rounded-xl bg-white text-black px-4 py-2 text-xs font-bold cursor-pointer">Back to Home</button>
             </div>
           </div>
         </>
@@ -2065,6 +1995,7 @@ export default function App() {
             onTrackClick={handleTrackClick}
             onUpvote={handleUpvote}
             onOpenDetail={handleOpenProduct}
+            onOpenRepo={handleOpenRepo}
             upvotedIds={userUpvotes}
           />
         ) : (

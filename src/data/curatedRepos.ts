@@ -69,6 +69,95 @@ const av = (login: string) => `https://avatars.githubusercontent.com/${login}`;
 
 // All star/fork counts verified against GitHub on August 21, 2026
 export const CURATED_REPOS: CuratedRepo[] = [
+  // ═══════════════════════════════════════════════
+  // ── RECENTLY ADDED — kept at the top so page 1 of the grid surfaces them ──
+  // Useful, clonable repos: full products you can fork + the infra every SaaS needs.
+  // Verified against GitHub on October 5, 2026 — re-run: node scripts/check-saas-ideas-additions.mjs
+  // ═══════════════════════════════════════════════
+
+  // ── Forkable SaaS products & app starters ──
+  repo('refine', 'refinedev/refine', 'A React Framework for building internal tools, admin panels, dashboards & B2B apps with unmatched flexibility.', 'https://github.com/refinedev/refine', 35760, 3233, 'TypeScript', 'SaaS Starters', 'refinedev', av('refinedev')),
+  repo('create-t3-app', 't3-oss/create-t3-app', 'The best way to start a full-stack, typesafe Next.js app', 'https://github.com/t3-oss/create-t3-app', 29154, 1542, 'TypeScript', 'SaaS Starters', 't3-oss', av('t3-oss')),
+  repo('taxonomy', 'shadcn-ui/taxonomy', 'An open source application built using the new router, server components and everything new in Next.js 13.', 'https://github.com/shadcn-ui/taxonomy', 19290, 2747, 'TypeScript', 'SaaS Starters', 'shadcn-ui', av('shadcn-ui')),
+  repo('ToolJet', 'ToolJet/ToolJet', 'Open-source foundation of ToolJet AI - the enterprise app generation platform for internal tools, dashboards, business applications, workflows and AI agents. Build visually, from a prompt, or from Claude Code, Codex and Cursor over MCP 🚀', 'https://github.com/ToolJet/ToolJet', 41040, 5470, 'JavaScript', 'SaaS Starters', 'ToolJet', av('ToolJet')),
+  repo('saleor', 'saleor/saleor', 'Saleor Core: the high performance, composable, headless commerce API.', 'https://github.com/saleor/saleor', 23410, 6139, 'Python', 'SaaS Starters', 'saleor', av('saleor')),
+  repo('vendure', 'vendurehq/vendure', 'Open-source headless commerce platform built with TypeScript, NestJS, React, and GraphQL', 'https://github.com/vendurehq/vendure', 8500, 1505, 'TypeScript', 'SaaS Starters', 'vendurehq', av('vendurehq')),
+  repo('OpenSign', 'OpenSignLabs/OpenSign', '🔥 The free & Open Source DocuSign alternative', 'https://github.com/OpenSignLabs/OpenSign', 7058, 836, 'JavaScript', 'SaaS Starters', 'OpenSignLabs', av('OpenSignLabs')),
+  repo('espocrm', 'espocrm/espocrm', 'EspoCRM – Open Source CRM Application', 'https://github.com/espocrm/espocrm', 3438, 989, 'PHP', 'SaaS Starters', 'espocrm', av('espocrm')),
+
+  // ── Collaboration & communication apps ──
+  repo('Rocket.Chat', 'RocketChat/Rocket.Chat', 'The Secure CommsOS™ for mission-critical operations', 'https://github.com/RocketChat/Rocket.Chat', 46213, 13943, 'TypeScript', 'Email & Communication', 'RocketChat', av('RocketChat')),
+  repo('mattermost', 'mattermost/mattermost', 'Mattermost is an open source platform for secure collaboration across the entire software development lifecycle..', 'https://github.com/mattermost/mattermost', 39265, 9034, 'TypeScript', 'Email & Communication', 'mattermost', av('mattermost')),
+  repo('novu', 'novuhq/novu', 'The open-source communication infrastructure for agents and products', 'https://github.com/novuhq/novu', 40113, 4506, 'TypeScript', 'Email & Communication', 'novuhq', av('novuhq')),
+  repo('jitsi-meet', 'jitsi/jitsi-meet', 'Jitsi Meet - Secure, Simple and Scalable Video Conferences that you use as a standalone app or embed in your web application.', 'https://github.com/jitsi/jitsi-meet', 30043, 8072, 'TypeScript', 'Email & Communication', 'jitsi', av('jitsi')),
+  repo('postal', 'postalserver/postal', '📮 A fully featured open source mail delivery platform for incoming & outgoing e-mail', 'https://github.com/postalserver/postal', 16851, 1301, 'Ruby', 'Email & Communication', 'postalserver', av('postalserver')),
+  repo('freescout', 'freescout-help-desk/freescout', 'FreeScout — Free self-hosted omnichannel AI-powered helpdesk & shared mailbox', 'https://github.com/freescout-help-desk/freescout', 4583, 728, 'PHP', 'Email & Communication', 'freescout-help-desk', av('freescout-help-desk')),
+
+  // ── Knowledge, docs & productivity ──
+  repo('AFFiNE', 'toeverything/AFFiNE', 'There can be more than Notion and Miro. AFFiNE(pronounced [ə‘fain]) is a next-gen knowledge base that brings planning, sorting and creating all together. Privacy first, open-source, customizable and ready to use.', 'https://github.com/toeverything/AFFiNE', 73235, 5333, 'TypeScript', 'CMS & Content', 'toeverything', av('toeverything')),
+  repo('docmost', 'docmost/docmost', 'Docmost is an open-source collaborative wiki and documentation software. It is an open-source alternative to Confluence and Notion.', 'https://github.com/docmost/docmost', 21872, 1600, 'TypeScript', 'CMS & Content', 'docmost', av('docmost')),
+  repo('BookStack', 'BookStackApp/BookStack', 'NOW MANAGED ON CODEBERG', 'https://github.com/BookStackApp/BookStack', 19076, 2427, 'PHP', 'CMS & Content', 'BookStackApp', av('BookStackApp')),
+  repo('openproject', 'opf/openproject', 'OpenProject is the leading open source project management software for product, project and portfolio management. A powerful Jira alternative with agile planning, issue tracking, roadmaps, Gantt charts, time tracking, collaboration features, and more. Available on premises or in the cloud. ⭐ Star us on GitHub', 'https://github.com/opf/openproject', 16309, 3525, 'Ruby', 'Productivity', 'opf', av('opf')),
+
+  // ── Auth, identity & authorization ──
+  repo('better-auth', 'better-auth/better-auth', 'The most comprehensive authentication framework', 'https://github.com/better-auth/better-auth', 30162, 2941, 'TypeScript', 'Auth & Identity', 'better-auth', av('better-auth')),
+  repo('authentik', 'goauthentik/authentik', 'The authentication glue you need.', 'https://github.com/goauthentik/authentik', 25846, 2059, 'Python', 'Auth & Identity', 'goauthentik', av('goauthentik')),
+  repo('casdoor', 'casdoor/casdoor', 'An open-source Agent-first Identity and Access Management (IAM) /LLM MCP & agent gateway and auth server with web UI supporting OpenClaw, MCP, OAuth, OIDC, SAML, CAS, LDAP, SCIM, WebAuthn, TOTP, MFA, Face ID, Google Workspace, Azure AD', 'https://github.com/casdoor/casdoor', 14511, 1831, 'Go', 'Auth & Identity', 'casdoor', av('casdoor')),
+  repo('openfga', 'openfga/openfga', 'A high-performance and flexible authorization/permission engine built for developers and inspired by Google Zanzibar.', 'https://github.com/openfga/openfga', 5920, 511, 'Go', 'Privacy & Security', 'openfga', av('openfga')),
+
+  // ── Data layer: databases, tables & ORMs ──
+  repo('Prisma ORM', 'prisma/orm', 'Next-generation ORM for Node.js & TypeScript | PostgreSQL, MySQL, MariaDB, SQL Server, SQLite, MongoDB and CockroachDB', 'https://github.com/prisma/orm', 47694, 2545, 'TypeScript', 'Databases', 'prisma', av('prisma')),
+  repo('milvus', 'milvus-io/milvus', 'Milvus is a high-performance, cloud-native vector database built for scalable vector ANN search', 'https://github.com/milvus-io/milvus', 46318, 4278, 'Go', 'Databases', 'milvus-io', av('milvus-io')),
+  repo('qdrant', 'qdrant/qdrant', 'Qdrant - High-performance, massive-scale Vector Database and Vector Search Engine for the next generation of AI. Also available in the cloud https://cloud.qdrant.io/', 'https://github.com/qdrant/qdrant', 34933, 2725, 'Rust', 'Databases', 'qdrant', av('qdrant')),
+  repo('chroma', 'chroma-core/chroma', 'Search infrastructure for AI', 'https://github.com/chroma-core/chroma', 29439, 2547, 'Rust', 'Databases', 'chroma-core', av('chroma-core')),
+  repo('teable', 'teableio/teable', '✨ AI Spreadsheet for Business', 'https://github.com/teableio/teable', 21859, 1353, 'TypeScript', 'Databases', 'teableio', av('teableio')),
+  repo('baserow', 'baserow/baserow', 'Build databases, automations, apps & agents with AI — no code. Open source platform available on cloud and self-hosted. GDPR, HIPAA, SOC 2 compliant. Best Airtable alternative.', 'https://github.com/baserow/baserow', 6081, 750, 'Python', 'Databases', 'baserow', av('baserow')),
+
+  // ── Backend building blocks: jobs, workflows & webhooks ──
+  repo('trigger.dev', 'triggerdotdev/trigger.dev', 'Trigger.dev – build and deploy durable AI agents and workflows', 'https://github.com/triggerdotdev/trigger.dev', 16468, 1482, 'TypeScript', 'API & Backend', 'triggerdotdev', av('triggerdotdev')),
+  repo('hatchet', 'hatchet-dev/hatchet', '🪓 An orchestration engine for background tasks, AI agents, and durable workflows', 'https://github.com/hatchet-dev/hatchet', 8060, 517, 'Go', 'API & Backend', 'hatchet-dev', av('hatchet-dev')),
+  repo('inngest', 'inngest/inngest', 'The leading workflow orchestration platform. Run stateful step functions and AI workflows on serverless, servers, or the edge.', 'https://github.com/inngest/inngest', 5911, 370, 'Go', 'API & Backend', 'inngest', av('inngest')),
+  repo('svix', 'svix/svix-webhooks', 'The open source and enterprise-ready webhooks service 🦀', 'https://github.com/svix/svix-webhooks', 3429, 289, 'Rust', 'API & Backend', 'svix', av('svix')),
+
+  // ── Payments, billing & revenue ──
+  repo('akaunting', 'akaunting/akaunting', 'Online Accounting Software', 'https://github.com/akaunting/akaunting', 10161, 2995, 'PHP', 'Payments & Billing', 'akaunting', av('akaunting')),
+  repo('killbill', 'killbill/killbill', 'Open-Source Subscription Billing & Payments Platform', 'https://github.com/killbill/killbill', 5780, 969, 'Java', 'Payments & Billing', 'killbill', av('killbill')),
+  repo('openmeter', 'openmeterio/openmeter', 'Metering and Billing for AI, API and DevOps. Collect and aggregate millions of usage events in real-time and enable usage-based billing.', 'https://github.com/openmeterio/openmeter', 2367, 223, 'Go', 'Payments & Billing', 'openmeterio', av('openmeterio')),
+
+  // ── Analytics, monitoring & growth ──
+  repo('superset', 'apache/superset', 'Apache Superset is a Data Visualization and Data Exploration Platform', 'https://github.com/apache/superset', 75039, 18430, 'Python', 'Analytics', 'apache', av('apache')),
+  repo('matomo', 'matomo-org/matomo', 'Empowering People Ethically 🚀 — Matomo is hiring! Join us → https://matomo.org/jobs Matomo is the leading open-source alternative to Google Analytics, giving you complete control and built-in privacy. Easily collect, visualise, and analyse data from websites & apps. Star us on GitHub ⭐️ – Pull Requests welcome!', 'https://github.com/matomo-org/matomo', 21923, 2902, 'PHP', 'Analytics', 'matomo-org', av('matomo-org')),
+  repo('unleash', 'Unleash/unleash', 'Open-source feature management platform', 'https://github.com/Unleash/unleash', 13856, 904, 'TypeScript', 'Analytics', 'Unleash', av('Unleash')),
+  repo('growthbook', 'growthbook/growthbook', 'Open Source Feature Flags, Experimentation, and Product Analytics', 'https://github.com/growthbook/growthbook', 8475, 868, 'TypeScript', 'Analytics', 'growthbook', av('growthbook')),
+  repo('flagsmith', 'Flagsmith/flagsmith', 'Flagsmith is an open-source feature flag platform with remote config, experimentation, and self-hosted or cloud deployment options.', 'https://github.com/Flagsmith/flagsmith', 6585, 579, 'Python', 'Analytics', 'Flagsmith', av('Flagsmith')),
+  repo('sentry', 'getsentry/sentry', 'Developer-first error tracking and performance monitoring', 'https://github.com/getsentry/sentry', 45436, 4906, 'Python', 'Monitoring', 'getsentry', av('getsentry')),
+  repo('signoz', 'SigNoz/signoz', 'SigNoz is an open-source, OpenTelemetry-native observability platform for your team and their AI agents. Get logs, metrics, and traces in one tool with features like APM, distributed tracing, log management, infra monitoring, etc. Combined with SigNoz MCP and a native AI teammate (in SigNoz Cloud) it helps you build more resilient apps.', 'https://github.com/SigNoz/signoz', 32278, 2527, 'TypeScript', 'Monitoring', 'SigNoz', av('SigNoz')),
+  repo('changedetection.io', 'dgtlmoon/changedetection.io', 'Best and simplest tool for website change detection, web page monitoring, and website change alerts. Perfect for tracking content changes, price drops, restock alerts, and website defacement monitoring—all for free or enjoy our SaaS plan!', 'https://github.com/dgtlmoon/changedetection.io', 34788, 2119, 'Python', 'Monitoring', 'dgtlmoon', av('dgtlmoon')),
+  repo('beszel', 'henrygd/beszel', 'Lightweight server monitoring with historical data, docker stats, and alerts.', 'https://github.com/henrygd/beszel', 25970, 1064, 'Go', 'Monitoring', 'henrygd', av('henrygd')),
+  repo('highlight', 'highlight/highlight', 'highlight.io: The open source, full-stack monitoring platform. Error monitoring, session replay, logging, distributed tracing, and more.', 'https://github.com/highlight/highlight', 9383, 681, 'TypeScript', 'Monitoring', 'highlight', av('highlight')),
+  repo('openstatus', 'openstatusHQ/openstatus', '🫖 Status page with uptime monitoring & API monitoring as code 🫖', 'https://github.com/openstatusHQ/openstatus', 9168, 785, 'TypeScript', 'Monitoring', 'openstatusHQ', av('openstatusHQ')),
+
+  // ── AI building blocks: gateways, RAG & image gen ──
+  repo('langflow', 'langflow-ai/langflow', 'Langflow is a powerful tool for building and deploying AI-powered agents and workflows.', 'https://github.com/langflow-ai/langflow', 155507, 10180, 'Python', 'AI & ML', 'langflow-ai', av('langflow-ai')),
+  repo('ComfyUI', 'Comfy-Org/ComfyUI', 'The most powerful and modular diffusion model GUI, api and backend with a graph/nodes interface. The fastest local inference engine in the world.', 'https://github.com/Comfy-Org/ComfyUI', 136125, 16142, 'Python', 'AI & ML', 'Comfy-Org', av('Comfy-Org')),
+  repo('ragflow', 'infiniflow/ragflow', 'RAGFlow is a leading open-source Retrieval-Augmented Generation (RAG) engine that fuses cutting-edge RAG with Agent capabilities to create a superior context layer for LLMs', 'https://github.com/infiniflow/ragflow', 91688, 10890, 'Go', 'AI & ML', 'infiniflow', av('infiniflow')),
+  repo('OpenHands', 'OpenHands/OpenHands', '🙌 OpenHands: AI-Driven Development', 'https://github.com/OpenHands/OpenHands', 90012, 11902, 'TypeScript', 'AI & ML', 'OpenHands', av('OpenHands')),
+  repo('litellm', 'BerriAI/litellm', 'The fastest, litest AI Gateway. Rust core with Python SDK. Call 100+ LLM APIs in OpenAI (or native) format with cost tracking, guardrails, load balancing, and logging [Bedrock, Azure, OpenAI, Anthropic, OpenAI, VertexAI, vLLM, Nvidia NIM]', 'https://github.com/BerriAI/litellm', 60141, 12023, 'Python', 'AI & ML', 'BerriAI', av('BerriAI')),
+  repo('LibreChat', 'LibreChat-AI/LibreChat', 'Enhanced ChatGPT Clone: Features Agents, MCP, Skills, DeepSeek, Anthropic, AWS, OpenAI, Responses API, Azure, Groq, o1, GPT-5, Mistral, OpenRouter, Vertex AI, Gemini, Artifacts, AI model switching, message search, Code Interpreter, langchain, DALL-E-3, OpenAPI Actions, Functions, Secure Multi-User Auth, Presets, open-source for self-hosting. Active', 'https://github.com/LibreChat-AI/LibreChat', 45290, 9286, 'TypeScript', 'AI & ML', 'LibreChat-AI', av('LibreChat-AI')),
+  repo('Vercel AI SDK', 'vercel/ai', 'The AI Toolkit for TypeScript. From the creators of Next.js, the AI SDK is a free open-source library for building AI-powered applications and agents', 'https://github.com/vercel/ai', 27125, 5257, 'TypeScript', 'AI & ML', 'vercel', av('vercel')),
+  repo('gateway', 'Portkey-AI/gateway', 'A blazing fast AI Gateway with integrated guardrails. Route to 1,600+ LLMs, 50+ AI Guardrails with 1 fast & friendly API.', 'https://github.com/Portkey-AI/gateway', 13127, 1331, 'TypeScript', 'AI & ML', 'Portkey-AI', av('Portkey-AI')),
+
+  // ── DevOps, infra & internal tools ──
+  repo('gitea', 'go-gitea/gitea', 'Git with a cup of tea! Painless self-hosted all-in-one software development service, including Git hosting, code review, team collaboration, package registry and CI/CD', 'https://github.com/go-gitea/gitea', 58304, 7222, 'Go', 'DevOps & Infra', 'go-gitea', av('go-gitea')),
+  repo('windmill', 'windmill-labs/windmill', 'Open-source developer platform to power your entire infra and turn scripts into webhooks, workflows and UIs. Fastest workflow engine (13x vs Airflow). Open-source alternative to Retool and Temporal.', 'https://github.com/windmill-labs/windmill', 18104, 1110, 'Rust', 'DevOps & Infra', 'windmill-labs', av('windmill-labs')),
+
+  // ── UI, frontend & testing ──
+  repo('tailwindcss', 'tailwindlabs/tailwindcss', 'A utility-first CSS framework for rapid UI development.', 'https://github.com/tailwindlabs/tailwindcss', 97775, 7499, 'TypeScript', 'UI Components', 'tailwindlabs', av('tailwindlabs')),
+  repo('storybook', 'storybookjs/storybook', 'Storybook is the industry standard workshop for building, documenting, and testing UI components in isolation', 'https://github.com/storybookjs/storybook', 91199, 10475, 'TypeScript', 'UI Components', 'storybookjs', av('storybookjs')),
+  repo('tabler', 'tabler/tabler', 'Tabler is free and open-source HTML Dashboard UI Kit built on Bootstrap', 'https://github.com/tabler/tabler', 41814, 4433, 'Astro', 'UI Components', 'tabler', av('tabler')),
+  repo('lucide', 'lucide-icons/lucide', 'Beautiful & consistent icon toolkit made by the community. Open-source project and a fork of Feather Icons.', 'https://github.com/lucide-icons/lucide', 24858, 1616, 'TypeScript', 'UI Components', 'lucide-icons', av('lucide-icons')),
+  repo('playwright', 'microsoft/playwright', 'Playwright is a framework for Web Testing and Automation. It allows testing Chromium, Firefox and WebKit with a single API.', 'https://github.com/microsoft/playwright', 97102, 6544, 'TypeScript', 'Utilities', 'microsoft', av('microsoft')),
+
   // ── SaaS Starters ──
   repo('Next-js-Boilerplate', 'ixartz/Next-js-Boilerplate', '🚀🎉📚 Nextjs Boilerplate and Starter with App Router and Page Router support, Tailwind CSS 4 and TypeScript', 'https://github.com/ixartz/Next-js-Boilerplate', 13050, 2406, 'TypeScript', 'SaaS Starters', 'ixartz', av('ixartz')),
   repo('cal.com', 'calcom/cal.com', 'Scheduling infrastructure for everyone', 'https://github.com/calcom/cal.com', 47836, 14888, 'TypeScript', 'SaaS Starters', 'calcom', av('calcom')),

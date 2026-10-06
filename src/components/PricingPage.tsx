@@ -79,7 +79,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({
             className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-700 bg-[#2a2a2a] px-3 py-1.5 text-xs font-bold text-neutral-300 hover:border-neutral-500 hover:text-white transition-all cursor-pointer"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            Back to Directory
+            Back to Home
           </button>
         </div>
 

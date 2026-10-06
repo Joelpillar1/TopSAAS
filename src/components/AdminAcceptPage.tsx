@@ -6,6 +6,7 @@ import confetti from 'canvas-confetti';
 import { WebsiteSubmission, Category, Product } from '../types';
 import { playSound } from '../utils/sound';
 import { getWebsiteFavicon } from '../utils/logo';
+import { publishedProductId } from '../utils/db';
 import { FeaturedProductSelector } from './FeaturedProductSelector';
 import { ProductLogo } from './ProductLogo';
 import { RankMedal } from './RankMedal';
@@ -286,7 +287,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
               className="flex items-center gap-1.5 rounded-lg border border-neutral-700 bg-[#2a2a2a] px-3 py-1.5 text-xs font-bold text-neutral-300 hover:border-mint-500/60 hover:bg-[#333333] transition-all cursor-pointer"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
-              <span>Back to Directory</span>
+              <span>Back to Home</span>
             </button>
             <div className="h-4 w-px bg-neutral-700" />
             <div className="flex items-center gap-2">
@@ -530,12 +531,8 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                     const isUnderReview = sub.status === 'under_review';
                     const isApproved = sub.status === 'approved';
                     const isRejected = sub.status === 'rejected';
-                    const liveProduct = products.find(
-                      (p) =>
-                        p.url.toLowerCase().replace(/\/$/, '') === sub.url.toLowerCase().replace(/\/$/, '') ||
-                        p.id === sub.id ||
-                        p.id === `prod-${sub.id}`
-                    );
+                    // A submission's listing is always `prod-<id>` — an id lookup, not a URL match.
+                    const liveProduct = products.find((p) => p.id === publishedProductId(sub.id));
 
                     return (
                       <div
@@ -1367,12 +1364,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
         const isUnderReview = (sub.status || 'under_review') === 'under_review';
         const isApproved = sub.status === 'approved';
         const isRejected = sub.status === 'rejected';
-        const liveProduct = products.find(
-          (p) =>
-            p.url.toLowerCase().replace(/\/$/, '') === sub.url.toLowerCase().replace(/\/$/, '') ||
-            p.id === sub.id ||
-            p.id === `prod-${sub.id}`
-        );
+        const liveProduct = products.find((p) => p.id === publishedProductId(sub.id));
         const videoData = getVideoEmbedUrl(sub.demoVideoUrl);
 
         return (
