@@ -1,19 +1,19 @@
 import { supabase } from './supabase';
 
 /**
- * Markers that prove the TopSAAS badge snippet is present in a page's HTML.
- * Kept deliberately domain-agnostic: the directory is served from topsaas.space,
- * and the badge can also be shown on previews, so matching only `topsaas.org`
- * (the previous behaviour) silently failed for real listings.
+ * Markers that prove the TopSAAS badge snippet is present in a page's HTML or scripts.
  */
 const BADGE_MARKERS: RegExp[] = [
   /\/badge\//i, // <img src="https://…/badge/<id>?style=…">
   /badge\?style=/i,
   /featured\s+on\s+topsaas/i, // anchor text / img alt
   /topsaas\.(space|org|com)/i, // any link back to the directory
+  /Share(?:%20|\s+)Badge/i, // new PNG badge paths
+  /TopSAAS\s+Type/i, // new PNG badge names
 ];
 
 export function containsBadge(html: string): boolean {
+  if (!html) return false;
   return BADGE_MARKERS.some((marker) => marker.test(html));
 }
 
@@ -25,44 +25,69 @@ export interface BadgeCheckResult {
 }
 
 /**
- * Primary check: ask the `verify-badge` Edge Function to fetch the page
- * server-side. No CORS, a real user agent, and no third-party rate limits.
- * If the function is not deployed yet this fails gracefully so the caller can
- * fall back to the browser path.
+ * Primary check: call the Vercel serverless endpoint `/api/verify-badge`.
+ * This runs on the server (no CORS, realistic Chrome browser headers, redirect following,
+ * and deep-scans both raw HTML and client-rendered SPA bundles).
+ * Falls back to live topsaas.space endpoint or Supabase Edge Function if needed.
  */
 export async function verifyBadgeViaEdge(url: string): Promise<BadgeCheckResult> {
+  // 1. Try local or same-origin /api/verify-badge
+  const endpoints = ['/api/verify-badge'];
+
+  // If in local dev (localhost/127.0.0.1), also add the live production endpoint as fallback
+  if (typeof window !== 'undefined' && /localhost|127\.0\.0\.1/i.test(window.location.hostname)) {
+    endpoints.push('https://topsaas.space/api/verify-badge');
+  }
+
+  for (const endpoint of endpoints) {
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+      });
+
+      if (res.ok) {
+        const data = await res.json().catch(() => null);
+        if (data && typeof data.verified === 'boolean') {
+          return {
+            verified: data.verified,
+            fetched: Boolean(data.fetched),
+            reason: typeof data.reason === 'string' ? data.reason : undefined,
+          };
+        }
+      }
+    } catch {
+      // Try next endpoint
+    }
+  }
+
+  // 2. Fallback to Supabase Edge Function if available
   try {
     const { data, error } = await supabase.functions.invoke('verify-badge', {
       body: { url },
     });
 
-    if (error) return { verified: false, fetched: false, reason: error.message };
-    if (!data || typeof data.verified !== 'boolean') {
-      return { verified: false, fetched: false, reason: 'Unexpected verifier response' };
+    if (!error && data && typeof data.verified === 'boolean') {
+      return {
+        verified: data.verified,
+        fetched: Boolean(data.fetched),
+        reason: typeof data.reason === 'string' ? data.reason : undefined,
+      };
     }
-
-    return {
-      verified: data.verified,
-      fetched: Boolean(data.fetched),
-      reason: typeof data.reason === 'string' ? data.reason : undefined,
-    };
-  } catch (err) {
-    return {
-      verified: false,
-      fetched: false,
-      reason: err instanceof Error ? err.message : 'Network error',
-    };
+  } catch {
+    // Continue to fallback
   }
+
+  return {
+    verified: false,
+    fetched: false,
+    reason: 'Could not reach verification service',
+  };
 }
 
 /**
- * Fallback: best-effort browser fetch. The direct attempt only succeeds for sites
- * that send permissive CORS headers, so we then try public proxies that work
- * without an API key.
- *
- * Note the response shapes differ: AllOrigins `/get` wraps the page in JSON,
- * everything else returns the raw HTML body. The previous implementation assumed
- * JSON for every proxy, which meant the raw-text proxies always threw.
+ * Fallback: best-effort browser fetch when serverless verification is unavailable.
  */
 export async function fetchHtmlBestEffort(
   url: string
@@ -100,7 +125,7 @@ export async function fetchHtmlBestEffort(
 
       if (html) return { html, fetched: true };
     } catch {
-      // Try the next proxy.
+      // Try next proxy
     }
   }
 

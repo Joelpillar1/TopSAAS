@@ -653,12 +653,12 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
         markVerified(`TopSAAS badge detected on ${targetUrl}! Verification complete.`);
       } else if (fetched) {
         setBadgeVerificationError(
-          `We loaded ${targetUrl}, but could not find the TopSAAS badge code. Make sure the snippet is in the page's raw HTML — badges injected only by client-side JavaScript will not be seen — then re-publish and try again.`
+          edge.reason || `We reached ${targetUrl}, but could not find the TopSAAS badge code. Make sure the badge snippet is embedded in your website, then re-publish and try again.`
         );
         playSound('error', soundEnabled);
       } else {
         setBadgeVerificationError(
-          `Could not reach ${targetUrl} to inspect the HTML. If your site has bot protection or is behind authentication, make sure it is publicly reachable, then retry — or use the manual confirmation below.`
+          edge.reason || `Could not reach ${targetUrl} to inspect the HTML. If your site has bot protection or is behind authentication, make sure it is publicly reachable, then retry — or use the manual confirmation below.`
         );
         playSound('error', soundEnabled);
       }

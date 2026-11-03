@@ -1587,7 +1587,6 @@ export default function App() {
   const globalHeader = (
     <Header
       onGoHome={handleBackToLeaderboard}
-      onOpenSubmit={handleOpenSubmit}
       onOpenSubmit={handleTopNavSubmit}
       onSignIn={handleSignIn}
       onGoToProfile={handleGoToProfile}
