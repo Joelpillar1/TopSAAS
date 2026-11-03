@@ -27,7 +27,7 @@ import { playSound } from './utils/sound';
 import confetti from 'canvas-confetti';
 import { supabase } from './utils/supabase';
 import { loadProducts, saveAllProducts, saveProductRanksDirect, debouncedSyncProducts, toggleUpvote, getUserUpvotes, getUpvoteCounts, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, insertProductDirect, fetchComments, addComment, getCachedCommentsSync, submissionToProduct, publishedProductId, isProductUpvoted, getGuestUpvotes, saveGuestUpvotes, incrementProductUpvotesDirect } from './utils/db';
-import { getRecentWeeks, isInWeek } from './utils/weeks';
+import { getRecentWeeks, isInWeek, getWeekInfo, WeekInfo } from './utils/weeks';
 import { getWebsiteFavicon } from './utils/logo';
 import { Trophy, X, Plus, ShieldCheck, Loader2, Star, MessageCircle, Flame, Search } from 'lucide-react';
 import { FeaturedSpotModal } from './components/FeaturedSpotModal';
@@ -40,6 +40,7 @@ import { ProductRow, timeAgo } from './components/ProductRow';
 import { SponsorTile } from './components/SponsorTile';
 import { MOCK_SPONSORS } from './data/mockSponsors';
 import { HeroSponsorRails } from './components/HeroSponsorRails';
+import { WeeklyLaunchView } from './components/WeeklyLaunchView';
 import { SpotlightCard, RailCard, FeedRow, PromotedCard, SponsoredLaunchBanner } from './components/DirectoryRails';
 import { ProductLogo } from './components/ProductLogo';
 
@@ -394,11 +395,8 @@ export default function App() {
   const [liveFeed, setLiveFeed] = useState<FeedEvent[]>([]);
   const lastClickFeedRef = React.useRef<Record<string, number>>({});
 
-  // Weekly launch board state (0 = current week, higher = older weeks)
-  const [selectedWeekOffset, setSelectedWeekOffset] = useState<number>(0);
-  // Default to the full directory so the page never opens on an empty round
-  const [showAllTime, setShowAllTime] = useState<boolean>(true);
-  const weekPickedByUserRef = React.useRef(false);
+  // Weekly launch board state: selected week (defaults to current calendar week)
+  const [selectedWeek, setSelectedWeek] = useState<WeekInfo | null>(() => getWeekInfo(Date.now()));
 
   // Comments (discussion threads on product detail pages)
   const [comments, setComments] = useState<Comment[]>(() => {
@@ -1525,9 +1523,6 @@ export default function App() {
 
   // Weekly launch rounds: scope products to the selected week, upvote-ranked
   const weeks = getRecentWeeks(6);
-  const selectedWeek = showAllTime
-    ? null
-    : weeks[weeks.length - 1 - Math.min(Math.max(selectedWeekOffset, 0), weeks.length - 1)];
   const weekScopedProducts = selectedWeek
     ? products.filter((p) => isInWeek(p.createdAt, selectedWeek))
     : products;
@@ -2185,6 +2180,16 @@ export default function App() {
                 }}
               />
 
+              {/* ── Weekly launch view (horizontal): week selector ── */}
+              <WeeklyLaunchView
+                selectedWeek={selectedWeek}
+                onSelectWeek={(w) => {
+                  setSelectedWeek(w);
+                  setCurrentPage(1);
+                }}
+                soundEnabled={soundEnabled}
+              />
+
               {/* ── Directory board: centered ranked list within sponsor rails ── */}
               <section id="leaderboard-section" className="w-full pt-2">
                 <div className="w-full space-y-3.5">
@@ -2325,8 +2330,7 @@ export default function App() {
                               type="button"
                               onClick={() => {
                                 playSound('click', soundEnabled);
-                                weekPickedByUserRef.current = true;
-                                setShowAllTime(true);
+                                setSelectedWeek(null);
                                 setCurrentPage(1);
                               }}
                               className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-transparent px-3.5 py-2 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-colors cursor-pointer"

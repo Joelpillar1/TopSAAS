@@ -1,16 +1,19 @@
 // Monday-based (ISO-8601 style) week utilities for the weekly launch board
 
 export interface WeekInfo {
-  key: string; // '2026-W36'
-  label: string; // 'Week 36'
+  key: string; // '2026-W45'
+  label: string; // 'Week 45'
+  weekNumber: number; // 45
   start: number; // Monday 00:00 local (inclusive)
   end: number; // next Monday 00:00 local (exclusive)
+  isCurrent?: boolean;
+  isFuture?: boolean;
 }
 
 const WEEK_MS = 7 * 86400000;
 
 /** ISO-8601 week number for a given date (Monday-start weeks) */
-function getISOWeek(date: Date): number {
+export function getISOWeek(date: Date): number {
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
   // Move to Thursday of the same week (ISO weeks belong to the year of their Thursday)
   const dayNum = (d.getUTCDay() + 6) % 7; // Mon=0 ... Sun=6
@@ -30,12 +33,33 @@ export function getWeekInfo(ts: number): WeekInfo {
   const start = monday.getTime();
   const end = start + WEEK_MS;
   const weekNumber = getISOWeek(monday);
+  const now = Date.now();
+  const isCurrent = now >= start && now < end;
+  const isFuture = start > now;
   return {
     key: `${monday.getFullYear()}-W${String(weekNumber).padStart(2, '0')}`,
     label: `Week ${weekNumber}`,
+    weekNumber,
     start,
     end,
+    isCurrent,
+    isFuture,
   };
+}
+
+/** Week info for an offset in weeks from now (0 = current week, -1 = last week, +1 = next week) */
+export function getWeekByOffset(offset = 0): WeekInfo {
+  const now = Date.now();
+  return getWeekInfo(now + offset * WEEK_MS);
+}
+
+/** Get a sequence of weeks around an offset (e.g. 3 past, current, 3 future) */
+export function getWeeksWindow(centerOffset = 0, countBefore = 3, countAfter = 3): WeekInfo[] {
+  const out: WeekInfo[] = [];
+  for (let i = -countBefore; i <= countAfter; i++) {
+    out.push(getWeekByOffset(centerOffset + i));
+  }
+  return out;
 }
 
 /** Week info for the `count` most recent weeks, oldest first (last entry = current week) */
