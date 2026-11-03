@@ -2190,7 +2190,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1.5">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-mint-400" />
+                    <CheckCircle2 className="h-3.5 w-3.5 text-white/90" />
                     Submit website
                   </span>
                 )}
