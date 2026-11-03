@@ -43,9 +43,11 @@ export const RichFooter: React.FC<RichFooterProps> = ({
           {/* Brand Column */}
           <div className="col-span-2 sm:col-span-3 lg:col-span-2 space-y-4">
             <div className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-mint-500 text-white shadow-[0_0_0_1px_rgba(37,99,235,0.3)]">
-                <Trophy className="h-5 w-5 fill-white stroke-white" />
-              </div>
+              <img
+                src="/logo/TopSAAS%20-%20blue.png"
+                alt="TopSAAS"
+                className="h-9 w-9 shrink-0 rounded-xl object-contain"
+              />
               <span className="font-black text-xl text-neutral-950 tracking-tight">TopSAAS</span>
             </div>
             <p className="text-xs text-neutral-600 leading-relaxed max-w-xs">

@@ -26,9 +26,13 @@ export const SignInModal: React.FC<SignInModalProps> = ({
           <X className="h-5 w-5" />
         </button>
 
-        {/* Icon */}
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-neutral-100 text-mint-600 border border-neutral-200 mb-5 shadow-2xs">
-          <ShieldCheck className="h-7 w-7" />
+        {/* Logo */}
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-neutral-50 border border-neutral-200 mb-5 shadow-2xs overflow-hidden">
+          <img
+            src="/logo/TopSAAS%20-%20blue.png"
+            alt="TopSAAS logo"
+            className="h-10 w-10 object-contain"
+          />
         </div>
 
         {/* Text */}

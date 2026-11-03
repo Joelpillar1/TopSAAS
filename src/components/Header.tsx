@@ -100,11 +100,13 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             type="button"
             onClick={onGoHome}
-            className="flex items-center gap-2 sm:gap-2.5 cursor-pointer group shrink-0"
+            className="flex items-center gap-2.5 cursor-pointer group shrink-0"
           >
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-mint-500 text-white shadow-[0_0_0_1px_rgba(37,99,235,0.3)] group-hover:bg-mint-600 transition-colors">
-              <Trophy className="h-4 w-4 fill-white stroke-white" />
-            </div>
+            <img
+              src="/logo/TopSAAS%20-%20blue.png"
+              alt="TopSAAS"
+              className="h-8 w-8 shrink-0 rounded-lg object-contain transition-transform group-hover:scale-105"
+            />
             <span className="font-black text-lg sm:text-xl tracking-tight text-neutral-950 whitespace-nowrap inline-block shrink-0">
               TopSAAS
             </span>
