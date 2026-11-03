@@ -154,16 +154,15 @@ export const RichFooter: React.FC<RichFooterProps> = ({
           <h4 className="text-xs font-bold text-neutral-500 mb-3 text-center">Featured on</h4>
           <div className="flex flex-wrap items-center justify-center gap-4">
             <a
-              href="https://www.topsaas.space/product/sub-topsaas"
+              href="https://www.topsaas.space/"
               target="_blank"
               rel="noopener noreferrer"
               className="transition-opacity hover:opacity-85 inline-flex items-center"
             >
               <img
-                src="https://www.topsaas.space/badge/sub-topsaas?style=classic&theme=dark"
-                alt="TopSAAS - Featured on TopSAAS"
-                width={250}
-                height={54}
+                src="https://topsaas.space/Share%20Badge/TopSAAS%20Type%202%20-%20light.png"
+                alt="Featured on TopSAAS"
+                height={36}
                 className="h-9 w-auto"
                 loading="lazy"
               />

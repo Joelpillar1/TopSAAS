@@ -29,7 +29,7 @@ import { supabase } from './utils/supabase';
 import { loadProducts, saveAllProducts, saveProductRanksDirect, debouncedSyncProducts, toggleUpvote, getUserUpvotes, getUpvoteCounts, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, insertProductDirect, fetchComments, addComment, getCachedCommentsSync, submissionToProduct, publishedProductId, isProductUpvoted, getGuestUpvotes, saveGuestUpvotes, incrementProductUpvotesDirect } from './utils/db';
 import { getRecentWeeks, isInWeek } from './utils/weeks';
 import { getWebsiteFavicon } from './utils/logo';
-import { Trophy, X, Plus, ShieldCheck, Loader2, Star, MessageCircle, Flame } from 'lucide-react';
+import { Trophy, X, Plus, ShieldCheck, Loader2, Star, MessageCircle, Flame, Search } from 'lucide-react';
 import { FeaturedSpotModal } from './components/FeaturedSpotModal';
 import { ProductPage } from './components/ProductPage';
 import { RepoDetailPage } from './components/RepoDetailPage';
@@ -148,7 +148,7 @@ function getDeletedSubmissionIds(): Set<string> {
       const arr = JSON.parse(raw);
       if (Array.isArray(arr)) return new Set(arr);
     }
-  } catch {}
+  } catch { }
   return new Set();
 }
 
@@ -159,7 +159,7 @@ function markSubmissionDeleted(id: string) {
     deleted.add(id);
     deleted.add(id.toLowerCase().replace(/\/$/, ''));
     localStorage.setItem(STORAGE_KEYS.DELETED_SUBMISSIONS, JSON.stringify([...deleted]));
-  } catch {}
+  } catch { }
 }
 
 /** Clear deleted state when a submission is created or resubmitted */
@@ -179,7 +179,7 @@ function unmarkSubmissionDeleted(idOrUrl: string) {
     if (changed) {
       localStorage.setItem(STORAGE_KEYS.DELETED_SUBMISSIONS, JSON.stringify([...deleted]));
     }
-  } catch {}
+  } catch { }
 }
 
 export default function App() {
@@ -252,7 +252,7 @@ export default function App() {
           );
         }
       }
-    } catch {}
+    } catch { }
     return INITIAL_SUBMISSIONS;
   });
   const [submissionsLoaded, setSubmissionsLoaded] = useState(false);
@@ -280,10 +280,10 @@ export default function App() {
             } else {
               localStorage.setItem(STORAGE_KEYS.SUBMISSIONS, JSON.stringify(dbSubs));
             }
-          } catch {}
+          } catch { }
 
         }
-      } catch {}
+      } catch { }
       setSubmissionsLoaded(true);
     }
     loadSubmissions();
@@ -310,7 +310,7 @@ export default function App() {
             });
         }
       }
-    } catch {}
+    } catch { }
 
     // Start with empty directory — no seed products
     return [];
@@ -363,7 +363,7 @@ export default function App() {
     try {
       const saved = localStorage.getItem('topsaas_ui_sound');
       if (saved !== null) return saved === 'true';
-    } catch {}
+    } catch { }
     return false; // OFF by default as requested
   });
 
@@ -505,7 +505,7 @@ export default function App() {
     try {
       const q = new URLSearchParams(window.location.search).get('q');
       if (q) setSearchQuery(q);
-    } catch {}
+    } catch { }
   }, []);
 
   // Navigation handlers
@@ -513,7 +513,7 @@ export default function App() {
     setCurrentRoute('/');
     try {
       window.history.pushState('', document.title, '/');
-    } catch {}
+    } catch { }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -537,7 +537,7 @@ export default function App() {
     setRepoRouteId(repo.full_name);
     try {
       window.history.pushState({}, repo.name, `/repo/${repo.full_name}`);
-    } catch {}
+    } catch { }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -547,7 +547,7 @@ export default function App() {
     setProductRouteId(product.id);
     try {
       window.history.pushState({}, product.name, `/product/${encodeURIComponent(product.id)}`);
-    } catch {}
+    } catch { }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -564,7 +564,7 @@ export default function App() {
           logoUrl: s.logoUrl?.startsWith('data:image') ? undefined : s.logoUrl,
         }));
         localStorage.setItem(STORAGE_KEYS.SUBMISSIONS, JSON.stringify(lightweight));
-      } catch {}
+      } catch { }
     }
   };
 
@@ -574,7 +574,7 @@ export default function App() {
       localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
       localStorage.setItem(STORAGE_KEYS.SOUND, soundEnabled.toString());
       saveSubmissionsToStorage(submissions);
-    } catch {}
+    } catch { }
   }, [products, soundEnabled, submissions]);
 
   // Subscribe to realtime changes on submissions table only when on admin accept review page
@@ -636,10 +636,10 @@ export default function App() {
         setCurrentRoute('/submit');
         try {
           window.history.pushState({}, 'Launch a product', '/submit');
-        } catch {}
+        } catch { }
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
-    } catch {}
+    } catch { }
   }, [user]);
 
   // When user is signed in, automatically claim any submissions matching the user's email
@@ -664,7 +664,7 @@ export default function App() {
         // One narrow RPC instead of a per-row UPDATE: it attaches this account to
         // any of its unclaimed submissions (matched by verified email) without
         // needing write access to protected columns like `status` (migration 026).
-        supabase.rpc('claim_submissions').then(() => {}, () => {});
+        supabase.rpc('claim_submissions').then(() => { }, () => { });
         return updated;
       }
       return prev;
@@ -698,7 +698,7 @@ export default function App() {
             if (rpcError) {
               await supabase.from('products').update({ upvotes: real, updated_at: Date.now() }).eq('id', p.id);
             }
-          } catch {}
+          } catch { }
         }
       };
 
@@ -729,14 +729,14 @@ export default function App() {
         try {
           localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(withCounts));
           localStorage.setItem('topsaas_products_cache_v2', JSON.stringify(withCounts));
-        } catch {}
+        } catch { }
       } else if (dbProducts !== null) {
         // Supabase is reachable but returned zero products — clear stale localStorage
         setProducts([]);
         try {
           localStorage.removeItem(STORAGE_KEYS.PRODUCTS);
           localStorage.removeItem('topsaas_products_cache_v2');
-        } catch {}
+        } catch { }
       }
       // If dbProducts is null (network/RLS error), keep localStorage as fallback
       setProductsLoaded(true);
@@ -749,7 +749,7 @@ export default function App() {
     if (!user) {
       setIsAdmin(false);
       setUserUpvotes(new Set());
-      try { localStorage.removeItem('topsaas_guest_upvotes'); } catch {}
+      try { localStorage.removeItem('topsaas_guest_upvotes'); } catch { }
       return;
     }
     checkIsAdmin().then((admin) => {
@@ -780,8 +780,8 @@ export default function App() {
 
             const additions = missing.map((s, i) => submissionToProduct(s, prev.length + i + 1));
             const next = [...prev, ...additions];
-            additions.forEach((p) => { insertProductDirect(p).catch(() => {}); });
-            saveAllProducts(next).catch(() => {});
+            additions.forEach((p) => { insertProductDirect(p).catch(() => { }); });
+            saveAllProducts(next).catch(() => { });
             return next;
           });
         });
@@ -825,7 +825,7 @@ export default function App() {
     setCurrentRoute('/submit');
     try {
       window.history.pushState({}, 'Launch a product', '/submit');
-    } catch {}
+    } catch { }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -836,19 +836,19 @@ export default function App() {
     if (trimmed) {
       try {
         localStorage.setItem('topsaas_submit_initial_url', trimmed);
-      } catch {}
+      } catch { }
     }
     if (!user) {
       try {
         localStorage.setItem('topsaas_pending_submit_redirect', 'true');
-      } catch {}
+      } catch { }
       setIsSignInModalOpen(true);
       return;
     }
     setCurrentRoute('/submit');
     try {
       window.history.pushState({}, 'Launch a product', '/submit');
-    } catch {}
+    } catch { }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -923,7 +923,7 @@ export default function App() {
       try {
         localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(reRanked));
         localStorage.setItem('topsaas_products_cache_v2', JSON.stringify(reRanked));
-      } catch {}
+      } catch { }
 
       return reRanked;
     });
@@ -1055,7 +1055,7 @@ export default function App() {
 
     try {
       await supabase.from('submissions').update({ status: 'approved', reviewed_at: reviewedAt }).eq('id', sub.id);
-    } catch {}
+    } catch { }
 
     // 2. Publish the listing at its deterministic id. The id alone decides create
     //    vs. refresh — no URL matching, no reconciliation against submissions.
@@ -1068,31 +1068,31 @@ export default function App() {
 
       const nextProducts = existing
         ? prev.map((p) =>
-            p.id === listingId
-              ? {
-                  ...fresh,
-                  // A republish must never reset engagement or the creation date.
-                  rank: p.rank,
-                  previousRank: p.previousRank ?? p.rank,
-                  upvotes: p.upvotes,
-                  clicks: p.clicks,
-                  dinoScore: p.dinoScore,
-                  totalBid: p.totalBid,
-                  bidHistory: p.bidHistory,
-                  createdAt: p.createdAt,
-                }
-              : p
-          )
+          p.id === listingId
+            ? {
+              ...fresh,
+              // A republish must never reset engagement or the creation date.
+              rank: p.rank,
+              previousRank: p.previousRank ?? p.rank,
+              upvotes: p.upvotes,
+              clicks: p.clicks,
+              dinoScore: p.dinoScore,
+              totalBid: p.totalBid,
+              bidHistory: p.bidHistory,
+              createdAt: p.createdAt,
+            }
+            : p
+        )
         : [...prev, fresh].map((p, idx) => ({ ...p, rank: idx + 1 }));
 
       productToSync = nextProducts.find((p) => p.id === listingId) ?? fresh;
 
       debouncedSyncProducts(nextProducts);
-      saveAllProducts(nextProducts).catch(() => {});
+      saveAllProducts(nextProducts).catch(() => { });
       try {
         localStorage.setItem('topsaas_products_cache_v2', JSON.stringify(nextProducts));
         localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(nextProducts));
-      } catch {}
+      } catch { }
       return nextProducts;
     });
 
@@ -1103,7 +1103,7 @@ export default function App() {
     if (productToSync) {
       try {
         await insertProductDirect(productToSync);
-      } catch {}
+      } catch { }
     }
   };
 
@@ -1118,7 +1118,7 @@ export default function App() {
     );
     try {
       await supabase.from('submissions').update({ status: 'rejected', reviewed_at: reviewedAt, rejection_reason: rejectionReason }).eq('id', submissionId);
-    } catch {}
+    } catch { }
   };
 
   // Admin Delete Permanent
@@ -1159,7 +1159,7 @@ export default function App() {
     setSubmissions((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
     try {
       await supabase.from('submissions').update(toDbSubmission(updated)).eq('id', updated.id);
-    } catch {}
+    } catch { }
   };
 
   // Admin Restore Submission to Queue
@@ -1169,7 +1169,7 @@ export default function App() {
     );
     try {
       await supabase.from('submissions').update({ status: 'under_review', reviewed_at: null }).eq('id', submissionId);
-    } catch {}
+    } catch { }
   };
 
   // Seed sample submissions for testing
@@ -1181,7 +1181,7 @@ export default function App() {
         INITIAL_SUBMISSIONS.map(toDbSubmission),
         { onConflict: 'id' }
       );
-    } catch {}
+    } catch { }
   };
 
   // Track click on a website (counts the visit + pushes a live traffic event)
@@ -1223,9 +1223,9 @@ export default function App() {
       try {
         localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(updated));
         localStorage.setItem('topsaas_products_cache_v2', JSON.stringify(updated));
-      } catch {}
+      } catch { }
       debouncedSyncProducts(updated);
-      saveAllProducts(updated).catch(() => {});
+      saveAllProducts(updated).catch(() => { });
       return updated;
     });
 
@@ -1244,7 +1244,7 @@ export default function App() {
             try {
               localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(restored));
               localStorage.setItem('topsaas_products_cache_v2', JSON.stringify(restored));
-            } catch {}
+            } catch { }
             return restored;
           });
         }
@@ -1261,7 +1261,7 @@ export default function App() {
           try {
             localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(restored));
             localStorage.setItem('topsaas_products_cache_v2', JSON.stringify(restored));
-          } catch {}
+          } catch { }
           return restored;
         });
       }
@@ -1276,9 +1276,9 @@ export default function App() {
       try {
         localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(updated));
         localStorage.setItem('topsaas_products_cache_v2', JSON.stringify(updated));
-      } catch {}
+      } catch { }
       debouncedSyncProducts(updated);
-      saveAllProducts(updated).catch(() => {});
+      saveAllProducts(updated).catch(() => { });
       return updated;
     });
 
@@ -1319,8 +1319,8 @@ export default function App() {
       try {
         localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(ranked));
         localStorage.setItem('topsaas_products_cache_v2', JSON.stringify(ranked));
-      } catch {}
-      saveAllProducts(ranked).catch(() => {});
+      } catch { }
+      saveAllProducts(ranked).catch(() => { });
       debouncedSyncProducts(ranked);
 
       return ranked;
@@ -1339,8 +1339,8 @@ export default function App() {
       try {
         localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(ranked));
         localStorage.setItem('topsaas_products_cache_v2', JSON.stringify(ranked));
-      } catch {}
-      saveAllProducts(ranked).catch(() => {});
+      } catch { }
+      saveAllProducts(ranked).catch(() => { });
       debouncedSyncProducts(ranked);
       return ranked;
     });
@@ -1566,7 +1566,7 @@ export default function App() {
         tab === 'pricing' ? 'Pricing' : tab === 'saas-ideas' ? 'SaaS Ideas' : 'Directory',
         nextRoute
       );
-    } catch {}
+    } catch { }
     if (tab === 'directory') {
       setSelectedCategory('All');
     }
@@ -1580,13 +1580,14 @@ export default function App() {
 
   const handleNavigateLegal = (doc: 'privacy' | 'terms') => {
     setCurrentRoute(`/${doc}`);
-    try { window.history.pushState('', document.title, `/${doc}`); } catch {}
+    try { window.history.pushState('', document.title, `/${doc}`); } catch { }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const globalHeader = (
     <Header
       onGoHome={handleBackToLeaderboard}
+      onOpenSubmit={handleOpenSubmit}
       onOpenSubmit={handleTopNavSubmit}
       onSignIn={handleSignIn}
       onGoToProfile={handleGoToProfile}
@@ -1602,12 +1603,12 @@ export default function App() {
       <>
         {globalHeader}
         <PaymentSuccess
-        onBackToDirectory={handleBackToLeaderboard}
-        soundEnabled={soundEnabled}
-        onActivateFeatured={(productId) => {
-          setFeaturedProductId(productId);
-        }}
-      />
+          onBackToDirectory={handleBackToLeaderboard}
+          soundEnabled={soundEnabled}
+          onActivateFeatured={(productId) => {
+            setFeaturedProductId(productId);
+          }}
+        />
       </>
     );
   }
@@ -1687,9 +1688,18 @@ export default function App() {
 
   // 1.5 PRODUCT DETAIL ROUTE (/product/:id)
   if (currentRoute === 'product') {
+    const routeId = productRouteId || '';
+    // If someone visits /product/sub-topsaas or /product/topsaas, redirect to home
+    if (routeId.toLowerCase() === 'sub-topsaas' || routeId.toLowerCase() === 'topsaas') {
+      if (typeof window !== 'undefined') {
+        try { window.history.replaceState('', document.title, '/'); } catch {}
+        window.location.replace('/');
+      }
+      return null;
+    }
+
     // Listings are addressed by their deterministic id. Both the published
     // `prod-<id>` form and the bare id resolve, so old links keep working.
-    const routeId = productRouteId || '';
     const bareRouteId = routeId.startsWith('prod-') ? routeId.replace(/^prod-/, '') : routeId;
     const canonicalId = routeId ? publishedProductId(bareRouteId) : '';
 
@@ -1706,8 +1716,8 @@ export default function App() {
 
     const rankIndex = rawProduct
       ? sortedByRankProducts.findIndex(
-          (p) => p.id === rawProduct!.id || p.id === publishedProductId(rawProduct!.id)
-        )
+        (p) => p.id === rawProduct!.id || p.id === publishedProductId(rawProduct!.id)
+      )
       : -1;
     const dynamicRank = rawProduct ? (rankIndex >= 0 ? rankIndex + 1 : (rawProduct.rank || 1)) : 1;
     const product = rawProduct ? { ...rawProduct, rank: dynamicRank } : null;
@@ -1728,14 +1738,14 @@ export default function App() {
           <div className="min-h-screen bg-white text-neutral-900 flex items-center justify-center font-sans">
             <div className="text-center space-y-3">
               <h2 className="text-lg font-bold">Product not found</h2>
-            <p className="text-sm text-neutral-400">This listing may have been removed.</p>
-            <button
-              onClick={() => {
-                setCurrentRoute('/');
-                try { window.history.pushState('', document.title, '/'); } catch {}
-              }}
-              className="mt-2 rounded-xl bg-white text-black px-4 py-2 text-xs font-bold cursor-pointer"
-            >
+              <p className="text-sm text-neutral-400">This listing may have been removed.</p>
+              <button
+                onClick={() => {
+                  setCurrentRoute('/');
+                  try { window.history.pushState('', document.title, '/'); } catch { }
+                }}
+                className="mt-2 rounded-xl bg-white text-black px-4 py-2 text-xs font-bold cursor-pointer"
+              >
                 Back to Home
               </button>
             </div>
@@ -1764,13 +1774,13 @@ export default function App() {
           onAddComment={handleAddComment}
           onBack={() => {
             setCurrentRoute('/');
-            try { window.history.pushState('', document.title, '/'); } catch {}
+            try { window.history.pushState('', document.title, '/'); } catch { }
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
           onSelectProduct={(p) => {
             setCurrentRoute('product');
             setProductRouteId(p.id);
-            try { window.history.pushState({}, p.name, `/product/${encodeURIComponent(p.id)}`); } catch {}
+            try { window.history.pushState({}, p.name, `/product/${encodeURIComponent(p.id)}`); } catch { }
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
           onShare={(p) => setShareProduct(p)}
@@ -1786,12 +1796,12 @@ export default function App() {
           onSelectCategory={setSelectedCategory}
           onOpenPrivacy={() => {
             setCurrentRoute('/privacy');
-            try { window.history.pushState('', document.title, '/privacy'); } catch {}
+            try { window.history.pushState('', document.title, '/privacy'); } catch { }
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
           onOpenTerms={() => {
             setCurrentRoute('/terms');
-            try { window.history.pushState('', document.title, '/terms'); } catch {}
+            try { window.history.pushState('', document.title, '/terms'); } catch { }
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
         />
@@ -1820,7 +1830,7 @@ export default function App() {
       setCurrentRoute('/');
       try {
         window.history.pushState('', document.title, '/');
-      } catch {}
+      } catch { }
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
@@ -1870,12 +1880,12 @@ export default function App() {
           onSelectCategory={setSelectedCategory}
           onOpenPrivacy={() => {
             setCurrentRoute('/privacy');
-            try { window.history.pushState('', document.title, '/privacy'); } catch {}
+            try { window.history.pushState('', document.title, '/privacy'); } catch { }
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
           onOpenTerms={() => {
             setCurrentRoute('/terms');
-            try { window.history.pushState('', document.title, '/terms'); } catch {}
+            try { window.history.pushState('', document.title, '/terms'); } catch { }
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
           onOpenPricing={handleOpenPricing}
@@ -1927,7 +1937,7 @@ export default function App() {
             setProductRouteId(productId);
             try {
               window.history.pushState({}, 'Product', `/product/${encodeURIComponent(productId)}`);
-            } catch {}
+            } catch { }
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
           soundEnabled={soundEnabled}
@@ -1940,12 +1950,12 @@ export default function App() {
           onSelectCategory={setSelectedCategory}
           onOpenPrivacy={() => {
             setCurrentRoute('/privacy');
-            try { window.history.pushState('', document.title, '/privacy'); } catch {}
+            try { window.history.pushState('', document.title, '/privacy'); } catch { }
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
           onOpenTerms={() => {
             setCurrentRoute('/terms');
-            try { window.history.pushState('', document.title, '/terms'); } catch {}
+            try { window.history.pushState('', document.title, '/terms'); } catch { }
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
         />
@@ -1968,9 +1978,9 @@ export default function App() {
           <div className="min-h-screen bg-white text-neutral-900 flex items-center justify-center font-sans">
             <div className="text-center space-y-3">
               <ShieldCheck className="mx-auto h-10 w-10 text-neutral-500" />
-            <h2 className="text-lg font-bold">Admin Access Required</h2>
-            <p className="text-sm text-neutral-400">You don't have admin privileges.</p>
-            <button onClick={handleBackToLeaderboard} className="mt-2 rounded-xl bg-white text-black px-4 py-2 text-xs font-bold cursor-pointer">Back to Home</button>
+              <h2 className="text-lg font-bold">Admin Access Required</h2>
+              <p className="text-sm text-neutral-400">You don't have admin privileges.</p>
+              <button onClick={handleBackToLeaderboard} className="mt-2 rounded-xl bg-white text-black px-4 py-2 text-xs font-bold cursor-pointer">Back to Home</button>
             </div>
           </div>
         </>
@@ -1981,32 +1991,32 @@ export default function App() {
         {globalHeader}
         <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between font-sans">
           <AdminAcceptPage
-          submissions={submissions}
-          products={products}
-          onAcceptSubmission={handleAcceptSubmission}
-          onRejectSubmission={handleRejectSubmission}
-          onDeleteSubmission={handleDeleteSubmission}
-          onUpdateSubmission={handleUpdateSubmission}
-          onRestoreSubmission={handleRestoreSubmission}
-          onDelistProduct={handleDelistProduct}
-          onAssignRank={handleAssignRank}
-          onAutoRankByUpvotes={handleAutoRankByUpvotes}
-          onBackToDirectory={handleBackToLeaderboard}
-          onOpenSubmitModal={handleOpenSubmit}
-          onSeedSampleSubmissions={handleSeedSampleSubmissions}
-          soundEnabled={soundEnabled}
-          onToggleSound={() => setSoundEnabled(!soundEnabled)}
-          featuredProductId={featuredProductId}
-          onSetFeatured={handleSetFeatured}
-          onSaveProductsOrder={handleSaveProductsOrder}
-          onToggleVerified={handleToggleVerifiedProduct}
-        />
+            submissions={submissions}
+            products={products}
+            onAcceptSubmission={handleAcceptSubmission}
+            onRejectSubmission={handleRejectSubmission}
+            onDeleteSubmission={handleDeleteSubmission}
+            onUpdateSubmission={handleUpdateSubmission}
+            onRestoreSubmission={handleRestoreSubmission}
+            onDelistProduct={handleDelistProduct}
+            onAssignRank={handleAssignRank}
+            onAutoRankByUpvotes={handleAutoRankByUpvotes}
+            onBackToDirectory={handleBackToLeaderboard}
+            onOpenSubmitModal={handleOpenSubmit}
+            onSeedSampleSubmissions={handleSeedSampleSubmissions}
+            soundEnabled={soundEnabled}
+            onToggleSound={() => setSoundEnabled(!soundEnabled)}
+            featuredProductId={featuredProductId}
+            onSetFeatured={handleSetFeatured}
+            onSaveProductsOrder={handleSaveProductsOrder}
+            onToggleVerified={handleToggleVerifiedProduct}
+          />
 
-        <SignInModal
-          isOpen={isSignInModalOpen}
-          onClose={() => setIsSignInModalOpen(false)}
-          onSignIn={handleSignIn}
-        />
+          <SignInModal
+            isOpen={isSignInModalOpen}
+            onClose={() => setIsSignInModalOpen(false)}
+            onSignIn={handleSignIn}
+          />
         </div>
       </>
     );
@@ -2096,349 +2106,342 @@ export default function App() {
             upvotedIds={userUpvotes}
           />
         ) : (
-        <>
-        {/* ── Hero: brand statement + search ── */}
-        <HeroSponsorRails
-          sponsors={MOCK_SPONSORS}
-          isLoading={!productsLoaded}
-          soundEnabled={soundEnabled}
-          onOpenProduct={handleOpenProduct}
-          onOpenFeaturedSpotModal={() => {
-            if (!user) {
-              setIsSignInModalOpen(true);
-            } else {
-              setIsFeaturedSpotModalOpen(true);
-            }
-          }}
-        >
-          <HomeHero
-            totalProducts={products.length}
-            totalCategories={directoryCategories.length}
-            searchQuery={searchQuery}
-            onSearchChange={(v) => {
-              setSearchQuery(v);
-              setCurrentPage(1);
-            }}
-            onOpenSubmit={handleOpenSubmit}
-            soundEnabled={soundEnabled}
-            dealsCount={totalDealsCount}
-            stealsOnly={stealsOnly}
-            onToggleSteals={() => {
-              playSound('click', soundEnabled);
-              setStealsOnly((prev) => !prev);
-              setCurrentPage(1);
-            }}
-          />
-
-          {/* ── Directory board: centered ranked list within sponsor rails ── */}
-          <section id="leaderboard-section" className="w-full pt-2">
-            <div className="w-full space-y-3.5">
-        {/* Category bar + Steals Only toggle on the same line (right-side edge) */}
-        <div className="flex items-center justify-between gap-2.5">
-          {/* Category chips */}
-          <div className="flex items-center gap-1.5 min-w-0 flex-1">
-            {/* "All" stays pinned outside the scrolling strip */}
-            <button
-              type="button"
-              onClick={() => {
-                playSound('click', soundEnabled);
-                setSelectedCategory('All' as Category);
-                setCurrentPage(1);
-              }}
-              className={`flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[11px] font-bold transition-all cursor-pointer ${
-                selectedCategory === 'All'
-                  ? 'border-mint-500/60 bg-mint-500/15 text-mint-700'
-                  : 'border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 hover:text-neutral-950'
-              }`}
-            >
-              <span>All</span>
-              <span className={`rounded-md px-1.5 py-px text-[9px] font-black font-mono-num ${selectedCategory === 'All' ? 'bg-mint-500/20 text-mint-700' : 'bg-neutral-100 text-neutral-600'}`}>
-                {products.length}
-              </span>
-            </button>
-
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none min-w-0 flex-1" role="navigation" aria-label="Browse by category">
-              {([...(selectedCategory !== 'All' && !directoryCategories.includes(selectedCategory) ? [selectedCategory] : []), ...directoryCategories] as Category[]).map((cat) => {
-                const catKey = cat.toLowerCase();
-                const count = products.filter((p) =>
-                  p.category
-                    ? p.category.split(',').map((c) => c.trim().toLowerCase()).includes(catKey)
-                    : false
-                ).length;
-                const active = selectedCategory === cat;
-                return (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => {
-                      playSound('click', soundEnabled);
-                      setSelectedCategory(cat);
-                      setCurrentPage(1);
-                    }}
-                    className={`flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[11px] font-bold transition-all cursor-pointer ${
-                      active
-                        ? 'border-mint-500/60 bg-mint-500/15 text-mint-700'
-                        : 'border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 hover:text-neutral-950'
-                    }`}
-                  >
-                    <span>{cat}</span>
-                    <span className={`rounded-md px-1.5 py-px text-[9px] font-black font-mono-num ${active ? 'bg-mint-500/20 text-mint-700' : 'bg-neutral-100 text-neutral-600'}`}>
-                      {count}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Controls on the right edge: Steals Only */}
-          <div className="shrink-0 flex items-center gap-2 pl-1">
-            <button
-              type="button"
-              role="switch"
-              aria-checked={stealsOnly}
-              onClick={(e) => {
-                playSound('click', soundEnabled);
-                if (!stealsOnly) {
-                  try {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    const x = (rect.left + rect.width / 2) / window.innerWidth;
-                    const y = (rect.top + rect.height / 2) / window.innerHeight;
-                    confetti({
-                      particleCount: 24,
-                      spread: 50,
-                      origin: { x, y },
-                      colors: ['#66cc88', '#f59e0b', '#38bdf8', '#fbbf24'],
-                      ticks: 120,
-                      gravity: 1.1,
-                      scalar: 0.8,
-                      disableForReducedMotion: true,
-                    });
-                  } catch {}
+          <>
+            {/* ── Hero: brand statement + search ── */}
+            <HeroSponsorRails
+              sponsors={MOCK_SPONSORS}
+              isLoading={!productsLoaded}
+              soundEnabled={soundEnabled}
+              onOpenProduct={handleOpenProduct}
+              onOpenFeaturedSpotModal={() => {
+                if (!user) {
+                  setIsSignInModalOpen(true);
+                } else {
+                  setIsFeaturedSpotModalOpen(true);
                 }
-                setStealsOnly((prev) => !prev);
-                setCurrentPage(1);
               }}
-              title={stealsOnly ? 'Turn off Steals Only filter' : 'Show only tools with exclusive discounts (50% OFF, lifetime deals, promo codes)'}
-              className={`group inline-flex items-center gap-2 rounded-lg border px-2.5 py-1 text-xs font-bold transition-all cursor-pointer select-none ${
-                stealsOnly
-                  ? 'border-amber-400/70 bg-amber-50 text-amber-800 ring-1 ring-amber-400/40'
-                  : 'border-neutral-200 bg-white text-neutral-500 hover:border-neutral-300 hover:text-neutral-950'
-              }`}
             >
-              <Flame
-                className={`h-3.5 w-3.5 transition-transform duration-200 ${
-                  stealsOnly ? 'text-amber-500 fill-amber-500/30 scale-110' : 'text-neutral-400 group-hover:text-amber-500'
-                }`}
+              <HomeHero
+                totalProducts={products.length}
+                totalCategories={directoryCategories.length}
+                searchQuery={searchQuery}
+                onSearchChange={(v) => {
+                  setSearchQuery(v);
+                  setCurrentPage(1);
+                }}
+                onOpenSubmit={handleOpenSubmit}
+                soundEnabled={soundEnabled}
+                dealsCount={totalDealsCount}
+                stealsOnly={stealsOnly}
+                onToggleSteals={() => {
+                  playSound('click', soundEnabled);
+                  setStealsOnly((prev) => !prev);
+                  setCurrentPage(1);
+                }}
               />
-              <span className="text-[11px] font-bold tracking-tight whitespace-nowrap">
-                Steals Only
-              </span>
-              {totalDealsCount > 0 && (
-                <span
-                  className={`rounded-full px-1.5 py-px text-[9px] font-black font-mono-num ${
-                    stealsOnly ? 'bg-amber-500/20 text-amber-800' : 'bg-neutral-100 text-neutral-600 group-hover:text-neutral-800'
-                  }`}
-                >
-                  {totalDealsCount}
-                </span>
-              )}
 
-              {/* Sliding switch track & knob */}
-              <span
-                className={`relative inline-flex h-4 w-7 shrink-0 items-center rounded-full p-0.5 transition-colors duration-200 ${
-                  stealsOnly ? 'bg-amber-400' : 'bg-neutral-300 group-hover:bg-neutral-400'
-                }`}
-              >
-                <span
-                  className={`inline-block h-3 w-3 transform rounded-full bg-white shadow-xs transition-transform duration-200 ease-out ${
-                    stealsOnly ? 'translate-x-3' : 'translate-x-0'
-                  }`}
-                />
-              </span>
-            </button>
-          </div>
-        </div>
+              {/* ── Directory board: centered ranked list within sponsor rails ── */}
+              <section id="leaderboard-section" className="w-full pt-2">
+                <div className="w-full space-y-3.5">
+                  {/* Category bar + Steals Only toggle on the same line (right-side edge) */}
+                  <div className="flex items-center justify-between gap-2.5">
+                    {/* Category chips */}
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none min-w-0 flex-1" role="navigation" aria-label="Browse by category">
+                      {(['All', ...(selectedCategory !== 'All' && !directoryCategories.includes(selectedCategory) ? [selectedCategory] : []), ...directoryCategories] as Category[]).map((cat) => {
+                        const count = cat === 'All' ? products.length : products.filter((p) => p.category === cat).length;
+                        const active = selectedCategory === cat;
+                        return (
+                          <button
+                            key={cat}
+                            type="button"
+                            onClick={() => {
+                              playSound('click', soundEnabled);
+                              setSelectedCategory(cat);
+                              setCurrentPage(1);
+                            }}
+                            className={`flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[11px] font-bold transition-all cursor-pointer ${active
+                              ? 'border-mint-500/60 bg-mint-500/15 text-mint-700'
+                              : 'border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 hover:text-neutral-950'
+                              }`}
+                          >
+                            <span>{cat}</span>
+                            <span className={`rounded-md px-1.5 py-px text-[9px] font-black font-mono-num ${active ? 'bg-mint-500/20 text-mint-700' : 'bg-neutral-100 text-neutral-600'}`}>
+                              {count}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
 
-        {/* Leaderboard Rendering */}
-        {!productsLoaded ? (
-          <SkeletonRows />
-        ) : filteredProducts.length === 0 ? (
-          <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center">
-            {selectedWeek && weekScopedProducts.length === 0 ? (
-              <>
-                <Trophy className="mx-auto h-10 w-10 text-neutral-700 mb-3" />
-                <h3 className="text-lg font-bold text-neutral-950">No launches in {selectedWeek.label} yet</h3>
-                <p className="text-xs text-neutral-500 max-w-sm mx-auto mt-1 mb-5 font-medium">
-                  The round is fresh. Be the first to launch your SaaS this week and take the #1 spot.
-                </p>
-                <div className="flex items-center justify-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      playSound('click', soundEnabled);
-                      weekPickedByUserRef.current = true;
-                      setShowAllTime(true);
-                      setCurrentPage(1);
-                    }}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-transparent px-3.5 py-2 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-colors cursor-pointer"
-                  >
-                    <span>See all launches</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      playSound('click', soundEnabled);
-                      handleOpenSubmit();
-                    }}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-xs font-bold text-black hover:bg-neutral-200 transition-colors cursor-pointer"
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    <span>Launch your SaaS</span>
-                  </button>
-                </div>
-              </>
-            ) : stealsOnly ? (
-              <>
-                <Flame className="mx-auto h-10 w-10 text-amber-400 mb-3 animate-pulse" />
-                <h3 className="text-lg font-bold text-neutral-950">No exclusive deals found</h3>
-                <p className="text-xs text-neutral-400 max-w-md mx-auto mt-1 mb-5 font-medium">
-                  {searchQuery.trim()
-                    ? `No tools with exclusive discounts match "${searchQuery}". Try searching for another term or turn off Steals Only.`
-                    : selectedCategory !== 'All'
-                    ? `No tools in "${selectedCategory}" have active promo codes or discounts right now. Check back soon or turn off Steals Only.`
-                    : 'No tools with active discounts match your current filters.'}
-                </p>
-                <div className="flex items-center justify-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      playSound('click', soundEnabled);
-                      setStealsOnly(false);
-                      setCurrentPage(1);
-                    }}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-xs font-bold text-amber-800 hover:bg-amber-100 transition-colors cursor-pointer"
-                  >
-                    <span>Turn off Steals Only</span>
-                  </button>
-                  {(searchQuery || selectedCategory !== 'All') && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        playSound('click', soundEnabled);
-                        setSearchQuery('');
-                        setSelectedCategory('All');
-                        setCurrentPage(1);
-                      }}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-transparent px-3.5 py-2 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-colors cursor-pointer"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                      <span>Clear Filters</span>
-                    </button>
+                    {/* Controls on the right edge: Search + Steals Only */}
+                    <div className="shrink-0 flex items-center gap-2 pl-1">
+                      <div className="relative hidden sm:block w-36 xl:w-44">
+                        <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neutral-400" />
+                        <input
+                          type="text"
+                          value={searchQuery}
+                          onChange={(e) => {
+                            setSearchQuery(e.target.value);
+                            setCurrentPage(1);
+                          }}
+                          placeholder="Search tools…"
+                          className="w-full rounded-lg border border-neutral-200 bg-white py-1 pl-8 pr-6 text-[11px] font-medium text-neutral-900 placeholder-neutral-400 outline-none transition-all focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900/10"
+                        />
+                        {searchQuery && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSearchQuery('');
+                              setCurrentPage(1);
+                            }}
+                            className="absolute right-1.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-700"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={stealsOnly}
+                        onClick={(e) => {
+                          playSound('click', soundEnabled);
+                          if (!stealsOnly) {
+                            try {
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              const x = (rect.left + rect.width / 2) / window.innerWidth;
+                              const y = (rect.top + rect.height / 2) / window.innerHeight;
+                              confetti({
+                                particleCount: 24,
+                                spread: 50,
+                                origin: { x, y },
+                                colors: ['#66cc88', '#f59e0b', '#38bdf8', '#fbbf24'],
+                                ticks: 120,
+                                gravity: 1.1,
+                                scalar: 0.8,
+                                disableForReducedMotion: true,
+                              });
+                            } catch { }
+                          }
+                          setStealsOnly((prev) => !prev);
+                          setCurrentPage(1);
+                        }}
+                        title={stealsOnly ? 'Turn off Steals Only filter' : 'Show only tools with exclusive discounts (50% OFF, lifetime deals, promo codes)'}
+                        className={`group inline-flex items-center gap-2 rounded-lg border px-2.5 py-1 text-xs font-bold transition-all cursor-pointer select-none ${stealsOnly
+                          ? 'border-amber-400/70 bg-amber-50 text-amber-800 ring-1 ring-amber-400/40'
+                          : 'border-neutral-200 bg-white text-neutral-500 hover:border-neutral-300 hover:text-neutral-950'
+                          }`}
+                      >
+                        <Flame
+                          className={`h-3.5 w-3.5 transition-transform duration-200 ${stealsOnly ? 'text-amber-500 fill-amber-500/30 scale-110' : 'text-neutral-400 group-hover:text-amber-500'
+                            }`}
+                        />
+                        <span className="text-[11px] font-bold tracking-tight whitespace-nowrap">
+                          Steals Only
+                        </span>
+                        {totalDealsCount > 0 && (
+                          <span
+                            className={`rounded-full px-1.5 py-px text-[9px] font-black font-mono-num ${stealsOnly ? 'bg-amber-500/20 text-amber-800' : 'bg-neutral-100 text-neutral-600 group-hover:text-neutral-800'
+                              }`}
+                          >
+                            {totalDealsCount}
+                          </span>
+                        )}
+
+                        {/* Sliding switch track & knob */}
+                        <span
+                          className={`relative inline-flex h-4 w-7 shrink-0 items-center rounded-full p-0.5 transition-colors duration-200 ${stealsOnly ? 'bg-amber-400' : 'bg-neutral-300 group-hover:bg-neutral-400'
+                            }`}
+                        >
+                          <span
+                            className={`inline-block h-3 w-3 transform rounded-full bg-white shadow-xs transition-transform duration-200 ease-out ${stealsOnly ? 'translate-x-3' : 'translate-x-0'
+                              }`}
+                          />
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Leaderboard Rendering */}
+                  {!productsLoaded ? (
+                    <SkeletonRows />
+                  ) : filteredProducts.length === 0 ? (
+                    <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center">
+                      {selectedWeek && weekScopedProducts.length === 0 ? (
+                        <>
+                          <Trophy className="mx-auto h-10 w-10 text-neutral-700 mb-3" />
+                          <h3 className="text-lg font-bold text-neutral-950">No launches in {selectedWeek.label} yet</h3>
+                          <p className="text-xs text-neutral-500 max-w-sm mx-auto mt-1 mb-5 font-medium">
+                            The round is fresh. Be the first to launch your SaaS this week and take the #1 spot.
+                          </p>
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                playSound('click', soundEnabled);
+                                weekPickedByUserRef.current = true;
+                                setShowAllTime(true);
+                                setCurrentPage(1);
+                              }}
+                              className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-transparent px-3.5 py-2 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-colors cursor-pointer"
+                            >
+                              <span>See all launches</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                playSound('click', soundEnabled);
+                                handleOpenSubmit();
+                              }}
+                              className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-xs font-bold text-black hover:bg-neutral-200 transition-colors cursor-pointer"
+                            >
+                              <Plus className="h-3.5 w-3.5" />
+                              <span>Launch your SaaS</span>
+                            </button>
+                          </div>
+                        </>
+                      ) : stealsOnly ? (
+                        <>
+                          <Flame className="mx-auto h-10 w-10 text-amber-400 mb-3 animate-pulse" />
+                          <h3 className="text-lg font-bold text-neutral-950">No exclusive deals found</h3>
+                          <p className="text-xs text-neutral-400 max-w-md mx-auto mt-1 mb-5 font-medium">
+                            {searchQuery.trim()
+                              ? `No tools with exclusive discounts match "${searchQuery}". Try searching for another term or turn off Steals Only.`
+                              : selectedCategory !== 'All'
+                                ? `No tools in "${selectedCategory}" have active promo codes or discounts right now. Check back soon or turn off Steals Only.`
+                                : 'No tools with active discounts match your current filters.'}
+                          </p>
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                playSound('click', soundEnabled);
+                                setStealsOnly(false);
+                                setCurrentPage(1);
+                              }}
+                              className="inline-flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-xs font-bold text-amber-800 hover:bg-amber-100 transition-colors cursor-pointer"
+                            >
+                              <span>Turn off Steals Only</span>
+                            </button>
+                            {(searchQuery || selectedCategory !== 'All') && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  playSound('click', soundEnabled);
+                                  setSearchQuery('');
+                                  setSelectedCategory('All');
+                                  setCurrentPage(1);
+                                }}
+                                className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-transparent px-3.5 py-2 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-colors cursor-pointer"
+                              >
+                                <X className="h-3.5 w-3.5" />
+                                <span>Clear Filters</span>
+                              </button>
+                            )}
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <Trophy className="mx-auto h-10 w-10 text-neutral-700 mb-3" />
+                          <h3 className="text-lg font-bold text-neutral-950">No websites found</h3>
+                          <p className="text-xs text-neutral-500 max-w-sm mx-auto mt-1 mb-5 font-medium">
+                            {searchQuery.trim()
+                              ? `No tools match "${searchQuery}". Try searching for another term or clear filters.`
+                              : 'No websites in this category yet. Be the first to submit!'}
+                          </p>
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                playSound('click', soundEnabled);
+                                setSearchQuery('');
+                                setSelectedCategory('All');
+                              }}
+                              className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-transparent px-3.5 py-2 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-colors cursor-pointer"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                              <span>Clear Filters</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                playSound('click', soundEnabled);
+                                handleOpenSubmit();
+                              }}
+                              className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-xs font-bold text-black hover:bg-neutral-200 transition-colors cursor-pointer"
+                            >
+                              <Plus className="h-3.5 w-3.5" />
+                              <span>New Launch</span>
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {/* Featured sponsor — full-width card above the list */}
+                      {currentPage === 1 && !isEmptyFeatured && (
+                        <SponsorTile
+                          soundEnabled={soundEnabled}
+                          product={explicitFeaturedProduct}
+                          onOpenProduct={handleOpenProduct}
+                          onUpvote={handleUpvote}
+                          upvoted={explicitFeaturedProduct ? isProductUpvoted(explicitFeaturedProduct.id, userUpvotes) : false}
+                          onOpenFeaturedSpotModal={() => {
+                            if (!user) {
+                              setIsSignInModalOpen(true);
+                            } else {
+                              setIsFeaturedSpotModalOpen(true);
+                            }
+                          }}
+                        />
+                      )}
+
+                      {/* Single-column row list */}
+                      {paginatedProducts.map((p, index) => {
+                        const currentRank = startIndex + index + 1;
+                        return (
+                          <ProductRow
+                            key={p.id}
+                            product={p}
+                            rank={currentRank}
+                            soundEnabled={soundEnabled}
+                            showVerified
+                            commentCount={commentCounts[p.id] ?? 0}
+                            onOpen={handleOpenProduct}
+                            onUpvote={handleUpvote}
+                            upvoted={isProductUpvoted(p.id, userUpvotes)}
+                          />
+                        );
+                      })}
+
+                      {/* Homepage Pagination */}
+                      {totalPages > 1 && (
+                        <Pagination
+                          currentPage={currentPage}
+                          totalPages={totalPages}
+                          totalItems={filteredProducts.length}
+                          pageSize={pageSize}
+                          onPageChange={(page) => {
+                            setCurrentPage(page);
+                            const tableSection = document.getElementById('leaderboard-section');
+                            if (tableSection) {
+                              tableSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            } else {
+                              window.scrollTo({ top: 380, behavior: 'smooth' });
+                            }
+                          }}
+                          soundEnabled={soundEnabled}
+                        />
+                      )}
+                    </div>
                   )}
+
                 </div>
-              </>
-            ) : (
-              <>
-                <Trophy className="mx-auto h-10 w-10 text-neutral-700 mb-3" />
-                <h3 className="text-lg font-bold text-neutral-950">No websites found</h3>
-                <p className="text-xs text-neutral-500 max-w-sm mx-auto mt-1 mb-5 font-medium">
-                  {searchQuery.trim()
-                    ? `No tools match "${searchQuery}". Try searching for another term or clear filters.`
-                    : 'No websites in this category yet. Be the first to submit!'}
-                </p>
-                <div className="flex items-center justify-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      playSound('click', soundEnabled);
-                      setSearchQuery('');
-                      setSelectedCategory('All');
-                    }}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-transparent px-3.5 py-2 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-colors cursor-pointer"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                    <span>Clear Filters</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      playSound('click', soundEnabled);
-                      handleOpenSubmit();
-                    }}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-xs font-bold text-black hover:bg-neutral-200 transition-colors cursor-pointer"
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    <span>New Launch</span>
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {/* Featured sponsor — full-width card above the list */}
-            {currentPage === 1 && !isEmptyFeatured && (
-              <SponsorTile
-                soundEnabled={soundEnabled}
-                product={explicitFeaturedProduct}
-                onOpenProduct={handleOpenProduct}
-                onUpvote={handleUpvote}
-                upvoted={explicitFeaturedProduct ? isProductUpvoted(explicitFeaturedProduct.id, userUpvotes) : false}
-                onOpenFeaturedSpotModal={() => {
-                  if (!user) {
-                    setIsSignInModalOpen(true);
-                  } else {
-                    setIsFeaturedSpotModalOpen(true);
-                  }
-                }}
-              />
-            )}
-
-            {/* Single-column row list */}
-            {paginatedProducts.map((p, index) => {
-              const currentRank = startIndex + index + 1;
-              return (
-                <ProductRow
-                  key={p.id}
-                  product={p}
-                  rank={currentRank}
-                  soundEnabled={soundEnabled}
-                  showVerified
-                  commentCount={commentCounts[p.id] ?? 0}
-                  onOpen={handleOpenProduct}
-                  onUpvote={handleUpvote}
-                  upvoted={isProductUpvoted(p.id, userUpvotes)}
-                />
-              );
-            })}
-
-            {/* Homepage Pagination */}
-            {totalPages > 1 && (
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                totalItems={filteredProducts.length}
-                pageSize={pageSize}
-                onPageChange={(page) => {
-                  setCurrentPage(page);
-                  const tableSection = document.getElementById('leaderboard-section');
-                  if (tableSection) {
-                    tableSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  } else {
-                    window.scrollTo({ top: 380, behavior: 'smooth' });
-                  }
-                }}
-                soundEnabled={soundEnabled}
-              />
-            )}
-          </div>
-        )}
-
-          </div>
-        </section>
-        </HeroSponsorRails>
-        </>
+              </section>
+            </HeroSponsorRails>
+          </>
         )}
       </main>
 
@@ -2451,12 +2454,12 @@ export default function App() {
         onSelectCategory={setSelectedCategory}
         onOpenPrivacy={() => {
           setCurrentRoute('/privacy');
-          try { window.history.pushState('', document.title, '/privacy'); } catch {}
+          try { window.history.pushState('', document.title, '/privacy'); } catch { }
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
         onOpenTerms={() => {
           setCurrentRoute('/terms');
-          try { window.history.pushState('', document.title, '/terms'); } catch {}
+          try { window.history.pushState('', document.title, '/terms'); } catch { }
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
         onOpenPricing={handleOpenPricing}
