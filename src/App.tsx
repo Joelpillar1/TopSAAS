@@ -1184,11 +1184,21 @@ export default function App() {
     } catch { }
   };
 
-  // Track click on a website (counts the visit + pushes a live traffic event)
+  // Track click on a website (counts the visit + pushes a live traffic event + tracks sponsor performance)
   const handleTrackClick = (productId: string, _url: string) => {
     const now = Date.now();
     setProducts((prev) =>
-      prev.map((p) => (p.id === productId ? { ...p, clicks: p.clicks + 1, updatedAt: now } : p))
+      prev.map((p) => {
+        if (p.id !== productId) return p;
+        const updatedClicks = (p.clicks || 0) + 1;
+        const updatedSponsorClicks = p.isSponsored ? (p.sponsorClicks || 0) + 1 : p.sponsorClicks;
+        return {
+          ...p,
+          clicks: updatedClicks,
+          sponsorClicks: updatedSponsorClicks,
+          updatedAt: now,
+        };
+      })
     );
     const last = lastClickFeedRef.current[productId] || 0;
     if (now - last < 60_000) return;
@@ -1198,6 +1208,39 @@ export default function App() {
     setLiveFeed((prev) =>
       [{ id: `visit-${now}`, productId, name: target.name, kind: 'visit', time: now }, ...prev].slice(0, 14)
     );
+  };
+
+  // Update a single product in state and database
+  const handleUpdateProduct = (updatedProduct: Product) => {
+    setProducts((prev) => {
+      const next = prev.map((p) => (p.id === updatedProduct.id ? updatedProduct : p));
+      try {
+        localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(next));
+        localStorage.setItem('topsaas_products_cache_v2', JSON.stringify(next));
+      } catch { }
+      saveAllProducts(next).catch(() => { });
+      debouncedSyncProducts(next);
+      return next;
+    });
+  };
+
+  // Activate sponsor placement (7-day free trial or 30-day paid)
+  const handleActivateSponsorTrial = async (product: Product, tier: 'trial' | 'paid', email?: string) => {
+    const durationDays = tier === 'paid' ? 30 : 7;
+    const now = Date.now();
+    const expiresAt = now + durationDays * 86400 * 1000;
+
+    const updatedProduct: Product = {
+      ...product,
+      isSponsored: true,
+      sponsorTier: tier,
+      sponsorStartedAt: now,
+      sponsorExpiresAt: expiresAt,
+      sponsorClicks: product.sponsorClicks || 0,
+      sponsorContactEmail: email || product.sponsorContactEmail || (user ? user.email : undefined),
+    };
+
+    handleUpdateProduct(updatedProduct);
   };
 
   // Rent the featured spotlight (side rail ad card)
@@ -1900,6 +1943,7 @@ export default function App() {
           products={products}
           user={user}
           soundEnabled={soundEnabled}
+          onActivateSponsor={handleActivateSponsorTrial}
           onOpenSubmitModal={() => {
             setIsFeaturedSpotModalOpen(false);
             handleOpenSubmit();
@@ -2009,6 +2053,7 @@ export default function App() {
             onSetFeatured={handleSetFeatured}
             onSaveProductsOrder={handleSaveProductsOrder}
             onToggleVerified={handleToggleVerifiedProduct}
+            onUpdateProduct={handleUpdateProduct}
           />
 
           <SignInModal
@@ -2108,7 +2153,7 @@ export default function App() {
           <>
             {/* ── Hero: brand statement + search ── */}
             <HeroSponsorRails
-              sponsors={MOCK_SPONSORS}
+              sponsors={products.filter((p) => p.isSponsored)}
               isLoading={!productsLoaded}
               soundEnabled={soundEnabled}
               onOpenProduct={handleOpenProduct}
@@ -2497,6 +2542,7 @@ export default function App() {
         products={products}
         user={user}
         soundEnabled={soundEnabled}
+        onActivateSponsor={handleActivateSponsorTrial}
         onOpenSubmitModal={() => {
           setIsFeaturedSpotModalOpen(false);
           handleOpenSubmit();

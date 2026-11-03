@@ -91,6 +91,11 @@ export interface Product {
   featuredQuote?: string;
   verified?: boolean;
   isSponsored?: boolean;
+  sponsorTier?: 'trial' | 'paid' | 'none';
+  sponsorStartedAt?: number;
+  sponsorExpiresAt?: number;
+  sponsorClicks?: number;
+  sponsorContactEmail?: string;
   description?: string;
   whatItDoes?: string[];
   features?: ProductFeature[];

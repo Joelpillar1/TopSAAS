@@ -3,6 +3,7 @@ import { Megaphone } from 'lucide-react';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
 import { BorderBeam } from './BorderBeam';
+import { ProductLogo } from './ProductLogo';
 
 interface HeroSponsorRailsProps {
   sponsors?: Product[];
@@ -42,7 +43,6 @@ const RIGHT_SLOTS = [
 /** Skeleton loader for ad cards matching the exact dimensions and spacing */
 export const SkeletonAdCard: React.FC = () => (
   <div className="flex w-full flex-col justify-between rounded-2xl border border-neutral-200/80 bg-white p-3.5 xl:p-4 text-left shadow-2xs overflow-hidden min-h-[112px] xl:min-h-[120px]">
-    {/* Top row skeleton: icon + title */}
     <div className="flex items-center gap-2">
       <div
         className="h-7 w-7 xl:h-8 xl:w-8 shrink-0 rounded-xl animate-pulse bg-gradient-to-r from-neutral-200 via-neutral-100 to-neutral-200 bg-[length:200%_100%]"
@@ -54,7 +54,6 @@ export const SkeletonAdCard: React.FC = () => (
       />
     </div>
 
-    {/* Subtitle / description lines */}
     <div className="mt-2.5 space-y-1.5">
       <div
         className="h-2.5 w-full rounded animate-pulse bg-gradient-to-r from-neutral-200 via-neutral-100 to-neutral-200 bg-[length:200%_100%]"
@@ -66,7 +65,6 @@ export const SkeletonAdCard: React.FC = () => (
       />
     </div>
 
-    {/* Bottom row skeleton */}
     <div className="mt-2.5 flex items-center justify-between">
       <div
         className="h-5 w-20 rounded-md animate-pulse bg-gradient-to-r from-neutral-200 via-neutral-100 to-neutral-200 bg-[length:200%_100%]"
@@ -79,6 +77,73 @@ export const SkeletonAdCard: React.FC = () => (
     </div>
   </div>
 );
+
+const ActiveSponsorCard: React.FC<{
+  product: Product;
+  soundEnabled: boolean;
+  onOpenProduct?: (product: Product) => void;
+}> = ({ product, soundEnabled, onOpenProduct }) => {
+  const handleClick = () => {
+    playSound('click', soundEnabled);
+    onOpenProduct?.(product);
+  };
+
+  const isTrial = product.sponsorTier === 'trial';
+  const daysLeft = product.sponsorExpiresAt
+    ? Math.max(1, Math.ceil((product.sponsorExpiresAt - Date.now()) / (86400 * 1000)))
+    : null;
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={handleClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleClick();
+        }
+      }}
+      className="group relative flex w-full flex-col justify-between rounded-2xl border border-neutral-200/90 bg-white p-3.5 xl:p-4 text-left shadow-2xs transition-all duration-200 hover:border-neutral-900/30 hover:shadow-xs cursor-pointer overflow-hidden min-h-[112px] xl:min-h-[120px] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+    >
+      <div className="relative flex items-center gap-2.5 min-w-0">
+        <ProductLogo
+          src={product.logoUrl}
+          alt={product.name}
+          containerClassName="h-8 w-8 xl:h-9 xl:w-9 rounded-xl border border-neutral-200 bg-white shrink-0 overflow-hidden relative flex items-center justify-center transition-transform group-hover:scale-105"
+          iconClassName="h-4 w-4 text-neutral-700 shrink-0"
+        />
+        <div className="min-w-0 flex-1">
+          <h4 className="truncate text-xs xl:text-[13px] font-bold text-neutral-950 group-hover:text-blue-600 transition-colors">
+            {product.name}
+          </h4>
+          <span className="text-[10px] text-neutral-400 font-medium truncate block">
+            {product.category}
+          </span>
+        </div>
+      </div>
+
+      <p className="relative mt-2 text-[11px] xl:text-[11.5px] font-medium text-neutral-500 line-clamp-2 leading-relaxed">
+        {product.tagline}
+      </p>
+
+      <div className="relative mt-2 flex items-center justify-between text-[10.5px] xl:text-[11px] font-bold">
+        {isTrial ? (
+          <span className="inline-flex items-center rounded-md bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 text-[10px] xl:text-[10.5px] font-bold text-emerald-700">
+            Sponsored{daysLeft ? ` • ${daysLeft}d left` : ''}
+          </span>
+        ) : (
+          <span className="inline-flex items-center rounded-md bg-amber-50 border border-amber-200/80 px-2 py-0.5 text-[10px] xl:text-[10.5px] font-bold text-amber-700">
+            ⭐ Featured Sponsor
+          </span>
+        )}
+        <span className="text-[10.5px] font-semibold text-neutral-600 opacity-80 group-hover:opacity-100 group-hover:underline transition-opacity">
+          Visit →
+        </span>
+      </div>
+    </div>
+  );
+};
 
 const OpenAdCard: React.FC<OpenAdCardProps> = ({
   title = 'Ad spot open',
@@ -105,10 +170,8 @@ const OpenAdCard: React.FC<OpenAdCardProps> = ({
       }}
       className="group relative flex w-full flex-col justify-between rounded-2xl border border-neutral-200/90 bg-white p-3.5 xl:p-4 text-left shadow-2xs transition-all duration-200 hover:border-blue-300 hover:shadow-xs cursor-pointer overflow-hidden min-h-[112px] xl:min-h-[120px] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
     >
-      {/* Subtle ambient pastel corner glow matching reference */}
       <div className="pointer-events-none absolute -top-6 -right-6 h-16 w-16 rounded-full bg-gradient-to-br from-pink-300/20 via-purple-300/10 to-transparent blur-xl" />
 
-      {/* Top row: Megaphone icon on left, Title */}
       <div className="relative flex items-center gap-2 min-w-0">
         <div className="flex h-7 w-7 xl:h-8 xl:w-8 shrink-0 items-center justify-center rounded-xl border border-neutral-200/90 bg-white text-blue-600 shadow-2xs transition-transform group-hover:scale-105">
           <Megaphone className="h-3.5 w-3.5" />
@@ -118,12 +181,10 @@ const OpenAdCard: React.FC<OpenAdCardProps> = ({
         </h4>
       </div>
 
-      {/* Subtitle text */}
       <p className="relative mt-2 text-[11px] xl:text-[11.5px] font-medium text-neutral-500 line-clamp-2 leading-relaxed">
         {subtitle}
       </p>
 
-      {/* Bottom row: Free 7 days (No stars) */}
       <div className="relative mt-2 flex items-center justify-between text-[10.5px] xl:text-[11px] font-bold">
         <span className="inline-flex items-center rounded-md bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 text-[10.5px] xl:text-[11px] font-bold text-emerald-700">
           {duration}
@@ -137,11 +198,21 @@ const OpenAdCard: React.FC<OpenAdCardProps> = ({
 };
 
 export const HeroSponsorRails: React.FC<HeroSponsorRailsProps> = ({
+  sponsors = [],
   soundEnabled,
   isLoading = false,
+  onOpenProduct,
   onOpenFeaturedSpotModal,
   children,
 }) => {
+  // Filter active sponsors that have not expired
+  const activeSponsors = (sponsors || []).filter(
+    (p) => p.isSponsored && (p.sponsorExpiresAt ? p.sponsorExpiresAt > Date.now() : true)
+  );
+
+  const leftSponsors = activeSponsors.filter((_, i) => i % 2 === 0);
+  const rightSponsors = activeSponsors.filter((_, i) => i % 2 === 1);
+
   return (
     <div className="relative w-full">
       <div className="flex flex-col lg:flex-row items-center lg:items-start justify-center gap-4 xl:gap-8 pt-1">
@@ -150,7 +221,15 @@ export const HeroSponsorRails: React.FC<HeroSponsorRailsProps> = ({
           {isLoading
             ? Array.from({ length: 6 }).map((_, i) => <SkeletonAdCard key={`left-skeleton-${i}`} />)
             : LEFT_SLOTS.map((slot, index) => {
-                const card = (
+                const sponsoredItem = leftSponsors[index];
+                const card = sponsoredItem ? (
+                  <ActiveSponsorCard
+                    key={`active-left-${sponsoredItem.id}`}
+                    product={sponsoredItem}
+                    soundEnabled={soundEnabled}
+                    onOpenProduct={onOpenProduct}
+                  />
+                ) : (
                   <OpenAdCard
                     key={slot.id}
                     title={slot.title}
@@ -160,6 +239,7 @@ export const HeroSponsorRails: React.FC<HeroSponsorRailsProps> = ({
                     onOpenModal={onOpenFeaturedSpotModal}
                   />
                 );
+
                 if (index !== 0) return card;
                 return (
                   <BorderBeam
@@ -186,7 +266,15 @@ export const HeroSponsorRails: React.FC<HeroSponsorRailsProps> = ({
           {isLoading
             ? Array.from({ length: 6 }).map((_, i) => <SkeletonAdCard key={`right-skeleton-${i}`} />)
             : RIGHT_SLOTS.map((slot, index) => {
-                const card = (
+                const sponsoredItem = rightSponsors[index];
+                const card = sponsoredItem ? (
+                  <ActiveSponsorCard
+                    key={`active-right-${sponsoredItem.id}`}
+                    product={sponsoredItem}
+                    soundEnabled={soundEnabled}
+                    onOpenProduct={onOpenProduct}
+                  />
+                ) : (
                   <OpenAdCard
                     key={slot.id}
                     title={slot.title}
@@ -196,6 +284,7 @@ export const HeroSponsorRails: React.FC<HeroSponsorRailsProps> = ({
                     onOpenModal={onOpenFeaturedSpotModal}
                   />
                 );
+
                 if (index !== 0) return card;
                 return (
                   <BorderBeam
@@ -215,4 +304,3 @@ export const HeroSponsorRails: React.FC<HeroSponsorRailsProps> = ({
     </div>
   );
 };
-

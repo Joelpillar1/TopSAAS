@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { 
-  ArrowLeft, ArrowUpDown, Check, X, Clock, ExternalLink, ShieldCheck, Search, Trash2, Eye, RotateCcw, Globe, Twitter, User, Calendar, CheckCircle2, XCircle, AlertCircle, Edit3, Plus, Trophy, Crown, ChevronUp, ChevronDown, Star, LayoutList, Mail, Flame, Tag, Play, Video, Copy, Image as ImageIcon, MessageSquareQuote, Target, Layers, Info, Sparkles, BadgeCheck
+  ArrowLeft, ArrowUpDown, Check, X, Clock, ExternalLink, ShieldCheck, Search, Trash2, Eye, RotateCcw, Globe, Twitter, User, Calendar, CheckCircle2, XCircle, AlertCircle, Edit3, Plus, Trophy, Crown, ChevronUp, ChevronDown, Star, LayoutList, Mail, Flame, Tag, Play, Video, Copy, Image as ImageIcon, MessageSquareQuote, Target, Layers, Info, Sparkles, BadgeCheck, Megaphone
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { WebsiteSubmission, Category, Product } from '../types';
@@ -12,6 +12,7 @@ import { RichText } from './RichText';
 import { ProductLogo } from './ProductLogo';
 import { RankMedal } from './RankMedal';
 import { VerifiedBadge } from './VerifiedBadge';
+import { SponsorTrackerTab } from './SponsorTrackerTab';
 
 function getVideoEmbedUrl(url?: string): { type: 'iframe' | 'video' | 'link'; embedUrl: string } | null {
   if (!url) return null;
@@ -65,6 +66,7 @@ interface AdminAcceptPageProps {
   featuredProductId: string | null;
   onSetFeatured: (productId: string | null) => void;
   onToggleVerified?: (productId: string, verified: boolean) => void;
+  onUpdateProduct?: (product: Product) => void;
 }
 
 export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
@@ -85,14 +87,18 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
   featuredProductId,
   onSetFeatured,
   onToggleVerified,
+  onUpdateProduct,
 }) => {
   // Counts
   const pendingCount = submissions.filter((s) => (s.status || 'under_review') === 'under_review').length;
   const approvedCount = submissions.filter((s) => s.status === 'approved').length;
   const rejectedCount = submissions.filter((s) => s.status === 'rejected').length;
 
-  // Active view tab: submissions queue vs products management vs featured (default to submissions queue)
-  const [activeView, setActiveView] = useState<'submissions' | 'products' | 'featured'>('submissions');
+  // Active view tab: submissions queue vs products management vs featured vs sponsors
+  const [activeView, setActiveView] = useState<'submissions' | 'products' | 'featured' | 'sponsors'>('submissions');
+  const activeSponsorsCount = products.filter(
+    (p) => (p.isSponsored || p.sponsorTier === 'trial' || p.sponsorTier === 'paid') && (p.sponsorExpiresAt ? p.sponsorExpiresAt > Date.now() : true)
+  ).length;
 
   // If new pending submissions come in, make sure we show the queue
   React.useEffect(() => {
@@ -360,6 +366,21 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
           >
             <Crown className="h-3.5 w-3.5" />
             <span>Featured</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => { setActiveView('sponsors'); playSound('click', soundEnabled); }}
+            className={`flex items-center gap-1.5 rounded-t-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer border border-b-0 whitespace-nowrap ${
+              activeView === 'sponsors'
+                ? 'bg-neutral-950 border-neutral-950 text-white shadow-2xs'
+                : 'bg-transparent border-transparent text-neutral-500 hover:text-neutral-950 hover:bg-neutral-800/60'
+            }`}
+          >
+            <Megaphone className="h-3.5 w-3.5 text-emerald-400" />
+            <span>Sponsors & Trials</span>
+            <span className="ml-1 rounded-full bg-emerald-500 text-white px-1.5 py-0.2 text-[9px] font-bold">
+              {activeSponsorsCount}
+            </span>
           </button>
         </div>
 
@@ -1214,6 +1235,17 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
               </ul>
             </div>
           </>
+        )}
+
+        {/* ============================================================ */}
+        {/* SPONSORS & OUTREACH TRACKER VIEW */}
+        {/* ============================================================ */}
+        {activeView === 'sponsors' && (
+          <SponsorTrackerTab
+            products={products}
+            soundEnabled={soundEnabled}
+            onUpdateProduct={onUpdateProduct || (() => {})}
+          />
         )}
       </main>
 
