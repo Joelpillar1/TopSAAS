@@ -63,16 +63,16 @@ export const EmbedBadgeModal: React.FC<EmbedBadgeModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md font-sans">
-      <div className="relative w-full max-w-xl rounded-2xl border border-neutral-800 bg-[#222222] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 text-white max-h-[92vh] flex flex-col">
+      <div className="relative w-full max-w-xl rounded-2xl border border-neutral-200 bg-white shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 text-neutral-900 max-h-[92vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-neutral-800 px-5 py-4 shrink-0">
+        <div className="flex items-center justify-between border-b border-neutral-200 px-5 py-4 shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-mint-500/15 border border-mint-500/30 text-mint-400">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-mint-500/15 border border-mint-500/30 text-mint-600">
               <Code2 className="h-4 w-4" />
             </div>
             <div>
-              <h3 className="text-sm sm:text-base font-black text-white">Embed Founder Badge</h3>
-              <p className="text-[11px] text-neutral-400">Show off your TopSAAS ranking & collect upvotes</p>
+              <h3 className="text-sm sm:text-base font-black text-neutral-950">Embed Founder Badge</h3>
+              <p className="text-[11px] text-neutral-500">Show off your TopSAAS ranking & collect upvotes</p>
             </div>
           </div>
 
@@ -82,7 +82,7 @@ export const EmbedBadgeModal: React.FC<EmbedBadgeModalProps> = ({
               playSound('click', soundEnabled);
               onClose();
             }}
-            className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-800 hover:text-white transition-colors cursor-pointer"
+            className="rounded-lg p-1.5 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-950 transition-colors cursor-pointer"
             title="Close"
           >
             <X className="h-4 w-4" />
@@ -93,15 +93,15 @@ export const EmbedBadgeModal: React.FC<EmbedBadgeModalProps> = ({
         <div className="p-5 overflow-y-auto space-y-5 flex-1 text-xs">
           {/* Live Preview Box */}
           <div className="space-y-2">
-            <div className="flex items-center justify-between text-[11px] font-bold text-neutral-400">
+            <div className="flex items-center justify-between text-[11px] font-bold text-neutral-500">
               <span>LIVE PREVIEW</span>
-              <span className="text-mint-400 font-medium">Clicking opens your directory listing</span>
+              <span className="text-mint-600 font-medium">Clicking opens your directory listing</span>
             </div>
 
             <div
               className={`flex items-center justify-center rounded-xl p-8 border transition-all ${
                 theme === 'dark'
-                  ? 'bg-[#0f0f11] border-neutral-800'
+                  ? 'bg-[#0f0f11] border-neutral-200'
                   : 'bg-[#f4f4f5] border-neutral-300'
               }`}
             >
@@ -120,10 +120,10 @@ export const EmbedBadgeModal: React.FC<EmbedBadgeModalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             {/* Style Selector */}
             <div className="space-y-1.5">
-              <label className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider block">
+              <label className="text-[11px] font-bold text-neutral-500  block">
                 Badge Style
               </label>
-              <div className="grid grid-cols-3 gap-1 rounded-xl bg-[#2a2a2a] p-1 border border-neutral-800">
+              <div className="grid grid-cols-3 gap-1 rounded-xl bg-white p-1 border border-neutral-200">
                 <button
                   type="button"
                   onClick={() => {
@@ -132,8 +132,8 @@ export const EmbedBadgeModal: React.FC<EmbedBadgeModalProps> = ({
                   }}
                   className={`flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     style === 'featured'
-                      ? 'bg-mint-500 text-[#0b0f14] shadow-xs'
-                      : 'text-neutral-300 hover:text-white'
+                      ? 'bg-mint-500 text-white shadow-xs'
+                      : 'text-neutral-600 hover:text-neutral-950'
                   }`}
                   title="Featured On TopSAAS (with mint upvote chevron)"
                 >
@@ -148,8 +148,8 @@ export const EmbedBadgeModal: React.FC<EmbedBadgeModalProps> = ({
                   }}
                   className={`flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     style === 'classic'
-                      ? 'bg-mint-500 text-[#0b0f14] shadow-xs'
-                      : 'text-neutral-300 hover:text-white'
+                      ? 'bg-mint-500 text-white shadow-xs'
+                      : 'text-neutral-600 hover:text-neutral-950'
                   }`}
                   title="Classic Minimal (DanielLaunches style)"
                 >
@@ -164,8 +164,8 @@ export const EmbedBadgeModal: React.FC<EmbedBadgeModalProps> = ({
                   }}
                   className={`flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     style === 'rank'
-                      ? 'bg-mint-500 text-[#0b0f14] shadow-xs'
-                      : 'text-neutral-300 hover:text-white'
+                      ? 'bg-mint-500 text-white shadow-xs'
+                      : 'text-neutral-600 hover:text-neutral-950'
                   }`}
                   title="Live Leaderboard Rank"
                 >
@@ -177,10 +177,10 @@ export const EmbedBadgeModal: React.FC<EmbedBadgeModalProps> = ({
 
             {/* Theme Toggle */}
             <div className="space-y-1.5">
-              <label className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider block">
+              <label className="text-[11px] font-bold text-neutral-500  block">
                 Theme Color
               </label>
-              <div className="grid grid-cols-2 gap-1 rounded-xl bg-[#2a2a2a] p-1 border border-neutral-800">
+              <div className="grid grid-cols-2 gap-1 rounded-xl bg-white p-1 border border-neutral-200">
                 <button
                   type="button"
                   onClick={() => {
@@ -189,8 +189,8 @@ export const EmbedBadgeModal: React.FC<EmbedBadgeModalProps> = ({
                   }}
                   className={`py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     theme === 'dark'
-                      ? 'bg-neutral-800 text-white border border-neutral-700 shadow-xs'
-                      : 'text-neutral-400 hover:text-white'
+                      ? 'bg-neutral-950 text-white border border-neutral-950 shadow-xs'
+                      : 'text-neutral-500 hover:text-neutral-950'
                   }`}
                 >
                   Dark Mode
@@ -203,8 +203,8 @@ export const EmbedBadgeModal: React.FC<EmbedBadgeModalProps> = ({
                   }}
                   className={`py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     theme === 'light'
-                      ? 'bg-neutral-800 text-white border border-neutral-700 shadow-xs'
-                      : 'text-neutral-400 hover:text-white'
+                      ? 'bg-neutral-950 text-white border border-neutral-950 shadow-xs'
+                      : 'text-neutral-500 hover:text-neutral-950'
                   }`}
                 >
                   Light Mode
@@ -216,12 +216,12 @@ export const EmbedBadgeModal: React.FC<EmbedBadgeModalProps> = ({
           {/* Code Snippet Box */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1 rounded-lg bg-[#2a2a2a] p-0.5 border border-neutral-800">
+              <div className="flex items-center gap-1 rounded-lg bg-white p-0.5 border border-neutral-200">
                 <button
                   type="button"
                   onClick={() => setFormat('html')}
                   className={`px-2.5 py-1 rounded text-[11px] font-bold transition-all cursor-pointer ${
-                    format === 'html' ? 'bg-neutral-700 text-white' : 'text-neutral-400 hover:text-white'
+                    format === 'html' ? 'bg-neutral-950 text-white' : 'text-neutral-500 hover:text-neutral-950'
                   }`}
                 >
                   HTML
@@ -230,7 +230,7 @@ export const EmbedBadgeModal: React.FC<EmbedBadgeModalProps> = ({
                   type="button"
                   onClick={() => setFormat('markdown')}
                   className={`px-2.5 py-1 rounded text-[11px] font-bold transition-all cursor-pointer ${
-                    format === 'markdown' ? 'bg-neutral-700 text-white' : 'text-neutral-400 hover:text-white'
+                    format === 'markdown' ? 'bg-neutral-950 text-white' : 'text-neutral-500 hover:text-neutral-950'
                   }`}
                 >
                   Markdown (README)
@@ -239,7 +239,7 @@ export const EmbedBadgeModal: React.FC<EmbedBadgeModalProps> = ({
                   type="button"
                   onClick={() => setFormat('image_url')}
                   className={`px-2.5 py-1 rounded text-[11px] font-bold transition-all cursor-pointer ${
-                    format === 'image_url' ? 'bg-neutral-700 text-white' : 'text-neutral-400 hover:text-white'
+                    format === 'image_url' ? 'bg-neutral-950 text-white' : 'text-neutral-500 hover:text-neutral-950'
                   }`}
                 >
                   Image URL
@@ -250,7 +250,7 @@ export const EmbedBadgeModal: React.FC<EmbedBadgeModalProps> = ({
                 <button
                   type="button"
                   onClick={handleDownloadSvg}
-                  className="inline-flex items-center gap-1 text-[11px] font-bold text-neutral-400 hover:text-white transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-neutral-500 hover:text-neutral-950 transition-colors cursor-pointer"
                   title="Download SVG file"
                 >
                   <Download className="h-3 w-3" />
@@ -259,15 +259,15 @@ export const EmbedBadgeModal: React.FC<EmbedBadgeModalProps> = ({
               </div>
             </div>
 
-            <div className="relative rounded-xl border border-neutral-800 bg-[#17171a] p-3 font-mono text-[11px] text-neutral-300 leading-relaxed overflow-x-auto">
+            <div className="relative rounded-xl border border-neutral-200 bg-neutral-100 p-3 font-mono text-[11px] text-neutral-800 leading-relaxed overflow-x-auto">
               <pre className="whitespace-pre-wrap break-all pr-14">{snippet}</pre>
               <button
                 type="button"
                 onClick={handleCopy}
                 className={`absolute top-2.5 right-2.5 inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-bold transition-all cursor-pointer shadow-xs ${
                   copied
-                    ? 'bg-mint-500 text-[#0b0f14]'
-                    : 'bg-[#2a2a2a] text-white hover:bg-neutral-700 border border-neutral-700'
+                    ? 'bg-mint-500 text-white'
+                    : 'bg-white text-neutral-700 border border-neutral-200 hover:bg-neutral-200 hover:text-neutral-950'
                 }`}
               >
                 {copied ? (
@@ -286,8 +286,8 @@ export const EmbedBadgeModal: React.FC<EmbedBadgeModalProps> = ({
           </div>
 
           {/* Quick instructions */}
-          <div className="rounded-xl border border-neutral-800/60 bg-[#2a2a2a]/60 p-3 text-[11.5px] text-neutral-400 leading-relaxed flex items-start gap-2.5">
-            <span className="text-mint-400 font-bold shrink-0">Tip:</span>
+          <div className="rounded-xl border border-neutral-200/60 bg-neutral-50 p-3 text-[11.5px] text-neutral-600 leading-relaxed flex items-start gap-2.5">
+            <span className="text-mint-600 font-bold shrink-0">Tip:</span>
             <span>
               Paste this snippet into your website footer, landing page hero, or GitHub README. Every click links
               straight to your TopSAAS listing to drive more community upvotes!
@@ -296,12 +296,12 @@ export const EmbedBadgeModal: React.FC<EmbedBadgeModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="border-t border-neutral-800 px-5 py-3.5 flex items-center justify-between bg-[#1f1f22] shrink-0">
+        <div className="border-t border-neutral-200 px-5 py-3.5 flex items-center justify-between bg-neutral-50 shrink-0">
           <a
             href={liveUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs font-medium text-neutral-400 hover:text-white transition-colors"
+            className="inline-flex items-center gap-1 text-xs font-medium text-neutral-500 hover:text-neutral-950 transition-colors"
           >
             <span>View Public Listing</span>
             <ExternalLink className="h-3 w-3" />
@@ -312,8 +312,8 @@ export const EmbedBadgeModal: React.FC<EmbedBadgeModalProps> = ({
             onClick={handleCopy}
             className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-black transition-all cursor-pointer shadow-sm ${
               copied
-                ? 'bg-mint-500 text-[#0b0f14]'
-                : 'bg-white text-black hover:bg-neutral-200'
+                ? 'bg-mint-500 text-white'
+                : 'bg-neutral-950 text-white hover:bg-neutral-800'
             }`}
           >
             {copied ? (

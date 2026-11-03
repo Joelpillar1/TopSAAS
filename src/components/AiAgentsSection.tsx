@@ -29,11 +29,11 @@ export const AiAgentsSection: React.FC<AiAgentsSectionProps> = ({ soundEnabled =
   ];
 
   return (
-    <div className="w-full border-t border-neutral-800 pt-6 mt-8 mb-4">
+    <div className="w-full border-t border-neutral-200 pt-6 mt-8 mb-4">
       {/* Top row: Ask AI query buttons */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4">
-        <span className="text-xs font-bold uppercase tracking-wider text-neutral-400">
-          Ask AI About TopSAAS
+        <span className="text-xs font-bold text-neutral-500">
+          Ask AI about TopSAAS
         </span>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -44,7 +44,7 @@ export const AiAgentsSection: React.FC<AiAgentsSectionProps> = ({ soundEnabled =
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => playSound('click', soundEnabled)}
-              className="inline-flex items-center px-3 py-1 rounded-lg border border-neutral-700 bg-neutral-800/60 text-xs font-medium text-neutral-300 hover:text-white hover:border-neutral-500 hover:bg-neutral-800 transition-colors cursor-pointer"
+              className="inline-flex items-center px-3 py-1 rounded-lg border border-neutral-200 bg-white text-xs font-medium text-neutral-700 hover:text-neutral-950 hover:border-neutral-300 hover:bg-neutral-50 shadow-2xs transition-colors cursor-pointer"
             >
               {ai.name}
             </a>
@@ -53,10 +53,10 @@ export const AiAgentsSection: React.FC<AiAgentsSectionProps> = ({ soundEnabled =
       </div>
 
       {/* Straight divider line */}
-      <div className="border-t border-neutral-800/80 my-3" />
+      <div className="border-t border-neutral-200/80 my-3" />
 
       {/* Bottom row: Machine-readable agent links */}
-      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-xs text-neutral-400 py-1">
+      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-xs text-neutral-500 py-1">
         {agentLinks.map((link, idx) => (
           <React.Fragment key={link.label}>
             <a
@@ -65,12 +65,12 @@ export const AiAgentsSection: React.FC<AiAgentsSectionProps> = ({ soundEnabled =
               rel="noopener noreferrer"
               title={link.title}
               onClick={() => playSound('click', soundEnabled)}
-              className="hover:text-white hover:underline underline-offset-4 transition-colors font-mono text-[11.5px] text-neutral-400"
+              className="hover:text-neutral-950 hover:underline underline-offset-4 transition-colors font-mono text-[11.5px] text-neutral-600"
             >
               {link.label}
             </a>
             {idx < agentLinks.length - 1 && (
-              <span className="text-neutral-600 select-none">·</span>
+              <span className="text-neutral-300 select-none">·</span>
             )}
           </React.Fragment>
         ))}

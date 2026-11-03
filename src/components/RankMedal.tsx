@@ -4,9 +4,10 @@ interface RankMedalProps {
   rank: 1 | 2 | 3;
   className?: string;
   title?: string;
+  variant?: 'ribbon' | 'coin';
 }
 
-export const RankMedal: React.FC<RankMedalProps> = ({ rank, className = 'h-7 w-7', title }) => {
+export const RankMedal: React.FC<RankMedalProps> = ({ rank, className = 'h-7 w-7', title, variant = 'coin' }) => {
   // Rank 1: Gold, Rank 2: Silver, Rank 3: Bronze
   const colors = {
     1: {
@@ -15,6 +16,11 @@ export const RankMedal: React.FC<RankMedalProps> = ({ rank, className = 'h-7 w-7
       highlight: '#FED78A',
       shadow: '#C67A1B',
       text: '#683300',
+      gradStart: '#FDE047',
+      gradMid: '#F59E0B',
+      gradEnd: '#D97706',
+      rim: '#B45309',
+      numColor: '#78350F',
     },
     2: {
       outer: '#B7ACC9',
@@ -22,6 +28,11 @@ export const RankMedal: React.FC<RankMedalProps> = ({ rank, className = 'h-7 w-7
       highlight: '#EFEBF8',
       shadow: '#988AAE',
       text: '#443B59',
+      gradStart: '#F1F5F9',
+      gradMid: '#CBD5E1',
+      gradEnd: '#94A3B8',
+      rim: '#64748B',
+      numColor: '#334155',
     },
     3: {
       outer: '#B35D38',
@@ -29,10 +40,78 @@ export const RankMedal: React.FC<RankMedalProps> = ({ rank, className = 'h-7 w-7
       highlight: '#F0A787',
       shadow: '#964320',
       text: '#4A1D0B',
+      gradStart: '#FED7AA',
+      gradMid: '#F97316',
+      gradEnd: '#C2410C',
+      rim: '#9A3412',
+      numColor: '#7C2D12',
     },
   }[rank];
 
   const medalTitle = title || `Rank #${rank}`;
+
+  if (variant === 'coin') {
+    const idPrefix = `rank-coin-${rank}`;
+    return (
+      <div className={`relative inline-flex items-center justify-center shrink-0 ${className}`} title={medalTitle}>
+        <svg
+          viewBox="0 0 32 32"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="w-full h-full drop-shadow-sm select-none"
+        >
+          <defs>
+            <linearGradient id={`${idPrefix}-base`} x1="4" y1="4" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stopColor={colors.gradStart} />
+              <stop offset="50%" stopColor={colors.gradMid} />
+              <stop offset="100%" stopColor={colors.gradEnd} />
+            </linearGradient>
+            <radialGradient id={`${idPrefix}-face`} cx="38%" cy="32%" r="65%">
+              <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.6" />
+              <stop offset="40%" stopColor={colors.gradStart} />
+              <stop offset="100%" stopColor={colors.gradMid} />
+            </radialGradient>
+          </defs>
+
+          {/* 3D coin bottom shadow stack */}
+          <circle cx="16" cy="18" r="13" fill={colors.rim} opacity="0.35" />
+          <circle cx="16" cy="17" r="13" fill={colors.rim} />
+
+          {/* Main 3D outer rim */}
+          <circle cx="16" cy="16" r="13" fill={`url(#${idPrefix}-base)`} stroke={colors.rim} strokeWidth="0.75" />
+
+          {/* Inner inset disc */}
+          <circle cx="16" cy="16" r="10.5" fill={`url(#${idPrefix}-face)`} stroke={colors.highlight} strokeWidth="0.8" />
+
+          {/* Subtle inner decorative circle ring */}
+          <circle cx="16" cy="16" r="8.75" stroke={colors.rim} strokeWidth="0.5" strokeDasharray="1.5 1.5" opacity="0.55" />
+
+          {/* Specular top highlight */}
+          <path
+            d="M9 13C10.8 9.5 21.2 9.5 23 13"
+            stroke="#FFFFFF"
+            strokeWidth="1.2"
+            strokeLinecap="round"
+            opacity="0.8"
+          />
+
+          {/* Centered bold rank number */}
+          <text
+            x="16"
+            y="20.5"
+            textAnchor="middle"
+            fill={colors.numColor}
+            fontSize="13"
+            fontWeight="900"
+            fontFamily="system-ui, -apple-system, sans-serif"
+            className="select-none"
+          >
+            {rank}
+          </text>
+        </svg>
+      </div>
+    );
+  }
 
   return (
     <div className={`relative inline-flex items-center justify-center shrink-0 ${className}`} title={medalTitle}>

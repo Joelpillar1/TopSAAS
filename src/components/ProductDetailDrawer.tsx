@@ -32,7 +32,7 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
         <div>
           <div className="flex items-center justify-between pb-4 border-b border-neutral-200">
             <div className="flex items-center gap-2">
-              <span className="font-mono-num text-xs font-black uppercase tracking-wider text-black">
+              <span className="font-mono-num text-xs font-black  text-black">
                 Product Profile
               </span>
               <span className="text-neutral-300">•</span>
@@ -99,7 +99,7 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
           {/* Key Metrics Grid */}
           <div className="mt-5 grid grid-cols-3 gap-2">
             <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-2.5 shadow-2xs">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 truncate">
+              <div className="text-[10px] font-bold  text-neutral-500 truncate">
                 Upvotes
               </div>
               <div className="font-mono-num text-base font-black text-black mt-0.5 flex items-center gap-1">
@@ -109,7 +109,7 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
             </div>
 
             <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-2.5 shadow-2xs">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 truncate">
+              <div className="text-[10px] font-bold  text-neutral-500 truncate">
                 Rank
               </div>
               <div className="font-mono-num text-base font-black text-black mt-0.5 flex items-center gap-1">
@@ -119,7 +119,7 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
             </div>
 
             <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-2.5 shadow-2xs">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 truncate">
+              <div className="text-[10px] font-bold  text-neutral-500 truncate">
                 Category
               </div>
               <div className="text-xs font-black text-black mt-1 truncate">
@@ -131,7 +131,7 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
           {/* Description */}
           {product.description && (
             <div className="mt-5 rounded-xl border border-neutral-200 bg-neutral-50 p-3.5">
-              <h4 className="text-xs font-bold text-neutral-800 uppercase tracking-wider mb-1">About</h4>
+              <h4 className="text-xs font-bold text-neutral-800  mb-1">About</h4>
               <p className="text-xs text-neutral-600 leading-relaxed font-normal">
                 {product.description}
               </p>

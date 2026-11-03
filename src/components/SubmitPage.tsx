@@ -7,6 +7,8 @@ import { getWebsiteFavicon } from '../utils/logo';
 import { playSound } from '../utils/sound';
 import { BadgeStyle, BadgeTheme, BadgeFormat, generateBadgeSvg, generateBadgeSnippet } from '../utils/badgeSvg';
 import { verifyBadgeViaEdge, fetchHtmlBestEffort, containsBadge } from '../utils/badgeVerify';
+import { prepareRichText } from '../utils/richText';
+import { RichTextEditor } from './RichTextEditor';
 
 const DRAFT_KEY = 'topsaas_launch_draft_v1';
 const STEP_KEY = 'topsaas_launch_step_v1';
@@ -230,18 +232,18 @@ interface SubmitPageProps {
 }
 
 const inputClass = (invalid: boolean) =>
-  `w-full rounded-xl border bg-[#222222] px-3.5 py-2.5 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:ring-2 transition-shadow ${
+  `w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 transition-shadow ${
     invalid
       ? 'border-red-500/70 focus:border-red-500 focus:ring-red-500/25'
-      : 'border-neutral-700 focus:border-neutral-400 focus:ring-neutral-500/25'
+      : 'border-neutral-300 focus:border-neutral-900 focus:ring-neutral-900/10'
   }`;
 
-const labelClass = 'mb-1.5 block text-xs font-bold text-neutral-200';
+const labelClass = 'mb-1.5 block text-xs font-bold text-neutral-900';
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
   return (
-    <p className="mt-1.5 flex items-center gap-1.5 text-[11px] font-semibold text-red-400">
+    <p className="mt-1.5 flex items-center gap-1.5 text-[11px] font-semibold text-red-600">
       <AlertCircle className="h-3 w-3 shrink-0" />
       {message}
     </p>
@@ -271,6 +273,15 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
     } else if (draft?.category && (!draft.categories || draft.categories.length === 0)) {
       initial.categories = draft.category.split(',').map((c) => c.trim() as Category).filter(Boolean);
     }
+
+    try {
+      const prefillUrl = localStorage.getItem('topsaas_submit_initial_url');
+      if (prefillUrl) {
+        localStorage.removeItem('topsaas_submit_initial_url');
+        initial.url = autoFormatUrl(prefillUrl);
+      }
+    } catch {}
+
     return initial;
   });
   const [errors, setErrors] = useState<Partial<Record<FieldKey, string>>>({});
@@ -282,6 +293,18 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
   useEffect(() => {
     saveDraft(form, step);
   }, [form, step]);
+
+  // Ensure prefilled URL from localStorage (e.g. from HomeHero "Launch Now") is loaded
+  useEffect(() => {
+    try {
+      const prefillUrl = localStorage.getItem('topsaas_submit_initial_url');
+      if (prefillUrl) {
+        localStorage.removeItem('topsaas_submit_initial_url');
+        setForm((prev) => ({ ...prev, url: autoFormatUrl(prefillUrl) }));
+        setStep(0);
+      }
+    } catch {}
+  }, []);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [categorySearch, setCategorySearch] = useState('');
@@ -387,10 +410,6 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
       if (form.categories.length === 0 && !form.category.trim()) {
         out.category = 'Choose at least one category for your listing.';
       }
-    } else if (i === 4) {
-      if (!isBadgeVerified) {
-        out.badge = 'Please verify the TopSAAS badge on your website before submitting.';
-      }
     }
     return out;
   };
@@ -415,7 +434,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
       return isStepComplete(0) && isStepComplete(2);
     }
     if (i === 4) {
-      return isStepComplete(3) && isBadgeVerified;
+      return isStepComplete(3);
     }
     return false;
   };
@@ -648,15 +667,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
     if (missing.length > 0) {
       const first = missing[0];
       setErrors(validateStep(first));
-      setBanner(first === 4 ? 'Please verify the TopSAAS badge on your website before submitting.' : 'Some required fields are still empty — they are marked below.');
+      setBanner('Some required fields are still empty — they are marked below.');
       setStep(first);
-      requestAnimationFrame(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
-      return;
-    }
-
-    if (!isBadgeVerified) {
-      setBanner('Please verify the TopSAAS badge on your website before submitting.');
-      setStep(4);
       requestAnimationFrame(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
       return;
     }
@@ -693,7 +705,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
         tagline: form.tagline.trim(),
         url: check.value,
         category: finalCategory,
-        description: form.description.trim() || undefined,
+        description: prepareRichText(form.description) || undefined,
         logoUrl: form.logoDataUrl || undefined,
         screenshots: form.screenshots.length > 0 ? form.screenshots.slice(0, 10) : undefined,
         demoVideoUrl: form.demoVideoUrl ? autoFormatUrl(form.demoVideoUrl) : undefined,
@@ -705,9 +717,9 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
         creatorRole: form.creatorRole.trim() || undefined,
         targetAudience: form.targetAudience.trim() || undefined,
         pricingModel: form.pricingModel || undefined,
-        problemItSolves: form.problemItSolves.trim() || undefined,
-        solution: form.solution.trim() || undefined,
-        uniqueSellingPoint: form.uniqueSellingPoint.trim() || undefined,
+        problemItSolves: prepareRichText(form.problemItSolves) || undefined,
+        solution: prepareRichText(form.solution) || undefined,
+        uniqueSellingPoint: prepareRichText(form.uniqueSellingPoint) || undefined,
         offerDiscount: form.offerDiscount.trim() || undefined,
         offerCode: form.offerCode.trim() || undefined,
         offerUrl: form.offerUrl.trim() ? autoFormatUrl(form.offerUrl) : undefined,
@@ -752,36 +764,36 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
   // ── Success (Under Review) ──
   if (launched) {
     return (
-      <div className="min-h-screen bg-[#222222] text-neutral-100 font-sans">
+      <div className="min-h-screen bg-white text-neutral-900 font-sans">
         <div className="mx-auto flex max-w-xl flex-col items-center px-4 py-20 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-400 shadow-lg">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-mint-50 border border-mint-200 text-mint-600 shadow-xs">
             <Clock className="h-8 w-8" strokeWidth={2.5} />
           </div>
 
-          <div className="mt-6 inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 px-3 py-1 text-xs font-bold text-amber-300">
-            <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
+          <div className="mt-6 inline-flex items-center gap-1.5 rounded-full bg-mint-50 border border-mint-200 px-3 py-1 text-xs font-bold text-mint-700">
+            <span className="h-2 w-2 rounded-full bg-mint-500 animate-pulse" />
             Pending Approval
           </div>
 
-          <h1 className="mt-3 text-2xl sm:text-3xl font-black tracking-tight text-white">{launched.name} is submitted</h1>
-          <p className="mt-2 max-w-md text-xs sm:text-sm leading-relaxed text-neutral-400">
+          <h1 className="mt-3 text-2xl sm:text-3xl font-black tracking-tight text-neutral-950">{launched.name} is submitted</h1>
+          <p className="mt-2 max-w-md text-xs sm:text-sm leading-relaxed text-neutral-500">
             Your launch has been received and under review queue. Once approved your product will automatically appear live in the directory.
           </p>
 
-          <div className="mt-6 w-full rounded-2xl border border-neutral-800 bg-[#2a2a2a] p-4 text-left space-y-2.5">
+          <div className="mt-6 w-full rounded-2xl border border-neutral-200 bg-white p-4 text-left space-y-2.5 shadow-2xs">
             <div className="flex items-center justify-between text-xs">
-              <span className="text-neutral-400">Review status</span>
-              <span className="font-bold text-amber-400 flex items-center gap-1">
+              <span className="text-neutral-500">Review status</span>
+              <span className="font-bold text-mint-700 flex items-center gap-1">
                 <Clock className="h-3.5 w-3.5" /> Pending Approval
               </span>
             </div>
-            <div className="flex items-center justify-between text-xs border-t border-neutral-800 pt-2.5">
-              <span className="text-neutral-400">Turnaround time</span>
-              <span className="font-bold text-white">Usually reviewed within 24 hours</span>
+            <div className="flex items-center justify-between text-xs border-t border-neutral-200 pt-2.5">
+              <span className="text-neutral-500">Turnaround time</span>
+              <span className="font-bold text-neutral-950">Usually reviewed within 24 hours</span>
             </div>
-            <div className="flex items-center justify-between text-xs border-t border-neutral-800 pt-2.5">
-              <span className="text-neutral-400">Submitted URL</span>
-              <span className="font-bold text-neutral-300 truncate max-w-[240px]">{form.url || launched.name}</span>
+            <div className="flex items-center justify-between text-xs border-t border-neutral-200 pt-2.5">
+              <span className="text-neutral-500">Submitted URL</span>
+              <span className="font-bold text-neutral-900 truncate max-w-[240px]">{form.url || launched.name}</span>
             </div>
           </div>
 
@@ -789,14 +801,14 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
             <button
               type="button"
               onClick={onBack}
-              className="rounded-xl bg-white px-6 py-3 text-xs font-black text-[#0b0f14] hover:bg-neutral-200 active:scale-[0.98] transition-all cursor-pointer shadow-md"
+              className="btn-primary px-6 py-3 text-xs font-bold"
             >
               Back to directory
             </button>
             <button
               type="button"
               onClick={handleStartOver}
-              className="rounded-xl border border-neutral-700 bg-[#343434] px-5 py-3 text-xs font-bold text-neutral-200 hover:border-neutral-500 hover:text-white active:scale-[0.98] transition-all cursor-pointer"
+              className="rounded-xl border border-neutral-200 bg-neutral-100 px-5 py-3 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 active:scale-[0.98] transition-all cursor-pointer"
             >
               Submit another website
             </button>
@@ -818,21 +830,21 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
   );
 
   return (
-    <div className="bg-[#222222] text-neutral-100 font-sans flex flex-col flex-1">
+    <div className="bg-white text-neutral-900 font-sans flex flex-col flex-1">
       <main className="mx-auto w-full max-w-2xl flex-1 px-3.5 sm:px-6 pb-12 pt-4 sm:pt-6">
         <div ref={panelRef}>
           {/* ── Intro ── */}
           <div className="mb-5 pt-1">
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">Submit your website</h1>
-            <p className="mt-1 text-[13px] sm:text-sm font-medium text-neutral-400">
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-neutral-950">Submit your website</h1>
+            <p className="mt-1 text-[13px] sm:text-sm font-medium text-neutral-500">
               Five quick steps: website details, media & video, directory specs, founder profile, and badge verification.
             </p>
           </div>
 
           {/* ── Signed-out notice ── */}
           {!isSignedIn && (
-            <div className="mb-5 flex items-start gap-2.5 rounded-2xl border border-neutral-800 bg-[#343434] px-4 py-3">
-              <p className="text-xs font-medium leading-relaxed text-neutral-400">
+            <div className="mb-5 flex items-start gap-2.5 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3">
+              <p className="text-xs font-medium leading-relaxed text-neutral-600">
                 You&apos;re not signed in. Sign in with Google before submitting so the listing is
                 linked to your profile — then you can manage it from there.
               </p>
@@ -842,7 +854,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
           {/* ── Banner ── */}
           {banner && (
             <div className="mb-5 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3">
-              <p className="flex items-center gap-2 text-xs font-semibold text-red-300">
+              <p className="flex items-center gap-2 text-xs font-semibold text-red-600">
                 <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                 {banner}
               </p>
@@ -850,7 +862,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
           )}
 
           {/* ── Step tabs ── */}
-          <div className="mb-5 grid grid-cols-5 gap-1 rounded-2xl border border-neutral-800 bg-[#2a2a2a] p-1" role="tablist" aria-label="Submission steps">
+          <div className="mb-5 grid grid-cols-5 gap-1 rounded-2xl border border-neutral-200 bg-white p-1 shadow-2xs" role="tablist" aria-label="Submission steps">
             {STEPS.map((label, i) => {
               const active = step === i;
               const isCompleted = isStepComplete(i) && step > i;
@@ -863,17 +875,17 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                   onClick={() => handleTabClick(i)}
                   className={`flex items-center justify-center gap-1.5 sm:gap-2 rounded-xl px-1.5 sm:px-2 py-2.5 text-xs font-bold transition-all cursor-pointer ${
                     active
-                      ? 'bg-white text-[#0b0f14] shadow-2xs'
-                      : 'text-neutral-400 hover:bg-white/5 hover:text-white'
+                      ? 'bg-neutral-950 text-white shadow-2xs'
+                      : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-950'
                   }`}
                 >
                   <span
                     className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-black shrink-0 ${
                       active
-                        ? 'bg-[#0b0f14] text-white'
+                        ? 'bg-mint-500 text-white'
                         : isCompleted
-                        ? 'bg-mint-500/20 text-mint-400 border border-mint-500/40'
-                        : 'bg-neutral-800 text-neutral-400'
+                        ? 'bg-mint-500/20 text-mint-700 border border-mint-500/40'
+                        : 'bg-neutral-100 text-neutral-600 border border-neutral-200'
                     }`}
                   >
                     {isCompleted ? <Check className="h-3 w-3" strokeWidth={3.5} /> : i + 1}
@@ -886,7 +898,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
 
           {/* ── Step panels ── */}
           {step === 0 && (
-            <section className="rounded-2xl border border-neutral-800 bg-[#2a2a2a] p-4 sm:p-6 shadow-xs space-y-4">
+            <section className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-6 shadow-xs space-y-4">
               <div>
                 <label className={labelClass}>
                   Website URL <span className="text-red-400">*</span>
@@ -905,7 +917,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
               </div>
 
 
-              <div className="border-t border-neutral-800 pt-4">
+              <div className="border-t border-neutral-200 pt-4">
                 <label className={labelClass}>
                   Product name <span className="text-red-400">*</span>
                   <span className="float-right font-mono-num text-[10px] font-semibold text-neutral-500">
@@ -948,37 +960,35 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
               </div>
 
               <div>
-                <label className={labelClass}>
-                  Description
-                  <span className="float-right font-mono-num text-[10px] font-semibold text-neutral-500">
-                    {form.description.length}/2000
-                  </span>
-                </label>
-                <textarea
+                <label className={labelClass}>Description</label>
+                <RichTextEditor
                   value={form.description}
+                  onChange={(html) => {
+                    set('description', html);
+                    if (draftSaved) setDraftSaved(false);
+                  }}
+                  placeholder="What does it do, and who is it for? Use the toolbar to add bold, lists, links and more."
                   maxLength={2000}
-                  rows={5}
-                  onChange={(e) => set('description', e.target.value)}
-                  placeholder="What does it do, and who is it for?"
-                  className={`${inputClass(false)} resize-y leading-relaxed`}
+                  minHeightClass="min-h-[150px]"
+                  ariaLabel="Description"
                 />
                 <p className="mt-1.5 text-[11px] font-medium text-neutral-600">
-                  Optional — shown on your listing page under About.
+                  Optional — headings, bold, lists and links render exactly like this on your listing page.
                 </p>
               </div>
             </section>
           )}
 
           {step === 1 && (
-            <section className="rounded-2xl border border-neutral-800 bg-[#2a2a2a] p-4 sm:p-6 shadow-xs">
+            <section className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-6 shadow-xs">
               <div className="flex flex-col sm:flex-row items-start gap-4">
-                <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-neutral-800 bg-[#222222]">
+                <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-neutral-200 bg-white">
                   {form.logoDataUrl ? (
                     <img src={form.logoDataUrl} alt="Logo preview" className="h-full w-full object-contain" />
                   ) : autoLogoPreview ? (
                     <img src={autoLogoPreview} alt="Site favicon preview" className="h-8 w-8 object-contain" />
                   ) : (
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-600">Logo</span>
+                    <span className="text-[10px] font-bold  text-neutral-600">Logo</span>
                   )}
                 </div>
 
@@ -1002,26 +1012,26 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                     onDrop={handleDrop}
                     className={`flex min-h-[120px] cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-4 text-center transition-colors outline-none ${
                       isDraggingLogo
-                        ? 'border-white bg-white/5'
-                        : 'border-neutral-700 bg-[#222222] hover:border-neutral-500'
+                        ? 'border-neutral-900 bg-neutral-50'
+                        : 'border-neutral-300 bg-white hover:border-neutral-500 hover:bg-neutral-50/50'
                     }`}
                   >
                     {form.logoDataUrl ? (
                       <>
-                        <p className="text-xs font-bold text-neutral-200">Logo uploaded</p>
+                        <p className="text-xs font-bold text-neutral-900">Logo uploaded</p>
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
                             set('logoDataUrl', '');
                           }}
-                          className="rounded-lg border border-neutral-700 bg-[#343434] px-2.5 py-1 text-[11px] font-bold text-neutral-300 hover:border-neutral-500 hover:text-white transition-colors cursor-pointer"
+                          className="rounded-lg border border-neutral-200 bg-neutral-100 px-2.5 py-1 text-[11px] font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-colors cursor-pointer"
                         >
                           Remove and upload another
                         </button>
                       </>
                     ) : (
-                      <p className="text-xs font-bold text-neutral-300">Upload logo</p>
+                      <p className="text-xs font-bold text-neutral-900">Upload logo</p>
                     )}
                     <p className="text-[10px] font-medium text-neutral-500">
                       Click, drop, or paste a square image — large files are compressed automatically
@@ -1049,15 +1059,15 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
               </div>
 
               {/* Feature screenshots gallery (up to 10) */}
-              <div className="mt-6 border-t border-neutral-800 pt-6">
+              <div className="mt-6 border-t border-neutral-200 pt-6">
                 <div className="mb-2 flex items-baseline justify-between gap-2">
                   <div>
-                    <label className="text-sm font-bold text-neutral-200">Feature screenshots</label>
-                    <p className="text-[11px] text-neutral-400 mt-0.5">
+                    <label className="text-sm font-bold text-neutral-900">Feature screenshots</label>
+                    <p className="text-[11px] text-neutral-500 mt-0.5">
                       Drag to reorder or use the arrow buttons. The first image (#1) is your primary listing cover.
                     </p>
                   </div>
-                  <span className="font-mono-num text-[11px] font-bold text-neutral-400 bg-[#222222] px-2 py-0.5 rounded-md border border-neutral-700 shrink-0">
+                  <span className="font-mono-num text-[11px] font-bold text-neutral-700 bg-neutral-50 px-2 py-0.5 rounded-md border border-neutral-200 shrink-0">
                     {form.screenshots.length}/10
                   </span>
                 </div>
@@ -1104,7 +1114,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                             ? 'opacity-40 border-neutral-600'
                             : isFirst
                             ? 'border-mint-500/50 hover:border-mint-500/80'
-                            : 'border-neutral-700 hover:border-neutral-500'
+                            : 'border-neutral-200 hover:border-neutral-500'
                         }`}
                       >
                         <img
@@ -1116,12 +1126,12 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                         {/* Order / Cover Badge */}
                         <div className="absolute left-2 top-2 z-10">
                           {isFirst ? (
-                            <span className="inline-flex items-center gap-1 rounded-md bg-mint-500 px-2 py-0.5 text-[10px] font-black text-[#0b0f14] shadow-md">
-                              <Star className="h-3 w-3 fill-[#0b0f14]" />
+                            <span className="inline-flex items-center gap-1 rounded-md bg-mint-500 px-2 py-0.5 text-[10px] font-black text-white shadow-md">
+                              <Star className="h-3 w-3 fill-white" />
                               <span>#1 Cover</span>
                             </span>
                           ) : (
-                            <span className="rounded-md bg-black/80 backdrop-blur-xs border border-neutral-700/60 px-1.5 py-0.5 text-[10px] font-mono font-bold text-neutral-200 shadow-md">
+                            <span className="rounded-md bg-black/80 backdrop-blur-xs border border-neutral-200/60 px-1.5 py-0.5 text-[10px] font-mono font-bold text-neutral-200 shadow-md">
                               #{i + 1}
                             </span>
                           )}
@@ -1135,7 +1145,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                             removeScreenshot(i);
                           }}
                           aria-label={`Remove screenshot ${i + 1}`}
-                          className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-lg bg-black/80 text-neutral-300 hover:bg-red-600 hover:text-white border border-neutral-700/60 hover:border-red-500 transition-all cursor-pointer shadow-md"
+                          className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-lg bg-black/80 text-neutral-300 hover:bg-red-600 hover:text-white border border-neutral-200/60 hover:border-red-500 transition-all cursor-pointer shadow-md"
                           title="Delete screenshot"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -1152,7 +1162,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                             }}
                             disabled={isFirst}
                             aria-label="Move left"
-                            className="flex h-6 w-6 items-center justify-center rounded-md bg-neutral-800/90 border border-neutral-700/60 text-white hover:bg-mint-500 hover:text-[#0b0f14] disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+                            className="flex h-6 w-6 items-center justify-center rounded-md bg-neutral-800/90 border border-neutral-200/60 text-white hover:bg-mint-500 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
                             title="Move earlier in gallery"
                           >
                             <ChevronLeft className="h-3.5 w-3.5" />
@@ -1166,7 +1176,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                                 e.stopPropagation();
                                 moveScreenshot(i, 0);
                               }}
-                              className="rounded-md bg-neutral-800/90 border border-neutral-700/60 px-2 py-0.5 text-[9px] font-bold text-neutral-300 hover:text-mint-300 hover:border-mint-500/60 transition-all cursor-pointer"
+                              className="rounded-md bg-neutral-800/90 border border-neutral-200/60 px-2 py-0.5 text-[9px] font-bold text-neutral-300 hover:text-mint-600 hover:border-mint-500/60 transition-all cursor-pointer"
                               title="Set this screenshot as main cover (#1)"
                             >
                               Set as Cover
@@ -1182,7 +1192,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                             }}
                             disabled={isLast}
                             aria-label="Move right"
-                            className="flex h-6 w-6 items-center justify-center rounded-md bg-neutral-800/90 border border-neutral-700/60 text-white hover:bg-mint-500 hover:text-[#0b0f14] disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+                            className="flex h-6 w-6 items-center justify-center rounded-md bg-neutral-800/90 border border-neutral-200/60 text-white hover:bg-mint-500 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
                             title="Move later in gallery"
                           >
                             <ChevronRight className="h-3.5 w-3.5" />
@@ -1197,7 +1207,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                       type="button"
                       onClick={() => screenshotsInputRef.current?.click()}
                       disabled={isAddingShots}
-                      className="flex aspect-video cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-neutral-700 bg-[#222222] text-neutral-500 transition-colors hover:border-neutral-500 hover:text-neutral-300 disabled:opacity-60"
+                      className="flex aspect-video cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-neutral-200 bg-white text-neutral-500 transition-colors hover:border-neutral-400 hover:text-neutral-950 disabled:opacity-60"
                     >
                       {isAddingShots ? (
                         <>
@@ -1232,13 +1242,13 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
               </div>
 
               {/* Demo Video URL Input */}
-              <div className="mt-6 border-t border-neutral-800 pt-6">
+              <div className="mt-6 border-t border-neutral-200 pt-6">
                 <div className="mb-2 flex items-center justify-between gap-2">
-                  <label className="text-sm font-bold text-neutral-200 flex items-center gap-1.5">
-                    <Video className="h-4 w-4 text-mint-400" />
+                  <label className="text-sm font-bold text-neutral-900 flex items-center gap-1.5">
+                    <Video className="h-4 w-4 text-mint-600" />
                     <span>Demo Video URL</span>
                   </label>
-                  <span className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider">
+                  <span className="text-[10px] font-semibold text-neutral-500">
                     Optional
                   </span>
                 </div>
@@ -1264,7 +1274,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                         set('demoVideoUrl', '');
                         if (draftSaved) setDraftSaved(false);
                       }}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-neutral-400 hover:text-white transition-colors cursor-pointer"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-neutral-500 hover:text-neutral-950 transition-colors cursor-pointer"
                     >
                       Clear
                     </button>
@@ -1278,31 +1288,31 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
           )}
 
           {step === 2 && (
-            <section className="rounded-2xl border border-neutral-800 bg-[#2a2a2a] p-4 sm:p-6 shadow-xs space-y-6">
+            <section className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-6 shadow-xs space-y-6">
               {/* Multi-Category Selection */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className={labelClass}>
                     Categories <span className="text-red-400">*</span>
                   </label>
-                  <span className="font-mono-num text-[11px] font-bold text-neutral-400 bg-[#222222] px-2 py-0.5 rounded-md border border-neutral-700">
+                  <span className="font-mono-num text-[11px] font-bold text-neutral-700 bg-neutral-50 px-2 py-0.5 rounded-md border border-neutral-200">
                     {form.categories.length}/3 selected
                   </span>
                 </div>
 
                 {/* Selected categories pill tags */}
                 {form.categories.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mb-3 p-2.5 rounded-xl border border-neutral-800 bg-[#222222]">
+                  <div className="flex flex-wrap gap-1.5 mb-3 p-2.5 rounded-xl border border-neutral-200 bg-white">
                     {form.categories.map((cat) => (
                       <span
                         key={cat}
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-mint-500/15 border border-mint-500/40 px-2.5 py-1 text-xs font-bold text-mint-200 shadow-2xs"
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-mint-500/15 border border-mint-500/40 px-2.5 py-1 text-xs font-bold text-mint-700 shadow-2xs"
                       >
                         <span>{cat}</span>
                         <button
                           type="button"
                           onClick={() => toggleCategory(cat)}
-                          className="flex h-4 w-4 items-center justify-center rounded-full hover:bg-mint-500/30 text-mint-300 hover:text-white transition-colors cursor-pointer"
+                          className="flex h-4 w-4 items-center justify-center rounded-full hover:bg-mint-500/30 text-mint-600 hover:text-white transition-colors cursor-pointer"
                         >
                           <X className="h-3 w-3" />
                         </button>
@@ -1319,15 +1329,15 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                       setIsCategoryOpen((o) => !o);
                       setCategorySearch('');
                     }}
-                    className={`w-full flex items-center justify-between rounded-xl border bg-[#222222] px-3.5 py-2.5 text-sm font-semibold text-white transition-all cursor-pointer text-left ${
+                    className={`w-full flex items-center justify-between rounded-xl border bg-white px-3.5 py-2.5 text-sm font-semibold text-neutral-900 transition-all cursor-pointer text-left ${
                       showCategoryError
                         ? 'border-red-500/70'
                         : isCategoryOpen
-                          ? 'border-white ring-2 ring-white/15'
-                          : 'border-neutral-700 hover:border-neutral-500'
+                          ? 'border-neutral-900 ring-2 ring-neutral-900/10'
+                          : 'border-neutral-300 hover:border-neutral-400'
                     }`}
                   >
-                    <span className="text-neutral-400 font-medium">
+                    <span className="text-neutral-700 font-medium">
                       {form.categories.length > 0
                         ? `${form.categories.length} category${form.categories.length > 1 ? 'ies' : ''} selected — click to manage`
                         : 'Choose up to 3 categories...'}
@@ -1340,7 +1350,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                   </button>
 
                   {isCategoryOpen && (
-                    <div className="absolute left-0 right-0 top-full z-30 mt-1.5 rounded-xl border border-neutral-700 bg-[#343434] p-2 shadow-2xl space-y-2">
+                    <div className="absolute left-0 right-0 top-full z-30 mt-1.5 rounded-xl border border-neutral-200 bg-white p-2 shadow-2xl space-y-2">
                       <div className="relative">
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-500" />
                         <input
@@ -1349,7 +1359,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                           value={categorySearch}
                           onChange={(e) => setCategorySearch(e.target.value)}
                           placeholder="Search 25+ categories..."
-                          className="w-full rounded-lg border border-neutral-700 bg-[#222222] pl-8 pr-3 py-1.5 text-xs text-white placeholder:text-neutral-500 focus:border-neutral-400 focus:outline-none"
+                          className="w-full rounded-lg border border-neutral-200 bg-neutral-50 pl-8 pr-3 py-1.5 text-xs text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-900 focus:outline-none"
                         />
                       </div>
                       <div className="max-h-56 overflow-y-auto space-y-0.5 pr-0.5">
@@ -1365,12 +1375,12 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                                 onClick={() => toggleCategory(cat)}
                                 className={`w-full flex items-center justify-between rounded-lg px-2.5 py-2 text-left text-xs transition-colors cursor-pointer ${
                                   selected
-                                    ? 'bg-mint-500/20 font-bold text-mint-200'
-                                    : 'font-medium text-neutral-400 hover:bg-white/5 hover:text-white'
+                                    ? 'bg-mint-500/20 font-bold text-mint-700'
+                                    : 'font-medium text-neutral-700 hover:bg-neutral-100 hover:text-neutral-950'
                                 }`}
                               >
                                 <span className="truncate">{cat}</span>
-                                {selected && <Check className="h-3.5 w-3.5 shrink-0 text-mint-300 stroke-[3]" />}
+                                {selected && <Check className="h-3.5 w-3.5 shrink-0 text-mint-600 stroke-[3]" />}
                               </button>
                             );
                           })
@@ -1382,7 +1392,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
 
                 {/* Quick Toggle Popular Categories */}
                 <div className="mt-2.5 flex flex-wrap gap-1.5">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 self-center mr-1">
+                  <span className="text-[10px] font-bold text-neutral-500 self-center mr-1">
                     Popular:
                   </span>
                   {['AI Tools', 'Developer Tools', 'Productivity', 'SaaS & Indie', 'Marketing & SEO', 'Design & UI'].map(
@@ -1395,8 +1405,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                           onClick={() => toggleCategory(cat as Category)}
                           className={`rounded-lg px-2 py-1 text-[10px] font-bold transition-all cursor-pointer ${
                             active
-                              ? 'bg-mint-500/20 text-mint-200 border border-mint-500/50 shadow-2xs'
-                              : 'bg-[#222222] text-neutral-400 border border-neutral-700 hover:text-white hover:border-neutral-500'
+                              ? 'bg-mint-500/20 text-mint-700 border border-mint-500/50 shadow-2xs'
+                              : 'bg-white text-neutral-700 border border-neutral-200 hover:text-neutral-950 hover:border-neutral-400 hover:bg-neutral-50'
                           }`}
                         >
                           {active ? `✓ ${cat}` : `+ ${cat}`}
@@ -1407,13 +1417,13 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                 </div>
 
                 <FieldError message={showCategoryError ? errors.category : undefined} />
-                <p className="mt-1.5 text-[11px] font-medium text-neutral-600">
+                <p className="mt-1.5 text-[11px] font-medium text-neutral-500">
                   Select up to 3 relevant categories to maximize visibility across directory filters.
                 </p>
               </div>
 
               {/* Pricing */}
-              <div className="border-t border-neutral-800 pt-5">
+              <div className="border-t border-neutral-200 pt-5">
                 <label className={labelClass}>Pricing model</label>
                 <div className="grid grid-cols-2 gap-2">
                   {PRICING_OPTIONS.map((opt) => {
@@ -1428,53 +1438,53 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                         }}
                         className={`rounded-xl border px-3 py-2.5 text-left transition-all cursor-pointer ${
                           selected
-                            ? 'border-white bg-white'
-                            : 'border-neutral-700 bg-[#222222] hover:border-neutral-500'
+                            ? 'border-neutral-950 bg-neutral-950 text-white'
+                            : 'border-neutral-200 bg-white hover:border-neutral-400 text-neutral-900'
                         }`}
                       >
-                        <span className={`block text-xs font-bold ${selected ? 'text-[#0b0f14]' : 'text-neutral-200'}`}>
+                        <span className={`block text-xs font-bold ${selected ? 'text-white' : 'text-neutral-900'}`}>
                           {opt.value}
                         </span>
-                        <span className={`block text-[10px] font-medium ${selected ? 'text-neutral-600' : 'text-neutral-500'}`}>
+                        <span className={`block text-[10px] font-medium ${selected ? 'text-neutral-300' : 'text-neutral-500'}`}>
                           {opt.hint}
                         </span>
                       </button>
                     );
                   })}
                 </div>
-                <p className="mt-1.5 text-[11px] font-medium text-neutral-600">
+                <p className="mt-1.5 text-[11px] font-medium text-neutral-500">
                   Optional — shown on your listing page.
                 </p>
               </div>
 
               {/* Special Offer & Viewer Discount */}
-              <div className="border-t border-neutral-800 pt-5 space-y-3.5">
+              <div className="border-t border-neutral-200 pt-5 space-y-3.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-mint-500/15 text-mint-400 border border-mint-500/30">
+                    <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-mint-500/15 text-mint-600 border border-mint-500/30">
                       <Tag className="h-3.5 w-3.5" />
                     </div>
                     <div>
-                      <h3 className="text-xs font-bold text-white flex items-center gap-1.5">
+                      <h3 className="text-xs font-bold text-neutral-950 flex items-center gap-1.5">
                         <span>Special Offer & Discount</span>
-                        <span className="rounded bg-mint-500/15 border border-mint-500/30 px-1.5 py-0.5 text-[9px] font-black text-mint-300 uppercase tracking-wider">
+                        <span className="rounded bg-mint-500/15 border border-mint-500/30 px-1.5 py-0.5 text-[9px] font-black text-mint-600">
                           Boosts Clicks
                         </span>
                       </h3>
-                      <p className="text-[11px] text-neutral-400">
+                      <p className="text-[11px] text-neutral-500">
                         Offer TopSAAS viewers a discount code or promo to drive conversions and early customers.
                       </p>
                     </div>
                   </div>
-                  <span className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider">
+                  <span className="text-[10px] font-semibold text-neutral-500">
                     Optional
                   </span>
                 </div>
 
-                <div className="rounded-xl border border-neutral-700/80 bg-[#222222] p-3.5 sm:p-4 space-y-3.5">
+                <div className="rounded-xl border border-neutral-200 bg-white p-3.5 sm:p-4 space-y-3.5">
                   {/* Preset chips for quick fill */}
                   <div>
-                    <div className="text-[10px] font-bold text-neutral-400 mb-1.5 uppercase tracking-wider">
+                    <div className="text-[10px] font-bold text-neutral-600 mb-1.5">
                       Quick Discount Presets:
                     </div>
                     <div className="flex flex-wrap gap-1.5">
@@ -1492,8 +1502,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                           }}
                           className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all cursor-pointer ${
                             form.offerDiscount === preset
-                              ? 'bg-mint-500 text-[#0b0f14] border border-mint-400 shadow-2xs'
-                              : 'bg-[#2a2a2a] text-neutral-300 border border-neutral-700 hover:border-neutral-500 hover:text-white'
+                              ? 'bg-mint-500 text-white border border-mint-400 shadow-2xs'
+                              : 'bg-white text-neutral-700 border border-neutral-200 hover:border-neutral-400 hover:bg-neutral-50 hover:text-neutral-950'
                           }`}
                         >
                           {preset}
@@ -1580,8 +1590,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
               </div>
 
               {/* Who it's for */}
-              <div className="border-t border-neutral-800 pt-5">
-                <h2 className="mb-3 text-[11px] font-black uppercase tracking-[0.16em] text-neutral-400">
+              <div className="border-t border-neutral-200 pt-5">
+                <h2 className="mb-3 text-[11px] font-black uppercase tracking-wider text-neutral-700">
                   Who it&apos;s for
                 </h2>
                 <div className="space-y-4">
@@ -1598,35 +1608,35 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                   </div>
                   <div>
                     <label className={labelClass}>Problem it solves</label>
-                    <textarea
+                    <RichTextEditor
                       value={form.problemItSolves}
-                      maxLength={600}
-                      rows={3}
-                      onChange={(e) => set('problemItSolves', e.target.value)}
+                      onChange={(html) => set('problemItSolves', html)}
                       placeholder="What pain point does it address?"
-                      className={`${inputClass(false)} resize-y leading-relaxed`}
+                      maxLength={600}
+                      minHeightClass="min-h-[96px]"
+                      ariaLabel="Problem it solves"
                     />
                   </div>
                   <div>
                     <label className={labelClass}>Your solution</label>
-                    <textarea
+                    <RichTextEditor
                       value={form.solution}
-                      maxLength={600}
-                      rows={3}
-                      onChange={(e) => set('solution', e.target.value)}
+                      onChange={(html) => set('solution', html)}
                       placeholder="How does it solve that problem?"
-                      className={`${inputClass(false)} resize-y leading-relaxed`}
+                      maxLength={600}
+                      minHeightClass="min-h-[96px]"
+                      ariaLabel="Your solution"
                     />
                   </div>
                   <div>
                     <label className={labelClass}>What makes it different</label>
-                    <textarea
+                    <RichTextEditor
                       value={form.uniqueSellingPoint}
-                      maxLength={600}
-                      rows={3}
-                      onChange={(e) => set('uniqueSellingPoint', e.target.value)}
+                      onChange={(html) => set('uniqueSellingPoint', html)}
                       placeholder="What sets it apart from alternatives?"
-                      className={`${inputClass(false)} resize-y leading-relaxed`}
+                      maxLength={600}
+                      minHeightClass="min-h-[96px]"
+                      ariaLabel="What makes it different"
                     />
                   </div>
                 </div>
@@ -1636,9 +1646,9 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
               </div>
 
               {/* Social & Distribution Links */}
-              <div className="border-t border-neutral-800 pt-5 space-y-4">
+              <div className="border-t border-neutral-200 pt-5 space-y-4">
                 <div>
-                  <h2 className="text-[11px] font-black uppercase tracking-[0.16em] text-neutral-400">
+                  <h2 className="text-[11px] font-black uppercase tracking-wider text-neutral-700">
                     Social & Distribution Links
                   </h2>
                   <p className="mt-1 text-xs text-neutral-500">
@@ -1773,28 +1783,28 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
           )}
 
           {step === 3 && (
-            <section className="rounded-2xl border border-neutral-800 bg-[#2a2a2a] p-4 sm:p-6 shadow-xs space-y-6">
+            <section className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-6 shadow-xs space-y-6">
               <div>
-                <h2 className="text-sm font-black uppercase tracking-wider text-white">
+                <h2 className="text-sm font-black text-neutral-950">
                   Founder & Maker Profile
                 </h2>
-                <p className="mt-1 text-xs text-neutral-400">
+                <p className="mt-1 text-xs text-neutral-500">
                   Put a face and handle behind your launch. This displays in the &quot;Meet the Founder&quot; section of your listing page.
                 </p>
               </div>
 
               {/* Founder Profile Picture */}
-              <div className="border-t border-neutral-800 pt-5">
+              <div className="border-t border-neutral-200 pt-5">
                 <label className={labelClass}>Founder profile picture</label>
-                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 p-4 rounded-xl border border-neutral-700 bg-[#222222]">
+                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 p-4 rounded-xl border border-neutral-200 bg-white">
                   {/* Photo Preview */}
-                  <div className="relative h-20 w-20 shrink-0 rounded-full overflow-hidden border-2 border-neutral-700 bg-[#2a2a2a] flex items-center justify-center shadow-md">
+                  <div className="relative h-20 w-20 shrink-0 rounded-full overflow-hidden border-2 border-neutral-200 bg-white flex items-center justify-center shadow-md">
                     {form.creatorAvatar ? (
                       <img src={form.creatorAvatar} alt="Founder preview" className="h-full w-full object-cover" />
                     ) : defaultCreatorAvatar ? (
                       <img src={defaultCreatorAvatar} alt="Account avatar" className="h-full w-full object-cover" />
                     ) : (
-                      <span className="text-xl font-black text-mint-300">
+                      <span className="text-xl font-black text-mint-600">
                         {(form.creatorName || defaultCreatorName || 'F').slice(0, 1).toUpperCase()}
                       </span>
                     )}
@@ -1802,7 +1812,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
 
                   {/* Actions & info */}
                   <div className="flex-1 space-y-2 text-center sm:text-left">
-                    <p className="text-xs font-bold text-white">
+                    <p className="text-xs font-bold text-neutral-950">
                       {form.creatorAvatar
                         ? 'Custom photo selected'
                         : defaultCreatorAvatar
@@ -1816,7 +1826,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                       <button
                         type="button"
                         onClick={() => founderPhotoInputRef.current?.click()}
-                        className="rounded-lg border border-neutral-700 bg-[#343434] px-3 py-1.5 text-xs font-bold text-neutral-200 hover:border-neutral-500 hover:text-white transition-colors cursor-pointer"
+                        className="rounded-lg border border-neutral-200 bg-neutral-100 px-3 py-1.5 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-colors cursor-pointer"
                       >
                         {form.creatorAvatar ? 'Change photo' : 'Upload custom photo'}
                       </button>
@@ -1824,7 +1834,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                         <button
                           type="button"
                           onClick={() => set('creatorAvatar', defaultCreatorAvatar)}
-                          className="rounded-lg border border-neutral-800 bg-transparent px-2.5 py-1.5 text-xs font-semibold text-neutral-400 hover:text-white transition-colors cursor-pointer"
+                          className="rounded-lg border border-neutral-200 bg-transparent px-2.5 py-1.5 text-xs font-semibold text-neutral-500 hover:text-neutral-950 transition-colors cursor-pointer"
                         >
                           Use Google photo
                         </button>
@@ -1833,7 +1843,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                         <button
                           type="button"
                           onClick={() => set('creatorAvatar', '')}
-                          className="rounded-lg border border-neutral-800 bg-transparent px-2.5 py-1.5 text-xs font-semibold text-red-400 hover:text-red-300 transition-colors cursor-pointer"
+                          className="rounded-lg border border-neutral-200 bg-transparent px-2.5 py-1.5 text-xs font-semibold text-red-400 hover:text-red-300 transition-colors cursor-pointer"
                         >
                           Remove
                         </button>
@@ -1855,7 +1865,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
               </div>
 
               {/* Founder Name */}
-              <div className="border-t border-neutral-800 pt-5">
+              <div className="border-t border-neutral-200 pt-5">
                 <label className={labelClass}>Founder / Maker name</label>
                 <input
                   type="text"
@@ -1871,7 +1881,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
               </div>
 
               {/* Personal X Handle */}
-              <div className="border-t border-neutral-800 pt-5">
+              <div className="border-t border-neutral-200 pt-5">
                 <label className={labelClass}>Personal X (Twitter) profile</label>
                 <input
                   type="text"
@@ -1891,7 +1901,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
               </div>
 
               {/* Role / Title */}
-              <div className="border-t border-neutral-800 pt-5">
+              <div className="border-t border-neutral-200 pt-5">
                 <label className={labelClass}>Role or title</label>
                 <input
                   type="text"
@@ -1910,8 +1920,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                       onClick={() => set('creatorRole', role)}
                       className={`rounded-lg px-2 py-1 text-[10px] font-bold transition-colors cursor-pointer ${
                         form.creatorRole === role
-                          ? 'bg-mint-500/15 text-mint-200 border border-mint-500/40'
-                          : 'bg-[#222222] text-neutral-400 border border-neutral-700 hover:text-white hover:border-neutral-500'
+                          ? 'bg-mint-500/15 text-mint-700 border border-mint-500/40'
+                          : 'bg-white text-neutral-700 border border-neutral-200 hover:text-neutral-950 hover:border-neutral-400 hover:bg-neutral-50'
                       }`}
                     >
                       {role}
@@ -1925,27 +1935,27 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
           {/* ── Step 4: Embed Badge & Verification ── */}
           {step === 4 && (
             <section className="space-y-6 animate-in fade-in-50 duration-200">
-              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 border-b border-neutral-800 pb-5">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 border-b border-neutral-200 pb-5">
                 <div>
-                  <h2 className="text-base sm:text-lg font-black text-white">Embed Founder Badge</h2>
-                  <p className="mt-1 text-xs text-neutral-400 max-w-xl leading-relaxed">
+                  <h2 className="text-base sm:text-lg font-black text-neutral-950">Embed Founder Badge</h2>
+                  <p className="mt-1 text-xs text-neutral-500 max-w-xl leading-relaxed">
                     Embed the official TopSAAS badge on your website so visitors can support your launch and discover your directory listing.
                   </p>
                 </div>
 
                 <div className={`shrink-0 self-start sm:self-auto flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
                   isBadgeVerified
-                    ? 'bg-mint-500/15 border-mint-500/40 text-mint-300'
-                    : 'bg-amber-500/15 border-amber-500/30 text-amber-300'
+                    ? 'bg-mint-500/15 border-mint-500/40 text-mint-700'
+                    : 'bg-amber-500/15 border-amber-500/30 text-amber-700'
                 }`}>
                   {isBadgeVerified ? (
                     <>
-                      <CheckCircle2 className="h-4 w-4 text-mint-400" />
+                      <CheckCircle2 className="h-4 w-4 text-mint-600" />
                       <span>Badge Verified</span>
                     </>
                   ) : (
                     <>
-                      <AlertCircle className="h-4 w-4 text-amber-400" />
+                      <AlertCircle className="h-4 w-4 text-amber-500" />
                       <span>Not Yet Verified</span>
                     </>
                   )}
@@ -1954,25 +1964,25 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
 
               {/* 1. Customizer & Live Preview */}
               <div className="space-y-3">
-                <div className="flex items-center justify-between text-xs font-bold text-neutral-400">
+                <div className="flex items-center justify-between text-xs font-bold text-neutral-600">
                   <span>1. CHOOSE BADGE STYLE & THEME</span>
-                  <span className="text-mint-400 font-medium">Live SVG Preview</span>
+                  <span className="text-mint-600 font-medium">Live SVG Preview</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {/* Style */}
                   <div className="space-y-1.5">
-                    <label className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider block">
+                    <label className="text-[11px] font-bold text-neutral-700 block">
                       Badge Style
                     </label>
-                    <div className="grid grid-cols-3 gap-1 rounded-xl bg-[#2a2a2a] p-1 border border-neutral-800">
+                    <div className="grid grid-cols-3 gap-1 rounded-xl bg-white p-1 border border-neutral-200">
                       <button
                         type="button"
                         onClick={() => { playSound('click', soundEnabled); setBadgeStyle('featured'); }}
                         className={`py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                           badgeStyle === 'featured'
-                            ? 'bg-mint-500 text-[#0b0f14]'
-                            : 'text-neutral-400 hover:text-white'
+                            ? 'bg-mint-500 text-white'
+                            : 'text-neutral-600 hover:text-neutral-950 hover:bg-neutral-50'
                         }`}
                         title="Featured with mint chevron button"
                       >
@@ -1983,8 +1993,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                         onClick={() => { playSound('click', soundEnabled); setBadgeStyle('classic'); }}
                         className={`py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                           badgeStyle === 'classic'
-                            ? 'bg-mint-500 text-[#0b0f14]'
-                            : 'text-neutral-400 hover:text-white'
+                            ? 'bg-mint-500 text-white'
+                            : 'text-neutral-600 hover:text-neutral-950 hover:bg-neutral-50'
                         }`}
                         title="Classic DanielLaunches style"
                       >
@@ -1995,8 +2005,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                         onClick={() => { playSound('click', soundEnabled); setBadgeStyle('rank'); }}
                         className={`py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                           badgeStyle === 'rank'
-                            ? 'bg-mint-500 text-[#0b0f14]'
-                            : 'text-neutral-400 hover:text-white'
+                            ? 'bg-mint-500 text-white'
+                            : 'text-neutral-600 hover:text-neutral-950 hover:bg-neutral-50'
                         }`}
                         title="Directory Leaderboard Rank"
                       >
@@ -2007,17 +2017,17 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
 
                   {/* Theme */}
                   <div className="space-y-1.5">
-                    <label className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider block">
+                    <label className="text-[11px] font-bold text-neutral-700 block">
                       Theme
                     </label>
-                    <div className="grid grid-cols-2 gap-1 rounded-xl bg-[#2a2a2a] p-1 border border-neutral-800">
+                    <div className="grid grid-cols-2 gap-1 rounded-xl bg-white p-1 border border-neutral-200">
                       <button
                         type="button"
                         onClick={() => { playSound('click', soundEnabled); setBadgeTheme('dark'); }}
                         className={`py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                           badgeTheme === 'dark'
-                            ? 'bg-neutral-800 text-white border border-neutral-700 shadow-xs'
-                            : 'text-neutral-400 hover:text-white'
+                            ? 'bg-neutral-950 text-white shadow-xs'
+                            : 'text-neutral-600 hover:text-neutral-950 hover:bg-neutral-50'
                         }`}
                       >
                         Dark Mode
@@ -2027,8 +2037,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                         onClick={() => { playSound('click', soundEnabled); setBadgeTheme('light'); }}
                         className={`py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                           badgeTheme === 'light'
-                            ? 'bg-neutral-800 text-white border border-neutral-700 shadow-xs'
-                            : 'text-neutral-400 hover:text-white'
+                            ? 'bg-neutral-950 text-white shadow-xs'
+                            : 'text-neutral-600 hover:text-neutral-950 hover:bg-neutral-50'
                         }`}
                       >
                         Light Mode
@@ -2041,7 +2051,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                 <div
                   className={`flex items-center justify-center rounded-2xl p-6 border transition-all ${
                     badgeTheme === 'dark'
-                      ? 'bg-[#121214] border-neutral-800'
+                      ? 'bg-[#121214] border-neutral-200'
                       : 'bg-[#f4f4f5] border-neutral-300'
                   }`}
                 >
@@ -2054,34 +2064,34 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
               </div>
 
               {/* 2. Copy Code Snippet */}
-              <div className="space-y-2 border-t border-neutral-800 pt-5">
+              <div className="space-y-2 border-t border-neutral-200 pt-5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-neutral-300">2. COPY SNIPPET TO YOUR WEBSITE</span>
-                  <div className="flex items-center gap-1 bg-[#2a2a2a] p-0.5 rounded-lg border border-neutral-800 text-[11px]">
+                  <span className="text-xs font-bold text-neutral-900">2. COPY SNIPPET TO YOUR WEBSITE</span>
+                  <div className="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-neutral-200 text-[11px]">
                     <button
                       type="button"
                       onClick={() => setBadgeFormat('html')}
-                      className={`px-2 py-0.5 rounded font-bold transition-all cursor-pointer ${badgeFormat === 'html' ? 'bg-neutral-700 text-white' : 'text-neutral-400 hover:text-white'}`}
+                      className={`px-2 py-0.5 rounded font-bold transition-all cursor-pointer ${badgeFormat === 'html' ? 'bg-neutral-950 text-white' : 'text-neutral-600 hover:text-neutral-950'}`}
                     >
                       HTML
                     </button>
                     <button
                       type="button"
                       onClick={() => setBadgeFormat('markdown')}
-                      className={`px-2 py-0.5 rounded font-bold transition-all cursor-pointer ${badgeFormat === 'markdown' ? 'bg-neutral-700 text-white' : 'text-neutral-400 hover:text-white'}`}
+                      className={`px-2 py-0.5 rounded font-bold transition-all cursor-pointer ${badgeFormat === 'markdown' ? 'bg-neutral-950 text-white' : 'text-neutral-600 hover:text-neutral-950'}`}
                     >
                       Markdown
                     </button>
                   </div>
                 </div>
 
-                <div className="relative rounded-xl border border-neutral-800 bg-[#17171a] p-3 font-mono text-[11px] text-neutral-300 leading-relaxed overflow-x-auto">
+                <div className="relative rounded-xl border border-neutral-200 bg-[#17171a] p-3 font-mono text-[11px] text-neutral-300 leading-relaxed overflow-x-auto">
                   <pre className="whitespace-pre-wrap break-all pr-16">{badgeEmbedSnippet}</pre>
                   <button
                     type="button"
                     onClick={handleCopyBadgeSnippet}
                     className={`absolute top-2.5 right-2.5 inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-bold transition-all cursor-pointer shadow-xs ${
-                      copiedBadge ? 'bg-mint-500 text-[#0b0f14]' : 'bg-[#2a2a2a] text-white hover:bg-neutral-700 border border-neutral-700'
+                      copiedBadge ? 'bg-mint-500 text-white' : 'bg-white text-neutral-800 hover:bg-neutral-100 border border-neutral-300'
                     }`}
                   >
                     {copiedBadge ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
@@ -2094,15 +2104,15 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
               </div>
 
               {/* 3. Verification Action Panel */}
-              <div className="rounded-2xl border border-neutral-800 bg-[#2a2a2a] p-5 space-y-4">
+              <div className="rounded-2xl border border-neutral-200 bg-white p-5 space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
-                    <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
+                    <h3 className="text-sm font-bold text-neutral-950 flex items-center gap-1.5">
                       <span>3. Verify Badge Deployment</span>
-                      {isBadgeVerified && <CheckCircle2 className="h-4 w-4 text-mint-400" />}
+                      {isBadgeVerified && <CheckCircle2 className="h-4 w-4 text-mint-600" />}
                     </h3>
-                    <p className="text-xs text-neutral-400 mt-0.5">
-                      Target Website: <span className="font-mono text-neutral-200 underline font-semibold">{form.url || 'None entered in Step 1'}</span>
+                    <p className="text-xs text-neutral-500 mt-0.5">
+                      Target Website: <span className="font-mono text-neutral-900 underline font-semibold">{form.url || 'None entered in Step 1'}</span>
                     </p>
                   </div>
 
@@ -2112,8 +2122,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                     disabled={isVerifyingBadge || !form.url.trim()}
                     className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-black transition-all cursor-pointer shadow-sm min-h-[40px] shrink-0 ${
                       isBadgeVerified
-                        ? 'bg-mint-500/20 text-mint-300 border border-mint-500/40 hover:bg-mint-500/30'
-                        : 'bg-mint-500 text-[#0b0f14] hover:bg-mint-400 active:scale-95'
+                        ? 'bg-mint-500/20 text-mint-600 border border-mint-500/40 hover:bg-mint-500/30'
+                        : 'bg-mint-500 text-white hover:bg-mint-400 active:scale-95'
                     }`}
                   >
                     {isVerifyingBadge ? (
@@ -2137,12 +2147,12 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
 
                 {/* Verification Feedback Messages */}
                 {badgeVerificationSuccess && (
-                  <div className="rounded-xl border border-mint-500/40 bg-mint-500/10 p-3.5 text-xs text-mint-300 flex items-start gap-2.5">
-                    <CheckCircle2 className="h-4 w-4 text-mint-400 shrink-0 mt-0.5" />
+                  <div className="rounded-xl border border-mint-500/40 bg-mint-500/10 p-3.5 text-xs text-mint-600 flex items-start gap-2.5">
+                    <CheckCircle2 className="h-4 w-4 text-mint-600 shrink-0 mt-0.5" />
                     <div>
                       <p className="font-bold">Badge Successfully Verified!</p>
-                      <p className="text-[11px] text-mint-200/80 mt-0.5">{badgeVerificationSuccess}</p>
-                      <p className="text-[11px] text-mint-400 font-semibold mt-1">You may now submit your product for review.</p>
+                      <p className="text-[11px] text-mint-700/80 mt-0.5">{badgeVerificationSuccess}</p>
+                      <p className="text-[11px] text-mint-600 font-semibold mt-1">You may now submit your product for review.</p>
                     </div>
                   </div>
                 )}
@@ -2163,7 +2173,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                             playSound('success', soundEnabled);
                             confetti({ particleCount: 35, spread: 50, origin: { y: 0.7 } });
                           }}
-                          className="text-[11px] font-bold text-neutral-400 hover:text-white underline transition-colors cursor-pointer"
+                          className="text-[11px] font-bold text-neutral-500 hover:text-neutral-950 underline transition-colors cursor-pointer"
                         >
                           Running in localhost or private dev environment? Click here to confirm manual verification.
                         </button>
@@ -2173,24 +2183,22 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                 )}
 
                 {!badgeVerificationSuccess && !badgeVerificationError && (
-                  <div className="rounded-xl border border-neutral-800/80 bg-[#1e1e1e] p-3 text-[11.5px] text-neutral-400 flex items-center gap-2">
-                    <Lock className="h-4 w-4 text-amber-400 shrink-0" />
-                    <span>The &ldquo;Submit website&rdquo; button will unlock once badge verification passes.</span>
+                  <div className="rounded-xl border border-neutral-200 bg-white p-3 text-[11.5px] text-neutral-500 flex items-center gap-2">
+                    <ShieldCheck className="h-4 w-4 text-mint-500 shrink-0" />
+                    <span>Verifying the badge gives your listing an official Verified Startup checkmark upon launch approval.</span>
                   </div>
                 )}
               </div>
             </section>
           )}
         </div>
-      </main>
 
-      {/* ── Sticky action bar ── */}
-      <footer className="sticky bottom-0 z-40 border-t border-neutral-800 bg-[#222222]/95 backdrop-blur-md">
-        <div className="mx-auto flex max-w-2xl items-center justify-between gap-3 px-3.5 py-3 sm:px-6">
+        {/* ── Actions ── */}
+        <div className="mt-5 flex items-center justify-between gap-3 rounded-2xl border border-neutral-200 bg-white px-4 py-3 shadow-2xs">
           <button
             type="button"
             onClick={handleSaveDraft}
-            className="text-[11px] font-bold text-neutral-500 hover:text-white transition-colors cursor-pointer"
+            className="text-[11px] font-bold text-neutral-500 hover:text-neutral-950 transition-colors cursor-pointer"
           >
             {draftSaved ? 'Draft saved' : 'Save draft'}
           </button>
@@ -2200,7 +2208,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
               <button
                 type="button"
                 onClick={() => handleTabClick(step - 1)}
-                className="rounded-xl border border-neutral-700 bg-[#343434] px-4 py-2.5 text-xs font-bold text-neutral-200 hover:border-neutral-500 hover:text-white transition-all cursor-pointer"
+                className="rounded-xl border border-neutral-200 bg-neutral-100 px-4 py-2.5 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-all cursor-pointer"
               >
                 Back
               </button>
@@ -2210,7 +2218,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
               <button
                 type="button"
                 onClick={handleNext}
-                className="rounded-xl bg-white px-5 py-2.5 text-xs font-black text-[#0b0f14] hover:bg-neutral-200 active:scale-[0.98] transition-all cursor-pointer"
+                className="btn-primary px-5 py-2.5 text-xs font-bold"
               >
                 Continue
               </button>
@@ -2218,27 +2226,18 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
               <button
                 type="button"
                 onClick={handleLaunch}
-                disabled={isSubmitting || !isBadgeVerified}
-                className={`rounded-xl px-5 py-2.5 text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 shadow-sm ${
-                  isBadgeVerified
-                    ? 'bg-mint-500 text-[#0b0f14] hover:bg-mint-400 active:scale-[0.98]'
-                    : 'bg-neutral-800 text-neutral-500 cursor-not-allowed border border-neutral-700 opacity-60'
-                }`}
-                title={isBadgeVerified ? 'Submit website for review' : 'You must verify the TopSAAS badge on your website before submitting'}
+                disabled={isSubmitting}
+                className="rounded-xl px-5 py-2.5 text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 shadow-sm bg-neutral-950 text-white hover:bg-neutral-800 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Submit website for review"
               >
                 {isSubmitting ? (
                   <span className="inline-flex items-center gap-1.5">
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     Submitting…
                   </span>
-                ) : !isBadgeVerified ? (
-                  <span className="inline-flex items-center gap-1.5">
-                    <Lock className="h-3.5 w-3.5 text-neutral-400" />
-                    Verify badge to submit
-                  </span>
                 ) : (
                   <span className="inline-flex items-center gap-1.5">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-[#0b0f14]" />
+                    <CheckCircle2 className="h-3.5 w-3.5 text-mint-400" />
                     Submit website
                   </span>
                 )}
@@ -2247,14 +2246,14 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
               <button
                 type="button"
                 onClick={onSignInRequest}
-                className="rounded-xl bg-white px-5 py-2.5 text-xs font-black text-[#0b0f14] hover:bg-neutral-200 active:scale-[0.98] transition-all cursor-pointer"
+                className="rounded-xl bg-neutral-950 px-5 py-2.5 text-xs font-black text-white hover:bg-neutral-800 active:scale-[0.98] transition-all cursor-pointer"
               >
                 Sign in to submit
               </button>
             )}
           </div>
         </div>
-      </footer>
+      </main>
     </div>
   );
 };

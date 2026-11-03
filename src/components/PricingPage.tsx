@@ -76,7 +76,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({
           <button
             type="button"
             onClick={() => { playSound('click', soundEnabled); onGoHome(); }}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-700 bg-[#2a2a2a] px-3 py-1.5 text-xs font-bold text-neutral-300 hover:border-neutral-500 hover:text-white transition-all cursor-pointer"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-1.5 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-all cursor-pointer"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             Back to Home
@@ -85,10 +85,10 @@ export const PricingPage: React.FC<PricingPageProps> = ({
 
         {/* ── Page header ── */}
         <div className="space-y-2">
-          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-black text-neutral-950 tracking-tight">
             Listing Plans
           </h1>
-          <p className="text-sm text-neutral-400 max-w-xl">
+          <p className="text-sm text-neutral-500 max-w-xl">
             Submit your SaaS for free, or pay to skip the queue, get a verified badge, and a permanent dofollow backlink.
           </p>
         </div>
@@ -97,17 +97,17 @@ export const PricingPage: React.FC<PricingPageProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
           {/* Free */}
-          <div className="flex flex-col rounded-2xl border border-neutral-800 bg-[#2a2a2a] p-6 space-y-6">
+          <div className="flex flex-col rounded-2xl border border-neutral-200 bg-white p-6 space-y-6">
             <div className="space-y-1">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-500">Free</p>
+              <p className="text-[11px] font-bold  text-neutral-500">Free</p>
               <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-black text-white">$0</span>
+                <span className="text-3xl font-black text-neutral-950">$0</span>
                 <span className="text-xs text-neutral-500 font-medium">forever</span>
               </div>
-              <p className="text-xs text-neutral-400 pt-1">Standard queue submission. Good for testing if your product resonates.</p>
+              <p className="text-xs text-neutral-500 pt-1">Standard queue submission. Good for testing if your product resonates.</p>
             </div>
 
-            <ul className="space-y-2.5 text-xs text-neutral-400 flex-1">
+            <ul className="space-y-2.5 text-xs text-neutral-600 flex-1">
               <li className="flex items-center gap-2">
                 <Check className="h-3.5 w-3.5 text-neutral-500 shrink-0" />
                 Public directory listing
@@ -137,51 +137,51 @@ export const PricingPage: React.FC<PricingPageProps> = ({
             <button
               type="button"
               onClick={() => { playSound('click', soundEnabled); onOpenSubmit('free'); }}
-              className="w-full rounded-xl border border-neutral-700 bg-[#333333] py-2.5 text-xs font-bold text-neutral-200 hover:border-neutral-500 hover:text-white transition-all cursor-pointer"
+              className="w-full rounded-xl border border-neutral-200 bg-neutral-100 py-2.5 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-all cursor-pointer"
             >
               Submit for Free
             </button>
           </div>
 
           {/* Lifetime */}
-          <div className="flex flex-col rounded-2xl border border-neutral-700 bg-[#2a2a2a] p-6 space-y-6">
+          <div className="flex flex-col rounded-2xl border border-neutral-200 bg-white p-6 space-y-6">
             <div className="space-y-1">
               <div className="flex items-center gap-1.5">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">Lifetime</p>
-                <Award className="h-3 w-3 text-emerald-400" />
+                <p className="text-[11px] font-bold text-emerald-600">Lifetime</p>
+                <Award className="h-3 w-3 text-emerald-600" />
               </div>
               <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-black text-white">$99</span>
+                <span className="text-3xl font-black text-neutral-950">$99</span>
                 <span className="text-xs text-neutral-500 font-medium">one-time</span>
               </div>
-              <p className="text-xs text-neutral-400 pt-1">Pay once, keep all benefits permanently. Best for bootstrappers who want lasting SEO value.</p>
+              <p className="text-xs text-neutral-500 pt-1">Pay once, keep all benefits permanently. Best for bootstrappers who want lasting SEO value.</p>
             </div>
 
-            <ul className="space-y-2.5 text-xs text-neutral-300 flex-1">
+            <ul className="space-y-2.5 text-xs text-neutral-700 flex-1">
               <li className="flex items-center gap-2">
-                <Check className="h-3.5 w-3.5 text-mint-400 shrink-0" />
+                <Check className="h-3.5 w-3.5 text-mint-600 shrink-0" />
                 Everything in Free
               </li>
               <li className="flex items-center gap-2">
-                <Check className="h-3.5 w-3.5 text-mint-400 shrink-0" />
+                <Check className="h-3.5 w-3.5 text-mint-600 shrink-0" />
                 Live within 24 hours
               </li>
               <li className="flex items-center gap-2">
-                <Check className="h-3.5 w-3.5 text-mint-400 shrink-0" />
+                <Check className="h-3.5 w-3.5 text-mint-600 shrink-0" />
                 Permanent dofollow backlink
               </li>
               <li className="flex items-start gap-2">
-                <Check className="h-3.5 w-3.5 text-mint-400 shrink-0 mt-0.5" />
+                <Check className="h-3.5 w-3.5 text-mint-600 shrink-0 mt-0.5" />
                 <span className="flex items-center gap-1">
                   Verified badge <VerifiedBadge className="h-3.5 w-3.5" />
                 </span>
               </li>
               <li className="flex items-center gap-2">
-                <Check className="h-3.5 w-3.5 text-mint-400 shrink-0" />
+                <Check className="h-3.5 w-3.5 text-mint-600 shrink-0" />
                 Included in /llms.txt
               </li>
               <li className="flex items-center gap-2">
-                <Check className="h-3.5 w-3.5 text-mint-400 shrink-0" />
+                <Check className="h-3.5 w-3.5 text-mint-600 shrink-0" />
                 1× newsletter launch blast
               </li>
               <li className="flex items-center gap-2 text-neutral-600">
@@ -197,7 +197,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({
             <button
               type="button"
               onClick={() => { playSound('click', soundEnabled); onOpenSubmit('lifetime'); }}
-              className="w-full rounded-xl border border-neutral-600 bg-[#333333] py-2.5 text-xs font-bold text-white hover:border-neutral-400 transition-all cursor-pointer"
+              className="w-full rounded-xl border border-neutral-300 bg-neutral-100 py-2.5 text-xs font-bold text-neutral-900 hover:border-neutral-400 hover:bg-neutral-200 transition-all cursor-pointer"
             >
               Get Lifetime — $99
             </button>
@@ -205,47 +205,47 @@ export const PricingPage: React.FC<PricingPageProps> = ({
 
           {/* Pro Growth — highlighted with BorderBeam wrapper (SponsorTile pattern) */}
           <BorderBeam size="md" colorVariant="colorful" strength={0.85} className="rounded-2xl flex flex-col">
-            <div className="flex flex-col rounded-2xl bg-[#1e2720] p-6 space-y-6 h-full">
+            <div className="flex flex-col rounded-2xl border border-neutral-200 bg-neutral-100 p-6 space-y-6 h-full">
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-mint-400">Pro Growth</p>
-                    <Zap className="h-3 w-3 text-mint-400" />
+                    <p className="text-[11px] font-bold text-mint-700">Pro Growth</p>
+                    <Zap className="h-3 w-3 text-mint-600" />
                   </div>
-                  <span className="rounded-md bg-mint-500/15 border border-mint-500/30 px-1.5 py-0.5 text-[10px] font-bold text-mint-300 uppercase tracking-wide">
+                  <span className="rounded-md bg-white border border-mint-500/40 px-1.5 py-0.5 text-[10px] font-bold text-mint-700">
                     Recommended
                   </span>
                 </div>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-3xl font-black text-white">$49</span>
-                  <span className="text-xs text-neutral-400 font-medium">/mo per product</span>
+                  <span className="text-3xl font-black text-neutral-950">$49</span>
+                  <span className="text-xs text-neutral-500 font-medium">/mo per product</span>
                 </div>
-                <p className="text-xs text-neutral-400 pt-1">Active distribution channel. Keeps your product visible month after month without extra effort.</p>
+                <p className="text-xs text-neutral-600 pt-1">Active distribution channel. Keeps your product visible month after month without extra effort.</p>
               </div>
 
-              <ul className="space-y-2.5 text-xs text-neutral-200 flex-1">
+              <ul className="space-y-2.5 text-xs text-neutral-700 flex-1">
                 <li className="flex items-center gap-2">
-                  <Check className="h-3.5 w-3.5 text-mint-400 shrink-0" />
+                  <Check className="h-3.5 w-3.5 text-mint-600 shrink-0" />
                   Everything in Lifetime
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="h-3.5 w-3.5 text-mint-400 shrink-0" />
+                  <Check className="h-3.5 w-3.5 text-mint-600 shrink-0" />
                   Pinned Top 3 in your category
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="h-3.5 w-3.5 text-mint-400 shrink-0" />
+                  <Check className="h-3.5 w-3.5 text-mint-600 shrink-0" />
                   Monthly newsletter re-blast
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="h-3.5 w-3.5 text-mint-400 shrink-0" />
+                  <Check className="h-3.5 w-3.5 text-mint-600 shrink-0" />
                   &quot;vs Competitor&quot; comparison pages
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="h-3.5 w-3.5 text-mint-400 shrink-0" />
+                  <Check className="h-3.5 w-3.5 text-mint-600 shrink-0" />
                   Dedicated editorial review post
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="h-3.5 w-3.5 text-mint-400 shrink-0" />
+                  <Check className="h-3.5 w-3.5 text-mint-600 shrink-0" />
                   3-month downgrade protection
                 </li>
               </ul>
@@ -253,7 +253,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({
               <button
                 type="button"
                 onClick={() => { playSound('click', soundEnabled); onOpenSubmit('monthly_pro'); }}
-                className="w-full rounded-xl bg-mint-500 py-2.5 text-xs font-black text-[#0b0f14] hover:bg-mint-400 transition-all cursor-pointer shadow-md shadow-mint-500/20"
+                className="w-full rounded-xl bg-mint-500 py-2.5 text-xs font-black text-white hover:bg-mint-400 transition-all cursor-pointer shadow-md shadow-mint-500/20"
               >
                 Start Pro — $49/mo
               </button>
@@ -262,43 +262,43 @@ export const PricingPage: React.FC<PricingPageProps> = ({
         </div>
 
         {/* ── What you actually get ── */}
-        <div className="rounded-2xl border border-neutral-800 bg-[#2a2a2a] divide-y divide-neutral-800 overflow-hidden">
+        <div className="rounded-2xl border border-neutral-200 bg-white divide-y divide-neutral-200 overflow-hidden">
           <div className="px-5 py-4">
-            <h2 className="text-sm font-bold text-white">What each plan includes</h2>
+            <h2 className="text-sm font-bold text-neutral-950">What each plan includes</h2>
             <p className="text-xs text-neutral-500 mt-0.5">Every row is a specific feature, not a marketing category.</p>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="border-b border-neutral-800 bg-[#252525] text-neutral-400">
+                <tr className="border-b border-neutral-200 bg-neutral-100 text-neutral-500">
                   <th className="p-4 text-left font-semibold w-1/2">Feature</th>
                   <th className="p-4 text-center font-semibold">Free</th>
-                  <th className="p-4 text-center font-semibold text-neutral-300">Lifetime</th>
-                  <th className="p-4 text-center font-semibold text-mint-400 bg-mint-500/5 border-x border-mint-500/15">Pro</th>
+                  <th className="p-4 text-center font-semibold text-neutral-700">Lifetime</th>
+                  <th className="p-4 text-center font-semibold text-mint-600 bg-mint-500/5 border-x border-mint-500/15">Pro</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-neutral-800/60">
+              <tbody className="divide-y divide-neutral-200/60">
                 {comparisonRows.map((row, idx) => (
-                  <tr key={idx} className="hover:bg-neutral-800/30 transition-colors">
-                    <td className="p-4 font-medium text-neutral-300">{row.feature}</td>
+                  <tr key={idx} className="hover:bg-neutral-50 transition-colors">
+                    <td className="p-4 font-medium text-neutral-700">{row.feature}</td>
                     <td className="p-4 text-center text-neutral-500">
                       {typeof row.free === 'boolean'
                         ? row.free
-                          ? <Check className="h-3.5 w-3.5 text-neutral-400 mx-auto" />
-                          : <X className="h-3.5 w-3.5 text-neutral-700 mx-auto" />
+                          ? <Check className="h-3.5 w-3.5 text-neutral-500 mx-auto" />
+                          : <X className="h-3.5 w-3.5 text-neutral-400 mx-auto" />
                         : row.free}
                     </td>
-                    <td className="p-4 text-center text-neutral-300">
+                    <td className="p-4 text-center text-neutral-700">
                       {typeof row.lifetime === 'boolean'
                         ? row.lifetime
-                          ? <Check className="h-3.5 w-3.5 text-mint-400 mx-auto" />
+                          ? <Check className="h-3.5 w-3.5 text-mint-600 mx-auto" />
                           : <X className="h-3.5 w-3.5 text-neutral-700 mx-auto" />
                         : row.lifetime}
                     </td>
-                    <td className="p-4 text-center text-mint-300 font-medium bg-mint-500/5 border-x border-mint-500/15">
+                    <td className="p-4 text-center text-mint-600 font-medium bg-mint-500/5 border-x border-mint-500/15">
                       {typeof row.pro === 'boolean'
                         ? row.pro
-                          ? <Check className="h-3.5 w-3.5 text-mint-400 mx-auto" />
+                          ? <Check className="h-3.5 w-3.5 text-mint-600 mx-auto" />
                           : <X className="h-3.5 w-3.5 text-neutral-700 mx-auto" />
                         : row.pro}
                     </td>
@@ -310,27 +310,27 @@ export const PricingPage: React.FC<PricingPageProps> = ({
         </div>
 
         {/* ── What the verified badge means ── */}
-        <div className="rounded-2xl border border-neutral-800 bg-[#2a2a2a] p-5 sm:p-6 space-y-4">
+        <div className="rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 space-y-4">
           <div className="flex items-center gap-2.5">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-mint-500/10 border border-mint-500/30">
-              <ShieldCheck className="h-4.5 w-4.5 text-mint-400" />
+              <ShieldCheck className="h-4.5 w-4.5 text-mint-600" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-white">About the verified badge</h2>
+              <h2 className="text-sm font-bold text-neutral-950">About the verified badge</h2>
               <p className="text-[11px] text-neutral-500 mt-0.5">Paid listings only</p>
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs text-neutral-400">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs text-neutral-600">
             <div className="space-y-1">
-              <p className="font-semibold text-neutral-200">On the directory</p>
+              <p className="font-semibold text-neutral-900">On the directory</p>
               <p>A mint rosette appears next to your listing card, distinguishing it from unverified submissions.</p>
             </div>
             <div className="space-y-1">
-              <p className="font-semibold text-neutral-200">On your website</p>
+              <p className="font-semibold text-neutral-900">On your website</p>
               <p>Embed a dynamic SVG badge that links back to your live TopSAAS listing. Works on any site or landing page.</p>
             </div>
             <div className="space-y-1">
-              <p className="font-semibold text-neutral-200">What it means</p>
+              <p className="font-semibold text-neutral-900">What it means</p>
               <p>It means your listing has been manually reviewed, your URL is live, and you have an active paid plan.</p>
             </div>
           </div>
@@ -338,27 +338,27 @@ export const PricingPage: React.FC<PricingPageProps> = ({
 
         {/* ── FAQ ── */}
         <div className="space-y-3">
-          <h2 className="text-sm font-bold text-white">Common questions</h2>
+          <h2 className="text-sm font-bold text-neutral-950">Common questions</h2>
           <div className="space-y-2">
             {faqs.map((faq, index) => {
               const isOpen = openFaqIndex === index;
               return (
                 <div
                   key={index}
-                  className="rounded-xl border border-neutral-800 bg-[#2a2a2a] overflow-hidden"
+                  className="rounded-xl border border-neutral-200 bg-white overflow-hidden"
                 >
                   <button
                     type="button"
                     onClick={() => toggleFaq(index)}
-                    className="flex w-full items-center justify-between gap-4 p-4 text-left text-xs font-semibold text-neutral-200 hover:text-white transition-colors cursor-pointer"
+                    className="flex w-full items-center justify-between gap-4 p-4 text-left text-xs font-semibold text-neutral-900 hover:text-neutral-950 transition-colors cursor-pointer"
                   >
                     <span>{faq.q}</span>
                     {isOpen
-                      ? <ChevronUp className="h-3.5 w-3.5 text-mint-400 shrink-0" />
+                      ? <ChevronUp className="h-3.5 w-3.5 text-mint-600 shrink-0" />
                       : <ChevronDown className="h-3.5 w-3.5 text-neutral-600 shrink-0" />}
                   </button>
                   {isOpen && (
-                    <div className="px-4 pb-4 text-xs text-neutral-400 border-t border-neutral-800 pt-3 leading-relaxed">
+                    <div className="px-4 pb-4 text-xs text-neutral-600 border-t border-neutral-200 pt-3 leading-relaxed">
                       {faq.a}
                     </div>
                   )}

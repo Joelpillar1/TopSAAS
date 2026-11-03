@@ -18,7 +18,7 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
           playSound('click', soundEnabled);
           onOpenSubmit();
         }}
-        className="w-full flex items-center justify-center gap-2 rounded-xl bg-black py-3 px-4 text-xs font-bold text-white shadow-xs hover:bg-neutral-900 active:scale-[0.98] transition-all cursor-pointer min-h-[44px]"
+        className="w-full flex items-center justify-center gap-2 rounded-xl bg-neutral-950 py-3 px-4 text-xs font-bold text-white shadow-xs hover:bg-neutral-800 active:scale-[0.98] transition-all cursor-pointer min-h-[44px]"
       >
         <Plus className="h-4 w-4 stroke-[2.5]" />
         <span>New Launch</span>

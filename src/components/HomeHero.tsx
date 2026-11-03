@@ -1,14 +1,15 @@
-import React, { useEffect, useRef } from 'react';
-import { Search, Command, Flame } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { Globe, Flame } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { GridPattern } from '@/components/ui/grid-pattern';
+import { playSound } from '../utils/sound';
 
 interface HomeHeroProps {
   totalProducts: number;
   totalCategories: number;
-  searchQuery: string;
-  onSearchChange: (value: string) => void;
-  onOpenSubmit: () => void;
+  searchQuery?: string;
+  onSearchChange?: (value: string) => void;
+  onOpenSubmit: (initialUrl?: string) => void;
   soundEnabled: boolean;
   dealsCount?: number;
   stealsOnly?: boolean;
@@ -16,32 +17,29 @@ interface HomeHeroProps {
 }
 
 export const HomeHero: React.FC<HomeHeroProps> = ({
-  totalProducts,
   totalCategories,
-  searchQuery,
-  onSearchChange,
   onOpenSubmit,
   soundEnabled,
   dealsCount = 0,
   stealsOnly = false,
   onToggleSteals,
 }) => {
-  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [launchUrl, setLaunchUrl] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  // Ctrl/Cmd + K focuses the directory search
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        inputRef.current?.focus();
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  const handleSubmitLaunch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = launchUrl.trim();
+    if (!trimmed) {
+      inputRef.current?.focus();
+      return;
+    }
+    playSound('click', soundEnabled);
+    onOpenSubmit(trimmed);
+  };
 
   return (
-    <section className="relative overflow-hidden px-1 pt-6 sm:pt-10" aria-label="Find the best SaaS">
+    <section className="relative overflow-hidden px-1 pt-1 sm:pt-2 pb-1" aria-label="Find the best SaaS">
       {/* Background: subtle grid pattern */}
       <GridPattern
         width={32}
@@ -61,52 +59,67 @@ export const HomeHero: React.FC<HomeHeroProps> = ({
         className={cn(
           '[mask-image:radial-gradient(560px_circle_at_center,white,transparent)]',
           'inset-x-0 inset-y-[-30%] h-[200%] skew-y-12',
-          'fill-neutral-800/60 stroke-neutral-800/50',
+          'fill-neutral-300/30 stroke-neutral-300/40',
         )}
       />
       <div className="relative z-10 mx-auto flex max-w-2xl flex-col items-center text-center">
         {/* Headline */}
-        <h1 className="text-3xl font-black leading-[1.05] tracking-tight text-white sm:text-5xl">
+        <h1 className="text-3xl font-black leading-[1.05] tracking-tight text-neutral-950 sm:text-5xl">
           <span className="whitespace-nowrap">Find the best SaaS.</span>
           <br />
           <span className="text-neutral-500">Or get yours found.</span>
         </h1>
 
-        <p className="mt-4 text-sm font-medium text-neutral-400">
-          Search a product or click a card to open its page.
+        <p className="mt-3.5 text-xs sm:text-sm font-medium text-neutral-500 max-w-lg">
+          Free to submit. Get discovered by thousands of founders & users on autopilot.
         </p>
 
-        {/* Search */}
-        <div className="relative mt-7 w-full max-w-xl">
-          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
+        {/* Launch Now input and button */}
+        <form
+          onSubmit={handleSubmitLaunch}
+          className="relative mt-5 w-full max-w-lg flex items-center rounded-2xl border border-neutral-300 bg-white p-1.5 shadow-xs transition-all focus-within:border-mint-500 focus-within:ring-4 focus-within:ring-mint-500/10 hover:border-neutral-400"
+        >
+          <div className="flex items-center pl-3 pr-2 text-neutral-400">
+            <Globe className="h-4 w-4 shrink-0" />
+          </div>
           <input
             ref={inputRef}
             type="text"
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Search for a SaaS tool (e.g., 'invoice', 'community'…)"
-            aria-label="Search the directory"
-            className="w-full rounded-xl border border-neutral-700 bg-[#343434] py-3 pl-11 pr-20 text-sm font-medium text-neutral-100 placeholder-neutral-500 shadow-2xs outline-none transition-all focus:border-mint-500/70 focus:ring-4 focus:ring-mint-500/10"
+            value={launchUrl}
+            onChange={(e) => setLaunchUrl(e.target.value)}
+            placeholder="https://yourtool.com"
+            aria-label="Your SaaS website URL"
+            required
+            className="w-full bg-transparent py-2.5 text-sm font-semibold text-neutral-900 placeholder-neutral-400 outline-none"
           />
-          <span className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 items-center gap-1 rounded-md border border-neutral-700 bg-neutral-800 px-1.5 py-0.5 text-[10px] font-bold text-neutral-400 sm:flex">
-            <Command className="h-2.5 w-2.5" />
-            K
-          </span>
-        </div>
+          <button
+            type="submit"
+            className="shrink-0 btn-primary px-5 py-2.5 text-xs sm:text-sm font-bold rounded-xl"
+          >
+            Launch Now
+          </button>
+        </form>
 
-        {/* Live strip */}
-        <div className="mt-5 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1.5 text-[11px] font-semibold text-neutral-500">
-          <span className="inline-flex items-center gap-1.5">
-            <span className="h-1.5 w-1.5 rounded-full bg-mint-500" />
-            <span className="font-bold text-neutral-300 font-mono-num">{totalProducts}</span> products live
+        {/* Combined micro-benefits and live stats on the same line */}
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-x-2.5 sm:gap-x-3 gap-y-1 text-[11px] font-semibold text-neutral-500">
+          <span className="flex items-center gap-1">
+            <span className="text-mint-600 font-bold">✓</span> AI prefill
           </span>
-          <span className="text-neutral-700">·</span>
+          <span className="text-neutral-300">·</span>
+          <span className="flex items-center gap-1">
+            <span className="text-mint-600 font-bold">✓</span> Takes 30 secs
+          </span>
+          <span className="text-neutral-300">·</span>
+          <span className="flex items-center gap-1">
+            <span className="text-mint-600 font-bold">✓</span> 100% Free
+          </span>
+          <span className="text-neutral-300">·</span>
           <span>
-            <span className="font-bold text-neutral-300 font-mono-num">{totalCategories}</span> categories
+            <span className="font-bold text-neutral-800 font-mono-num">{totalCategories}</span> categories
           </span>
           {dealsCount > 0 && onToggleSteals && (
             <>
-              <span className="text-neutral-700">·</span>
+              <span className="text-neutral-300">·</span>
               <button
                 type="button"
                 onClick={() => {
@@ -115,16 +128,16 @@ export const HomeHero: React.FC<HomeHeroProps> = ({
                   if (section) section.scrollIntoView({ behavior: 'smooth' });
                 }}
                 className={`inline-flex items-center gap-1.5 text-[11px] font-semibold transition-colors cursor-pointer ${
-                  stealsOnly ? 'text-amber-300' : 'text-neutral-500 hover:text-amber-300'
+                  stealsOnly ? 'text-amber-700 font-bold' : 'text-neutral-600 hover:text-amber-600'
                 }`}
                 title={stealsOnly ? 'Turn off Steals Only filter' : 'Show only tools with exclusive discounts'}
               >
-                <Flame className={`h-3.5 w-3.5 ${stealsOnly ? 'text-amber-300 fill-amber-300/30 animate-pulse' : 'text-amber-400'}`} />
-                <span className={`font-bold font-mono-num ${stealsOnly ? 'text-amber-200' : 'text-neutral-300'}`}>{dealsCount}</span>
+                <Flame className={`h-3.5 w-3.5 ${stealsOnly ? 'text-amber-600 fill-amber-500/30 animate-pulse' : 'text-amber-500'}`} />
+                <span className={`font-bold font-mono-num ${stealsOnly ? 'text-amber-800' : 'text-neutral-800'}`}>{dealsCount}</span>
                 <span>{dealsCount === 1 ? 'steal' : 'steals'}</span>
                 {stealsOnly && (
-                  <span className="text-[9px] font-black uppercase tracking-wider text-amber-300">
-                    (active)
+                  <span className="text-[9px] font-black text-amber-700 bg-amber-100/70 px-1 rounded">
+                    active
                   </span>
                 )}
               </button>

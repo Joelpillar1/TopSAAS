@@ -1,13 +1,14 @@
 import React from 'react';
 import {
   ShieldCheck,
-  Sparkles,
   Trophy,
   FileText,
-  Zap,
+  TrendingUp,
+  BookOpen,
 } from 'lucide-react';
 import { Category } from '../types';
 import { playSound } from '../utils/sound';
+import { navigateTo } from '../utils/nav';
 import { AiAgentsSection } from './AiAgentsSection';
 
 interface RichFooterProps {
@@ -36,18 +37,18 @@ export const RichFooter: React.FC<RichFooterProps> = ({
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className={className || "mt-10 border-t border-neutral-800 bg-[#1c1c1c]"}>
+    <footer className={className || "mt-10 border-t border-neutral-200 bg-white"}>
       <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-12 pb-8">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-8 lg:gap-6">
           {/* Brand Column */}
           <div className="col-span-2 sm:col-span-3 lg:col-span-2 space-y-4">
             <div className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-mint-500 text-[#0b0f14]">
-                <Trophy className="h-5 w-5 fill-[#0b0f14] stroke-[#0b0f14]" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-mint-500 text-white shadow-[0_0_0_1px_rgba(37,99,235,0.3)]">
+                <Trophy className="h-5 w-5 fill-white stroke-white" />
               </div>
-              <span className="font-black text-xl text-white tracking-tight">TopSAAS</span>
+              <span className="font-black text-xl text-neutral-950 tracking-tight">TopSAAS</span>
             </div>
-            <p className="text-xs text-neutral-500 leading-relaxed max-w-xs">
+            <p className="text-xs text-neutral-600 leading-relaxed max-w-xs">
               The curated directory of the internet&apos;s best SaaS products. Founders list their
               software, real people discover it, and the best rise to the top.
             </p>
@@ -55,13 +56,13 @@ export const RichFooter: React.FC<RichFooterProps> = ({
 
           {/* Product Column */}
           <div className="space-y-3">
-            <h4 className="text-xs font-black uppercase tracking-wider text-neutral-200">Product</h4>
+            <h4 className="text-xs font-bold text-neutral-900">Product</h4>
             <ul className="space-y-2.5">
               <li>
                 <button
                   type="button"
                   onClick={() => { playSound('click', soundEnabled); onOpenHowItWorks(); }}
-                  className="text-xs text-neutral-500 hover:text-white transition-colors cursor-pointer"
+                  className="text-xs text-neutral-600 hover:text-neutral-950 transition-colors cursor-pointer"
                 >
                   How It Works
                 </button>
@@ -69,20 +70,27 @@ export const RichFooter: React.FC<RichFooterProps> = ({
               <li>
                 <button
                   type="button"
-                  onClick={() => { playSound('click', soundEnabled); onOpenSubmit(); }}
-                  className="text-xs text-neutral-500 hover:text-white transition-colors cursor-pointer flex items-center gap-1.5"
+                  onClick={() => { playSound('click', soundEnabled); navigateTo('/trending'); }}
+                  className="text-xs text-neutral-600 hover:text-neutral-950 transition-colors cursor-pointer flex items-center gap-1.5"
                 >
-                  <Sparkles className="h-3 w-3" />
-                  New Launch
+                  Trending
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => { playSound('click', soundEnabled); navigateTo('/guides'); }}
+                  className="text-xs text-neutral-600 hover:text-neutral-950 transition-colors cursor-pointer flex items-center gap-1.5"
+                >
+                  Build Guides
                 </button>
               </li>
               <li>
                 <button
                   type="button"
                   onClick={() => { playSound('click', soundEnabled); onOpenPrivacy?.(); }}
-                  className="text-xs text-neutral-500 hover:text-white transition-colors cursor-pointer flex items-center gap-1.5"
+                  className="text-xs text-neutral-600 hover:text-neutral-950 transition-colors cursor-pointer flex items-center gap-1.5"
                 >
-                  <ShieldCheck className="h-3 w-3" />
                   Privacy Policy
                 </button>
               </li>
@@ -90,28 +98,24 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                 <button
                   type="button"
                   onClick={() => { playSound('click', soundEnabled); onOpenTerms?.(); }}
-                  className="text-xs text-neutral-500 hover:text-white transition-colors cursor-pointer flex items-center gap-1.5"
+                  className="text-xs text-neutral-600 hover:text-neutral-950 transition-colors cursor-pointer flex items-center gap-1.5"
                 >
-                  <FileText className="h-3 w-3" />
                   Terms of Service
                 </button>
               </li>
             </ul>
           </div>
 
-          {/* Categories Column */}
-          {/* Categories column removed with the Directory section */}
-
           {/* Resources Column */}
           <div className="space-y-3">
-            <h4 className="text-xs font-black uppercase tracking-wider text-neutral-200">Resources</h4>
+            <h4 className="text-xs font-bold text-neutral-900">Resources</h4>
             <ul className="space-y-2.5">
               <li>
                 <a
                   href="https://x.com/ads4apps/status/2077469507543498836?s=46"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-neutral-500 hover:text-white transition-colors cursor-pointer"
+                  className="text-xs text-neutral-600 hover:text-neutral-950 transition-colors cursor-pointer"
                 >
                   $10K in 90 Days App Marketing
                 </a>
@@ -121,7 +125,7 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                   href="https://x.com/ErnestoSOFTWARE/status/2014110519913857122?s=46"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-neutral-500 hover:text-white transition-colors cursor-pointer"
+                  className="text-xs text-neutral-600 hover:text-neutral-950 transition-colors cursor-pointer"
                 >
                   $800K/y App Guide
                 </a>
@@ -131,7 +135,7 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                   href="https://www.post-bridge.com/growth-guide"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-neutral-500 hover:text-white transition-colors cursor-pointer"
+                  className="text-xs text-neutral-600 hover:text-neutral-950 transition-colors cursor-pointer"
                 >
                   Growth Hack by Jack Friks
                 </a>
@@ -145,9 +149,9 @@ export const RichFooter: React.FC<RichFooterProps> = ({
       </div>
 
       {/* Featured Badges */}
-      <div className="border-t border-neutral-800">
+      <div className="border-t border-neutral-200">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 py-5">
-          <h4 className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-3 text-center">Featured On</h4>
+          <h4 className="text-xs font-bold text-neutral-500 mb-3 text-center">Featured on</h4>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <a
               href="https://spacerrapps.com/apps/topsaas?utm_source=badge&utm_medium=referral&utm_campaign=featured"
@@ -156,7 +160,7 @@ export const RichFooter: React.FC<RichFooterProps> = ({
               className="transition-opacity hover:opacity-80"
             >
               <img
-                src="https://spacerrapps.com/badge/topsaas.svg?v=2&theme=dark"
+                src="https://spacerrapps.com/badge/topsaas.svg?v=2&theme=light"
                 alt="TopSAAS is featured on Spacerr"
                 className="h-8 w-auto"
                 loading="lazy"
@@ -177,13 +181,12 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                 onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
               />
             </a>
-            {/* Add more badges below */}
           </div>
         </div>
       </div>
 
       {/* Bottom Bar */}
-      <div className="border-t border-neutral-800">
+      <div className="border-t border-neutral-200">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-3 gap-y-1 text-[11px] text-neutral-500">
             <span>© {currentYear} TopSAAS.</span>
@@ -191,15 +194,15 @@ export const RichFooter: React.FC<RichFooterProps> = ({
             <button
               type="button"
               onClick={() => { playSound('click', soundEnabled); onOpenPrivacy?.(); }}
-              className="hover:text-white hover:underline transition-colors cursor-pointer"
+              className="hover:text-neutral-900 hover:underline transition-colors cursor-pointer"
             >
               Privacy Policy
             </button>
-            <span className="text-neutral-700">•</span>
+            <span className="text-neutral-400">•</span>
             <button
               type="button"
               onClick={() => { playSound('click', soundEnabled); onOpenTerms?.(); }}
-              className="hover:text-white hover:underline transition-colors cursor-pointer"
+              className="hover:text-neutral-900 hover:underline transition-colors cursor-pointer"
             >
               Terms of Service
             </button>

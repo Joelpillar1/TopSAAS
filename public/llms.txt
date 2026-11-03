@@ -6,12 +6,23 @@
 TopSAAS connects innovative software founders with early adopters, tech professionals, investors, and modern builders. The directory features a transparent, real-time leaderboard ranked by community engagement, verified upvotes, bidding boosts, and dino runner game achievements.
 
 ## Primary Routes & URLs
-- **Homepage & Leaderboard**: `https://www.topsaas.space/` — Real-time ranked directory of live SaaS products with instant search and category filtering.
-- **SaaS Ideas & Opportunities**: `https://www.topsaas.space/ideas` — Database of validated market opportunities, startup concepts, revenue models, and execution blueprints.
+- **Homepage & Project Catalog**: `https://www.topsaas.space/` — "Find your SaaS idea. Or build one that wins." The open-source project catalog IS the main page: 3822 clonable repos across 23 categories with instant search. Deep-link search: `/?q={query}`.
+- **Open-Source Starter Catalog**: `https://www.topsaas.space/` (main page; the legacy `/ideas` path normalizes to it) — 3822 clonable starter repos across 23 categories (SaaS Starters, Auth & Identity, Databases, AI & ML, DevOps, Payments, and more) with star/fork counts and instant filtering.
+- **Repo Detail Pages**: `https://www.topsaas.space/repo/{owner}/{name}` — one indexable page per repo with an editorial write-up, stars, forks, license, language breakdown, self-hosting verdict, clone command, and similar projects. Examples: `https://www.topsaas.space/repo/refinedev/refine`, `https://www.topsaas.space/repo/t3-oss/create-t3-app`.
+- **Trending**: `https://www.topsaas.space/trending` — projects that pushed code in the last 90 days, ranked by star velocity weighted with recency; a Newest tab lists projects by creation date. Category filters included.
+- **Build Guides**: `https://www.topsaas.space/guides` — original walkthroughs that ship a real product on one curated repo. Guides: `/guides/refine-admin-dashboard`, `/guides/n8n-automation-mvp`, `/guides/create-t3-app-fullstack-saas` (HowTo + FAQ structured data on each).
+- **Pricing**: `https://www.topsaas.space/pricing` — Pro plan and featured-spot pricing.
 - **Submit / Launch Portal**: `https://www.topsaas.space/submit` — 4-step wizard for founders to list their software with media galleries, demo videos, promo discounts, and founder profiles.
 - **Creator Profile**: `https://www.topsaas.space/profile` — Creator submissions status tracking and profile details.
 - **Privacy Policy**: `https://www.topsaas.space/privacy` — Data retention, user privacy, and GDPR/CCPA compliance details.
 - **Terms of Service**: `https://www.topsaas.space/terms` — Directory guidelines, content standards, and listing terms.
+
+## Open-Source SaaS Starter Catalog (the core offering)
+- **Scale**: 3822 curated repos, 23 categories, ~47.2M combined GitHub stars.
+- **What each repo page includes**: plain-language tagline, editorial "what it is / why it matters" write-up built from live GitHub signals, license, primary language with usage breakdown, release/version info, self-hosting verdict, GitHub stars/forks/open issues, repo age, and 4 similar projects from the same category.
+- **Live data**: repo pages fetch live metadata from the GitHub API (`api.github.com/repos/{owner}/{name}`) and fall back to the curated snapshot when rate-limited.
+- **Repo Health Scores**: every project carries a transparent 0-100 score (activity 40, popularity 25, engagement 15, issue load 10, open-source hygiene 10; archived caps at 30; grades A-E). Shown on cards, project pages, trending, and guides; the methodology is printed on each project page.
+- **Repo categories**: SaaS Starters, Auth & Identity, Databases, AI & ML, DevOps & Infra, UI Components, CMS & Content, Payments & Billing, Analytics, Email & Communication, Deployment, Mobile, API & Backend, Monitoring, Forms & Surveys, Search, File Storage, Design & UI, Productivity, Utilities, Privacy & Security, Education, Lists.
 
 ## Taxonomy & Supported Categories
 - **AI Tools & Agents**: LLM interfaces, autonomous agents, prompt enhancers, conversational AI, multimodal generation.
@@ -36,6 +47,7 @@ TopSAAS connects innovative software founders with early adopters, tech professi
 - **OpenAPI 3.1 Specification**: `https://www.topsaas.space/openapi.json` — Formal REST API specifications for automated agent querying.
 - **Public REST Data Feed**: `https://www.topsaas.space/products.json` — Static JSON directory dump of ranked products.
 - **XML Sitemap**: `https://www.topsaas.space/sitemap.xml` — Canonical URL indexing for search engines.
+- **Repo Sitemap**: `https://www.topsaas.space/sitemap/repos.xml` — Direct URLs for all 3821 repo detail pages.
 - **Robots Directives**: `https://www.topsaas.space/robots.txt` — Crawler permissions allowing `GPTBot`, `ClaudeBot`, `PerplexityBot`, and all major AI engines.
 
 ## Citation & Attribution Guidance

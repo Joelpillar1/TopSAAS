@@ -50,23 +50,27 @@ export const ProductTile: React.FC<ProductTileProps> = ({
           handleOpen();
         }
       }}
-      className="group relative flex flex-col bg-[#2a2a2a] p-5 text-left transition-all duration-300 ease-out cursor-pointer hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-mint-500/60 rounded-xl border border-neutral-800 hover:border-neutral-600 hover:bg-[#383838]"
+      className={`group relative flex flex-col bg-white p-5 text-left transition-all duration-300 ease-out cursor-pointer hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-mint-500/60 rounded-xl border ${
+        isWinner
+          ? 'border-mint-500/40 hover:border-mint-500 hover:bg-neutral-100 shadow-2xs hover:shadow-md'
+          : 'border-neutral-200 hover:border-neutral-300 hover:bg-neutral-100 shadow-2xs hover:shadow-md'
+      }`}
     >
       {/* Icon + rank */}
       <div className="flex items-start justify-between">
-        <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-lg border border-neutral-800 bg-[#222222] transition-all duration-200 group-hover:border-neutral-500 group-hover:scale-105 group-hover:shadow-md">
+        <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-lg border border-neutral-200 bg-neutral-100 transition-all duration-200 group-hover:border-neutral-300 group-hover:scale-105 group-hover:shadow-xs">
           <ProductLogo
             src={product.logoUrl}
             alt={product.name}
             containerClassName="flex h-full w-full items-center justify-center bg-transparent relative"
-            iconClassName="h-4.5 w-4.5 text-neutral-500 shrink-0 group-hover:text-neutral-300 transition-colors"
+            iconClassName="h-4.5 w-4.5 text-neutral-500 shrink-0 group-hover:text-neutral-700 transition-colors"
           />
         </div>
         <div className="flex items-center gap-2">
           {rank === 1 || rank === 2 || rank === 3 ? (
             <RankMedal rank={rank as 1 | 2 | 3} className="h-6 w-6" />
           ) : (
-            <span className="font-mono-num text-[11px] font-bold text-neutral-600 group-hover:text-neutral-300 transition-colors">
+            <span className="font-mono-num text-[11px] font-bold text-neutral-400 group-hover:text-neutral-600 transition-colors">
               #{rank}
             </span>
           )}
@@ -74,35 +78,35 @@ export const ProductTile: React.FC<ProductTileProps> = ({
       </div>
 
       {/* Title */}
-      <h3 className="mt-4 flex items-center gap-1.5 text-[15px] font-bold tracking-tight text-white group-hover:text-mint-300 transition-colors duration-200">
+      <h3 className="mt-4 flex items-center gap-1.5 text-[15px] font-bold tracking-tight text-neutral-950 group-hover:text-mint-600 transition-colors duration-200">
         <span className="truncate">{product.name}</span>
         {verified && <VerifiedBadge className="h-3.5 w-3.5 shrink-0" title="Verified Startup" />}
         {product.offerDiscount && (
-          <span className="rounded bg-mint-500/15 border border-mint-500/40 px-1.5 py-px text-[9px] font-black text-mint-300 shrink-0">
+          <span className="rounded bg-mint-50 border border-mint-200 px-1.5 py-px text-[9px] font-black text-mint-700 shrink-0">
             {product.offerDiscount}
           </span>
         )}
       </h3>
 
       {/* Description */}
-      <p className="mt-1 flex-1 text-[12.5px] font-medium leading-relaxed text-neutral-400 group-hover:text-neutral-200 line-clamp-2 transition-colors duration-200">
+      <p className="mt-1 flex-1 text-[12.5px] font-medium leading-relaxed text-neutral-600 group-hover:text-neutral-800 line-clamp-2 transition-colors duration-200">
         {product.tagline}
       </p>
 
       {/* Footer */}
-      <div className="mt-4 flex items-center justify-between gap-2 border-t border-neutral-800/80 group-hover:border-neutral-700/80 pt-3 transition-colors">
+      <div className="mt-4 flex items-center justify-between gap-2 border-t border-neutral-200 group-hover:border-neutral-300 pt-3 transition-colors">
         {/* Left: Category tag + Comment count (always fully visible) */}
         <div className="flex items-center gap-1.5 min-w-0 overflow-hidden flex-1">
           {product.category && (
             <span
-              className="truncate rounded-md bg-neutral-800/90 border border-neutral-700/40 group-hover:border-neutral-500/80 group-hover:text-white px-1.5 py-0.5 text-[10px] font-semibold text-neutral-300 min-w-0 max-w-[110px] sm:max-w-[140px] transition-colors duration-200"
+              className="truncate rounded-md bg-neutral-100 border border-neutral-200 group-hover:border-neutral-300 group-hover:text-neutral-950 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-600 min-w-0 max-w-[110px] sm:max-w-[140px] transition-colors duration-200"
               title={product.category}
             >
               {product.category}
             </span>
           )}
-          <span className="inline-flex shrink-0 items-center gap-1 text-[10.5px] font-semibold text-neutral-400">
-            <MessageCircle className="h-3 w-3 text-neutral-500 group-hover:text-neutral-300 transition-colors" />
+          <span className="inline-flex shrink-0 items-center gap-1 text-[10.5px] font-semibold text-neutral-500">
+            <MessageCircle className="h-3 w-3 text-neutral-400 group-hover:text-neutral-600 transition-colors" />
             <span className="font-mono-num">{commentCount ?? 0}</span>
           </span>
         </div>
@@ -115,8 +119,8 @@ export const ProductTile: React.FC<ProductTileProps> = ({
             title={upvoted ? 'Remove your upvote' : 'Upvote this product'}
             className={`inline-flex shrink-0 items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-bold transition-all cursor-pointer active:scale-95 ${
               upvoted
-                ? 'border-mint-500 bg-mint-500 text-[#0b0f14]'
-                : 'border-neutral-700 bg-transparent text-neutral-300 hover:border-mint-500/60 hover:text-mint-300 hover:bg-neutral-800'
+                ? 'border-mint-500 bg-mint-500 text-white'
+                : 'border-neutral-200 bg-white text-neutral-700 hover:border-mint-500/60 hover:text-mint-600 hover:bg-mint-50'
             }`}
           >
             <ChevronUp className="h-3.5 w-3.5" />

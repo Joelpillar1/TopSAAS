@@ -6,8 +6,6 @@ import { Category, Product, WebsiteSubmission, Comment, SubmitProductDetails } f
 import { HeroClaimBanner } from './components/HeroClaimBanner';
 import { BorderBeam } from './components/BorderBeam';
 import { HomeHero } from './components/HomeHero';
-import { LeaderboardTable } from './components/LeaderboardTable';
-import { ProductCard } from './components/ProductCard';
 import { HowItWorksModal } from './components/HowItWorksModal';
 import { ShareModal } from './components/ShareModal';
 import { Pagination } from './components/Pagination';
@@ -19,6 +17,9 @@ import { ProfilePage } from './components/ProfilePage';
 import { PaymentSuccess } from './components/PaymentSuccess';
 import { SubmitPage } from './components/SubmitPage';
 import { SaaSIdeas } from './components/SaaSIdeas';
+import { TrendingPage } from './components/TrendingPage';
+import { GuidesListPage } from './components/GuidesListPage';
+import { GuideDetailPage } from './components/GuideDetailPage';
 import { LegalPage } from './components/LegalPage';
 import { PricingPage } from './components/PricingPage';
 import { LegalTab } from './components/LegalModal';
@@ -28,20 +29,19 @@ import { supabase } from './utils/supabase';
 import { loadProducts, saveAllProducts, saveProductRanksDirect, debouncedSyncProducts, toggleUpvote, getUserUpvotes, getUpvoteCounts, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, insertProductDirect, fetchComments, addComment, getCachedCommentsSync, submissionToProduct, publishedProductId, isProductUpvoted, getGuestUpvotes, saveGuestUpvotes, incrementProductUpvotesDirect } from './utils/db';
 import { getRecentWeeks, isInWeek } from './utils/weeks';
 import { getWebsiteFavicon } from './utils/logo';
-import { LayoutGrid, List, Table as TableIcon, Trophy, X, Plus, ShieldCheck, Loader2, Star, MessageCircle, Flame } from 'lucide-react';
+import { Trophy, X, Plus, ShieldCheck, Loader2, Star, MessageCircle, Flame } from 'lucide-react';
 import { FeaturedSpotModal } from './components/FeaturedSpotModal';
 import { ProductPage } from './components/ProductPage';
 import { RepoDetailPage } from './components/RepoDetailPage';
 import { CURATED_REPOS, CuratedRepo } from './data/curatedRepos';
 import { BadgeRoute } from './components/BadgeRoute';
-import { SkeletonGrid } from './components/SkeletonCard';
-import { SkeletonTable } from './components/SkeletonTable';
-import { timeAgo } from './components/ProductRow';
-import { ProductTile } from './components/ProductTile';
+import { SkeletonRows } from './components/SkeletonCard';
+import { ProductRow, timeAgo } from './components/ProductRow';
 import { SponsorTile } from './components/SponsorTile';
+import { MOCK_SPONSORS } from './data/mockSponsors';
+import { HeroSponsorRails } from './components/HeroSponsorRails';
 import { SpotlightCard, RailCard, FeedRow, PromotedCard, SponsoredLaunchBanner } from './components/DirectoryRails';
 import { ProductLogo } from './components/ProductLogo';
-import { GridFillerCell, useGridColumns } from './components/GridFiller';
 
 // Map a Supabase DB row to our WebsiteSubmission type
 const mapDbSubmission = (row: Record<string, unknown>): WebsiteSubmission => ({
@@ -193,6 +193,15 @@ export default function App() {
       }
       if (/^\/product\//.test(path)) {
         return 'product';
+      }
+      if (/^\/guides\//.test(path)) {
+        return 'guide';
+      }
+      if (path === '/trending' || hash === '#trending' || hash === '#/trending') {
+        return 'trending';
+      }
+      if (path === '/guides' || hash === '#guides' || hash === '#/guides') {
+        return 'guides';
       }
       if (/^\/badge\//.test(path)) {
         return 'badge';
@@ -359,18 +368,10 @@ export default function App() {
   });
 
   // Active tab: derived from currentRoute so /ideas and /pricing survive reload.
-  // The Directory section is hidden for now — every non-pricing route lands on SaaS Ideas.
-  const activeTab: DirectoryTab = currentRoute === '/pricing' ? 'pricing' : 'saas-ideas';
+  const activeTab: DirectoryTab =
+    currentRoute === '/ideas' ? 'saas-ideas' : currentRoute === '/pricing' ? 'pricing' : 'directory';
 
-  // View layout
-  const [viewLayout, setViewLayout] = useState<'cards' | 'table'>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.VIEW_LAYOUT);
-      if (saved === 'cards' || saved === 'table') return saved;
-    } catch {}
-    return 'cards';
-  });
-
+  // View layout — single-column row list (the bento grid was retired)
   // Search and Category filtering state
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<Category>('All');
@@ -380,7 +381,6 @@ export default function App() {
   // Pagination state for homepage (50 list per page)
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize] = useState<number>(50);
-  const directoryGridColumns = useGridColumns();
 
   // Modals
   const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
@@ -429,6 +429,14 @@ export default function App() {
     }
     return null;
   });
+  // Build guide route state — resolved from /guides/:slug
+  const [guideSlug, setGuideSlug] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      const m = window.location.pathname.match(/^\/guides\/(.+)$/);
+      if (m) return decodeURIComponent(m[1]);
+    }
+    return null;
+  });
   // User's submitted product ID tracking (persists even if not signed in)
   const [myProductId, setMyProductId] = useState<string | null>(() => {
     try {
@@ -456,6 +464,14 @@ export default function App() {
       } else if (repoMatch) {
         setCurrentRoute('repo');
         setRepoRouteId(decodeURIComponent(repoMatch[1]));
+      } else if (path === '/trending' || hash === '#trending' || hash === '#/trending') {
+        setCurrentRoute('trending');
+      } else if (path === '/guides' || hash === '#guides' || hash === '#/guides') {
+        setCurrentRoute('guides');
+      } else if (/^\/guides\//.test(path)) {
+        const gm = path.match(/^\/guides\/(.+)$/);
+        setCurrentRoute('guide');
+        setGuideSlug(gm ? decodeURIComponent(gm[1]) : null);
       } else if (path === '/accept' || hash === '#accept' || hash === '#/accept') {
         setCurrentRoute('/accept');
       } else if (path === '/payment-success' || hash === '#payment-success' || hash === '#/payment-success') {
@@ -481,6 +497,15 @@ export default function App() {
       window.removeEventListener('popstate', handleRouteCheck);
       window.removeEventListener('hashchange', handleRouteCheck);
     };
+  }, []);
+
+  // Honor ?q= deep links (the SearchAction target advertised in the homepage
+  // JSON-LD), so search-engine site-search results land with the query applied.
+  useEffect(() => {
+    try {
+      const q = new URLSearchParams(window.location.search).get('q');
+      if (q) setSearchQuery(q);
+    } catch {}
   }, []);
 
   // Navigation handlers
@@ -552,13 +577,6 @@ export default function App() {
     } catch {}
   }, [products, soundEnabled, submissions]);
 
-  // Persist view layout preference
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.VIEW_LAYOUT, viewLayout);
-    } catch {}
-  }, [viewLayout]);
-
   // Subscribe to realtime changes on submissions table only when on admin accept review page
   useEffect(() => {
     if (!submissionsLoaded || !isAdmin || (currentRoute !== '/accept' && currentRoute !== 'accept')) return;
@@ -593,6 +611,8 @@ export default function App() {
       setUser(session?.user ?? null);
       setAuthLoaded(true);
       if (session?.user) saveUserProfile(session.user);
+    }).catch(() => {
+      setAuthLoaded(true);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -604,6 +624,23 @@ export default function App() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // When user signs in after initiating a submission (e.g. from "Launch Now"),
+  // automatically route them to /submit with their entered URL
+  useEffect(() => {
+    if (!user) return;
+    try {
+      const pendingRedirect = localStorage.getItem('topsaas_pending_submit_redirect');
+      if (pendingRedirect === 'true') {
+        localStorage.removeItem('topsaas_pending_submit_redirect');
+        setCurrentRoute('/submit');
+        try {
+          window.history.pushState({}, 'Launch a product', '/submit');
+        } catch {}
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    } catch {}
+  }, [user]);
 
   // When user is signed in, automatically claim any submissions matching the user's email
   useEffect(() => {
@@ -782,10 +819,29 @@ export default function App() {
     if (error) console.error('Sign in error:', error.message);
   };
 
-  // Submit now lives on its own page — every "New Launch" CTA routes there
-  const handleOpenSubmit = () => {
+  // Top nav Submit button: always navigates directly to the /submit page on click
+  const handleTopNavSubmit = () => {
     playSound('click', soundEnabled);
+    setCurrentRoute('/submit');
+    try {
+      window.history.pushState({}, 'Launch a product', '/submit');
+    } catch {}
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Submit now lives on its own page — every "New Launch" CTA routes there
+  const handleOpenSubmit = (initialUrl?: string) => {
+    playSound('click', soundEnabled);
+    const trimmed = initialUrl ? initialUrl.trim() : '';
+    if (trimmed) {
+      try {
+        localStorage.setItem('topsaas_submit_initial_url', trimmed);
+      } catch {}
+    }
     if (!user) {
+      try {
+        localStorage.setItem('topsaas_pending_submit_redirect', 'true');
+      } catch {}
       setIsSignInModalOpen(true);
       return;
     }
@@ -1492,11 +1548,6 @@ export default function App() {
   const startIndex = (currentPage - 1) * pageSize;
   const paginatedProducts = filteredProducts.slice(startIndex, startIndex + pageSize);
 
-  // Striped cells that complete the last row of the bento grid
-  const totalGridCards = paginatedProducts.length + (currentPage === 1 ? 1 : 0);
-  const directoryGridFillerCount =
-    (directoryGridColumns - (totalGridCards % directoryGridColumns)) % directoryGridColumns;
-
   // Keep currentPage valid if products change
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -1510,7 +1561,11 @@ export default function App() {
     const nextRoute = tab === 'saas-ideas' ? '/ideas' : tab === 'pricing' ? '/pricing' : '/';
     setCurrentRoute(nextRoute);
     try {
-      window.history.pushState({}, tab === 'saas-ideas' ? 'SaaS Ideas' : tab === 'pricing' ? 'Pricing' : 'Directory', nextRoute);
+      window.history.pushState(
+        {},
+        tab === 'pricing' ? 'Pricing' : tab === 'saas-ideas' ? 'SaaS Ideas' : 'Directory',
+        nextRoute
+      );
     } catch {}
     if (tab === 'directory') {
       setSelectedCategory('All');
@@ -1532,9 +1587,12 @@ export default function App() {
   const globalHeader = (
     <Header
       onGoHome={handleBackToLeaderboard}
+      onOpenSubmit={handleTopNavSubmit}
       onSignIn={handleSignIn}
       onGoToProfile={handleGoToProfile}
       user={user}
+      activeTab={activeTab}
+      onTabChange={handleTabChange}
     />
   );
 
@@ -1557,7 +1615,7 @@ export default function App() {
   // 0.2 PRICING PAGE ROUTE (/pricing)
   if (currentRoute === '/pricing') {
     return (
-      <div className="min-h-screen bg-[#222222] text-neutral-100 flex flex-col justify-between selection:bg-mint-500 selection:text-[#0b0f14] font-sans">
+      <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between selection:bg-mint-500/20 selection:text-neutral-900 font-sans">
         {globalHeader}
         <PricingPage
           onOpenSubmit={(plan) => {
@@ -1575,7 +1633,7 @@ export default function App() {
           onOpenPrivacy={() => handleNavigateLegal('privacy')}
           onOpenTerms={() => handleNavigateLegal('terms')}
           onOpenPricing={handleOpenPricing}
-          className="border-t border-neutral-800 bg-[#1c1c1c]"
+          className="border-t border-neutral-200 bg-neutral-100"
         />
       </div>
     );
@@ -1587,7 +1645,7 @@ export default function App() {
       return (
         <>
           {globalHeader}
-          <div className="min-h-screen bg-[#222222] text-neutral-100 flex items-center justify-center font-sans">
+          <div className="min-h-screen bg-white text-neutral-900 flex items-center justify-center font-sans">
             <Loader2 className="h-6 w-6 text-neutral-400 animate-spin" />
           </div>
         </>
@@ -1658,7 +1716,7 @@ export default function App() {
         return (
           <>
             {globalHeader}
-            <div className="min-h-screen bg-[#222222] text-neutral-100 flex items-center justify-center font-sans">
+            <div className="min-h-screen bg-white text-neutral-900 flex items-center justify-center font-sans">
               <Loader2 className="h-6 w-6 text-neutral-400 animate-spin" />
             </div>
           </>
@@ -1667,7 +1725,7 @@ export default function App() {
       return (
         <>
           {globalHeader}
-          <div className="min-h-screen bg-[#222222] text-neutral-100 flex items-center justify-center font-sans">
+          <div className="min-h-screen bg-white text-neutral-900 flex items-center justify-center font-sans">
             <div className="text-center space-y-3">
               <h2 className="text-lg font-bold">Product not found</h2>
             <p className="text-sm text-neutral-400">This listing may have been removed.</p>
@@ -1686,12 +1744,16 @@ export default function App() {
       );
     }
     return (
-      <div className="min-h-screen bg-[#222222] text-neutral-100 flex flex-col justify-between font-sans">
+      <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between font-sans">
         {globalHeader}
         <ProductPage
           product={product}
           topProduct={topProduct || product}
-          allProducts={sortedByRankProducts.map((p, idx) => ({ ...markOwnership(p), rank: idx + 1 }))}
+          allProducts={[
+            ...sortedByRankProducts.map((p, idx) => ({ ...markOwnership(p), rank: idx + 1 })),
+            ...MOCK_SPONSORS,
+          ]}
+          onOpenFeaturedSpotModal={() => setIsFeaturedSpotModalOpen(true)}
           comments={comments.filter((c) => c.productId === product.id)}
           soundEnabled={soundEnabled}
           isSignedIn={!!user}
@@ -1754,10 +1816,10 @@ export default function App() {
     const repo =
       CURATED_REPOS.find((r) => r.full_name.toLowerCase() === repoId.toLowerCase()) || null;
 
-    const backToIdeas = () => {
-      setCurrentRoute('/ideas');
+    const backToHome = () => {
+      setCurrentRoute('/');
       try {
-        window.history.pushState('', document.title, '/ideas');
+        window.history.pushState('', document.title, '/');
       } catch {}
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
@@ -1766,14 +1828,14 @@ export default function App() {
       return (
         <>
           {globalHeader}
-          <div className="min-h-screen bg-[#222222] text-neutral-100 flex items-center justify-center font-sans">
+          <div className="min-h-screen bg-white text-neutral-900 flex items-center justify-center font-sans">
             <div className="text-center space-y-3">
               <h2 className="text-lg font-bold">Repository not found</h2>
               <p className="text-sm text-neutral-400">
                 This repo may have been removed from the collection.
               </p>
               <button
-                onClick={backToIdeas}
+                onClick={backToHome}
                 className="mt-2 rounded-xl bg-white text-black px-4 py-2 text-xs font-bold cursor-pointer"
               >
                 Back to SaaS Ideas
@@ -1785,12 +1847,12 @@ export default function App() {
     }
 
     return (
-      <div className="min-h-screen bg-[#222222] text-neutral-100 flex flex-col justify-between font-sans">
+      <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between font-sans">
         {globalHeader}
         <RepoDetailPage
           repo={repo}
           soundEnabled={soundEnabled}
-          onBack={backToIdeas}
+          onBack={backToHome}
           onSelectRepo={handleOpenRepo}
           onOpenFeatured={() => {
             if (!user) {
@@ -1844,14 +1906,14 @@ export default function App() {
       return (
         <>
           {globalHeader}
-          <div className="min-h-screen bg-[#222222] text-neutral-100 flex items-center justify-center font-sans">
+          <div className="min-h-screen bg-white text-neutral-900 flex items-center justify-center font-sans">
             <Loader2 className="h-6 w-6 text-neutral-400 animate-spin" />
           </div>
         </>
       );
     }
     return (
-      <div className="min-h-screen bg-[#222222] text-neutral-100 flex flex-col justify-between font-sans">
+      <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between font-sans">
         {globalHeader}
         <SubmitPage
           isSignedIn={!!user}
@@ -1903,7 +1965,7 @@ export default function App() {
       return (
         <>
           {globalHeader}
-          <div className="min-h-screen bg-[#222222] text-neutral-100 flex items-center justify-center font-sans">
+          <div className="min-h-screen bg-white text-neutral-900 flex items-center justify-center font-sans">
             <div className="text-center space-y-3">
               <ShieldCheck className="mx-auto h-10 w-10 text-neutral-500" />
             <h2 className="text-lg font-bold">Admin Access Required</h2>
@@ -1917,7 +1979,7 @@ export default function App() {
     return (
       <>
         {globalHeader}
-        <div className="min-h-screen bg-[#222222] text-neutral-100 flex flex-col justify-between font-sans">
+        <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between font-sans">
           <AdminAcceptPage
           submissions={submissions}
           products={products}
@@ -1969,9 +2031,44 @@ export default function App() {
     );
   }
 
+  // Shared chrome (header + footer) for the standalone routes below.
+  const routeChrome = (page: React.ReactNode) => (
+    <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between selection:bg-mint-500/20 selection:text-neutral-900 font-sans">
+      {globalHeader}
+      {page}
+      <RichFooter
+        totalProducts={products.length}
+        soundEnabled={soundEnabled}
+        onOpenSubmit={handleOpenSubmit}
+        onSelectCategory={setSelectedCategory}
+        onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
+        onOpenPrivacy={() => handleNavigateLegal('privacy')}
+        onOpenTerms={() => handleNavigateLegal('terms')}
+        onOpenPricing={handleOpenPricing}
+      />
+    </div>
+  );
+
+  // 1.7 TRENDING ROUTE (/trending)
+  if (currentRoute === 'trending') {
+    return routeChrome(<TrendingPage soundEnabled={soundEnabled} onOpenRepo={handleOpenRepo} />);
+  }
+
+  // 1.8 BUILD GUIDES LIST ROUTE (/guides)
+  if (currentRoute === 'guides') {
+    return routeChrome(<GuidesListPage soundEnabled={soundEnabled} />);
+  }
+
+  // 1.9 BUILD GUIDE DETAIL ROUTE (/guides/:slug)
+  if (currentRoute === 'guide') {
+    return routeChrome(
+      <GuideDetailPage slug={guideSlug} soundEnabled={soundEnabled} onOpenRepo={handleOpenRepo} />
+    );
+  }
+
   // 2. MAIN DIRECTORY HOMEPAGE ROUTE
   return (
-    <div className="min-h-screen bg-[#222222] text-neutral-100 flex flex-col justify-between selection:bg-mint-500 selection:text-[#0b0f14] font-sans">
+    <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between selection:bg-mint-500/20 selection:text-neutral-900 font-sans">
       {globalHeader}
       {/* Main Content Area */}
       <main className="mx-auto w-full max-w-7xl px-3.5 sm:px-6 space-y-4 sm:space-y-5 flex-1 pb-16 pt-4 sm:pt-6">
@@ -2001,99 +2098,100 @@ export default function App() {
         ) : (
         <>
         {/* ── Hero: brand statement + search ── */}
-        <HomeHero
-          totalProducts={products.length}
-          totalCategories={directoryCategories.length}
-          searchQuery={searchQuery}
-          onSearchChange={(v) => {
-            setSearchQuery(v);
-            setCurrentPage(1);
-          }}
-          onOpenSubmit={handleOpenSubmit}
+        <HeroSponsorRails
+          sponsors={MOCK_SPONSORS}
+          isLoading={!productsLoaded}
           soundEnabled={soundEnabled}
-          dealsCount={totalDealsCount}
-          stealsOnly={stealsOnly}
-          onToggleSteals={() => {
-            playSound('click', soundEnabled);
-            setStealsOnly((prev) => !prev);
-            setCurrentPage(1);
+          onOpenProduct={handleOpenProduct}
+          onOpenFeaturedSpotModal={() => {
+            if (!user) {
+              setIsSignInModalOpen(true);
+            } else {
+              setIsFeaturedSpotModalOpen(true);
+            }
           }}
-        />
+        >
+          <HomeHero
+            totalProducts={products.length}
+            totalCategories={directoryCategories.length}
+            searchQuery={searchQuery}
+            onSearchChange={(v) => {
+              setSearchQuery(v);
+              setCurrentPage(1);
+            }}
+            onOpenSubmit={handleOpenSubmit}
+            soundEnabled={soundEnabled}
+            dealsCount={totalDealsCount}
+            stealsOnly={stealsOnly}
+            onToggleSteals={() => {
+              playSound('click', soundEnabled);
+              setStealsOnly((prev) => !prev);
+              setCurrentPage(1);
+            }}
+          />
 
-        {/* ── Directory board: side rails + ranked center column ── */}
-        <div id="leaderboard-section" className="grid grid-cols-1 gap-5">
-          {/* Left rail (retired in the bento layout) */}
-          <aside className="hidden" aria-hidden="true">
-            <SpotlightCard soundEnabled={soundEnabled} onRent={openRentSpotlight} />
-            <RailCard title="Live Traffic" dot="red">
-              {liveFeed.length === 0 ? (
-                <p className="px-4 py-3 text-[10px] font-medium text-neutral-400">
-                  Visits and new listings appear here live.
-                </p>
-              ) : (
-                liveFeed.map((ev) => {
-                  const p = products.find((prod) => prod.id === ev.productId);
-                  return (
-                    <FeedRow
-                      key={ev.id}
-                      soundEnabled={soundEnabled}
-                      onClick={p ? () => handleOpenProduct(p) : undefined}
-                      logo={
-                        <ProductLogo
-                          src={p?.logoUrl}
-                          alt={p?.name || ev.name}
-                          containerClassName="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-2xs relative"
-                          iconClassName="h-3.5 w-3.5 text-neutral-400 shrink-0"
-                        />
-                      }
-                      name={ev.name}
-                      sub={ev.kind === 'visit' ? `got a click ${timeAgo(ev.time)}` : `joined ${timeAgo(ev.time)}`}
-                      right={
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-bold text-emerald-700 ring-1 ring-inset ring-emerald-200">
-                          LIVE
-                        </span>
-                      }
-                    />
-                  );
-                })
-              )}
-            </RailCard>
-          </aside>
-
-          {/* Center column */}
-          <div className="min-w-0 space-y-3.5">
+          {/* ── Directory board: centered ranked list within sponsor rails ── */}
+          <section id="leaderboard-section" className="w-full pt-2">
+            <div className="w-full space-y-3.5">
         {/* Category bar + Steals Only toggle on the same line (right-side edge) */}
         <div className="flex items-center justify-between gap-2.5">
           {/* Category chips */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none min-w-0 flex-1" role="navigation" aria-label="Browse by category">
-            {(['All', ...(selectedCategory !== 'All' && !directoryCategories.includes(selectedCategory) ? [selectedCategory] : []), ...directoryCategories] as Category[]).map((cat) => {
-              const count = cat === 'All' ? products.length : products.filter((p) => p.category === cat).length;
-              const active = selectedCategory === cat;
-              return (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => {
-                    playSound('click', soundEnabled);
-                    setSelectedCategory(cat);
-                    setCurrentPage(1);
-                  }}
-                  className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-bold transition-all cursor-pointer ${
-                    active
-                      ? 'border-mint-500/60 bg-mint-500/15 text-mint-200'
-                      : 'border-neutral-800 bg-[#2a2a2a] text-neutral-400 hover:border-neutral-600 hover:text-white'
-                  }`}
-                >
-                  <span>{cat}</span>
-                  <span className={`rounded-full px-1.5 py-px text-[9px] font-black font-mono-num ${active ? 'bg-mint-500/20 text-mint-200' : 'bg-neutral-800 text-neutral-400'}`}>
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
+          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+            {/* "All" stays pinned outside the scrolling strip */}
+            <button
+              type="button"
+              onClick={() => {
+                playSound('click', soundEnabled);
+                setSelectedCategory('All' as Category);
+                setCurrentPage(1);
+              }}
+              className={`flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[11px] font-bold transition-all cursor-pointer ${
+                selectedCategory === 'All'
+                  ? 'border-mint-500/60 bg-mint-500/15 text-mint-700'
+                  : 'border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 hover:text-neutral-950'
+              }`}
+            >
+              <span>All</span>
+              <span className={`rounded-md px-1.5 py-px text-[9px] font-black font-mono-num ${selectedCategory === 'All' ? 'bg-mint-500/20 text-mint-700' : 'bg-neutral-100 text-neutral-600'}`}>
+                {products.length}
+              </span>
+            </button>
+
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none min-w-0 flex-1" role="navigation" aria-label="Browse by category">
+              {([...(selectedCategory !== 'All' && !directoryCategories.includes(selectedCategory) ? [selectedCategory] : []), ...directoryCategories] as Category[]).map((cat) => {
+                const catKey = cat.toLowerCase();
+                const count = products.filter((p) =>
+                  p.category
+                    ? p.category.split(',').map((c) => c.trim().toLowerCase()).includes(catKey)
+                    : false
+                ).length;
+                const active = selectedCategory === cat;
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => {
+                      playSound('click', soundEnabled);
+                      setSelectedCategory(cat);
+                      setCurrentPage(1);
+                    }}
+                    className={`flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[11px] font-bold transition-all cursor-pointer ${
+                      active
+                        ? 'border-mint-500/60 bg-mint-500/15 text-mint-700'
+                        : 'border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 hover:text-neutral-950'
+                    }`}
+                  >
+                    <span>{cat}</span>
+                    <span className={`rounded-md px-1.5 py-px text-[9px] font-black font-mono-num ${active ? 'bg-mint-500/20 text-mint-700' : 'bg-neutral-100 text-neutral-600'}`}>
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          {/* Controls on the right edge: Steals Only + Card/List view switcher */}
+          {/* Controls on the right edge: Steals Only */}
           <div className="shrink-0 flex items-center gap-2 pl-1">
             <button
               type="button"
@@ -2122,15 +2220,15 @@ export default function App() {
                 setCurrentPage(1);
               }}
               title={stealsOnly ? 'Turn off Steals Only filter' : 'Show only tools with exclusive discounts (50% OFF, lifetime deals, promo codes)'}
-              className={`group inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-bold transition-all cursor-pointer select-none ${
+              className={`group inline-flex items-center gap-2 rounded-lg border px-2.5 py-1 text-xs font-bold transition-all cursor-pointer select-none ${
                 stealsOnly
-                  ? 'border-amber-400/60 bg-gradient-to-r from-amber-500/20 to-amber-500/10 text-amber-200 shadow-[0_0_16px_rgba(245,158,11,0.18)] ring-1 ring-amber-400/30'
-                  : 'border-neutral-800 bg-[#2a2a2a] text-neutral-400 hover:border-neutral-700 hover:text-neutral-200'
+                  ? 'border-amber-400/70 bg-amber-50 text-amber-800 ring-1 ring-amber-400/40'
+                  : 'border-neutral-200 bg-white text-neutral-500 hover:border-neutral-300 hover:text-neutral-950'
               }`}
             >
               <Flame
                 className={`h-3.5 w-3.5 transition-transform duration-200 ${
-                  stealsOnly ? 'text-amber-300 fill-amber-300/30 scale-110 animate-pulse' : 'text-neutral-500 group-hover:text-amber-400'
+                  stealsOnly ? 'text-amber-500 fill-amber-500/30 scale-110' : 'text-neutral-400 group-hover:text-amber-500'
                 }`}
               />
               <span className="text-[11px] font-bold tracking-tight whitespace-nowrap">
@@ -2139,7 +2237,7 @@ export default function App() {
               {totalDealsCount > 0 && (
                 <span
                   className={`rounded-full px-1.5 py-px text-[9px] font-black font-mono-num ${
-                    stealsOnly ? 'bg-amber-400/30 text-amber-100' : 'bg-neutral-800 text-neutral-500 group-hover:text-neutral-300'
+                    stealsOnly ? 'bg-amber-500/20 text-amber-800' : 'bg-neutral-100 text-neutral-600 group-hover:text-neutral-800'
                   }`}
                 >
                   {totalDealsCount}
@@ -2149,68 +2247,28 @@ export default function App() {
               {/* Sliding switch track & knob */}
               <span
                 className={`relative inline-flex h-4 w-7 shrink-0 items-center rounded-full p-0.5 transition-colors duration-200 ${
-                  stealsOnly ? 'bg-amber-400' : 'bg-neutral-700 group-hover:bg-neutral-600'
+                  stealsOnly ? 'bg-amber-400' : 'bg-neutral-300 group-hover:bg-neutral-400'
                 }`}
               >
                 <span
                   className={`inline-block h-3 w-3 transform rounded-full bg-white shadow-xs transition-transform duration-200 ease-out ${
-                    stealsOnly ? 'translate-x-3 bg-neutral-950' : 'translate-x-0'
+                    stealsOnly ? 'translate-x-3' : 'translate-x-0'
                   }`}
                 />
               </span>
             </button>
-
-            {/* View Layout Switcher (Card vs List) */}
-            <div className="flex items-center gap-1 bg-[#2a2a2a] p-1 rounded-full border border-neutral-800 shadow-2xs">
-              <button
-                type="button"
-                onClick={() => {
-                  playSound('click', soundEnabled);
-                  setViewLayout('cards');
-                }}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                  viewLayout === 'cards'
-                    ? 'bg-[#3a3a3a] text-white shadow-2xs'
-                    : 'text-neutral-400 hover:text-white'
-                }`}
-                title="Card View"
-              >
-                <LayoutGrid className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Card</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  playSound('click', soundEnabled);
-                  setViewLayout('table');
-                }}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                  viewLayout === 'table'
-                    ? 'bg-[#3a3a3a] text-white shadow-2xs'
-                    : 'text-neutral-400 hover:text-white'
-                }`}
-                title="List View"
-              >
-                <List className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">List</span>
-              </button>
-            </div>
           </div>
         </div>
 
         {/* Leaderboard Rendering */}
         {!productsLoaded ? (
-          viewLayout === 'table' ? (
-            <SkeletonTable />
-          ) : (
-            <SkeletonGrid />
-          )
+          <SkeletonRows />
         ) : filteredProducts.length === 0 ? (
-          <div className="rounded-2xl border border-neutral-800 bg-[#2a2a2a] p-12 text-center">
+          <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center">
             {selectedWeek && weekScopedProducts.length === 0 ? (
               <>
                 <Trophy className="mx-auto h-10 w-10 text-neutral-700 mb-3" />
-                <h3 className="text-lg font-bold text-white">No launches in {selectedWeek.label} yet</h3>
+                <h3 className="text-lg font-bold text-neutral-950">No launches in {selectedWeek.label} yet</h3>
                 <p className="text-xs text-neutral-500 max-w-sm mx-auto mt-1 mb-5 font-medium">
                   The round is fresh. Be the first to launch your SaaS this week and take the #1 spot.
                 </p>
@@ -2223,7 +2281,7 @@ export default function App() {
                       setShowAllTime(true);
                       setCurrentPage(1);
                     }}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-700 bg-transparent px-3.5 py-2 text-xs font-bold text-neutral-200 hover:border-neutral-500 hover:text-white transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-transparent px-3.5 py-2 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-colors cursor-pointer"
                   >
                     <span>See all launches</span>
                   </button>
@@ -2243,7 +2301,7 @@ export default function App() {
             ) : stealsOnly ? (
               <>
                 <Flame className="mx-auto h-10 w-10 text-amber-400 mb-3 animate-pulse" />
-                <h3 className="text-lg font-bold text-white">No exclusive deals found</h3>
+                <h3 className="text-lg font-bold text-neutral-950">No exclusive deals found</h3>
                 <p className="text-xs text-neutral-400 max-w-md mx-auto mt-1 mb-5 font-medium">
                   {searchQuery.trim()
                     ? `No tools with exclusive discounts match "${searchQuery}". Try searching for another term or turn off Steals Only.`
@@ -2259,7 +2317,7 @@ export default function App() {
                       setStealsOnly(false);
                       setCurrentPage(1);
                     }}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-amber-500/50 bg-amber-500/15 px-4 py-2 text-xs font-bold text-amber-300 hover:bg-amber-500/25 transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-xs font-bold text-amber-800 hover:bg-amber-100 transition-colors cursor-pointer"
                   >
                     <span>Turn off Steals Only</span>
                   </button>
@@ -2272,7 +2330,7 @@ export default function App() {
                         setSelectedCategory('All');
                         setCurrentPage(1);
                       }}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-700 bg-transparent px-3.5 py-2 text-xs font-bold text-neutral-200 hover:border-neutral-500 hover:text-white transition-colors cursor-pointer"
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-transparent px-3.5 py-2 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-colors cursor-pointer"
                     >
                       <X className="h-3.5 w-3.5" />
                       <span>Clear Filters</span>
@@ -2283,7 +2341,7 @@ export default function App() {
             ) : (
               <>
                 <Trophy className="mx-auto h-10 w-10 text-neutral-700 mb-3" />
-                <h3 className="text-lg font-bold text-white">No websites found</h3>
+                <h3 className="text-lg font-bold text-neutral-950">No websites found</h3>
                 <p className="text-xs text-neutral-500 max-w-sm mx-auto mt-1 mb-5 font-medium">
                   {searchQuery.trim()
                     ? `No tools match "${searchQuery}". Try searching for another term or clear filters.`
@@ -2297,7 +2355,7 @@ export default function App() {
                       setSearchQuery('');
                       setSelectedCategory('All');
                     }}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-700 bg-transparent px-3.5 py-2 text-xs font-bold text-neutral-200 hover:border-neutral-500 hover:text-white transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-transparent px-3.5 py-2 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-colors cursor-pointer"
                   >
                     <X className="h-3.5 w-3.5" />
                     <span>Clear Filters</span>
@@ -2317,88 +2375,43 @@ export default function App() {
               </>
             )}
           </div>
-        ) : viewLayout === 'table' ? (
-          <div className="space-y-4">
-            <LeaderboardTable
-              products={paginatedProducts}
-              soundEnabled={soundEnabled}
-              featuredProductId={featuredProductId}
-              onShareProduct={(p) => setShareProduct(p)}
-              onTrackClick={handleTrackClick}
-              onOpenDetail={handleOpenProduct}
-              onUpvote={handleUpvote}
-              upvotedIds={userUpvotes}
-              startIndex={startIndex}
-              commentCounts={commentCounts}
-              showSponsor={currentPage === 1 && !isEmptyFeatured}
-              sponsorProduct={explicitFeaturedProduct}
-              onOpenFeaturedSpotModal={() => {
-                if (!user) {
-                  setIsSignInModalOpen(true);
-                } else {
-                  setIsFeaturedSpotModalOpen(true);
-                }
-              }}
-            />
-
-            {/* Homepage Pagination */}
-            {totalPages > 1 && (
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                totalItems={filteredProducts.length}
-                pageSize={pageSize}
-                onPageChange={(page) => {
-                  setCurrentPage(page);
-                  const tableSection = document.getElementById('leaderboard-section');
-                  if (tableSection) {
-                    tableSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        ) : (
+          <div className="space-y-3">
+            {/* Featured sponsor — full-width card above the list */}
+            {currentPage === 1 && !isEmptyFeatured && (
+              <SponsorTile
+                soundEnabled={soundEnabled}
+                product={explicitFeaturedProduct}
+                onOpenProduct={handleOpenProduct}
+                onUpvote={handleUpvote}
+                upvoted={explicitFeaturedProduct ? isProductUpvoted(explicitFeaturedProduct.id, userUpvotes) : false}
+                onOpenFeaturedSpotModal={() => {
+                  if (!user) {
+                    setIsSignInModalOpen(true);
                   } else {
-                    window.scrollTo({ top: 380, behavior: 'smooth' });
+                    setIsFeaturedSpotModalOpen(true);
                   }
                 }}
-                soundEnabled={soundEnabled}
               />
             )}
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {/* Bento-style grid of product tiles */}
-            <div className="grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-800 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {currentPage === 1 && !isEmptyFeatured && (
-                <SponsorTile
+
+            {/* Single-column row list */}
+            {paginatedProducts.map((p, index) => {
+              const currentRank = startIndex + index + 1;
+              return (
+                <ProductRow
+                  key={p.id}
+                  product={p}
+                  rank={currentRank}
                   soundEnabled={soundEnabled}
-                  product={explicitFeaturedProduct}
-                  onOpenProduct={handleOpenProduct}
-                  onOpenFeaturedSpotModal={() => {
-                    if (!user) {
-                      setIsSignInModalOpen(true);
-                    } else {
-                      setIsFeaturedSpotModalOpen(true);
-                    }
-                  }}
+                  showVerified
+                  commentCount={commentCounts[p.id] ?? 0}
+                  onOpen={handleOpenProduct}
+                  onUpvote={handleUpvote}
+                  upvoted={isProductUpvoted(p.id, userUpvotes)}
                 />
-              )}
-              {paginatedProducts.map((p, index) => {
-                const calculatedRank = startIndex + index + 1;
-                return (
-                  <ProductTile
-                    key={p.id}
-                    product={{ ...p, rank: calculatedRank }}
-                    rank={calculatedRank}
-                    soundEnabled={soundEnabled}
-                    verified={Boolean(p.verified)}
-                    commentCount={commentCounts[p.id] ?? 0}
-                    onOpen={handleOpenProduct}
-                    onUpvote={handleUpvote}
-                    upvoted={isProductUpvoted(p.id, userUpvotes)}
-                  />
-                );
-              })}
-              {Array.from({ length: directoryGridFillerCount }).map((_, i) => (
-                <GridFillerCell key={`grid-filler-${i}`} />
-              ))}
-            </div>
+              );
+            })}
 
             {/* Homepage Pagination */}
             {totalPages > 1 && (
@@ -2422,173 +2435,9 @@ export default function App() {
           </div>
         )}
 
-          {/* Right rail (retired in the bento layout) */}
-          <aside className="hidden" aria-hidden="true">
-            <PromotedCard
-              product={promotedProduct}
-              soundEnabled={soundEnabled}
-              onOpen={handleOpenProduct}
-              onRent={openRentSpotlight}
-            />
-            <RailCard title="Last Week's Best">
-              {lastWeekBest.length === 0 ? (
-                <p className="px-4 py-3 text-[10px] font-medium text-neutral-400">
-                  No launches last week — the board is fresh.
-                </p>
-              ) : (
-                lastWeekBest.map((p) => (
-                  <FeedRow
-                    key={p.id}
-                    soundEnabled={soundEnabled}
-                    onClick={() => handleOpenProduct(p)}
-                    logo={
-                      <ProductLogo
-                        src={p.logoUrl}
-                        alt={p.name}
-                        containerClassName="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-2xs relative"
-                        iconClassName="h-3.5 w-3.5 text-neutral-400 shrink-0"
-                      />
-                    }
-                    name={p.name}
-                    sub={p.tagline}
-                    right={
-                      <span className="inline-flex items-center gap-1 font-mono-num text-[10px] font-bold text-neutral-500">
-                        <MessageCircle className="h-3 w-3 text-neutral-400" />
-                        {commentCounts[p.id] ?? 0}
-                      </span>
-                    }
-                  />
-                ))
-              )}
-            </RailCard>
-            <RailCard title="Just Listed">
-              {newestListings.length === 0 ? (
-                <p className="px-4 py-3 text-[10px] font-medium text-neutral-400">
-                  New products appear here as they launch.
-                </p>
-              ) : (
-                newestListings.map((p) => (
-                  <FeedRow
-                    key={p.id}
-                    soundEnabled={soundEnabled}
-                    onClick={() => handleOpenProduct(p)}
-                    logo={
-                      <ProductLogo
-                        src={p.logoUrl}
-                        alt={p.name}
-                        containerClassName="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-2xs relative"
-                        iconClassName="h-3.5 w-3.5 text-neutral-400 shrink-0"
-                      />
-                    }
-                    name={p.name}
-                    sub={timeAgo(p.createdAt)}
-                  />
-                ))
-              )}
-            </RailCard>
-          </aside>
-
-          {/* Mobile rails (retired in the bento layout) */}
-          <div className="hidden" aria-hidden="true">
-            <SpotlightCard soundEnabled={soundEnabled} onRent={openRentSpotlight} />
-            {promotedProduct && (
-              <PromotedCard
-                product={promotedProduct}
-                soundEnabled={soundEnabled}
-                onOpen={handleOpenProduct}
-                onRent={openRentSpotlight}
-              />
-            )}
-            <RailCard title="Last Week's Best">
-              {lastWeekBest.length === 0 ? (
-                <p className="px-4 py-3 text-[10px] font-medium text-neutral-400">
-                  No launches last week — the board is fresh.
-                </p>
-              ) : (
-                lastWeekBest.slice(0, 6).map((p) => (
-                  <FeedRow
-                    key={p.id}
-                    soundEnabled={soundEnabled}
-                    onClick={() => handleOpenProduct(p)}
-                    logo={
-                      <ProductLogo
-                        src={p.logoUrl}
-                        alt={p.name}
-                        containerClassName="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-2xs relative"
-                        iconClassName="h-3.5 w-3.5 text-neutral-400 shrink-0"
-                      />
-                    }
-                    name={p.name}
-                    sub={p.tagline}
-                    right={
-                      <span className="inline-flex items-center gap-1 font-mono-num text-[10px] font-bold text-neutral-500">
-                        <MessageCircle className="h-3 w-3 text-neutral-400" />
-                        {commentCounts[p.id] ?? 0}
-                      </span>
-                    }
-                  />
-                ))
-              )}
-            </RailCard>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <RailCard title="Live Traffic" dot="red">
-                {liveFeed.length === 0 ? (
-                  <p className="px-4 py-3 text-[10px] font-medium text-neutral-400">
-                    Visits and new listings appear here live.
-                  </p>
-                ) : (
-                  liveFeed.map((ev) => {
-                    const p = products.find((prod) => prod.id === ev.productId);
-                    return (
-                      <FeedRow
-                        key={ev.id}
-                        soundEnabled={soundEnabled}
-                        onClick={p ? () => handleOpenProduct(p) : undefined}
-                        logo={
-                          <ProductLogo
-                            src={p?.logoUrl}
-                            alt={p?.name || ev.name}
-                            containerClassName="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-2xs relative"
-                            iconClassName="h-3.5 w-3.5 text-neutral-400 shrink-0"
-                          />
-                        }
-                        name={ev.name}
-                        sub={ev.kind === 'visit' ? `got a click ${timeAgo(ev.time)}` : `joined ${timeAgo(ev.time)}`}
-                      />
-                    );
-                  })
-                )}
-              </RailCard>
-              <RailCard title="Just Listed">
-                {newestListings.length === 0 ? (
-                  <p className="px-4 py-3 text-[10px] font-medium text-neutral-400">
-                    New products appear here as they launch.
-                  </p>
-                ) : (
-                  newestListings.slice(0, 6).map((p) => (
-                    <FeedRow
-                      key={p.id}
-                      soundEnabled={soundEnabled}
-                      onClick={() => handleOpenProduct(p)}
-                      logo={
-                        <ProductLogo
-                          src={p.logoUrl}
-                          alt={p.name}
-                          containerClassName="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-2xs relative"
-                          iconClassName="h-3.5 w-3.5 text-neutral-400 shrink-0"
-                        />
-                      }
-                      name={p.name}
-                      sub={timeAgo(p.createdAt)}
-                    />
-                  ))
-                )}
-              </RailCard>
-            </div>
           </div>
-
-          </div>
-          </div>
+        </section>
+        </HeroSponsorRails>
         </>
         )}
       </main>

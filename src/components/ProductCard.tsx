@@ -4,7 +4,6 @@ import { VerifiedBadge } from './VerifiedBadge';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
-
 import { RankMedal } from './RankMedal';
 
 interface ProductCardProps {
@@ -33,7 +32,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onUpvote,
   upvoted = false,
 }) => {
-  const cardHighlightClass = 'border border-neutral-800 hover:border-neutral-600';
+  const cardHighlightClass = 'border border-neutral-200 hover:border-neutral-300';
 
   const handleUpvote = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -50,7 +49,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     rank === 1 || rank === 2 || rank === 3 ? (
       <RankMedal rank={rank as 1 | 2 | 3} className="h-7 w-7" />
     ) : (
-      <div className="flex h-7 w-7 shrink-0 items-center justify-center font-mono-num text-xs font-semibold text-neutral-600 group-hover:text-white transition-colors">
+      <div className="flex h-7 w-7 shrink-0 items-center justify-center font-mono-num text-xs font-semibold text-neutral-400 group-hover:text-neutral-700 transition-colors">
         {rank}
       </div>
     );
@@ -64,48 +63,48 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         <ProductLogo
           src={product.logoUrl}
           alt={product.name}
-          containerClassName="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-neutral-800 bg-[#222222] shadow-2xs group-hover:border-neutral-600 group-hover:scale-105 transition-all duration-200 relative"
-          iconClassName="h-4 w-4 text-neutral-500 shrink-0 group-hover:text-neutral-300 transition-colors"
+          containerClassName="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-neutral-200 bg-neutral-100 shadow-2xs group-hover:border-neutral-300 group-hover:scale-105 transition-all duration-200 relative"
+          iconClassName="h-4 w-4 text-neutral-500 shrink-0 group-hover:text-neutral-700 transition-colors"
         />
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
-            <span className="font-bold text-white group-hover:text-mint-300 transition-colors truncate text-sm">
+            <span className="font-bold text-neutral-950 group-hover:text-mint-600 transition-colors truncate text-sm">
               {product.name}
             </span>
             {showVerified && product.verified && (
               <VerifiedBadge className="h-3.5 w-3.5 shrink-0" title="Verified Startup" />
             )}
             {product.offerDiscount && (
-              <span className="rounded bg-mint-500/15 border border-mint-500/40 px-1.5 py-px text-[9px] font-black text-mint-300 shrink-0">
+              <span className="rounded bg-mint-50 border border-mint-200 px-1.5 py-px text-[9px] font-black text-mint-700 shrink-0">
                 {product.offerDiscount}
               </span>
             )}
             {product.isUserOwned && (
-              <span className="rounded-full border border-neutral-300 px-1.5 py-px text-[8px] font-black uppercase tracking-wider text-neutral-500">
+              <span className="rounded-full border border-neutral-300 px-1.5 py-px text-[9px] font-bold text-neutral-600">
                 Yours
               </span>
             )}
           </div>
-          <p className="text-[11px] text-neutral-500 group-hover:text-neutral-400 font-medium line-clamp-1 transition-colors">
+          <p className="text-[11px] text-neutral-600 group-hover:text-neutral-800 font-medium line-clamp-1 transition-colors">
             {product.tagline}
           </p>
         </div>
       </div>
 
       {/* Footer */}
-      <div className="mt-3 flex items-center justify-between gap-2 pt-2.5 border-t border-neutral-800/80 group-hover:border-neutral-700/80 transition-colors">
+      <div className="mt-3 flex items-center justify-between gap-2 pt-2.5 border-t border-neutral-200 group-hover:border-neutral-300 transition-colors">
         <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden">
           {product.category && (
             <span
-              className="truncate rounded-md bg-neutral-800/90 border border-neutral-700/40 group-hover:border-neutral-600/60 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-300 min-w-0 max-w-[110px] sm:max-w-[140px] transition-colors"
+              className="truncate rounded-md bg-neutral-100 border border-neutral-200 group-hover:border-neutral-300 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-600 min-w-0 max-w-[110px] sm:max-w-[140px] transition-colors"
               title={product.category}
             >
               {product.category}
             </span>
           )}
-          <span className="inline-flex shrink-0 items-center gap-1 text-[10px] font-semibold text-neutral-400">
-            <MessageCircle className="h-3 w-3 text-neutral-500 group-hover:text-neutral-400 transition-colors" />
+          <span className="inline-flex shrink-0 items-center gap-1 text-[10px] font-semibold text-neutral-500">
+            <MessageCircle className="h-3 w-3 text-neutral-400 group-hover:text-neutral-600 transition-colors" />
             <span className="font-mono-num">{commentCount ?? 0}</span>
           </span>
         </div>
@@ -117,8 +116,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             title={upvoted ? 'Remove your upvote' : 'Upvote this product'}
             className={`inline-flex shrink-0 items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-bold transition-all cursor-pointer active:scale-95 ${
               upvoted
-                ? 'border-mint-500 bg-mint-500 text-[#0b0f14]'
-                : 'border-neutral-700 bg-transparent text-neutral-300 hover:border-mint-500/60 hover:text-mint-300 hover:bg-neutral-800'
+                ? 'border-mint-500 bg-mint-500 text-white'
+                : 'border-neutral-200 bg-white text-neutral-700 hover:border-mint-500/60 hover:text-mint-600 hover:bg-mint-50'
             }`}
           >
             <ChevronUp className="h-3.5 w-3.5" />
@@ -129,7 +128,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     </>
   );
 
-  const sharedClass = `group flex flex-col justify-between rounded-xl border bg-[#2a2a2a] p-3.5 transition-all duration-300 ease-out cursor-pointer h-full w-full hover:bg-[#383838] hover:border-neutral-500 hover:shadow-[0_8px_28px_-4px_rgba(0,0,0,0.55)] hover:-translate-y-0.5 ${cardHighlightClass}`;
+  const sharedClass = `group flex flex-col justify-between rounded-xl border bg-white p-3.5 transition-all duration-300 ease-out cursor-pointer h-full w-full hover:bg-neutral-100 hover:border-neutral-300 hover:shadow-md hover:-translate-y-0.5 ${cardHighlightClass}`;
 
   if (onOpenDetail) {
     return (

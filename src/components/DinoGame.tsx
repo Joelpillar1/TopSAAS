@@ -928,7 +928,7 @@ export const DinoGame: React.FC<DinoGameProps> = ({
           <span className="flex h-5 w-5 items-center justify-center rounded-md bg-black text-white shadow-2xs">
             <Zap className="h-3 w-3 fill-current" />
           </span>
-          <span className="text-xs font-black uppercase tracking-wider text-black font-mono">
+          <span className="text-xs font-black  text-black font-mono">
             TopSAAS Runner
           </span>
         </div>
@@ -1016,7 +1016,7 @@ export const DinoGame: React.FC<DinoGameProps> = ({
               <span className="text-[11px] font-black text-black group-hover:underline truncate max-w-[100px] sm:max-w-[160px]">
                 {featuredProduct.name}
               </span>
-              <span className="rounded bg-black text-white text-[8px] font-black uppercase px-1 py-0.5 tracking-wider shrink-0">
+              <span className="rounded bg-black text-white text-[8px] font-black  px-1 py-0.5 tracking-wider shrink-0">
                 Featured
               </span>
             </a>
@@ -1053,7 +1053,7 @@ export const DinoGame: React.FC<DinoGameProps> = ({
                 e.stopPropagation();
                 startGame();
               }}
-              className="inline-flex items-center gap-2 rounded-xl bg-black px-5 py-2 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-neutral-800 active:scale-95 transition-all cursor-pointer"
+              className="inline-flex items-center gap-2 rounded-xl bg-black px-5 py-2 text-xs sm:text-sm font-bold text-neutral-950 shadow-sm hover:bg-neutral-800 active:scale-95 transition-all cursor-pointer"
             >
               <span>Press Space to Play</span>
             </button>
@@ -1087,7 +1087,7 @@ export const DinoGame: React.FC<DinoGameProps> = ({
                 e.stopPropagation();
                 startGame();
               }}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-black px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-neutral-800 active:scale-95 transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-black px-4 py-2 text-xs font-bold text-neutral-950 shadow-sm hover:bg-neutral-800 active:scale-95 transition-all cursor-pointer"
             >
               <RotateCcw className="h-3.5 w-3.5" />
               <span>Play Again (Space)</span>

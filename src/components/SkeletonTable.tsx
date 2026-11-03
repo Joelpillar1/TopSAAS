@@ -2,18 +2,18 @@ import React from 'react';
 
 const Shimmer: React.FC<{ className?: string }> = ({ className = '' }) => (
   <div
-    className={`animate-pulse bg-gradient-to-r from-neutral-800 via-neutral-700 to-neutral-800 bg-[length:200%_100%] rounded ${className}`}
+    className={`animate-pulse bg-gradient-to-r from-neutral-200 via-neutral-100 to-neutral-200 bg-[length:200%_100%] rounded ${className}`}
     style={{ animation: 'shimmer 1.5s infinite linear' }}
   />
 );
 
 export const SkeletonTable: React.FC = () => {
   return (
-    <div className="overflow-hidden rounded-2xl border border-neutral-800 bg-[#2a2a2a] shadow-xs transition-all">
+    <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-xs transition-all">
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
           <thead>
-            <tr className="border-b border-neutral-800 bg-[#343434] text-[11px] font-bold uppercase tracking-wider text-neutral-400">
+            <tr className="border-b border-neutral-200 bg-neutral-100/70 text-[11px] font-bold  text-neutral-600">
               <th className="py-3 pl-4 pr-2 w-14 text-center">Rank</th>
               <th className="py-3 px-4">Product</th>
               <th className="py-3 px-4 text-center">Upvotes</th>
@@ -22,9 +22,9 @@ export const SkeletonTable: React.FC = () => {
               <th className="py-3 pr-4 pl-2 text-right">Action</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-neutral-800">
+          <tbody className="divide-y divide-neutral-200">
             {Array.from({ length: 9 }).map((_, i) => (
-              <tr key={`skeleton-row-${i}`} className={i < 3 ? 'bg-[#2f2f2f]/50' : ''}>
+              <tr key={`skeleton-row-${i}`} className={i < 3 ? 'bg-neutral-50/70' : ''}>
                 <td className="py-3.5 pl-4 pr-2 text-center align-middle">
                   <Shimmer className="h-7 w-7 mx-auto rounded-lg" />
                 </td>

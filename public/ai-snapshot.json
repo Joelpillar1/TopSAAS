@@ -2,9 +2,9 @@
   "platform": "TopSAAS",
   "name": "TopSAAS — The Curated SaaS Directory",
   "url": "https://www.topsaas.space",
-  "generated_at": "2026-09-06T18:00:00Z",
-  "version": "2.0.0",
-  "summary": "The curated leaderboard, discovery platform, and launchpad for the internet's best SaaS products, AI tools, and developer utilities.",
+  "generated_at": "2026-10-06T00:00:00Z",
+  "version": "2.1.0",
+  "summary": "Find your SaaS idea: 3822 open-source starter repos across 23 categories with per-repo editorial detail pages, plus the curated leaderboard for SaaS products, AI tools, and developer utilities.",
   "statistics": {
     "categories_count": 28,
     "primary_categories": [
@@ -23,8 +23,23 @@
       "Paid",
       "Open Source"
     ],
+    "repo_catalog": {
+      "repos_count": 3822,
+      "repo_categories_count": 23,
+      "combined_stars": 8900000,
+      "detail_url_pattern": "https://www.topsaas.space/repo/{owner}/{name}",
+      "examples": [
+        "https://www.topsaas.space/repo/refinedev/refine",
+        "https://www.topsaas.space/repo/t3-oss/create-t3-app"
+      ]
+    },
     "features_supported": [
       "Real-time Leaderboard",
+      "Open-Source SaaS Starter Catalog",
+      "Repo Health Scores (0-100, transparent formula)",
+      "Trending Index (star velocity + recency)",
+      "Build Guides (HowTo + FAQ structured data)",
+      "Per-Repo Detail Pages with Editorial Write-ups",
       "Upvoting System",
       "Founder Offers & Coupons",
       "Demo Videos",
@@ -41,6 +56,7 @@
     "openapi_specification": "https://www.topsaas.space/openapi.json",
     "public_rest_feed": "https://www.topsaas.space/products.json",
     "sitemap_xml": "https://www.topsaas.space/sitemap.xml",
+    "repo_sitemap_xml": "https://www.topsaas.space/sitemap/repos.xml",
     "robots_txt": "https://www.topsaas.space/robots.txt"
   },
   "citation": {

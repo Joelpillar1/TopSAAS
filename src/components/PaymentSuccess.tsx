@@ -47,9 +47,9 @@ export const PaymentSuccess: React.FC<PaymentSuccessProps> = ({
   const price = '$99';
 
   return (
-    <div className="min-h-screen bg-[#222222] text-neutral-100 flex items-center justify-center font-sans px-4">
+    <div className="min-h-screen bg-white text-neutral-900 flex items-center justify-center font-sans px-4">
       <div className="w-full max-w-md">
-        <div className="rounded-2xl border border-neutral-800 bg-[#2a2a2a] p-6 sm:p-8 shadow-lg text-center">
+        <div className="rounded-2xl border border-neutral-200 bg-white p-6 sm:p-8 shadow-lg text-center">
           {/* Success Icon */}
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 border border-emerald-300 mb-4">
             <CheckCircle className="h-8 w-8 text-emerald-600" />
@@ -64,10 +64,10 @@ export const PaymentSuccess: React.FC<PaymentSuccessProps> = ({
           </p>
 
           {/* Order Details */}
-          <div className="rounded-xl border border-neutral-800 bg-[#343434] p-4 mb-4 text-left">
+          <div className="rounded-xl border border-neutral-200 bg-neutral-100 p-4 mb-4 text-left">
             <div className="flex items-center gap-2 mb-3">
               <Crown className="h-4 w-4 text-mint-500" />
-              <span className="text-xs font-bold text-white">Order Details</span>
+              <span className="text-xs font-bold text-neutral-950">Order Details</span>
             </div>
             <div className="space-y-2">
               {params.product && (
@@ -107,8 +107,8 @@ export const PaymentSuccess: React.FC<PaymentSuccessProps> = ({
           </div>
 
           {/* What's Next */}
-          <div className="rounded-xl border border-neutral-800 bg-[#343434] p-4 mb-6 text-left">
-            <h3 className="text-xs font-bold text-white mb-2">What happens next?</h3>
+          <div className="rounded-xl border border-neutral-200 bg-neutral-100 p-4 mb-6 text-left">
+            <h3 className="text-xs font-bold text-neutral-950 mb-2">What happens next?</h3>
             <ul className="space-y-1.5">
               <li className="flex items-start gap-2 text-xs text-neutral-400">
                 <span className="font-bold text-white">1.</span>
@@ -145,7 +145,7 @@ export const PaymentSuccess: React.FC<PaymentSuccessProps> = ({
                 playSound('click', soundEnabled);
                 onBackToDirectory();
               }}
-              className="text-xs text-neutral-400 hover:text-white transition-colors cursor-pointer"
+              className="text-xs text-neutral-500 hover:text-neutral-950 transition-colors cursor-pointer"
             >
               or go to homepage
             </a>

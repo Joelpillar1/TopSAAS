@@ -90,6 +90,7 @@ export interface Product {
   submittedBy?: string; // user ID of who submitted this product
   featuredQuote?: string;
   verified?: boolean;
+  isSponsored?: boolean;
   description?: string;
   whatItDoes?: string[];
   features?: ProductFeature[];

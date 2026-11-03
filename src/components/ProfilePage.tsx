@@ -29,6 +29,8 @@ import { SUBMISSION_CATEGORIES } from './BidModal';
 import { ProductLogo } from './ProductLogo';
 import { playSound } from '../utils/sound';
 import { EmbedBadgeModal } from './EmbedBadgeModal';
+import { RichTextEditor } from './RichTextEditor';
+import { prepareRichText } from '../utils/richText';
 
 interface ProfilePageProps {
   user: User;
@@ -374,10 +376,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
       tagline: editForm.tagline.trim(),
       url: cleanUrl(editForm.url),
       category: finalCategory,
-      description: editForm.description.trim() || undefined,
-      problemItSolves: editForm.problemItSolves.trim() || undefined,
-      solution: editForm.solution.trim() || undefined,
-      uniqueSellingPoint: editForm.uniqueSellingPoint.trim() || undefined,
+      description: prepareRichText(editForm.description) || undefined,
+      problemItSolves: prepareRichText(editForm.problemItSolves) || undefined,
+      solution: prepareRichText(editForm.solution) || undefined,
+      uniqueSellingPoint: prepareRichText(editForm.uniqueSellingPoint) || undefined,
       pricingModel: editForm.pricingModel || undefined,
       targetAudience: editForm.targetAudience.trim() || undefined,
       logoUrl: editForm.logoUrl.trim() || undefined,
@@ -495,29 +497,29 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   };
 
   const inputClass =
-    'w-full rounded-xl border border-neutral-700 bg-[#222222] px-3.5 py-2.5 text-xs text-white placeholder:text-neutral-600 focus:border-neutral-400 focus:outline-none focus:ring-1 focus:ring-neutral-400 transition-colors';
-  const labelClass = 'mb-1 block text-[11px] font-bold text-neutral-300';
+    'w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 text-xs text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-400 focus:outline-none focus:ring-1 focus:ring-neutral-400 transition-colors';
+  const labelClass = 'mb-1 block text-[11px] font-bold text-neutral-700';
 
   const liveCount = products.length;
 
   return (
-    <div className="min-h-screen bg-[#222222] text-neutral-100 font-sans">
+    <div className="min-h-screen bg-white text-neutral-900 font-sans">
       {/* Header */}
-      <div className="sticky top-0 z-40 border-b border-neutral-800 bg-[#222222]/95 backdrop-blur-md">
+      <div className="sticky top-0 z-40 border-b border-neutral-200 bg-white/95 backdrop-blur-md">
         <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3 sm:px-6">
           <button
             type="button"
             onClick={onBack}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-700 bg-[#2a2a2a] text-neutral-300 hover:border-neutral-500 hover:text-white transition-all cursor-pointer"
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-all cursor-pointer"
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
-          <h1 className="text-sm font-black text-white flex-1">My Products</h1>
+          <h1 className="text-sm font-black text-neutral-950 flex-1">My Products</h1>
           {onSignOut && (
             <button
               type="button"
               onClick={onSignOut}
-              className="flex items-center gap-1.5 rounded-lg border border-neutral-700 bg-[#2a2a2a] px-3 py-1.5 text-xs font-bold text-neutral-400 hover:border-red-400/70 hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
+              className="flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-bold text-neutral-600 hover:border-red-300 hover:text-red-600 hover:bg-red-50 transition-all cursor-pointer"
             >
               <LogOut className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Sign out</span>
@@ -528,21 +530,21 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
       <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6 space-y-6">
         {/* User Info Card */}
-        <div className="rounded-2xl border border-neutral-800 bg-[#2a2a2a] p-5 shadow-xs">
+        <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-xs">
           <div className="flex items-center gap-4">
             {user.user_metadata?.avatar_url ? (
               <img
                 src={user.user_metadata.avatar_url}
                 alt={user.user_metadata?.full_name || 'User'}
-                className="h-14 w-14 rounded-full object-cover ring-2 ring-neutral-700"
+                className="h-14 w-14 rounded-full object-cover ring-2 ring-neutral-200"
               />
             ) : (
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-mint-500 text-[#0b0f14] text-lg font-black">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-mint-500 text-white text-lg font-black">
                 {(user.email?.[0] || 'U').toUpperCase()}
               </div>
             )}
             <div className="space-y-0.5">
-              <h2 className="text-base font-black text-white">
+              <h2 className="text-base font-black text-neutral-950">
                 {user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
               </h2>
               <div className="flex items-center gap-1.5 text-xs text-neutral-400">
@@ -559,15 +561,15 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
         {/* Stats */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-xl border border-neutral-800 bg-[#2a2a2a] p-3 text-center">
-            <div className="text-lg font-black text-white">{liveCount}</div>
-            <div className="text-[10px] font-bold text-neutral-400 uppercase">Live Products</div>
+          <div className="rounded-xl border border-neutral-200 bg-white p-3 text-center">
+            <div className="text-lg font-black text-neutral-950">{liveCount}</div>
+            <div className="text-[11px] font-bold text-neutral-500">Live products</div>
           </div>
-          <div className="rounded-xl border border-neutral-800 bg-[#2a2a2a] p-3 text-center">
-            <div className="text-lg font-black text-amber-400">
+          <div className="rounded-xl border border-neutral-200 bg-white p-3 text-center">
+            <div className="text-lg font-black text-amber-600">
               {submissions.filter((s) => s.status === 'under_review').length}
             </div>
-            <div className="text-[10px] font-bold text-neutral-400 uppercase">Pending Approval</div>
+            <div className="text-[11px] font-bold text-neutral-500">Pending approval</div>
           </div>
         </div>
 
@@ -575,25 +577,25 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         {submissions.filter((s) => s.status === 'under_review').length > 0 && (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-black uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+              <h3 className="text-xs font-black text-amber-600 flex items-center gap-1.5">
                 <Clock className="h-3.5 w-3.5" />
                 Pending Approval ({submissions.filter((s) => s.status === 'under_review').length})
               </h3>
-              <span className="text-[10px] text-neutral-400">Awaiting approval</span>
+              <span className="text-[10px] text-neutral-500">Awaiting approval</span>
             </div>
             {submissions
               .filter((s) => s.status === 'under_review')
               .map((sub) => (
                 <div
                   key={sub.id}
-                  className="rounded-xl border border-amber-500/30 bg-[#2a2a2a] p-4 shadow-xs"
+                  className="rounded-xl border border-amber-500/30 bg-white p-4 shadow-xs"
                 >
                   <div className="flex items-start gap-3">
                     <ProductLogo
                       src={sub.logoUrl || getWebsiteFavicon(sub.url)}
                       alt={sub.name}
-                      containerClassName="relative h-11 w-11 rounded-lg overflow-hidden border border-neutral-700 bg-neutral-900 shrink-0 flex items-center justify-center shadow-2xs"
-                      iconClassName="h-5 w-5 text-neutral-400 shrink-0"
+                      containerClassName="relative h-11 w-11 rounded-lg overflow-hidden border border-neutral-200 bg-neutral-100 shrink-0 flex items-center justify-center shadow-2xs"
+                      iconClassName="h-5 w-5 text-neutral-500 shrink-0"
                     />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
@@ -602,19 +604,19 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                             playSound('click', soundEnabled);
                             if (onSelectProduct) onSelectProduct(submissionToProduct(sub));
                           }}
-                          className="text-sm font-black text-white truncate hover:text-amber-300 hover:underline cursor-pointer transition-colors"
+                          className="text-sm font-black text-neutral-950 truncate hover:text-amber-600 hover:underline cursor-pointer transition-colors"
                           title="Click to view details"
                         >
                           {sub.name}
                         </h4>
-                        <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-300 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-full">
+                        <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
                           <Clock className="h-2.5 w-2.5 animate-pulse" />
                           Pending Approval
                         </span>
                       </div>
-                      <p className="text-xs text-neutral-400 truncate mt-0.5">{sub.tagline}</p>
+                      <p className="text-xs text-neutral-500 truncate mt-0.5">{sub.tagline}</p>
                       <div className="flex flex-wrap items-center gap-2 mt-2">
-                        <span className="inline-flex items-center gap-1 rounded-md bg-neutral-800 px-2 py-0.5 text-[10px] font-bold text-neutral-300">
+                        <span className="inline-flex items-center gap-1 rounded-md bg-neutral-100 border border-neutral-200 px-2 py-0.5 text-[10px] font-bold text-neutral-600">
                           <Globe className="h-2.5 w-2.5" />
                           {sub.category}
                         </span>
@@ -631,7 +633,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
         {/* Live Products List */}
         <div className="space-y-3">
-          <h3 className="text-xs font-black uppercase tracking-wider text-neutral-400">
+          <h3 className="text-xs font-black text-neutral-500">
             Live Products ({products.length})
           </h3>
 
@@ -640,9 +642,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
               <Loader2 className="h-6 w-6 text-neutral-400 animate-spin" />
             </div>
           ) : products.length === 0 ? (
-            <div className="rounded-2xl border border-neutral-800 bg-[#2a2a2a] p-10 text-center">
+            <div className="rounded-2xl border border-neutral-200 bg-white p-10 text-center">
               <Globe className="mx-auto h-8 w-8 text-neutral-600 mb-3" />
-              <p className="text-sm font-bold text-neutral-300">No live products yet</p>
+              <p className="text-sm font-bold text-neutral-600">No live products yet</p>
               <p className="text-xs text-neutral-500 mt-1">
                 {submissions.filter((s) => s.status === 'under_review').length > 0
                   ? 'Your submission is pending approval and will appear here once approved.'
@@ -653,14 +655,14 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             products.map((product) => (
               <div
                 key={product.id}
-                className="rounded-xl border border-neutral-800 bg-[#2a2a2a] p-4 shadow-xs hover:border-neutral-700 transition-all"
+                className="rounded-xl border border-neutral-200 bg-white p-4 shadow-xs hover:border-neutral-200 transition-all"
               >
                 <div className="flex items-start gap-3">
                   <ProductLogo
                     src={product.logoUrl || getWebsiteFavicon(product.url)}
                     alt={product.name}
-                    containerClassName="relative h-11 w-11 rounded-lg overflow-hidden border border-neutral-700 bg-neutral-900 shrink-0 flex items-center justify-center shadow-2xs"
-                    iconClassName="h-5 w-5 text-neutral-400 shrink-0"
+                    containerClassName="relative h-11 w-11 rounded-lg overflow-hidden border border-neutral-200 bg-neutral-100 shrink-0 flex items-center justify-center shadow-2xs"
+                    iconClassName="h-5 w-5 text-neutral-500 shrink-0"
                   />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
@@ -669,18 +671,18 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                           playSound('click', soundEnabled);
                           if (onSelectProduct) onSelectProduct(product);
                         }}
-                        className="text-sm font-black text-white truncate hover:text-mint-300 hover:underline cursor-pointer transition-colors"
+                        className="text-sm font-black text-neutral-950 truncate hover:text-mint-600 hover:underline cursor-pointer transition-colors"
                         title="Click to view details"
                       >
                         {product.name}
                       </h4>
-                      <span className="text-[9px] font-bold text-mint-300 bg-mint-500/15 border border-mint-500/30 px-1.5 py-0.5 rounded">
+                      <span className="text-[9px] font-bold text-mint-600 bg-mint-500/15 border border-mint-500/30 px-1.5 py-0.5 rounded">
                         Live
                       </span>
                     </div>
-                    <p className="text-xs text-neutral-400 truncate mt-0.5">{product.tagline}</p>
+                    <p className="text-xs text-neutral-500 truncate mt-0.5">{product.tagline}</p>
                     <div className="flex flex-wrap items-center gap-2 mt-2">
-                      <span className="inline-flex items-center gap-1 rounded-md bg-neutral-800 px-2 py-0.5 text-[10px] font-bold text-neutral-300">
+                      <span className="inline-flex items-center gap-1 rounded-md bg-neutral-100 border border-neutral-200 px-2 py-0.5 text-[10px] font-bold text-neutral-600">
                         <Globe className="h-2.5 w-2.5" />
                         {product.category}
                       </span>
@@ -688,7 +690,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                         href={product.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-[10px] font-bold text-neutral-400 hover:text-white transition-colors"
+                        className="inline-flex items-center gap-1 text-[10px] font-bold text-neutral-500 hover:text-neutral-950 transition-colors"
                       >
                         Visit
                         <ExternalLink className="h-2.5 w-2.5" />
@@ -704,16 +706,16 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                         playSound('click', soundEnabled);
                         setBadgeProduct(product);
                       }}
-                      className="flex items-center gap-1 rounded-lg border border-neutral-700 bg-[#343434] px-2.5 py-1.5 text-xs font-bold text-mint-300 hover:border-mint-500/60 hover:text-white transition-all cursor-pointer shadow-2xs"
+                      className="flex items-center gap-1 rounded-lg border border-neutral-200 bg-neutral-100 px-2.5 py-1.5 text-xs font-bold text-mint-600 hover:border-mint-500/60 hover:text-mint-700 transition-all cursor-pointer"
                       title="Get Embeddable Badge"
                     >
-                      <Code2 className="h-3 w-3 text-mint-400" />
+                      <Code2 className="h-3 w-3 text-mint-600" />
                       <span className="hidden sm:inline">Badge</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => handleOpenEdit(product)}
-                      className="flex items-center gap-1 rounded-lg border border-neutral-700 bg-[#343434] px-2.5 py-1.5 text-xs font-bold text-neutral-200 hover:border-neutral-500 hover:text-white transition-all cursor-pointer shadow-2xs"
+                      className="flex items-center gap-1 rounded-lg border border-neutral-200 bg-neutral-100 px-2.5 py-1.5 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-all cursor-pointer shadow-2xs"
                       title="Edit project"
                     >
                       <Pencil className="h-3 w-3" />
@@ -723,7 +725,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                       type="button"
                       onClick={() => handleDelete(product.id)}
                       disabled={deletingId === product.id}
-                      className="flex h-7 w-7 items-center justify-center rounded-lg border border-neutral-700 bg-[#343434] text-neutral-400 hover:border-red-400/70 hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer disabled:opacity-50 shrink-0"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg border border-neutral-200 bg-neutral-100 text-neutral-500 hover:border-red-300 hover:text-red-600 hover:bg-red-50 transition-all cursor-pointer disabled:opacity-50 shrink-0"
                       title="Remove product"
                     >
                       {deletingId === product.id ? (
@@ -743,29 +745,29 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
       {/* ── Edit Product Modal ── */}
       {editingProduct && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-3 sm:p-4 backdrop-blur-sm overflow-y-auto">
-          <div className="relative w-full max-w-2xl rounded-2xl border border-neutral-800 bg-[#262626] shadow-2xl flex flex-col max-h-[92vh]">
+          <div className="relative w-full max-w-2xl rounded-2xl border border-neutral-200 bg-neutral-100 shadow-2xl flex flex-col max-h-[92vh]">
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-neutral-800 px-5 py-4">
+            <div className="flex items-center justify-between border-b border-neutral-200 px-5 py-4">
               <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-700 bg-[#222222]">
-                  <Pencil className="h-4 w-4 text-mint-300" />
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 bg-white">
+                  <Pencil className="h-4 w-4 text-mint-600" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black text-white">Edit {editingProduct.name}</h3>
-                  <p className="text-[11px] font-medium text-neutral-400">Update your project details and media</p>
+                  <h3 className="text-sm font-black text-neutral-950">Edit {editingProduct.name}</h3>
+                  <p className="text-[11px] font-medium text-neutral-500">Update your project details and media</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={handleCloseEdit}
-                className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-800 hover:text-white transition-colors cursor-pointer"
+                className="rounded-lg p-1.5 text-neutral-500 hover:bg-neutral-200 hover:text-neutral-950 transition-colors cursor-pointer"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             {/* Edit Tabs */}
-            <div className="flex items-center gap-1 border-b border-neutral-800 px-5 pt-2 bg-[#222222]/50 overflow-x-auto">
+            <div className="flex items-center gap-1 border-b border-neutral-200 px-5 pt-2 bg-white/50 overflow-x-auto">
               {(
                 [
                   { id: 'details', label: 'Basic Info' },
@@ -785,8 +787,8 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                     }}
                     className={`px-3 py-2 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
                       active
-                        ? 'border-mint-400 text-white'
-                        : 'border-transparent text-neutral-400 hover:text-neutral-200'
+                        ? 'border-mint-500 text-neutral-950'
+                        : 'border-transparent text-neutral-500 hover:text-neutral-950'
                     }`}
                   >
                     {tab.label}
@@ -798,7 +800,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             {/* Modal Body */}
             <div className="flex-1 overflow-y-auto p-5 space-y-4">
               {editError && (
-                <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs font-bold text-red-400">
+                <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-bold text-red-700">
                   {editError}
                 </div>
               )}
@@ -836,17 +838,17 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                   <div>
                     <div className="flex items-center justify-between mb-1.5">
                       <label className={labelClass}>Categories</label>
-                      <span className="font-mono-num text-[11px] font-bold text-neutral-400 bg-[#222222] px-2 py-0.5 rounded-md border border-neutral-700">
+                      <span className="font-mono-num text-[11px] font-bold text-neutral-400 bg-white px-2 py-0.5 rounded-md border border-neutral-200">
                         {editForm.categories.length}/3 selected
                       </span>
                     </div>
 
                     {/* Selected Categories */}
-                    <div className="flex flex-wrap gap-1.5 mb-2 p-2.5 rounded-xl border border-neutral-800 bg-[#222222]">
+                    <div className="flex flex-wrap gap-1.5 mb-2 p-2.5 rounded-xl border border-neutral-200 bg-white">
                       {editForm.categories.map((cat) => (
                         <span
                           key={cat}
-                          className="inline-flex items-center gap-1.5 rounded-lg bg-mint-500/15 border border-mint-500/40 px-2.5 py-1 text-xs font-bold text-mint-200"
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-mint-500/15 border border-mint-500/40 px-2.5 py-1 text-xs font-bold text-mint-700"
                         >
                           <span>{cat}</span>
                           <button
@@ -858,7 +860,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                                 setEditForm((p) => ({ ...p, categories: next, category: next.join(', ') }));
                               }
                             }}
-                            className="flex h-3.5 w-3.5 items-center justify-center rounded-full hover:bg-mint-500/30 text-mint-300 hover:text-white transition-colors cursor-pointer"
+                            className="flex h-3.5 w-3.5 items-center justify-center rounded-full hover:bg-mint-500/30 text-mint-600 hover:text-white transition-colors cursor-pointer"
                           >
                             <X className="h-3 w-3" />
                           </button>
@@ -867,7 +869,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                     </div>
 
                     {/* Quick Category Buttons */}
-                    <div className="max-h-36 overflow-y-auto p-1.5 rounded-xl border border-neutral-800 bg-[#1c1c1c] flex flex-wrap gap-1.5">
+                    <div className="max-h-36 overflow-y-auto p-1.5 rounded-xl border border-neutral-200 bg-neutral-100 flex flex-wrap gap-1.5">
                       {SUBMISSION_CATEGORIES.map((cat) => {
                         const active = editForm.categories.includes(cat);
                         return (
@@ -891,8 +893,8 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                             }}
                             className={`rounded-lg px-2.5 py-1 text-[11px] font-bold transition-all cursor-pointer ${
                               active
-                                ? 'bg-mint-500/20 text-mint-200 border border-mint-500/50'
-                                : 'bg-[#2a2a2a] text-neutral-400 border border-neutral-700 hover:text-white hover:border-neutral-500'
+                                ? 'bg-mint-500/20 text-mint-700 border border-mint-500/50'
+                                : 'bg-white text-neutral-600 border border-neutral-200 hover:text-neutral-950 hover:border-neutral-300'
                             }`}
                           >
                             {active ? `✓ ${cat}` : `+ ${cat}`}
@@ -946,54 +948,58 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
                   <div>
                     <label className={labelClass}>Description / Overview</label>
-                    <textarea
-                      rows={3}
+                    <RichTextEditor
                       value={editForm.description}
-                      onChange={(e) => setEditForm((p) => ({ ...p, description: e.target.value }))}
-                      className={`${inputClass} resize-y`}
+                      onChange={(html) => setEditForm((p) => ({ ...p, description: html }))}
                       placeholder="Tell visitors what your product does and how it helps them."
+                      maxLength={2000}
+                      minHeightClass="min-h-[110px]"
+                      ariaLabel="Description / Overview"
                     />
                   </div>
 
                   <div>
                     <label className={labelClass}>Problem It Solves</label>
-                    <textarea
-                      rows={2}
+                    <RichTextEditor
                       value={editForm.problemItSolves}
-                      onChange={(e) => setEditForm((p) => ({ ...p, problemItSolves: e.target.value }))}
-                      className={`${inputClass} resize-y`}
+                      onChange={(html) => setEditForm((p) => ({ ...p, problemItSolves: html }))}
                       placeholder="What pain point does it address?"
+                      maxLength={600}
+                      minHeightClass="min-h-[80px]"
+                      ariaLabel="Problem It Solves"
                     />
                   </div>
 
                   <div>
                     <label className={labelClass}>Your Solution</label>
-                    <textarea
-                      rows={2}
+                    <RichTextEditor
                       value={editForm.solution}
-                      onChange={(e) => setEditForm((p) => ({ ...p, solution: e.target.value }))}
-                      className={`${inputClass} resize-y`}
+                      onChange={(html) => setEditForm((p) => ({ ...p, solution: html }))}
                       placeholder="How does it solve that problem?"
+                      maxLength={600}
+                      minHeightClass="min-h-[80px]"
+                      ariaLabel="Your Solution"
                     />
                   </div>
 
                   <div>
                     <label className={labelClass}>What Makes It Different</label>
-                    <textarea
-                      rows={2}
+                    <RichTextEditor
                       value={editForm.uniqueSellingPoint}
-                      onChange={(e) => setEditForm((p) => ({ ...p, uniqueSellingPoint: e.target.value }))}
-                      className={`${inputClass} resize-y`}
+                      onChange={(html) => setEditForm((p) => ({ ...p, uniqueSellingPoint: html }))}
                       placeholder="What sets it apart from alternatives?"
+                      maxLength={600}
+                      minHeightClass="min-h-[80px]"
+                      ariaLabel="What Makes It Different"
                     />
                   </div>
 
                   {/* Special Offer & Discount */}
-                  <div className="rounded-xl border border-neutral-700/80 bg-[#1e1e1e] p-3.5 space-y-3">
+                  <div className="rounded-xl border border-neutral-200 bg-white p-3.5 space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-bold text-white">Special Offer / Viewer Discount</span>
-                        <span className="rounded bg-mint-500/15 border border-mint-500/30 px-1.5 py-0.2 text-[9px] font-black text-mint-300 uppercase">
+                        <span className="text-xs font-bold text-neutral-950">Special Offer / Viewer Discount</span>
+                        <span className="rounded bg-mint-500/15 border border-mint-500/30 px-1.5 py-0.2 text-[9px] font-bold text-mint-600">
                           Optional
                         </span>
                       </div>
@@ -1017,7 +1023,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                           type="text"
                           value={editForm.offerCode}
                           onChange={(e) => setEditForm((p) => ({ ...p, offerCode: e.target.value.toUpperCase() }))}
-                          className={`${inputClass} font-mono uppercase`}
+                          className={`${inputClass} font-mono`}
                           placeholder="e.g. TOPSAAS20"
                         />
                       </div>
@@ -1054,18 +1060,18 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
               {activeEditTab === 'media' && (
                 <div className="space-y-4">
                   {/* Feature Screenshots Gallery Section */}
-                  <div className="rounded-xl border border-neutral-800 bg-[#222222] p-4 space-y-3">
+                  <div className="rounded-xl border border-neutral-200 bg-white p-4 space-y-3">
                     <div className="flex items-center justify-between gap-2">
                       <div>
-                        <label className="text-xs font-bold text-white flex items-center gap-1.5">
-                          <Upload className="h-3.5 w-3.5 text-mint-400" />
+                        <label className="text-xs font-bold text-neutral-950 flex items-center gap-1.5">
+                          <Upload className="h-3.5 w-3.5 text-mint-600" />
                           <span>Feature Screenshots</span>
                         </label>
                         <p className="text-[11px] text-neutral-400 mt-0.5">
                           Upload up to 10 screenshots to showcase your UI, features, and app in the listing gallery.
                         </p>
                       </div>
-                      <span className="font-mono-num text-[11px] font-bold text-neutral-400 bg-[#2a2a2a] px-2.5 py-0.5 rounded-full border border-neutral-700 shrink-0">
+                      <span className="font-mono-num text-[11px] font-bold text-neutral-400 bg-white px-2.5 py-0.5 rounded-full border border-neutral-200 shrink-0">
                         {editForm.screenshots.length}/10
                       </span>
                     </div>
@@ -1075,7 +1081,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                       {editForm.screenshots.map((src, idx) => (
                         <div
                           key={idx}
-                          className="group relative aspect-video overflow-hidden rounded-xl border border-neutral-700 bg-[#1a1a1a]"
+                          className="group relative aspect-video overflow-hidden rounded-xl border border-neutral-200 bg-neutral-100"
                         >
                           <img
                             src={src}
@@ -1099,11 +1105,11 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                           type="button"
                           onClick={() => screenshotsInputRef.current?.click()}
                           disabled={isAddingShots}
-                          className="flex aspect-video cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-neutral-700 bg-[#2a2a2a] text-neutral-400 transition-colors hover:border-neutral-500 hover:text-white disabled:opacity-60"
+                          className="flex aspect-video cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-neutral-200 bg-white text-neutral-500 transition-colors hover:border-neutral-400 hover:text-neutral-950 disabled:opacity-60"
                         >
                           {isAddingShots ? (
                             <>
-                              <Loader2 className="h-4 w-4 animate-spin text-mint-400" />
+                              <Loader2 className="h-4 w-4 animate-spin text-mint-600" />
                               <span className="text-[10px] font-bold">Processing...</span>
                             </>
                           ) : (
@@ -1133,8 +1139,8 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                   {/* Logo Section */}
                   <div>
                     <label className={labelClass}>Product Logo</label>
-                    <div className="flex items-center gap-4 rounded-xl border border-neutral-800 bg-[#222222] p-3.5">
-                      <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-neutral-700 bg-neutral-900 shadow-inner">
+                    <div className="flex items-center gap-4 rounded-xl border border-neutral-200 bg-white p-3.5">
+                      <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-neutral-200 bg-neutral-100 shadow-inner">
                         {editForm.logoUrl ? (
                           <img
                             src={editForm.logoUrl}
@@ -1155,7 +1161,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-white">
+                        <p className="text-xs font-semibold text-neutral-950">
                           {editForm.logoUrl ? 'Custom uploaded logo' : 'Website favicon icon'}
                         </p>
                         <p className="text-[11px] text-neutral-500 mt-0.5 mb-2.5">
@@ -1167,7 +1173,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                           <button
                             type="button"
                             onClick={() => fileInputRef.current?.click()}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-700 bg-[#343434] px-3 py-1.5 text-xs font-bold text-neutral-200 hover:text-white hover:bg-neutral-700 transition-colors cursor-pointer"
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-neutral-100 px-3 py-1.5 text-xs font-bold text-neutral-700 hover:text-neutral-950 hover:bg-neutral-200 transition-colors cursor-pointer"
                           >
                             <Upload className="h-3.5 w-3.5" />
                             <span>{editForm.logoUrl ? 'Change Logo' : 'Upload Custom Logo'}</span>
@@ -1200,7 +1206,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                   <div>
                     <label className={labelClass}>
                       <span className="flex items-center gap-1.5">
-                        <Video className="h-3.5 w-3.5 text-mint-400" />
+                        <Video className="h-3.5 w-3.5 text-mint-600" />
                         <span>Demo Video URL (YouTube, Loom, Vimeo, MP4)</span>
                       </span>
                     </label>
@@ -1265,8 +1271,8 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
                   <div>
                     <label className={labelClass}>Founder Photo</label>
-                    <div className="flex items-center gap-4 rounded-xl border border-neutral-800 bg-[#222222] p-3.5">
-                      <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-neutral-700 bg-neutral-900 shadow-inner">
+                    <div className="flex items-center gap-4 rounded-xl border border-neutral-200 bg-white p-3.5">
+                      <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-neutral-200 bg-neutral-100 shadow-inner">
                         {editForm.creatorAvatar ? (
                           <img
                             src={editForm.creatorAvatar}
@@ -1280,7 +1286,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                             className="h-full w-full object-cover"
                           />
                         ) : editForm.creatorName ? (
-                          <span className="text-base font-bold text-neutral-400 uppercase">
+                          <span className="text-base font-bold text-neutral-500">
                             {editForm.creatorName.charAt(0)}
                           </span>
                         ) : (
@@ -1288,7 +1294,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-white">
+                        <p className="text-xs font-semibold text-neutral-950">
                           {editForm.creatorAvatar
                             ? 'Custom founder photo'
                             : user?.user_metadata?.avatar_url
@@ -1302,7 +1308,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                           <button
                             type="button"
                             onClick={() => founderPhotoInputRef.current?.click()}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-700 bg-[#343434] px-3 py-1.5 text-xs font-bold text-neutral-200 hover:text-white hover:bg-neutral-700 transition-colors cursor-pointer"
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-neutral-100 px-3 py-1.5 text-xs font-bold text-neutral-700 hover:text-neutral-950 hover:bg-neutral-200 transition-colors cursor-pointer"
                           >
                             <Upload className="h-3.5 w-3.5" />
                             <span>{editForm.creatorAvatar ? 'Change Photo' : 'Upload Photo'}</span>
@@ -1314,7 +1320,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                                 setEditForm((p) => ({ ...p, creatorAvatar: user.user_metadata.avatar_url }));
                                 playSound('click', soundEnabled);
                               }}
-                              className="text-xs font-semibold text-neutral-400 hover:text-white transition-colors px-2 py-1"
+                              className="text-xs font-semibold text-neutral-500 hover:text-neutral-950 transition-colors px-2 py-1"
                             >
                               Use Google Photo
                             </button>
@@ -1451,12 +1457,12 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             </div>
 
             {/* Modal Footer */}
-            <div className="flex items-center justify-between border-t border-neutral-800 px-5 py-3.5 bg-[#222222]">
+            <div className="flex items-center justify-between border-t border-neutral-200 px-5 py-3.5 bg-white">
               <button
                 type="button"
                 onClick={handleCloseEdit}
                 disabled={isSaving}
-                className="rounded-xl border border-neutral-700 bg-transparent px-4 py-2 text-xs font-bold text-neutral-300 hover:border-neutral-500 hover:text-white transition-colors cursor-pointer"
+                className="rounded-xl border border-neutral-200 bg-transparent px-4 py-2 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -1467,8 +1473,8 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                 disabled={isSaving}
                 className={`inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-black transition-all cursor-pointer shadow-md ${
                   saveSuccess
-                    ? 'bg-mint-500 text-[#0b0f14]'
-                    : 'bg-white text-[#0b0f14] hover:bg-neutral-200'
+                    ? 'bg-mint-500 text-white'
+                    : 'bg-neutral-950 text-white hover:bg-neutral-800'
                 }`}
               >
                 {isSaving ? (

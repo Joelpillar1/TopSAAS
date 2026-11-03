@@ -11,6 +11,7 @@ import {
   Folder,
   GitFork,
   Github,
+  BookOpen,
   Languages,
   Link2,
   Scale,
@@ -21,6 +22,12 @@ import {
 } from 'lucide-react';
 import { CURATED_REPOS, CuratedRepo, RepoCategory } from '../data/curatedRepos';
 import { formatStars } from '../utils/github';
+import { plainCopy } from '../utils/plainCopy';
+import { computeHealth } from '../utils/repoHealth';
+import { REPO_HEALTH, REPO_HEALTH_GENERATED_AT } from '../data/repoHealth';
+import { getGuideForRepo } from '../data/buildGuides';
+import { navigateTo } from '../utils/nav';
+import { HealthScore, healthExplain } from './HealthScore';
 import { timeAgo } from './ProductRow';
 import { BorderBeam } from './BorderBeam';
 import { playSound } from '../utils/sound';
@@ -261,14 +268,9 @@ const capabilitiesFromTopics = (topics: string[]): Capability[] => {
 
 /**
  * Repo blurbs come from curated data or the live GitHub API, so they can carry
- * emoji and em-dashes. Page copy stays plain: no emoji, no em-dashes.
+ * emoji and em-dashes. Page copy stays plain: no emoji, no em-dashes — the
+ * shared sanitizer lives in ../utils/plainCopy so every surface matches.
  */
-const plainCopy = (text: string): string =>
-  text
-    .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}]/gu, '')
-    .replace(/\u2014/g, ' - ')
-    .replace(/\s+/g, ' ')
-    .trim();
 
 /**
  * The page's own write-up of the repo: editorial prose built from curated data
@@ -449,10 +451,10 @@ const SectionLabel: React.FC<{ icon: React.ReactNode; children: React.ReactNode 
   children,
 }) => (
   <div className="flex items-center gap-2">
-    <span className="flex h-5 w-5 items-center justify-center rounded bg-mint-500/15 text-mint-300">
+    <span className="flex h-5 w-5 items-center justify-center rounded bg-mint-500/15 text-mint-600">
       {icon}
     </span>
-    <h2 className="text-xs font-black uppercase tracking-wider text-white">{children}</h2>
+    <h2 className="text-xs font-bold text-neutral-950">{children}</h2>
   </div>
 );
 
@@ -464,7 +466,7 @@ const StatRow: React.FC<{ label: string; value: React.ReactNode; sub?: string }>
   <div className="flex items-baseline justify-between gap-3 py-2">
     <span className="text-[11px] font-semibold text-neutral-500 shrink-0">{label}</span>
     <span className="text-right min-w-0">
-      <span className="block text-[13px] font-black text-white font-mono-num truncate">{value}</span>
+      <span className="block text-[13px] font-black text-neutral-950 font-mono-num truncate">{value}</span>
       {sub && <span className="block text-[10px] font-medium text-neutral-600">{sub}</span>}
     </span>
   </div>
@@ -599,20 +601,71 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
   });
 
   // Reference-style SEO title: "Postiz: Open Source Alternative to …"
+  // Also swaps canonical + OG/Twitter tags and injects per-repo JSON-LD so the
+  // SPA ships full head metadata for crawlers and answer engines. All restored
+  // on unmount so navigating away never leaks repo tags onto another route.
   useEffect(() => {
-    const prevTitle = document.title;
-    const metaEl = document.querySelector('meta[name="description"]');
-    const prevDesc = metaEl?.getAttribute('content') ?? null;
+    const SITE = 'https://www.topsaas.space';
+    const canonical = `${SITE}/repo/${repo.full_name}`;
     const shortDesc = (description || '').replace(/\s+/g, ' ').trim().slice(0, 110);
+    const metaDesc = (description || '').replace(/\s+/g, ' ').trim().slice(0, 157);
+
+    const prevTitle = document.title;
     document.title = shortDesc
       ? `${repo.name}: ${shortDesc} | TopSAAS`
       : `${repo.full_name} | TopSAAS`;
-    if (metaEl && shortDesc) metaEl.setAttribute('content', shortDesc);
+
+    type HeadPatch = { el: Element; attr: string; prev: string | null };
+    const patches: HeadPatch[] = [];
+    const setHead = (selector: string, attr: string, value: string) => {
+      const el = document.querySelector(selector);
+      if (!el) return;
+      patches.push({ el, attr, prev: el.getAttribute(attr) });
+      el.setAttribute(attr, value);
+    };
+
+    if (metaDesc) setHead('meta[name="description"]', 'content', metaDesc);
+    setHead('link[rel="canonical"]', 'href', canonical);
+    setHead('meta[property="og:url"]', 'content', canonical);
+    setHead('meta[property="og:title"]', 'content', document.title);
+    if (metaDesc) setHead('meta[property="og:description"]', 'content', metaDesc);
+    setHead('meta[name="twitter:url"]', 'content', canonical);
+    setHead('meta[name="twitter:title"]', 'content', document.title);
+    if (metaDesc) setHead('meta[name="twitter:description"]', 'content', metaDesc);
+
+    // SoftwareSourceCode structured data for the repo detail page.
+    const ld: Record<string, unknown> = {
+      '@context': 'https://schema.org',
+      '@type': 'SoftwareSourceCode',
+      name: repo.name,
+      description: description || `${repo.full_name} on GitHub`,
+      url: canonical,
+      codeRepository: repo.html_url,
+      author: { '@type': 'Organization', name: repo.owner.login },
+      keywords: repo.category,
+      interactionStatistic: {
+        '@type': 'InteractionCounter',
+        interactionType: 'https://schema.org/LikeAction',
+        userInteractionCount: stars,
+      },
+    };
+    if (repo.language) ld.programmingLanguage = repo.language;
+    if (live?.license) ld.license = live.license;
+    const ldEl = document.createElement('script');
+    ldEl.type = 'application/ld+json';
+    ldEl.id = 'repo-jsonld';
+    ldEl.textContent = JSON.stringify(ld);
+    document.head.appendChild(ldEl);
+
     return () => {
       document.title = prevTitle;
-      if (metaEl && prevDesc !== null) metaEl.setAttribute('content', prevDesc);
+      for (const p of patches) {
+        if (p.prev === null) p.el.removeAttribute(p.attr);
+        else p.el.setAttribute(p.attr, p.prev);
+      }
+      ldEl.remove();
     };
-  }, [repo.name, repo.full_name, description]);
+  }, [repo.name, repo.full_name, repo.html_url, repo.owner.login, repo.language, repo.category, description, stars, live?.license]);
 
   const copyText = (key: string, text: string) => {
     playSound('click', soundEnabled);
@@ -634,9 +687,35 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
     return [...sameCategory, ...filler].slice(0, 4);
   })();
 
+  // Health score: live GitHub signals when they have loaded, the generated
+  // snapshot otherwise — either way scored by the same shared formula.
+  const healthSignals =
+    live && live.pushedAt && live.createdAt
+      ? {
+          pushedAt: live.pushedAt,
+          createdAt: live.createdAt,
+          stars,
+          forks,
+          openIssues: live.openIssues ?? 0,
+          license: live.license,
+          archived: live.archived,
+          topics: live.topics.length,
+        }
+      : REPO_HEALTH[repo.full_name] ?? null;
+  const health = healthSignals ? computeHealth(healthSignals) : null;
+  const healthRow = {
+    label: 'Health',
+    value: health ? <HealthScore score={health.score} band={health.band} /> : '–',
+    sub: health ? `${health.score}/100 · grade ${health.band}` : 'snapshot pending',
+  };
+
+  // Cross-link: the original build guide for this project, when we have one.
+  const buildGuide = getGuideForRepo(repo.full_name);
+
   // Sidebar stat rows: live values when available, curated fallback otherwise.
   const sidebarRows: { label: string; value: React.ReactNode; sub?: string }[] = live
     ? [
+        healthRow,
         {
           label: 'Last commit',
           value: live.pushedAt ? timeAgo(new Date(live.pushedAt).getTime()) : '–',
@@ -657,6 +736,7 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
         { label: 'Open issues', value: live.openIssues?.toLocaleString() ?? '–' },
       ]
     : [
+        healthRow,
         { label: 'Language', value: repo.language || '–' },
         { label: 'Category', value: repo.category },
         { label: 'Self-hosted', value: selfHosted ? 'Yes' : '–' },
@@ -683,9 +763,9 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
       ];
 
   return (
-    <div className="min-h-screen bg-[#222222] text-neutral-100 flex flex-col font-sans pb-12 sm:pb-16">
+    <div className="min-h-screen bg-white text-neutral-900 flex flex-col font-sans pb-12 sm:pb-16">
       {/* Sticky bar: back · live key stats · share · github */}
-      <div className="sticky top-0 z-40 bg-[#222222]/90 backdrop-blur-md">
+      <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-3.5 py-2.5 sm:px-6 sm:py-3 gap-2">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <button
@@ -694,7 +774,7 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
                 playSound('click', soundEnabled);
                 onBack();
               }}
-              className="inline-flex items-center gap-1.5 px-1 py-2 text-xs font-bold text-neutral-400 hover:text-white transition-colors cursor-pointer shrink-0"
+              className="inline-flex items-center gap-1.5 px-1 py-2 text-xs font-bold text-neutral-500 hover:text-neutral-950 transition-colors cursor-pointer shrink-0"
             >
               <ArrowLeft className="h-4 w-4" />
               <span>Back</span>
@@ -707,24 +787,24 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => playSound('click', soundEnabled)}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-white px-2.5 py-1.5 text-[11px] font-black text-[#0b0f14] shadow-2xs hover:bg-neutral-300 active:scale-95 transition-all cursor-pointer shrink-0"
+                  className="btn-primary px-2.5 py-1.5 text-[11px] font-bold shrink-0"
                 >
                   <Github className="h-3.5 w-3.5" />
                   <span className="hidden sm:inline">View on GitHub</span>
                   <span className="sm:hidden">GitHub</span>
                 </a>
-                <span className="inline-flex items-center gap-1 rounded-md border border-neutral-700 bg-[#343434] px-2 py-1.5 text-[11px] font-bold text-neutral-300 font-mono-num shrink-0">
+                <span className="inline-flex items-center gap-1 rounded-md border border-neutral-200 bg-neutral-100 px-2 py-1.5 text-[11px] font-bold text-neutral-800 font-mono-num shrink-0">
                   <Star className="h-3 w-3 text-amber-400 fill-amber-400" />
                   {stars.toLocaleString()}
                 </span>
                 <button
                   type="button"
                   onClick={() => copyText('cloneSticky', cloneUrl)}
-                  className="inline-flex items-center gap-1 rounded-md border border-neutral-700 bg-[#343434] px-2 py-1.5 text-[11px] font-bold text-neutral-300 hover:text-white hover:border-neutral-500 transition-all cursor-pointer shrink-0"
+                  className="inline-flex items-center gap-1 rounded-md border border-neutral-200 bg-neutral-100 px-2 py-1.5 text-[11px] font-bold text-neutral-700 hover:text-neutral-950 hover:border-neutral-300 hover:bg-neutral-50 transition-all cursor-pointer shrink-0"
                   title="Copy clone URL"
                 >
                   {copiedKey === 'cloneSticky' ? (
-                    <Check className="h-3 w-3 text-mint-400" />
+                    <Check className="h-3 w-3 text-mint-600" />
                   ) : (
                     <Copy className="h-3 w-3" />
                   )}
@@ -740,11 +820,11 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
             <button
               type="button"
               onClick={() => copyText('page', pageUrl)}
-              className="inline-flex items-center justify-center rounded-md border border-neutral-700 bg-[#343434] p-2 sm:px-3 sm:py-1.5 text-xs font-bold text-neutral-300 hover:text-white hover:border-neutral-500 shadow-2xs active:scale-95 transition-all cursor-pointer min-h-[38px] min-w-[38px]"
+              className="inline-flex items-center justify-center rounded-md border border-neutral-200 bg-neutral-100 p-2 sm:px-3 sm:py-1.5 text-xs font-bold text-neutral-700 hover:text-neutral-950 hover:border-neutral-300 hover:bg-neutral-50 shadow-2xs active:scale-95 transition-all cursor-pointer min-h-[38px] min-w-[38px]"
               title="Copy link to this page"
             >
               {copiedKey === 'page' ? (
-                <Check className="h-4 w-4 text-mint-400" />
+                <Check className="h-4 w-4 text-mint-600" />
               ) : (
                 <Share2 className="h-4 w-4" />
               )}
@@ -765,7 +845,7 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
           {/* Header */}
           <header className="space-y-4">
             <div className="flex items-start gap-4">
-              <div className="h-14 w-14 sm:h-16 sm:w-16 shrink-0 overflow-hidden rounded-lg border border-neutral-700/70 bg-[#2a2a2a] shadow-2xs">
+              <div className="h-14 w-14 sm:h-16 sm:w-16 shrink-0 overflow-hidden rounded-lg border border-neutral-200/70 bg-white shadow-2xs">
                 <img
                   src={repo.owner.avatar_url}
                   alt={repo.owner.login}
@@ -775,16 +855,16 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white">
+                  <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-neutral-950">
                     {repo.name}
                   </h1>
                   {live?.archived && (
-                    <span className="rounded bg-amber-500/15 border border-amber-500/40 px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-300">
+                    <span className="rounded bg-amber-500/15 border border-amber-500/40 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">
                       Archived
                     </span>
                   )}
                   {live && (
-                    <span className="inline-flex items-center gap-1 rounded bg-neutral-800/70 border border-neutral-700/60 px-1.5 py-0.5 text-[10px] font-bold text-neutral-400">
+                    <span className="inline-flex items-center gap-1 rounded bg-neutral-100 border border-neutral-200 px-1.5 py-0.5 text-[10px] font-bold text-neutral-600">
                       <span className="h-1.5 w-1.5 rounded-full bg-mint-500" />
                       live
                     </span>
@@ -797,17 +877,17 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
             </div>
 
             {/* Tagline: the one-liner, set large like the reference */}
-            <p className="text-base sm:text-lg font-medium text-neutral-300 leading-relaxed max-w-3xl">
+            <p className="text-base sm:text-lg font-medium text-neutral-700 leading-relaxed max-w-3xl">
               {description}
             </p>
 
             {/* Chips */}
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1 rounded-md bg-mint-500/15 px-2 py-1 text-[11px] font-black uppercase tracking-wider text-mint-300 ring-1 ring-inset ring-mint-500/40">
+              <span className="inline-flex items-center gap-1 rounded-md bg-mint-500/15 px-2 py-1 text-[11px] font-bold text-mint-600 ring-1 ring-inset ring-mint-500/40">
                 {repo.category}
               </span>
               {repo.language && (
-                <span className="inline-flex items-center gap-1.5 rounded-md bg-[#2a2a2a] border border-neutral-700 px-2 py-1 text-[11px] font-bold text-neutral-300">
+                <span className="inline-flex items-center gap-1.5 rounded-md bg-white border border-neutral-200 px-2 py-1 text-[11px] font-bold text-neutral-700">
                   <span
                     className="h-2 w-2 rounded-full shrink-0"
                     style={{ backgroundColor: languageColor(repo.language) }}
@@ -816,7 +896,7 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
                 </span>
               )}
               {selfHosted && (
-                <span className="inline-flex items-center gap-1.5 rounded-md bg-[#2a2a2a] border border-neutral-700 px-2 py-1 text-[11px] font-bold text-neutral-300">
+                <span className="inline-flex items-center gap-1.5 rounded-md bg-white border border-neutral-200 px-2 py-1 text-[11px] font-bold text-neutral-700">
                   <Server className="h-3 w-3" />
                   Self-hosted
                 </span>
@@ -827,7 +907,7 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => playSound('click', soundEnabled)}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-[#2a2a2a] border border-neutral-700 px-2 py-1 text-[11px] font-bold text-neutral-300 hover:border-neutral-500 hover:text-white transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-md bg-white border border-neutral-200 px-2 py-1 text-[11px] font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-colors"
                 >
                   <Link2 className="h-3 w-3" />
                   <span className="max-w-[220px] truncate">{live.homepage}</span>
@@ -842,12 +922,12 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => playSound('click', soundEnabled)}
-                className="inline-flex items-center justify-center gap-2 rounded-md bg-white px-5 py-3 text-xs font-black text-[#0b0f14] shadow-2xs hover:bg-neutral-300 active:scale-[0.98] transition-all cursor-pointer"
+                className="btn-primary px-5 py-3 text-xs font-bold"
               >
                 <span>Visit on GitHub</span>
                 <ArrowUpRight className="h-3.5 w-3.5" />
               </a>
-              <span className="inline-flex items-center gap-1.5 rounded-md border border-neutral-700 bg-[#2a2a2a] px-4 py-3 text-xs font-bold text-neutral-200">
+              <span className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-white px-4 py-3 text-xs font-bold text-neutral-900">
                 <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
                 <span className="font-mono-num">{stars.toLocaleString()}</span>
                 <span className="text-neutral-500">stars</span>
@@ -855,11 +935,11 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
               <button
                 type="button"
                 onClick={() => copyText('clone', cloneUrl)}
-                className="inline-flex items-center gap-1.5 rounded-md border border-neutral-700 bg-[#2a2a2a] px-4 py-3 text-xs font-bold text-neutral-200 hover:border-neutral-500 hover:text-white transition-all cursor-pointer active:scale-95"
+                className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-white px-4 py-3 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-all cursor-pointer active:scale-95"
                 title="Copy clone URL"
               >
                 {copiedKey === 'clone' ? (
-                  <Check className="h-3.5 w-3.5 text-mint-400" />
+                  <Check className="h-3.5 w-3.5 text-mint-600" />
                 ) : (
                   <Copy className="h-3.5 w-3.5" />
                 )}
@@ -872,13 +952,13 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
               {compactStats.map((s) => (
                 <div
                   key={s.label}
-                  className="rounded-md border border-neutral-800 bg-[#2a2a2a] px-3 py-2 shadow-2xs"
+                  className="rounded-md border border-neutral-200 bg-white px-3 py-2 shadow-2xs"
                 >
-                  <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider text-neutral-500">
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-neutral-500">
                     {s.icon}
                     <span className="truncate">{s.label}</span>
                   </div>
-                  <div className="mt-0.5 text-sm font-black text-white font-mono-num truncate">
+                  <div className="mt-0.5 text-sm font-black text-neutral-950 font-mono-num truncate">
                     {s.value}
                   </div>
                 </div>
@@ -887,40 +967,67 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
           </header>
 
           {/* Editorial write-up: our own reading of the project */}
-          <article className="rounded-lg border border-neutral-800 bg-[#2a2a2a] p-5 sm:p-7 shadow-xs space-y-5">
-            <p className="text-[15px] leading-7 text-neutral-300">{editorial.lead}</p>
-            <p className="text-[15px] leading-7 text-neutral-300">{editorial.core}</p>
+          <article className="rounded-lg border border-neutral-200 bg-white p-5 sm:p-7 shadow-xs space-y-5">
+            <p className="text-[15px] leading-7 text-neutral-700">{editorial.lead}</p>
+            <p className="text-[15px] leading-7 text-neutral-700">{editorial.core}</p>
 
             <div className="space-y-3 pt-1">
-              <h3 className="text-sm font-black text-white">Key capabilities</h3>
+              <h3 className="text-sm font-black text-neutral-950">Key capabilities</h3>
               <ul className="space-y-2.5">
                 {editorial.capabilities.map((c) => (
                   <li
                     key={c.title}
-                    className="relative pl-4 text-[14.5px] leading-6 text-neutral-400 before:absolute before:left-0 before:top-[0.6em] before:h-1.5 before:w-1.5 before:rounded-full before:bg-mint-500/70"
+                    className="relative pl-4 text-[14.5px] leading-6 text-neutral-700 before:absolute before:left-0 before:top-[0.6em] before:h-1.5 before:w-1.5 before:rounded-full before:bg-mint-500/70"
                   >
-                    <span className="font-bold text-white">{c.title}</span> {c.body}
+                    <span className="font-bold text-neutral-950">{c.title}</span> {c.body}
                   </li>
                 ))}
               </ul>
             </div>
 
-            <p className="text-[15px] leading-7 text-neutral-300">{editorial.closing}</p>
-          </article>
+            <p className="text-[15px] leading-7 text-neutral-700">{editorial.closing}</p>            </article>
+
+            {/* Build guide cross-link: original walkthrough for this project */}
+            {buildGuide && (
+              <button
+                type="button"
+                onClick={() => {
+                  playSound('click', soundEnabled);
+                  navigateTo(`/guides/${buildGuide.slug}`);
+                }}
+                className="group flex w-full items-center gap-3.5 rounded-lg border border-neutral-200 bg-white p-4 text-left transition-colors hover:border-neutral-300 hover:bg-neutral-50 cursor-pointer"
+              >
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-mint-500/15 text-mint-600">
+                  <BookOpen className="h-4 w-4" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[10px] font-bold text-mint-600">
+                    Build guide
+                  </span>
+                  <span className="block truncate text-sm font-bold text-neutral-950 group-hover:text-mint-700 transition-colors">
+                    {buildGuide.title}
+                  </span>
+                  <span className="block truncate text-xs text-neutral-600">
+                    {buildGuide.timeEstimate} · {buildGuide.difficulty}
+                  </span>
+                </span>
+                <ArrowRight className="h-4 w-4 shrink-0 text-mint-600 transition-transform group-hover:translate-x-0.5" />
+              </button>
+            )}
 
           {/* Categories & Tags */}
-          <section className="rounded-lg border border-neutral-800 bg-[#2a2a2a] p-5 sm:p-6 shadow-xs space-y-4">
+          <section className="rounded-lg border border-neutral-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
             <div className="space-y-2">
-              <SectionLabel icon={<Folder className="h-3 w-3" />}>Categories</SectionLabel>
+              <SectionLabel>Categories</SectionLabel>
               <div>
-                <span className="inline-flex rounded-md bg-[#343434] border border-neutral-700 px-2.5 py-1 text-xs font-bold text-neutral-200">
+                <span className="inline-flex rounded-md bg-neutral-100 border border-neutral-200 px-2.5 py-1 text-xs font-bold text-neutral-800">
                   {repo.category}
                 </span>
               </div>
             </div>
             {topics && (
-              <div className="space-y-2 pt-1 border-t border-neutral-800/70">
-                <SectionLabel icon={<Tag className="h-3 w-3" />}>Tags</SectionLabel>
+              <div className="space-y-2 pt-1 border-t border-neutral-200/70">
+                <SectionLabel>Tags</SectionLabel>
                 <div className="flex flex-wrap gap-1.5">
                   {topics.map((t) => (
                     <a
@@ -929,7 +1036,7 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={() => playSound('click', soundEnabled)}
-                      className="inline-flex items-center gap-1 rounded bg-[#222222] border border-neutral-700/50 px-2 py-1 text-[11px] font-semibold text-neutral-400 hover:border-mint-500/50 hover:text-mint-200 transition-colors"
+                      className="inline-flex items-center gap-1 rounded bg-white border border-neutral-200 px-2 py-1 text-[11px] font-semibold text-neutral-700 hover:border-mint-500/50 hover:text-mint-700 transition-colors"
                     >
                       <span className="text-neutral-600">#</span>
                       {t}
@@ -941,11 +1048,11 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
           </section>
 
           {/* Built with */}
-          <section className="rounded-lg border border-neutral-800 bg-[#2a2a2a] p-5 sm:p-6 shadow-xs space-y-3">
-            <SectionLabel icon={<Languages className="h-3 w-3" />}>Built with</SectionLabel>
+          <section className="rounded-lg border border-neutral-200 bg-white p-5 sm:p-6 shadow-xs space-y-3">
+            <SectionLabel>Built with</SectionLabel>
             {breakdown.length > 0 ? (
               <>
-                <div className="flex h-2 w-full overflow-hidden rounded-full bg-[#222222] border border-neutral-800">
+                <div className="flex h-2 w-full overflow-hidden rounded-full bg-white border border-neutral-200">
                   {breakdown.map((l) => (
                     <span
                       key={l.name}
@@ -959,7 +1066,7 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
                   {breakdown.map((l) => (
                     <span
                       key={l.name}
-                      className="inline-flex items-center gap-1.5 rounded bg-[#222222] border border-neutral-700/50 px-2 py-1 text-[11px] font-bold text-neutral-300"
+                      className="inline-flex items-center gap-1.5 rounded bg-white border border-neutral-200 px-2 py-1 text-[11px] font-bold text-neutral-700"
                     >
                       <span
                         className="h-2 w-2 rounded-full shrink-0"
@@ -982,17 +1089,17 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
           </section>
 
           {/* Share row */}
-          <section className="flex flex-wrap items-center gap-2 border-t border-neutral-800 pt-5">
-            <span className="text-[11px] font-black uppercase tracking-wider text-neutral-500 mr-1">
+          <section className="flex flex-wrap items-center gap-2 border-t border-neutral-200 pt-5">
+            <span className="text-[11px] font-bold text-neutral-500 mr-1">
               Share
             </span>
             <button
               type="button"
               onClick={() => copyText('page2', pageUrl)}
-              className="inline-flex items-center gap-1.5 rounded-md border border-neutral-700 bg-[#2a2a2a] px-3 py-2 text-xs font-bold text-neutral-300 hover:text-white hover:border-neutral-500 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-700 hover:text-neutral-950 hover:border-neutral-300 hover:bg-neutral-50 transition-colors cursor-pointer"
             >
               {copiedKey === 'page2' ? (
-                <Check className="h-3.5 w-3.5 text-mint-400" />
+                <Check className="h-3.5 w-3.5 text-mint-600" />
               ) : (
                 <Copy className="h-3.5 w-3.5" />
               )}
@@ -1003,7 +1110,7 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => playSound('click', soundEnabled)}
-              className="inline-flex items-center gap-1.5 rounded-md border border-neutral-700 bg-[#2a2a2a] px-3 py-2 text-xs font-bold text-neutral-300 hover:text-white hover:border-neutral-500 transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-700 hover:text-neutral-950 hover:border-neutral-300 hover:bg-neutral-50 transition-colors"
             >
               Post on X
               <ArrowUpRight className="h-3 w-3 opacity-60" />
@@ -1013,7 +1120,7 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => playSound('click', soundEnabled)}
-              className="inline-flex items-center gap-1.5 rounded-md border border-neutral-700 bg-[#2a2a2a] px-3 py-2 text-xs font-bold text-neutral-300 hover:text-white hover:border-neutral-500 transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-700 hover:text-neutral-950 hover:border-neutral-300 hover:bg-neutral-50 transition-colors"
             >
               LinkedIn
               <ArrowUpRight className="h-3 w-3 opacity-60" />
@@ -1024,12 +1131,12 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
         {/* ─────────── right: sticky stats sidebar ─────────── */}
         <aside className="lg:sticky lg:top-[68px] space-y-5 min-w-0">
           {/* Key stats card: the reference's top-right panel */}
-          <div className="rounded-lg border border-neutral-700/60 bg-[#2a2a2a] p-5 shadow-xs">
-            <div className="flex items-end justify-between gap-3 pb-3 border-b border-neutral-800">
+          <div className="rounded-lg border border-neutral-200/60 bg-white p-5 shadow-xs">
+            <div className="flex items-end justify-between gap-3 pb-3 border-b border-neutral-200">
               <div>
                 <div className="flex items-center gap-1.5">
                   <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
-                  <span className="text-2xl font-black text-white font-mono-num">
+                  <span className="text-2xl font-black text-neutral-950 font-mono-num">
                     {stars.toLocaleString()}
                   </span>
                   <span className="text-xs font-semibold text-neutral-500">stars</span>
@@ -1038,14 +1145,14 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
               <div className="text-right">
                 <div className="flex items-center justify-end gap-1.5">
                   <GitFork className="h-3.5 w-3.5 text-neutral-500" />
-                  <span className="text-base font-black text-neutral-200 font-mono-num">
+                  <span className="text-base font-black text-neutral-950 font-mono-num">
                     {forks.toLocaleString()}
                   </span>
                 </div>
                 <span className="text-[10px] font-semibold text-neutral-500">forks</span>
               </div>
             </div>
-            <div className="divide-y divide-neutral-800/70">
+            <div className="divide-y divide-neutral-200/70">
               {sidebarRows.map((row) => (
                 <StatRow key={row.label} {...row} />
               ))}
@@ -1057,16 +1164,28 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
                   href={`https://github.com/${repo.owner.login}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[13px] font-black text-mint-300 hover:text-mint-200 hover:underline truncate font-mono-num"
+                  className="text-[13px] font-black text-mint-600 hover:text-mint-700 hover:underline truncate font-mono-num"
                 >
                   {repo.full_name}
                 </a>
               </div>
             </div>
             {!live && (
-              <p className="mt-2 border-t border-neutral-800 pt-2.5 text-[10px] font-medium text-neutral-500">
+              <p className="mt-2 border-t border-neutral-200 pt-2.5 text-[10px] font-medium text-neutral-500">
                 Live GitHub data (commit, version, license) syncs in when the API is reachable.
               </p>
+            )}
+            {health && (
+              <details className="mt-2 border-t border-neutral-200 pt-2.5 text-[10px] text-neutral-500">
+                <summary className="cursor-pointer font-semibold text-neutral-600 hover:text-neutral-900">
+                  How the health score is computed
+                </summary>
+                <p className="mt-1.5 leading-relaxed">
+                  {healthExplain}. Activity decays with days since the last push, and archived
+                  projects cap at 30. Grade bands: A at 85+, B at 70+, C at 55+, D at 40+.
+                  {' '}{REPO_HEALTH_GENERATED_AT && `Snapshot signals refreshed ${REPO_HEALTH_GENERATED_AT.slice(0, 10)}.`}
+                </p>
+              </details>
             )}
           </div>
 
@@ -1076,7 +1195,7 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
               size="md"
               colorVariant="colorful"
               strength={0.7}
-              borderRadius={8}
+              borderRadius={4}
               className="w-full rounded-lg"
             >
               <button
@@ -1085,31 +1204,31 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
                   playSound('click', soundEnabled);
                   onOpenFeatured();
                 }}
-                className="group flex w-full flex-col rounded-lg border border-neutral-800 bg-[#2a2a2a] p-5 text-left transition-all duration-300 ease-out cursor-pointer hover:bg-[#383838] hover:shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_8px_24px_-4px_rgba(0,0,0,0.55)]"
+                className="group flex w-full flex-col rounded-lg border border-neutral-200 bg-white p-5 text-left transition-all duration-300 ease-out cursor-pointer hover:bg-neutral-100 hover:shadow-[0_4px_20px_-4px_rgba(25,25,24,0.08)]"
               >
                 <span className="flex items-start justify-between gap-2.5">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-neutral-800 bg-[#222222] text-neutral-400 transition-all duration-200 group-hover:border-neutral-500 group-hover:bg-mint-500 group-hover:text-[#0b0f14]">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-neutral-200 bg-white text-neutral-600 transition-all duration-200 group-hover:border-neutral-500 group-hover:bg-mint-500 group-hover:text-white">
                     <Star className="h-4 w-4" />
                   </span>
-                  <span className="inline-flex items-center gap-1 rounded bg-mint-500/15 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-mint-300 ring-1 ring-inset ring-mint-500/40">
+                  <span className="inline-flex items-center gap-1 rounded bg-mint-500/15 px-1.5 py-0.5 text-[9px] font-bold text-mint-600 ring-1 ring-inset ring-mint-500/40">
                     Featured
                   </span>
                 </span>
-                <span className="mt-4 block text-[15px] font-bold tracking-tight text-white group-hover:text-mint-300 transition-colors">
+                <span className="mt-4 block text-[15px] font-bold tracking-tight text-neutral-950 group-hover:text-mint-600 transition-colors">
                   The featured spot is open
                 </span>
-                <span className="mt-0.5 block text-[11px] font-medium text-neutral-500 group-hover:text-neutral-400 transition-colors">
+                <span className="mt-0.5 block text-[11px] font-medium text-neutral-500 group-hover:text-neutral-700 transition-colors">
                   Put your product at the top of TopSAAS
                 </span>
-                <span className="mt-1.5 block text-[12.5px] font-medium leading-relaxed text-neutral-400 group-hover:text-neutral-300 transition-colors">
+                <span className="mt-1.5 block text-[12.5px] font-medium leading-relaxed text-neutral-600 group-hover:text-neutral-800 transition-colors">
                   Claim the featured spot for 30 days, seen by every builder who visits.
                 </span>
-                <span className="mt-4 flex items-center justify-between gap-2 border-t border-neutral-800/80 group-hover:border-neutral-700/80 pt-3 transition-colors">
+                <span className="mt-4 flex items-center justify-between gap-2 border-t border-neutral-200 group-hover:border-neutral-200 pt-3 transition-colors">
                   <span className="inline-flex items-center gap-1 text-[11px] text-neutral-400">
                     <Star className="h-3 w-3 text-amber-500 fill-amber-400" />
-                    <span className="font-bold text-white font-mono-num">30 days</span>
+                    <span className="font-bold text-neutral-900 font-mono-num">30 days</span>
                   </span>
-                  <span className="shrink-0 rounded-md border border-neutral-700 bg-[#343434] px-3 py-1.5 text-[11px] font-black text-white shadow-2xs transition-colors group-hover:border-mint-500 group-hover:text-mint-200">
+                  <span className="shrink-0 btn-primary px-3 py-1.5 text-[11px] font-bold">
                     Reserve spot
                   </span>
                 </span>
@@ -1121,10 +1240,10 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
 
         {/* ─────────── Similar open source projects: full width, below ─────────── */}
         <section className="space-y-3">
-          <SectionLabel icon={<ArrowRight className="h-3 w-3" />}>
+          <SectionLabel>
             Similar open source projects
           </SectionLabel>
-          <div className="grid grid-cols-1 gap-px overflow-hidden rounded-lg border border-neutral-800 bg-neutral-800 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-px overflow-hidden rounded-lg border border-neutral-200 bg-neutral-200 sm:grid-cols-2 lg:grid-cols-4">
             {relatedRepos.map((r) => (
               <button
                 key={r.full_name}
@@ -1133,10 +1252,10 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
                   playSound('click', soundEnabled);
                   onSelectRepo(r);
                 }}
-                className="group flex flex-col bg-[#2a2a2a] p-5 text-left transition-all duration-300 ease-out cursor-pointer hover:-translate-y-0.5 hover:bg-[#383838] hover:shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_8px_24px_-4px_rgba(0,0,0,0.55)] focus:outline-none focus-visible:ring-2 focus-visible:ring-mint-500/60"
+                className="group flex flex-col bg-white p-5 text-left transition-all duration-300 ease-out cursor-pointer hover:-translate-y-0.5 hover:bg-neutral-100 hover:shadow-[0_4px_20px_-4px_rgba(25,25,24,0.08)] focus:outline-none focus-visible:ring-2 focus-visible:ring-mint-500/60"
               >
                 <div className="flex items-start justify-between gap-2.5">
-                  <span className="h-11 w-11 shrink-0 overflow-hidden rounded-md border border-neutral-800 bg-[#222222] transition-all duration-200 group-hover:border-neutral-500">
+                  <span className="h-11 w-11 shrink-0 overflow-hidden rounded-md border border-neutral-200 bg-white transition-all duration-200 group-hover:border-neutral-500">
                     <img
                       src={r.owner.avatar_url}
                       alt={r.owner.login}
@@ -1144,24 +1263,24 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
                       referrerPolicy="no-referrer"
                     />
                   </span>
-                  <span className="flex h-6 w-6 items-center justify-center rounded border border-neutral-800 text-neutral-500 opacity-0 transition-all duration-200 group-hover:opacity-100 group-hover:border-neutral-600 group-hover:bg-neutral-800 group-hover:text-white">
+                  <span className="flex h-6 w-6 items-center justify-center rounded border border-neutral-200 text-neutral-500 opacity-0 transition-all duration-200 group-hover:opacity-100 group-hover:border-neutral-300 group-hover:bg-neutral-900 group-hover:text-white">
                     <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
                   </span>
                 </div>
-                <p className="mt-4 truncate text-[15px] font-bold tracking-tight text-white group-hover:text-mint-300 transition-colors">
+                <p className="mt-4 truncate text-[15px] font-bold tracking-tight text-neutral-950 group-hover:text-mint-600 transition-colors">
                   {r.name}
                 </p>
-                <p className="mt-0.5 truncate text-[11px] font-medium text-neutral-500 group-hover:text-neutral-400 transition-colors">
+                <p className="mt-0.5 truncate text-[11px] font-medium text-neutral-500 group-hover:text-neutral-700 transition-colors">
                   {r.owner.login}
                 </p>
-                <p className="mt-1.5 flex-1 text-[12.5px] font-medium leading-relaxed text-neutral-400 group-hover:text-neutral-300 line-clamp-2 transition-colors">
+                <p className="mt-1.5 flex-1 text-[12.5px] font-medium leading-relaxed text-neutral-600 group-hover:text-neutral-800 line-clamp-2 transition-colors">
                   {plainCopy(r.description || '')}
                 </p>
-                <div className="mt-4 flex items-center justify-between gap-2 border-t border-neutral-800/80 group-hover:border-neutral-700/80 pt-3 transition-colors">
+                <div className="mt-4 flex items-center justify-between gap-2 border-t border-neutral-200 group-hover:border-neutral-200 pt-3 transition-colors">
                   <div className="flex items-center gap-2.5 text-[11px] text-neutral-400">
                     <span className="inline-flex items-center gap-1">
                       <Star className="h-3 w-3 text-amber-500 fill-amber-400" />
-                      <span className="font-bold text-white font-mono-num">
+                      <span className="font-bold text-neutral-900 font-mono-num">
                         {formatStars(r.stargazers_count)}
                       </span>
                     </span>
@@ -1172,13 +1291,10 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
                   </div>
                   <div className="flex min-w-0 items-center gap-1.5">
                     {r.language && (
-                      <span className="shrink-0 rounded border border-neutral-700/40 bg-neutral-800 px-1.5 py-0.5 text-[10px] font-bold text-neutral-300">
+                      <span className="shrink-0 rounded border border-neutral-200 bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold text-neutral-700">
                         {r.language}
                       </span>
                     )}
-                    <span className="shrink-0 truncate rounded bg-neutral-800/60 px-1.5 py-0.5 text-[10px] font-bold text-neutral-500">
-                      {r.category}
-                    </span>
                   </div>
                 </div>
               </button>

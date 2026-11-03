@@ -16,26 +16,26 @@ export const SignInModal: React.FC<SignInModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md font-sans">
-      <div className="relative w-full max-w-sm rounded-2xl border border-neutral-800 bg-[#222222] shadow-2xl p-6 sm:p-8 text-center animate-in fade-in zoom-in-95 duration-150 text-white">
+      <div className="relative w-full max-w-sm rounded-2xl border border-neutral-200 bg-white shadow-2xl p-6 sm:p-8 text-center animate-in fade-in zoom-in-95 duration-150 text-neutral-900">
         {/* Close button */}
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-3.5 top-3.5 rounded-xl p-2 text-neutral-400 hover:bg-neutral-800 hover:text-white transition-colors cursor-pointer"
+          className="absolute right-3.5 top-3.5 rounded-xl p-2 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-950 transition-colors cursor-pointer"
         >
           <X className="h-5 w-5" />
         </button>
 
         {/* Icon */}
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-neutral-800 text-mint-300 border border-neutral-700 mb-5 shadow-2xs">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-neutral-100 text-mint-600 border border-neutral-200 mb-5 shadow-2xs">
           <ShieldCheck className="h-7 w-7" />
         </div>
 
         {/* Text */}
-        <h3 className="text-lg font-black text-white mb-1.5">
+        <h3 className="text-lg font-black text-neutral-950 mb-1.5">
           Sign in to continue
         </h3>
-        <p className="text-xs text-neutral-400 mb-6 max-w-[260px] mx-auto leading-relaxed">
+        <p className="text-xs text-neutral-600 mb-6 max-w-[260px] mx-auto leading-relaxed">
           You need an account to upvote, submit websites, and participate. It's free and takes seconds.
         </p>
 
@@ -43,7 +43,7 @@ export const SignInModal: React.FC<SignInModalProps> = ({
         <button
           type="button"
           onClick={onSignIn}
-          className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-neutral-700 bg-[#2a2a2a] px-4 py-3 text-sm font-bold text-white hover:border-neutral-500 hover:bg-[#303030] transition-all cursor-pointer shadow-2xs active:scale-[0.98]"
+          className="btn-secondary w-full py-3 px-4 text-sm font-bold"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
@@ -58,7 +58,7 @@ export const SignInModal: React.FC<SignInModalProps> = ({
         <button
           type="button"
           onClick={onClose}
-          className="mt-3 text-xs text-neutral-500 hover:text-white transition-colors cursor-pointer"
+          className="mt-3 text-xs text-neutral-500 hover:text-neutral-950 transition-colors cursor-pointer"
         >
           Maybe later
         </button>

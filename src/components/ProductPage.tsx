@@ -1,11 +1,8 @@
 import React, { useState } from 'react';
 import { Product, Comment } from '../types';
 import { 
-  ArrowLeft, 
   ExternalLink, 
-  Share2, 
   CheckCircle2, 
-  Crown, 
   Layers, 
   Sparkles, 
   ChevronRight, 
@@ -22,10 +19,14 @@ import {
   Tag,
   Copy,
   Check,
+  Star,
+  Flame,
 } from 'lucide-react';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
+import { RichText } from './RichText';
 import { VerifiedBadge } from './VerifiedBadge';
+import { SponsoredPartnersSidebar } from './SponsoredPartnersSidebar';
 import { timeAgo } from './ProductRow';
 
 function getVideoEmbedUrl(url?: string): { type: 'iframe' | 'video' | 'link'; embedUrl: string } | null {
@@ -68,8 +69,8 @@ const CommentAvatar: React.FC<{
 }> = ({
   avatarUrl,
   name = 'User',
-  className = 'h-8 w-8 shrink-0 rounded-full object-cover border border-neutral-700 bg-neutral-800',
-  fallbackClassName = 'flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-mint-500 text-[11px] font-black text-[#0b0f14]'
+  className = 'h-8 w-8 shrink-0 rounded-full object-cover border border-neutral-200 bg-neutral-800',
+  fallbackClassName = 'flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-mint-500 text-[11px] font-black text-white'
 }) => {
   const [hasError, setHasError] = useState(false);
   const initial = (name || 'U').trim().slice(0, 1).toUpperCase() || 'U';
@@ -110,6 +111,7 @@ interface ProductPageProps {
   onAddComment: (productId: string, content: string, userName: string, userEmail?: string, userAvatar?: string) => void;
   onUpvote?: (product: Product) => void;
   isUpvoted?: boolean;
+  onOpenFeaturedSpotModal?: () => void;
 }
 
 export const ProductPage: React.FC<ProductPageProps> = ({
@@ -129,11 +131,11 @@ export const ProductPage: React.FC<ProductPageProps> = ({
   onAddComment,
   onUpvote,
   isUpvoted = false,
+  onOpenFeaturedSpotModal,
 }) => {
   const [commentText, setCommentText] = useState('');
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [copiedOffer, setCopiedOffer] = useState(false);
-  const isRankOne = product.rank === 1;
 
   const handleCopyOfferCode = (code: string) => {
     playSound('click', soundEnabled);
@@ -150,79 +152,40 @@ export const ProductPage: React.FC<ProductPageProps> = ({
     .slice(0, 3);
 
   return (
-    <div className="min-h-screen bg-[#222222] text-neutral-100 flex flex-col font-sans pb-12 sm:pb-16">
-      {/* Top sticky navigation breadcrumb bar */}
-      <div className="sticky top-0 z-40 border-b border-neutral-800 bg-[#222222]/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-3.5 py-2.5 sm:px-6 sm:py-3 gap-2">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <button
-              onClick={() => {
-                playSound('click', soundEnabled);
-                onBack();
-              }}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-700 bg-[#343434] px-3 py-2 sm:py-1.5 text-xs font-bold text-neutral-100 shadow-2xs hover:bg-neutral-800 hover:border-neutral-500 active:scale-95 transition-all cursor-pointer shrink-0 min-h-[38px]"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span>Back to Home</span>
-            </button>
-
-            {/* Breadcrumb path */}
-            <div className="hidden md:flex items-center gap-1.5 text-xs text-neutral-500 font-medium truncate">
-              <span className="cursor-pointer hover:text-white" onClick={onBack}>Home</span>
-              <span>/</span>
-              <span className="text-neutral-400">{product.category}</span>
-              <span>/</span>
-              <span className="text-white font-bold truncate max-w-[160px]">{product.name}</span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            <button
-              onClick={() => {
-                playSound('click', soundEnabled);
-                onShare(product);
-              }}
-              className="inline-flex items-center justify-center rounded-xl border border-neutral-700 bg-[#343434] p-2 sm:px-3 sm:py-1.5 text-xs font-bold text-neutral-300 hover:text-white hover:border-neutral-500 shadow-2xs active:scale-95 transition-all cursor-pointer min-h-[38px] min-w-[38px]"
-              title="Share"
-            >
-              <Share2 className="h-4 w-4" />
-              <span className="hidden sm:inline sm:ml-1.5">Share</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
+    <div className="min-h-screen bg-white text-neutral-900 flex flex-col font-sans pb-12 sm:pb-16">
       {/* Main Page Content */}
       <main className="mx-auto w-full max-w-5xl px-3.5 py-4 sm:px-6 sm:py-6 space-y-5 sm:space-y-6 flex-1">
         {/* Header Hero Section */}
-        <div className="rounded-2xl border border-neutral-800 bg-[#2a2a2a] p-4 sm:p-8 shadow-xs space-y-5 sm:space-y-6">
+        <div className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-8 shadow-xs space-y-5 sm:space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 sm:gap-5">
             {/* Logo and titles */}
             <div className="flex items-start gap-3.5 sm:gap-4 min-w-0">
               <ProductLogo
                 src={product.logoUrl}
                 alt={product.name}
-                containerClassName="relative h-16 w-16 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-2xl border border-neutral-800 bg-[#222222] shadow-2xs flex items-center justify-center"
+                containerClassName="relative h-16 w-16 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-2xs flex items-center justify-center"
                 iconClassName="h-8 w-8 text-neutral-500 shrink-0"
-                badge={
-                  <div className={`absolute bottom-0 right-0 flex h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-tl-lg font-mono-num text-[10px] sm:text-[11px] font-black z-20 ${
-                    isRankOne ? 'bg-mint-500 text-[#0b0f14]' : 'bg-neutral-700 text-white'
-                  }`}>
-                    #{product.rank}
-                  </div>
-                }
               />
             </div>
 
               <div className="space-y-1.5 min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                  <h1 className="text-xl sm:text-3xl font-black tracking-tight text-white truncate">
+                  <h1 className="text-xl sm:text-3xl font-black tracking-tight text-neutral-950 truncate">
                     {product.name}
                   </h1>
                   {product.verified && (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-mint-500/15 border border-mint-500/40 px-2 py-0.5 text-[10px] sm:text-[11px] font-bold text-mint-300">
-                      <VerifiedBadge className="h-3.5 w-3.5" title="Verified Startup" />
-                      <span>Verified Startup</span>
+                    <VerifiedBadge className="h-5 w-5 sm:h-6 sm:w-6 shrink-0" title="Verified Startup" />
+                  )}
+                  {product.isSponsored && (
+                    <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 px-2 py-0.5 text-xs font-black tracking-tight text-white shadow-xs shadow-amber-600/25 select-none">
+                      <Star className="h-3 w-3 fill-amber-200 text-amber-200 shrink-0" />
+                      <span>Featured</span>
+                    </span>
+                  )}
+                  {product.offerDiscount && (
+                    <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 px-2 py-0.5 text-xs font-black tracking-tight text-white shadow-xs shadow-orange-500/25 select-none">
+                      <Flame className="h-3 w-3 fill-white stroke-white shrink-0" />
+                      <span>{product.offerDiscount}</span>
                     </span>
                   )}
                 </div>
@@ -234,17 +197,17 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                 {/* Built By Founder Hero Badge */}
                 {(product.creatorName || product.creatorAvatar) && (
                   <div className="flex items-center gap-2 pt-0.5">
-                    <div className="inline-flex items-center gap-1.5 rounded-full bg-[#222222] border border-neutral-700/80 pl-1 pr-2.5 py-0.5 text-xs">
+                    <div className="inline-flex items-center gap-1.5 rounded-lg bg-white border border-neutral-200 pl-1 pr-2 py-1 text-xs shadow-2xs">
                       <CommentAvatar
                         avatarUrl={product.creatorAvatar}
                         name={product.creatorName || 'Founder'}
                         className="h-5 w-5 shrink-0 rounded-full object-cover border border-neutral-600"
-                        fallbackClassName="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-mint-500 text-[9px] font-black text-[#0b0f14]"
+                        fallbackClassName="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-mint-500 text-[9px] font-black text-white"
                       />
                       <span className="text-neutral-500 font-medium text-[11px]">Built by</span>
-                      <span className="font-bold text-white text-[11px]">{product.creatorName}</span>
+                      <span className="font-bold text-neutral-900 text-[11px]">{product.creatorName}</span>
                       {product.creatorRole && (
-                        <span className="text-[9px] font-semibold text-mint-300 bg-mint-500/10 border border-mint-500/25 px-1.5 py-0.5 rounded">
+                        <span className="text-[9px] font-semibold text-mint-600 bg-mint-500/10 border border-mint-500/25 px-1.5 py-0.5 rounded-md">
                           {product.creatorRole}
                         </span>
                       )}
@@ -260,7 +223,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                         href={`https://x.com/${product.twitterHandle.replace('@', '')}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 rounded-md border border-neutral-700 bg-[#343434] px-2 py-0.5 text-[11px] font-semibold text-neutral-300 hover:border-neutral-500 hover:text-white transition-colors"
+                        className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-700 hover:border-gray-300 hover:bg-gray-200 hover:text-gray-900 transition-colors"
                       >
                         <span>X {product.twitterHandle.startsWith('@') ? product.twitterHandle : `@${product.twitterHandle}`}</span>
                       </a>
@@ -288,7 +251,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                           href={s.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 rounded-md border border-neutral-700 bg-[#343434] px-2 py-0.5 text-[11px] font-semibold text-neutral-300 hover:border-neutral-500 hover:text-white transition-colors"
+                          className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-700 hover:border-gray-300 hover:bg-gray-200 hover:text-gray-900 transition-colors"
                         >
                           <span>{name}</span>
                           <ExternalLink className="h-2.5 w-2.5 opacity-60" />
@@ -307,8 +270,8 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                   onClick={() => onUpvote(product)}
                   className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-3 text-xs font-bold transition-all cursor-pointer active:scale-95 border min-h-[44px] sm:min-h-[38px] ${
                     isUpvoted
-                      ? 'bg-mint-500 border-mint-400 text-[#0b0f14]'
-                      : 'bg-[#2a2a2a] border-neutral-700 text-neutral-200 hover:border-neutral-500 hover:text-white'
+                      ? 'bg-mint-500 border-mint-400 text-white'
+                      : 'bg-white border-neutral-200 text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50'
                   }`}
                   title={!isSignedIn ? 'Sign in to upvote' : (isUpvoted ? 'Remove upvote' : 'Upvote product')}
                 >
@@ -316,8 +279,8 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                   <span className="font-mono-num font-black text-sm">{(product.upvotes ?? 0).toLocaleString()}</span>
                 </button>
               ) : (
-                <div className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-700 bg-[#2a2a2a] px-3.5 py-3 text-xs font-bold text-neutral-200 min-h-[44px] sm:min-h-[38px]">
-                  <ChevronUp className="h-4 w-4 text-mint-400" />
+                <div className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3.5 py-3 text-xs font-bold text-neutral-900 min-h-[44px] sm:min-h-[38px]">
+                  <ChevronUp className="h-4 w-4 text-mint-600" />
                   <span className="font-mono-num font-black text-sm">{(product.upvotes ?? 0).toLocaleString()}</span>
                 </div>
               )}
@@ -328,10 +291,10 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                   const el = document.getElementById('product-discussion-section');
                   if (el) el.scrollIntoView({ behavior: 'smooth' });
                 }}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-700 bg-[#2a2a2a] px-3.5 py-3 text-xs font-bold text-neutral-200 hover:border-neutral-500 hover:text-white transition-all cursor-pointer min-h-[44px] sm:min-h-[38px]"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3.5 py-3 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-all cursor-pointer min-h-[44px] sm:min-h-[38px]"
                 title="Jump to discussion"
               >
-                <MessageCircle className="h-4 w-4 text-mint-400" />
+                <MessageCircle className="h-4 w-4 text-mint-600" />
                 <span className="font-mono-num font-black text-sm">{comments.length.toLocaleString()}</span>
               </button>
 
@@ -343,7 +306,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                   playSound('click', soundEnabled);
                   onTrackClick(product.id, product.url);
                 }}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-xs font-black text-[#0b0f14] shadow-2xs hover:bg-neutral-300 active:scale-[0.98] transition-all cursor-pointer text-center min-h-[44px] sm:min-h-[38px]"
+                className="btn-primary px-5 py-2.5 text-xs font-bold text-center min-h-[42px] sm:min-h-[38px]"
               >
                 <span>Visit Website</span>
                 <ExternalLink className="h-3.5 w-3.5" />
@@ -353,24 +316,24 @@ export const ProductPage: React.FC<ProductPageProps> = ({
 
           {/* Exclusive Offer / Viewer Deal Banner */}
           {(product.offerDiscount || product.offerCode) && (
-            <div className="relative overflow-hidden rounded-2xl border border-mint-500/40 bg-[#1a2a25] p-4 sm:p-5 shadow-lg">
+            <div className="relative overflow-hidden rounded-2xl border border-mint-500/40 bg-mint-50/70 p-4 sm:p-5">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="flex items-start gap-3 min-w-0">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-mint-500 text-[#0b0f14] shadow-md">
-                    <Tag className="h-5 w-5 fill-[#0b0f14] stroke-[#0b0f14]" />
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-mint-500 text-white">
+                    <Tag className="h-5 w-5 fill-white stroke-white" />
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="rounded-full bg-mint-500 text-[#0b0f14] px-2 py-0.5 text-[10px] font-black uppercase tracking-wider shadow-2xs">
-                        Exclusive TopSAAS Deal
+                      <span className="rounded-full bg-mint-500 text-white px-2 py-0.5 text-[10px] font-bold">
+                        Exclusive TopSAAS deal
                       </span>
                       {product.offerDiscount && (
-                        <span className="text-sm sm:text-base font-black text-mint-300">
+                        <span className="text-sm sm:text-base font-black text-mint-600">
                           {product.offerDiscount}
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-neutral-300 mt-1 font-medium">
+                    <p className="text-xs text-neutral-700 mt-1 font-medium">
                       {product.offerDetails || `Special discount available for TopSAAS viewers.`}
                     </p>
                   </div>
@@ -381,12 +344,12 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                     <button
                       type="button"
                       onClick={() => handleCopyOfferCode(product.offerCode!)}
-                      className="flex-1 sm:flex-initial flex items-center justify-center gap-2 rounded-xl border border-dashed border-mint-500/60 bg-[#0b0f14] px-3.5 py-2.5 text-xs font-mono font-bold text-mint-300 hover:bg-mint-500/10 hover:border-mint-400 transition-all cursor-pointer min-h-[40px]"
+                      className="flex-1 sm:flex-initial flex items-center justify-center gap-2 rounded-xl border border-dashed border-mint-500/60 bg-white px-3.5 py-2.5 text-xs font-mono font-bold text-mint-700 hover:bg-mint-500/10 hover:border-mint-400 transition-all cursor-pointer min-h-[40px]"
                       title="Click to copy promo code"
                     >
                       <span>{product.offerCode}</span>
                       {copiedOffer ? (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-sans font-black text-mint-400 bg-mint-500/20 px-1.5 py-0.5 rounded">
+                        <span className="inline-flex items-center gap-1 text-[10px] font-sans font-black text-mint-700 bg-mint-500/15 px-1.5 py-0.5 rounded">
                           <Check className="h-3 w-3" /> Copied!
                         </span>
                       ) : (
@@ -403,7 +366,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                       playSound('click', soundEnabled);
                       onTrackClick(product.id, product.offerUrl || product.url);
                     }}
-                    className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 rounded-xl bg-mint-500 px-4 py-2.5 text-xs font-black text-[#0b0f14] hover:bg-mint-400 active:scale-95 transition-all shadow-md cursor-pointer min-h-[40px]"
+                    className="flex-1 sm:flex-initial btn-primary px-4 py-2 text-xs font-bold min-h-[40px]"
                   >
                     <span>Redeem Deal</span>
                     <ExternalLink className="h-3.5 w-3.5" />
@@ -414,89 +377,75 @@ export const ProductPage: React.FC<ProductPageProps> = ({
           )}
 
           {/* Metrics bar */}
-          <div className="grid grid-cols-2 gap-3 pt-4 border-t border-neutral-800">
-            <div className="rounded-xl border border-neutral-800 bg-[#222222] p-3 shadow-2xs">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
-                Directory Spot
+          <div className="grid grid-cols-2 gap-3 pt-4 border-t border-neutral-200">
+            <div className="rounded-xl border border-neutral-200 bg-white p-3 shadow-2xs">
+              <div className="text-[11px] font-bold text-neutral-500">
+                Category
               </div>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                {isRankOne && <Crown className="h-4 w-4 fill-mint-500 text-mint-500" />}
-                <span className="font-mono-num text-lg font-black text-white">
-                  #{product.rank}
-                </span>
-                <span className="text-[11px] font-semibold text-neutral-500">
-                  {isRankOne ? 'Top Featured' : 'Spot'}
-                </span>
+              <div className="text-xs font-bold text-neutral-950 mt-1 truncate">
+                {product.category}
               </div>
             </div>
 
-            <div className="rounded-xl border border-neutral-800 bg-[#222222] p-3 shadow-2xs">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
-                {product.pricingModel ? 'Pricing' : 'Category'}
+            <div className="rounded-xl border border-neutral-200 bg-white p-3 shadow-2xs">
+              <div className="text-[11px] font-bold text-neutral-500">
+                {product.pricingModel ? 'Pricing' : 'Status'}
               </div>
-              <div className="text-xs font-bold text-white mt-1 truncate">
-                {product.pricingModel || product.category}
+              <div className="text-xs font-bold text-neutral-950 mt-1 truncate">
+                {product.pricingModel || 'Live on Directory'}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Demo Video Section */}
+        {/* Product Media: Demo Video (YouTube, Loom, Vimeo, direct MP4) or Screenshots */}
         {(() => {
           const videoData = getVideoEmbedUrl(product.demoVideoUrl);
           if (!videoData) return null;
 
           return (
-            <section className="rounded-2xl border border-neutral-800 bg-[#2a2a2a] p-4 sm:p-6 shadow-xs space-y-4">
-              <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
+            <section className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-6 shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
                 <div className="flex items-center gap-2">
-                  <Video className="h-4 w-4 text-mint-300" />
-                  <h2 className="text-sm font-black uppercase tracking-wider text-white">Product Demo Video</h2>
+                  <Video className="h-4 w-4 text-mint-600" />
+                  <h2 className="text-sm font-bold text-neutral-950">Product demo</h2>
                 </div>
-                <a
-                  href={product.demoVideoUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-[11px] font-bold text-mint-300 hover:text-mint-200 transition-colors"
-                >
-                  <span>Open Video</span>
-                  <ExternalLink className="h-3 w-3" />
-                </a>
+                <span className="text-[11px] font-bold text-mint-600 bg-mint-50 border border-mint-200 px-2 py-0.5 rounded-md">
+                  Interactive video
+                </span>
               </div>
 
-              <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-neutral-800 bg-black">
-                {videoData.type === 'iframe' ? (
+              <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-neutral-200 bg-black">
+                {videoData.type === 'iframe' && (
                   <iframe
                     src={videoData.embedUrl}
-                    title={`${product.name} Demo Video`}
+                    title={`${product.name} demo video`}
+                    className="h-full w-full border-0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowFullScreen
-                    className="h-full w-full border-0"
                   />
-                ) : videoData.type === 'video' ? (
+                )}
+                {videoData.type === 'video' && (
                   <video
                     src={videoData.embedUrl}
                     controls
-                    preload="metadata"
-                    className="h-full w-full object-contain"
-                  />
-                ) : (
+                    className="h-full w-full object-cover"
+                    poster={product.screenshots?.[0]}
+                  >
+                    Your browser does not support the video tag.
+                  </video>
+                )}
+                {videoData.type === 'link' && (
                   <div className="flex h-full w-full flex-col items-center justify-center gap-3 p-6 text-center">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-mint-500/20 text-mint-300">
-                      <Play className="h-6 w-6 fill-mint-400" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-white">Watch {product.name} Demo</h3>
-                      <p className="text-xs text-neutral-400 mt-1">Click below to watch the product demonstration.</p>
-                    </div>
+                    <p className="text-sm text-neutral-600">Watch the product demo video:</p>
                     <a
                       href={videoData.embedUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 rounded-xl bg-mint-500 px-4 py-2 text-xs font-black text-[#0b0f14] hover:bg-mint-400 transition-all cursor-pointer shadow-2xs"
+                      className="inline-flex items-center gap-2 rounded-xl bg-mint-500 px-4 py-2 text-xs font-black text-white hover:bg-mint-600"
                     >
-                      <span>Watch Demo</span>
-                      <ExternalLink className="h-3.5 w-3.5" />
+                      <Play className="h-4 w-4 fill-current" />
+                      Watch on external site
                     </a>
                   </div>
                 )}
@@ -507,9 +456,9 @@ export const ProductPage: React.FC<ProductPageProps> = ({
 
         {/* Screenshots Gallery */}
         {product.screenshots && product.screenshots.length > 0 && (
-          <section className="rounded-2xl border border-neutral-800 bg-[#2a2a2a] p-4 sm:p-6 shadow-xs space-y-4">
-            <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
-              <h2 className="text-sm font-black uppercase tracking-wider text-white">Screenshots</h2>
+          <section className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-6 shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
+              <h2 className="text-sm font-bold text-neutral-950">Screenshots</h2>
               <span className="font-mono-num text-xs font-bold text-neutral-500">
                 {product.screenshots.length} {product.screenshots.length === 1 ? 'image' : 'images'}
               </span>
@@ -523,7 +472,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                     playSound('click', soundEnabled);
                     setLightboxIndex(i);
                   }}
-                  className="group relative aspect-video overflow-hidden rounded-xl border border-neutral-800 bg-[#222222] cursor-pointer"
+                  className="group relative aspect-video overflow-hidden rounded-xl border border-neutral-200 bg-white cursor-pointer"
                   aria-label={`View screenshot ${i + 1}`}
                 >
                   <img
@@ -543,22 +492,28 @@ export const ProductPage: React.FC<ProductPageProps> = ({
           {/* Left 2 Cols: Description, What It Does, Features, Use Cases */}
           <div className="lg:col-span-2 space-y-6">
             {/* About & Executive Overview */}
-            <div className="rounded-2xl border border-neutral-800 bg-[#2a2a2a] p-6 shadow-xs space-y-4">
-              <div className="flex items-center gap-2 border-b border-neutral-800 pb-3">
-                <Sparkles className="h-4 w-4 text-mint-300" />
-                <h2 className="text-sm font-black uppercase tracking-wider text-white">
+            <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs space-y-4">
+              <div className="border-b border-neutral-200 pb-3">
+                <h2 className="text-sm font-bold text-neutral-950">
                   About {product.name}
                 </h2>
               </div>
 
-              <p className="text-sm sm:text-base leading-relaxed text-neutral-300 font-normal">
-                {product.description || `${product.name} is a premier platform in the ${product.category} space. Engineered to deliver exceptional speed, polish, and reliable performance, it helps builders and teams streamline their workflows.`}
-              </p>
+              {product.description ? (
+                <RichText
+                  html={product.description}
+                  className="text-sm sm:text-base leading-relaxed text-neutral-700 font-normal"
+                />
+              ) : (
+                <p className="text-sm sm:text-base leading-relaxed text-neutral-700 font-normal">
+                  {`${product.name} is a premier platform in the ${product.category} space. Engineered to deliver exceptional speed, polish, and reliable performance, it helps builders and teams streamline their workflows.`}
+                </p>
+              )}
 
               {product.featuredQuote && (
-                <div className="rounded-xl border border-neutral-800 bg-[#222222] p-4 flex items-start gap-3">
-                  <MessageSquareQuote className="h-5 w-5 text-mint-300 shrink-0 mt-0.5" />
-                  <div className="text-xs font-semibold text-neutral-300 italic">
+                <div className="rounded-xl border border-neutral-200 bg-white p-4 flex items-start gap-3">
+                  <MessageSquareQuote className="h-5 w-5 text-mint-600 shrink-0 mt-0.5" />
+                  <div className="text-xs font-semibold text-neutral-600 italic">
                     "{product.featuredQuote}"
                   </div>
                 </div>
@@ -567,68 +522,72 @@ export const ProductPage: React.FC<ProductPageProps> = ({
 
 
             {/* Problem / Solution / What Makes It Different */}
-            {(product.problemItSolves || product.solution || product.uniqueSellingPoint) && (
-              <div className="rounded-2xl border border-neutral-800 bg-[#2a2a2a] p-6 shadow-xs space-y-4">
-                <div className="flex items-center gap-2 border-b border-neutral-800 pb-3">
-                  <Layers className="h-4 w-4 text-mint-300" />
-                  <h2 className="text-sm font-black uppercase tracking-wider text-white">
-                    What {product.name} Does
-                  </h2>
+            {(() => {
+              const sections = [
+                product.problemItSolves && {
+                  title: 'Problem',
+                  content: product.problemItSolves,
+                },
+                product.solution && {
+                  title: 'Solution',
+                  content: product.solution,
+                },
+                product.uniqueSellingPoint && {
+                  title: 'What makes it different',
+                  content: product.uniqueSellingPoint,
+                },
+              ].filter(Boolean) as { title: string; content: string }[];
+
+              if (sections.length === 0) return null;
+
+              return (
+                <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs space-y-5">
+                  <div className="border-b border-neutral-200 pb-3">
+                    <h2 className="text-sm font-bold text-neutral-950">
+                      What {product.name} does
+                    </h2>
+                  </div>
+
+                  <div className="divide-y divide-neutral-200">
+                    {sections.map((section, idx) => (
+                      <div
+                        key={section.title}
+                        className={`${idx > 0 ? 'pt-5' : ''} ${idx < sections.length - 1 ? 'pb-5' : ''} space-y-1.5`}
+                      >
+                        <div className="mb-1">
+                          <span className="text-xs font-bold text-mint-600">
+                            {section.title}
+                          </span>
+                        </div>
+                        <RichText
+                          html={section.content}
+                          className="text-xs sm:text-sm text-neutral-700 leading-relaxed"
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
-
-                <div className="space-y-3">
-                  {product.problemItSolves && (
-                    <div className="rounded-xl border border-neutral-800 bg-[#222222] p-4 space-y-1.5">
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className="h-1.5 w-1.5 rounded-full bg-mint-400" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-mint-400">The Problem It Solves</span>
-                      </div>
-                      <p className="text-xs sm:text-sm text-neutral-300 leading-relaxed">{product.problemItSolves}</p>
-                    </div>
-                  )}
-
-                  {product.solution && (
-                    <div className="rounded-xl border border-neutral-800 bg-[#222222] p-4 space-y-1.5">
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className="h-1.5 w-1.5 rounded-full bg-mint-400" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-mint-400">Our Solution</span>
-                      </div>
-                      <p className="text-xs sm:text-sm text-neutral-300 leading-relaxed">{product.solution}</p>
-                    </div>
-                  )}
-
-                  {product.uniqueSellingPoint && (
-                    <div className="rounded-xl border border-neutral-800 bg-[#222222] p-4 space-y-1.5">
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className="h-1.5 w-1.5 rounded-full bg-mint-400" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-mint-400">What Makes It Different</span>
-                      </div>
-                      <p className="text-xs sm:text-sm text-neutral-300 leading-relaxed">{product.uniqueSellingPoint}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+              );
+            })()}
 
 
             {/* Use Cases & Who Uses It */}
             {product.useCases && product.useCases.length > 0 && (
-              <div className="rounded-2xl border border-neutral-800 bg-[#2a2a2a] p-6 shadow-xs space-y-4">
-                <div className="flex items-center gap-2 border-b border-neutral-800 pb-3">
-                  <Target className="h-4 w-4 text-mint-300" />
-                  <h2 className="text-sm font-black uppercase tracking-wider text-white">
-                    Who Uses It & Real-World Use Cases
+              <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs space-y-4">
+                <div className="border-b border-neutral-200 pb-3">
+                  <h2 className="text-sm font-bold text-neutral-950">
+                    Who uses it and real-world use cases
                   </h2>
                 </div>
 
                 <div className="space-y-3">
                   {product.useCases.map((uc, idx) => (
-                    <div key={idx} className="rounded-xl border border-neutral-800 bg-[#222222] p-4 space-y-1 transition-all duration-200 hover:border-neutral-700 hover:bg-[#262626] hover:shadow-sm">
+                    <div key={idx} className="rounded-xl border border-neutral-200 bg-white p-4 space-y-1 transition-all duration-200 hover:border-neutral-200 hover:bg-neutral-100 hover:shadow-sm">
                       <div className="flex items-center justify-between">
-                        <h3 className="text-xs font-bold text-white">
+                        <h3 className="text-xs font-bold text-neutral-950">
                           {uc.title}
                         </h3>
-                        <span className="text-[10px] font-semibold text-neutral-400 bg-[#343434] px-2 py-0.5 rounded-md">
+                        <span className="text-[10px] font-semibold text-neutral-400 bg-neutral-100 px-2 py-0.5 rounded-md">
                           {uc.audience}
                         </span>
                       </div>
@@ -646,16 +605,15 @@ export const ProductPage: React.FC<ProductPageProps> = ({
           <div className="space-y-6">
             {/* Founder / Maker Spotlight Card */}
             {(product.creatorName || product.creatorAvatar || product.creatorXHandle) && (
-              <div className="rounded-2xl border border-neutral-800 bg-[#2a2a2a] p-5 shadow-xs space-y-3.5">
-                <div className="flex items-center justify-between border-b border-neutral-800 pb-2.5">
-                  <div className="flex items-center gap-1.5">
-                    <Sparkles className="h-3.5 w-3.5 text-mint-400" />
-                    <h2 className="text-xs font-black uppercase tracking-wider text-white">
-                      Meet the Founder
+              <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-xs space-y-3.5">
+                <div className="flex items-center justify-between border-b border-neutral-200 pb-2.5">
+                  <div>
+                    <h2 className="text-xs font-bold text-neutral-950">
+                      Meet the founder
                     </h2>
                   </div>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-mint-500/10 border border-mint-500/30 px-2 py-0.5 text-[9px] font-bold text-mint-300">
-                    <CheckCircle2 className="h-2.5 w-2.5 fill-mint-500 text-[#0b0f14]" />
+                  <span className="inline-flex items-center gap-1 rounded-full bg-mint-500/10 border border-mint-500/30 px-2 py-0.5 text-[9px] font-bold text-mint-600">
+                    <CheckCircle2 className="h-2.5 w-2.5 fill-mint-500 text-white" />
                     Verified Maker
                   </span>
                 </div>
@@ -664,12 +622,12 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                   <CommentAvatar
                     avatarUrl={product.creatorAvatar}
                     name={product.creatorName || 'Founder'}
-                    className="h-12 w-12 shrink-0 rounded-full object-cover border-2 border-neutral-700 bg-neutral-800 shadow-md"
-                    fallbackClassName="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-mint-500 text-sm font-black text-[#0b0f14]"
+                    className="h-12 w-12 shrink-0 rounded-full object-cover border-2 border-neutral-200 bg-neutral-800 shadow-md"
+                    fallbackClassName="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-mint-500 text-sm font-black text-white"
                   />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
-                      <h3 className="text-sm font-black text-white truncate">
+                      <h3 className="text-sm font-black text-neutral-950 truncate">
                         {product.creatorName || 'Product Maker'}
                       </h3>
                     </div>
@@ -680,12 +638,12 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                 </div>
 
                 {product.creatorXHandle && (
-                  <div className="pt-2 border-t border-neutral-800/80">
+                  <div className="pt-2 border-t border-neutral-200">
                     <a
                       href={`https://x.com/${product.creatorXHandle.replace('@', '')}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-full flex items-center justify-center gap-2 rounded-xl border border-neutral-700 bg-[#343434] py-2 px-3 text-xs font-bold text-neutral-200 hover:border-neutral-500 hover:text-white transition-all cursor-pointer shadow-2xs"
+                      className="w-full flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-gray-100 py-2 px-3 text-xs font-bold text-gray-700 hover:border-gray-300 hover:bg-gray-200 hover:text-gray-900 transition-all cursor-pointer"
                     >
                       <span>Follow {product.creatorXHandle.startsWith('@') ? product.creatorXHandle : `@${product.creatorXHandle}`} on X</span>
                       <ExternalLink className="h-3 w-3 opacity-60" />
@@ -696,47 +654,47 @@ export const ProductPage: React.FC<ProductPageProps> = ({
             )}
 
             {/* Quick Specs & Highlights */}
-            <div className="rounded-2xl border border-neutral-800 bg-[#2a2a2a] p-5 shadow-xs space-y-3.5">
-              <h2 className="text-xs font-black uppercase tracking-wider text-white border-b border-neutral-800 pb-2">
-                Website Specifications
+            <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-xs space-y-3.5">
+              <h2 className="text-xs font-bold text-neutral-950 border-b border-neutral-200 pb-2">
+                Website specifications
               </h2>
 
               <div className="space-y-2.5 text-xs">
                 <div className="flex items-center justify-between">
                   <span className="text-neutral-500 font-medium">Category</span>
-                  <span className="font-bold text-white">{product.category}</span>
+                  <span className="font-bold text-neutral-900">{product.category}</span>
                 </div>
 
                 {product.pricingModel && (
                   <div className="flex items-center justify-between">
                     <span className="text-neutral-500 font-medium">Pricing Model</span>
-                    <span className="font-bold text-white text-right truncate max-w-[180px]">{product.pricingModel}</span>
+                    <span className="font-bold text-neutral-900 text-right truncate max-w-[180px]">{product.pricingModel}</span>
                   </div>
                 )}
 
                 {product.targetAudience && (
-                  <div className="pt-1 border-t border-neutral-800">
+                  <div className="pt-1 border-t border-neutral-200">
                     <span className="text-neutral-500 font-medium block mb-0.5">Target Audience</span>
-                    <span className="font-semibold text-neutral-300 text-[11px] block">{product.targetAudience}</span>
+                    <span className="font-semibold text-neutral-800 text-[11px] block">{product.targetAudience}</span>
                   </div>
                 )}
 
                 {product.keyHighlights && product.keyHighlights.map((kh, idx) => (
-                  <div key={idx} className="flex items-center justify-between pt-1 border-t border-neutral-800">
+                  <div key={idx} className="flex items-center justify-between pt-1 border-t border-neutral-200">
                     <span className="text-neutral-500 font-medium">{kh.label}</span>
-                    <span className="font-bold text-white">{kh.value}</span>
+                    <span className="font-bold text-neutral-900">{kh.value}</span>
                   </div>
                 ))}
 
 
-                <div className="flex items-center justify-between pt-1 border-t border-neutral-800">
+                <div className="flex items-center justify-between pt-1 border-t border-neutral-200">
                   <span className="text-neutral-500 font-medium">Official Link</span>
                   <a
                     href={product.url}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => onTrackClick(product.id, product.url)}
-                    className="font-bold text-mint-300 underline flex items-center gap-1 hover:text-mint-200 transition-colors"
+                    className="font-bold text-mint-600 underline flex items-center gap-1 hover:text-mint-700 transition-colors"
                   >
                     <span>Visit</span>
                     <ExternalLink className="h-2.5 w-2.5" />
@@ -744,7 +702,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                 </div>
 
                 {product.socials && product.socials.length > 0 && (
-                  <div className="pt-2.5 border-t border-neutral-800 space-y-2">
+                  <div className="pt-2.5 border-t border-neutral-200 space-y-2">
                     <span className="text-neutral-500 font-medium block text-[11px]">Social & Distribution</span>
                     <div className="flex flex-wrap gap-1.5">
                       {product.socials.map((s, idx) => {
@@ -769,7 +727,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                             href={s.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 rounded-lg border border-neutral-700 bg-[#343434] px-2 py-1 text-[10px] font-bold text-neutral-300 hover:border-mint-500/50 hover:text-mint-200 transition-colors"
+                            className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-100 px-2 py-1 text-[10px] font-bold text-gray-700 hover:border-gray-300 hover:bg-gray-200 hover:text-gray-900 transition-colors"
                           >
                             <span>{name}</span>
                             <ExternalLink className="h-2.5 w-2.5" />
@@ -782,18 +740,24 @@ export const ProductPage: React.FC<ProductPageProps> = ({
               </div>
             </div>
 
+            {/* Sponsored Partners Sidebar Card */}
+            <SponsoredPartnersSidebar
+              sponsors={allProducts.filter((p) => p.isSponsored)}
+              currentProductId={product.id}
+              soundEnabled={soundEnabled}
+              onSelectProduct={onSelectProduct}
+              onOpenFeaturedSpotModal={onOpenFeaturedSpotModal}
+            />
+
             {/* Direct Visit CTA Card */}
-            <div className="rounded-2xl border border-mint-500/50 bg-[#2f2f2f] p-5 shadow-xs space-y-3">
-              <div className="flex items-center justify-between border-b border-neutral-800 pb-2">
-                <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-mint-200">
+            <div className="rounded-2xl border border-neutral-200 bg-white p-5 space-y-3">
+              <div className="flex items-center justify-between border-b border-neutral-200 pb-2">
+                <div className="text-xs font-bold text-neutral-700">
                   <span>Visit {product.name}</span>
                 </div>
-                <span className="text-[10px] font-mono-num font-bold text-neutral-500">
-                  Spot #{product.rank}
-                </span>
               </div>
 
-              <p className="text-xs text-neutral-400">
+              <p className="text-xs text-neutral-500">
                 Explore the official website and get started with {product.name}.
               </p>
 
@@ -805,7 +769,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                   playSound('click', soundEnabled);
                   onTrackClick(product.id, product.url);
                 }}
-                className="w-full flex items-center justify-center gap-2 rounded-xl bg-mint-500 py-3 text-xs font-black text-[#0b0f14] hover:bg-mint-400 active:scale-95 transition-all shadow-2xs cursor-pointer min-h-[44px]"
+                className="w-full btn-primary py-3 text-xs font-bold min-h-[44px]"
               >
                 <span>Open {product.name}</span>
                 <ExternalLink className="h-3.5 w-3.5" />
@@ -815,14 +779,11 @@ export const ProductPage: React.FC<ProductPageProps> = ({
         </div>
 
         {/* Discussion & Comments */}
-        <div id="product-discussion-section" className="rounded-2xl border border-neutral-800 bg-[#2a2a2a] p-6 shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
-            <div className="flex items-center gap-2">
-              <MessageCircle className="h-4 w-4 text-mint-300" />
-              <h2 className="text-sm font-black uppercase tracking-wider text-white">
-                Discussion
-              </h2>
-            </div>
+        <div id="product-discussion-section" className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
+            <h2 className="text-sm font-bold text-neutral-950">
+              Discussion
+            </h2>
             <span className="font-mono-num text-xs font-bold text-neutral-500">
               {comments.length} {comments.length === 1 ? 'comment' : 'comments'}
             </span>
@@ -830,20 +791,20 @@ export const ProductPage: React.FC<ProductPageProps> = ({
 
           {/* Compose box or Sign-in prompt */}
           {isSignedIn ? (
-            <div className="space-y-3 rounded-xl border border-neutral-700/60 bg-[#1e1e1e] p-3.5 sm:p-4">
+            <div className="space-y-3 rounded-xl border border-neutral-200/60 bg-white p-3.5 sm:p-4">
               <div className="flex items-center gap-2.5">
                 <CommentAvatar
                   avatarUrl={userAvatar}
                   name={userName || userEmail?.split('@')[0] || 'User'}
-                  className="h-8 w-8 shrink-0 rounded-full object-cover border border-neutral-700 bg-neutral-800"
-                  fallbackClassName="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-mint-500 text-[11px] font-black text-[#0b0f14]"
+                  className="h-8 w-8 shrink-0 rounded-full object-cover border border-neutral-200 bg-neutral-800"
+                  fallbackClassName="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-mint-500 text-[11px] font-black text-white"
                 />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-white truncate">
+                    <span className="text-xs font-bold text-neutral-950 truncate">
                       {userName || userEmail?.split('@')[0] || 'Signed-in User'}
                     </span>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-mint-500/10 border border-mint-500/20 px-2 py-0.5 text-[9px] font-bold text-mint-300">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-mint-500/10 border border-mint-500/20 px-2 py-0.5 text-[9px] font-bold text-mint-600">
                       Verified
                     </span>
                   </div>
@@ -861,7 +822,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                 placeholder={`Ask a question or leave a comment about ${product.name}...`}
                 rows={3}
                 maxLength={2000}
-                className="w-full rounded-xl border border-neutral-700 bg-[#2a2a2a] px-3.5 py-2.5 text-xs font-medium text-white placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-mint-500/30 focus:border-mint-500 transition-shadow resize-none"
+                className="w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 text-xs font-medium text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-mint-500/30 focus:border-mint-500 transition-shadow resize-none"
               />
 
               <div className="flex items-center justify-between gap-2 pt-0.5">
@@ -875,20 +836,20 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                     onAddComment(product.id, commentText, authorName, userEmail, userAvatar);
                     setCommentText('');
                   }}
-                  className="rounded-xl bg-mint-500 px-4 py-2 text-xs font-bold text-[#0b0f14] hover:bg-mint-400 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-all cursor-pointer"
+                  className="rounded-xl bg-mint-500 px-4 py-2 text-xs font-bold text-white hover:bg-mint-600 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-all cursor-pointer"
                 >
                   Post comment
                 </button>
               </div>
             </div>
           ) : (
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-xl border border-neutral-700/60 bg-[#1e1e1e] p-4 text-center sm:text-left">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-xl border border-neutral-200/60 bg-white p-4 text-center sm:text-left">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-neutral-800 text-neutral-400 border border-neutral-700">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-neutral-100 text-neutral-600 border border-neutral-200">
                   <UserIcon className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-white">Join the discussion</p>
+                  <p className="text-xs font-bold text-neutral-950">Join the discussion</p>
                   <p className="text-[11px] text-neutral-400">Sign in to leave a comment with your name and profile picture.</p>
                 </div>
               </div>
@@ -898,7 +859,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                   playSound('click', soundEnabled);
                   onOpenSignIn?.();
                 }}
-                className="w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2 rounded-xl bg-mint-500 hover:bg-mint-400 text-[#0b0f14] px-4 py-2.5 text-xs font-black shadow-xs active:scale-95 transition-all cursor-pointer"
+                className="w-full sm:w-auto shrink-0 btn-primary px-4 py-2.5 text-xs font-bold"
               >
                 <LogIn className="h-3.5 w-3.5" />
                 <span>Sign in to comment</span>
@@ -916,16 +877,16 @@ export const ProductPage: React.FC<ProductPageProps> = ({
               {[...comments]
                 .sort((a, b) => a.createdAt - b.createdAt)
                 .map((c) => (
-                  <div key={c.id} className="flex items-start gap-3 rounded-xl border border-neutral-800 bg-[#222222] p-3.5">
+                  <div key={c.id} className="flex items-start gap-3 rounded-xl border border-neutral-200 bg-white p-3.5">
                     <CommentAvatar
                       avatarUrl={c.userAvatar}
                       name={c.userName}
-                      className="h-8 w-8 shrink-0 rounded-full object-cover border border-neutral-700 bg-neutral-800"
-                      fallbackClassName="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-mint-500 text-[11px] font-black text-[#0b0f14]"
+                      className="h-8 w-8 shrink-0 rounded-full object-cover border border-neutral-200 bg-neutral-800"
+                      fallbackClassName="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-mint-500 text-[11px] font-black text-white"
                     />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-white">{c.userName}</span>
+                        <span className="text-xs font-bold text-neutral-950">{c.userName}</span>
                         <span className="text-[10px] font-medium text-neutral-500">{timeAgo(c.createdAt)}</span>
                       </div>
                       <p className="mt-1 text-xs leading-relaxed text-neutral-400 break-words whitespace-pre-wrap">
@@ -938,16 +899,76 @@ export const ProductPage: React.FC<ProductPageProps> = ({
           )}
         </div>
 
+        {/* Featured Partner Spotlights at bottom */}
+        {allProducts.some((p) => p.isSponsored) && (
+          <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
+              <div className="flex items-center gap-2">
+                <Star className="h-4 w-4 fill-amber-500 text-amber-500" />
+                <h2 className="text-sm font-bold text-neutral-950">
+                  Featured partner spotlights
+                </h2>
+              </div>
+              <span className="text-[10px] font-bold text-neutral-500 bg-neutral-100 border border-neutral-200 px-1.5 py-0.5 rounded-md">
+                Sponsored Tools
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              {allProducts
+                .filter((p) => p.isSponsored && p.id !== product.id)
+                .slice(0, 3)
+                .map((sponsor) => (
+                  <div
+                    key={sponsor.id}
+                    onClick={() => {
+                      playSound('click', soundEnabled);
+                      onSelectProduct(sponsor);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="rounded-xl border border-amber-200/80 bg-amber-50/20 p-4 hover:border-amber-300 hover:bg-amber-50/50 transition-all cursor-pointer space-y-2 group shadow-2xs"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-lg overflow-hidden border border-neutral-200 bg-white flex items-center justify-center shrink-0 shadow-2xs">
+                          <ProductLogo
+                            src={sponsor.logoUrl}
+                            alt={sponsor.name}
+                            containerClassName="h-full w-full"
+                            iconClassName="h-4 w-4 text-neutral-400"
+                          />
+                        </div>
+                        <div>
+                          <h3 className="text-xs font-black text-neutral-900 group-hover:underline">
+                            {sponsor.name}
+                          </h3>
+                          <span className="text-[10px] text-neutral-500">{sponsor.category}</span>
+                        </div>
+                      </div>
+                      <span className="shrink-0 text-[8.5px] font-bold text-amber-700 bg-amber-100/70 border border-amber-300/80 px-1 py-0.2 rounded">
+                        Ad
+                      </span>
+                    </div>
+
+                    <p className="text-[11px] text-neutral-600 line-clamp-2 leading-relaxed">
+                      {sponsor.tagline}
+                    </p>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
+
         {/* Explore Related Websites */}
         {relatedProducts.length > 0 && (
-          <div className="rounded-2xl border border-neutral-800 bg-[#2a2a2a] p-6 shadow-xs space-y-4">
+          <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-black uppercase tracking-wider text-white">
-                Explore More Websites
+              <h2 className="text-sm font-bold text-neutral-950">
+                Explore more websites
               </h2>
               <button
                 onClick={onBack}
-                className="text-xs font-bold text-neutral-500 hover:text-white flex items-center gap-1 cursor-pointer"
+                className="text-xs font-bold text-neutral-500 hover:text-neutral-950 flex items-center gap-1 cursor-pointer"
               >
                 <span>Back to Home</span>
                 <ChevronRight className="h-3.5 w-3.5" />
@@ -963,11 +984,11 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                     onSelectProduct(rel);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  className="rounded-xl border border-neutral-800 bg-[#222222] p-4 hover:border-neutral-600 hover:bg-[#343434] transition-all cursor-pointer space-y-2 group shadow-2xs"
+                  className="rounded-xl border border-neutral-200 bg-white p-4 hover:border-neutral-600 hover:bg-neutral-100 transition-all cursor-pointer space-y-2 group shadow-2xs"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="h-8 w-8 rounded-lg overflow-hidden border border-neutral-800 bg-[#222222] flex items-center justify-center shrink-0 shadow-2xs">
+                      <div className="h-8 w-8 rounded-lg overflow-hidden border border-neutral-200 bg-white flex items-center justify-center shrink-0 shadow-2xs">
                         {rel.logoUrl ? (
                           <img src={rel.logoUrl} alt={rel.name} className="h-full w-full object-cover" />
                         ) : (
@@ -975,16 +996,13 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                         )}
                       </div>
                       <div>
-                        <h3 className="text-xs font-black text-white group-hover:underline">
+                        <h3 className="text-xs font-black text-neutral-900 group-hover:underline">
                           {rel.name}
                         </h3>
                         <span className="text-[10px] text-neutral-500">{rel.category}</span>
                       </div>
                     </div>
 
-                    <div className="font-mono-num text-xs font-black text-neutral-200 bg-neutral-800 border border-neutral-700 px-2 py-0.5 rounded-md">
-                      #{rel.rank}
-                    </div>
                   </div>
 
                   <p className="text-[11px] text-neutral-400 line-clamp-2 leading-relaxed">
@@ -1009,7 +1027,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
           <button
             type="button"
             onClick={() => setLightboxIndex(null)}
-            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-xl border border-neutral-700 bg-[#2a2a2a] text-white hover:border-neutral-500 cursor-pointer"
+            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-xl border border-neutral-200 bg-neutral-900/80 text-white hover:bg-neutral-900 cursor-pointer"
             aria-label="Close viewer"
           >
             <X className="h-5 w-5" />
@@ -1023,7 +1041,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                 playSound('click', soundEnabled);
                 setLightboxIndex(lightboxIndex - 1);
               }}
-              className="absolute left-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-xl border border-neutral-700 bg-[#2a2a2a] text-white hover:border-neutral-500 cursor-pointer"
+              className="absolute left-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-xl border border-neutral-200 bg-neutral-900/80 text-white hover:bg-neutral-900 cursor-pointer"
               aria-label="Previous screenshot"
             >
               <ChevronLeft className="h-5 w-5" />
@@ -1037,7 +1055,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                 playSound('click', soundEnabled);
                 setLightboxIndex(lightboxIndex + 1);
               }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-xl border border-neutral-700 bg-[#2a2a2a] text-white hover:border-neutral-500 cursor-pointer"
+              className="absolute right-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-xl border border-neutral-200 bg-neutral-900/80 text-white hover:bg-neutral-900 cursor-pointer"
               aria-label="Next screenshot"
             >
               <ChevronRight className="h-5 w-5" />
@@ -1048,9 +1066,9 @@ export const ProductPage: React.FC<ProductPageProps> = ({
             src={product.screenshots[lightboxIndex]}
             alt={`${product.name} screenshot ${lightboxIndex + 1}`}
             onClick={(e) => e.stopPropagation()}
-            className="mx-auto max-h-[85vh] max-w-full rounded-2xl border border-neutral-700 object-contain shadow-2xl"
+            className="mx-auto max-h-[85vh] max-w-full rounded-2xl border border-neutral-200 object-contain shadow-2xl"
           />
-          <span className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-lg border border-neutral-700 bg-[#2a2a2a] px-3 py-1 text-xs font-bold text-neutral-300">
+          <span className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-lg border border-neutral-200 bg-white px-3 py-1 text-xs font-bold text-neutral-700">
             {lightboxIndex + 1} / {product.screenshots.length}
           </span>
         </div>

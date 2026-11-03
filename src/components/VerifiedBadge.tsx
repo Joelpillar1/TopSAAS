@@ -25,16 +25,16 @@ export const VerifiedBadge: React.FC<VerifiedBadgeProps> = ({
         role="img"
         aria-label={title}
       >
-        {/* Scalloped rosette starburst badge in TopSAAS mint theme */}
+        {/* Scalloped rosette starburst badge in TopSAAS primary blue */}
         <path
           d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"
-          fill="#00e599"
+          fill="#2563eb"
         />
-        {/* Crisp dark checkmark inside */}
+        {/* Crisp white checkmark inside */}
         <path
           d="m8.5 12.2 2.4 2.4 4.8-4.8"
-          stroke="#09090b"
-          strokeWidth="2.4"
+          stroke="#ffffff"
+          strokeWidth="2.6"
           strokeLinecap="round"
           strokeLinejoin="round"
         />

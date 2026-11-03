@@ -44,7 +44,7 @@ export const LegalPage: React.FC<LegalPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-[#222222] text-neutral-100 flex flex-col justify-between selection:bg-mint-500 selection:text-[#0b0f14] font-sans">
+    <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between selection:bg-mint-500 selection:text-white font-sans">
       <main className="mx-auto w-full max-w-4xl px-4 sm:px-6 py-6 sm:py-8 flex-1 space-y-6">
         {/* Breadcrumb / Back Bar */}
         <div className="flex items-center justify-between">
@@ -54,7 +54,7 @@ export const LegalPage: React.FC<LegalPageProps> = ({
               playSound('click', soundEnabled);
               onBack();
             }}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-700 bg-[#2a2a2a] px-3 py-1.5 text-xs font-bold text-neutral-300 hover:border-mint-500/60 hover:text-white transition-all cursor-pointer shadow-2xs"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-1.5 text-xs font-bold text-neutral-700 hover:border-mint-500/60 hover:text-mint-700 hover:bg-mint-50/30 transition-all cursor-pointer shadow-2xs"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             <span>Back to Home</span>
@@ -63,38 +63,38 @@ export const LegalPage: React.FC<LegalPageProps> = ({
           <div className="flex items-center gap-1.5 text-[11px] text-neutral-400 font-medium">
             <span>Legal</span>
             <ChevronRight className="h-3 w-3 text-neutral-600" />
-            <span className="text-white font-bold">
+            <span className="text-neutral-900 font-bold">
               {activeDoc === 'privacy' ? 'Privacy Policy' : 'Terms of Service'}
             </span>
           </div>
         </div>
 
         {/* Page Hero & Tab Switcher */}
-        <div className="rounded-2xl border border-neutral-800 bg-[#2a2a2a] p-5 sm:p-7 shadow-xs space-y-5">
+        <div className="rounded-2xl border border-neutral-200 bg-white p-5 sm:p-7 shadow-xs space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-mint-500 text-[#0b0f14] shadow-xs">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-mint-500 text-white shadow-xs">
                 {activeDoc === 'privacy' ? <Lock className="h-6 w-6" /> : <FileText className="h-6 w-6" />}
               </div>
               <div>
-                <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                <h1 className="text-xl sm:text-2xl font-black text-neutral-950 tracking-tight">
                   {activeDoc === 'privacy' ? 'Privacy Policy' : 'Terms of Service'}
                 </h1>
-                <p className="text-xs text-neutral-400 font-medium">
+                <p className="text-xs text-neutral-500 font-medium">
                   Official Terms & Policies • Effective August 2026
                 </p>
               </div>
             </div>
 
             {/* Switcher Buttons */}
-            <div className="flex items-center gap-1.5 rounded-xl bg-neutral-800/70 p-1 shrink-0 self-start sm:self-auto">
+            <div className="flex items-center gap-1.5 rounded-xl bg-neutral-100 p-1 shrink-0 self-start sm:self-auto">
               <button
                 type="button"
                 onClick={() => handleDocSwitch('privacy')}
                 className={`flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-bold transition-all cursor-pointer ${
                   activeDoc === 'privacy'
-                    ? 'bg-mint-500 text-[#0b0f14] shadow-xs'
-                    : 'text-neutral-400 hover:text-white'
+                    ? 'bg-neutral-950 text-white shadow-xs'
+                    : 'text-neutral-500 hover:text-neutral-950'
                 }`}
               >
                 <ShieldCheck className="h-3.5 w-3.5" />
@@ -105,8 +105,8 @@ export const LegalPage: React.FC<LegalPageProps> = ({
                 onClick={() => handleDocSwitch('terms')}
                 className={`flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-bold transition-all cursor-pointer ${
                   activeDoc === 'terms'
-                    ? 'bg-mint-500 text-[#0b0f14] shadow-xs'
-                    : 'text-neutral-400 hover:text-white'
+                    ? 'bg-neutral-950 text-white shadow-xs'
+                    : 'text-neutral-500 hover:text-neutral-950'
                 }`}
               >
                 <FileText className="h-3.5 w-3.5" />
@@ -117,40 +117,40 @@ export const LegalPage: React.FC<LegalPageProps> = ({
         </div>
 
         {/* Document Content Card */}
-        <div className="rounded-2xl border border-neutral-800 bg-[#2a2a2a] p-6 sm:p-10 shadow-xs space-y-8 text-neutral-300 text-sm leading-relaxed">
+        <div className="rounded-2xl border border-neutral-200 bg-white p-6 sm:p-10 shadow-xs space-y-8 text-neutral-700 text-sm leading-relaxed">
           {activeDoc === 'privacy' ? (
             /* ════════════════ PRIVACY POLICY ════════════════ */
             <>
               <section className="space-y-2.5">
-                <h2 className="text-base sm:text-lg font-black text-white tracking-tight">1. Overview & Scope</h2>
+                <h2 className="text-base sm:text-lg font-black text-neutral-950 tracking-tight">1. Overview & Scope</h2>
                 <p>
                   TopSAAS (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) operates the TopSAAS directory and the TopSAAS Runner platform. We believe in open, fair, and transparent discovery for software creators. This Privacy Policy describes how we handle information collected when you access our platform, sign in, submit websites, or play the TopSAAS Runner.
                 </p>
               </section>
 
               <section className="space-y-2.5">
-                <h2 className="text-base sm:text-lg font-black text-white tracking-tight">2. Information We Collect</h2>
+                <h2 className="text-base sm:text-lg font-black text-neutral-950 tracking-tight">2. Information We Collect</h2>
                 <div className="space-y-2 pl-1">
                   <div>
-                    <strong className="text-white font-bold">A. User Account Data:</strong> When you sign in with Google OAuth, we receive your basic public profile information (name, email address, and avatar) provided by Google. This data is solely used to authenticate your session and link products you create.
+                    <strong className="text-neutral-950 font-bold">A. User Account Data:</strong> When you sign in with Google OAuth, we receive your basic public profile information (name, email address, and avatar) provided by Google. This data is solely used to authenticate your session and link products you create.
                   </div>
                   <div>
-                    <strong className="text-white font-bold">B. Website Submissions:</strong> Information you submit publicly to the directory, including website URLs, tool names, descriptions, categories, favicons, and social handles.
+                    <strong className="text-neutral-950 font-bold">B. Website Submissions:</strong> Information you submit publicly to the directory, including website URLs, tool names, descriptions, categories, favicons, and social handles.
                   </div>
                   <div>
-                    <strong className="text-white font-bold">C. Gameplay & Score Verification Data:</strong> When playing the TopSAAS Runner, session duration and score velocity are transmitted to our Supabase database to verify fair play and prevent automated scripts.
+                    <strong className="text-neutral-950 font-bold">C. Gameplay & Score Verification Data:</strong> When playing the TopSAAS Runner, session duration and score velocity are transmitted to our Supabase database to verify fair play and prevent automated scripts.
                   </div>
                   <div>
-                    <strong className="text-white font-bold">D. Payment Processing:</strong> When purchasing a Featured Spot sponsorship, transactions are securely processed by third-party payment providers (Dodo Payments / Stripe). TopSAAS does not process or store raw payment card data.
+                    <strong className="text-neutral-950 font-bold">D. Payment Processing:</strong> When purchasing a Featured Spot sponsorship, transactions are securely processed by third-party payment providers (Dodo Payments / Stripe). TopSAAS does not process or store raw payment card data.
                   </div>
                   <div>
-                    <strong className="text-white font-bold">E. Local Storage:</strong> We use your browser&apos;s local storage to remember your UI preferences, such as sound FX settings, theme toggles, and view layout (grid vs. table).
+                    <strong className="text-neutral-950 font-bold">E. Local Storage:</strong> We use your browser&apos;s local storage to remember your UI preferences, such as sound FX settings, theme toggles, and view layout (grid vs. table).
                   </div>
                 </div>
               </section>
 
               <section className="space-y-2.5">
-                <h2 className="text-base sm:text-lg font-black text-white tracking-tight">3. How We Use Your Data</h2>
+                <h2 className="text-base sm:text-lg font-black text-neutral-950 tracking-tight">3. How We Use Your Data</h2>
                 <p>We utilize the collected information strictly for legitimate operational purposes:</p>
                 <ul className="list-disc pl-5 space-y-1.5 text-neutral-400">
                   <li>Displaying, categorizing, and maintaining the public SaaS directory.</li>
@@ -158,27 +158,27 @@ export const LegalPage: React.FC<LegalPageProps> = ({
                   <li>Preventing bot attacks, duplicate submissions, and fraudulent leaderboard scripting.</li>
                   <li>Enabling creators to manage, edit, and delist their products.</li>
                 </ul>
-                <div className="rounded-xl border border-neutral-800 bg-[#343434] p-4 font-semibold text-neutral-100 text-xs">
-                  🔒 We never sell, lease, or monetize your personal data to third-party data brokers or advertisers.
+                <div className="rounded-xl border border-neutral-200 bg-neutral-100 p-4 font-semibold text-neutral-700 text-xs">
+                  We never sell, lease, or monetize your personal data to third-party data brokers or advertisers.
                 </div>
               </section>
 
               <section className="space-y-2.5">
-                <h2 className="text-base sm:text-lg font-black text-white tracking-tight">4. Data Security & Storage</h2>
+                <h2 className="text-base sm:text-lg font-black text-neutral-950 tracking-tight">4. Data Security & Storage</h2>
                 <p>
                   All data is secured using Supabase infrastructure with PostgreSQL Row Level Security (RLS) policies and HTTPS encrypted in-transit. Access to administrative management tools is strictly restricted to verified administrative users.
                 </p>
               </section>
 
               <section className="space-y-2.5">
-                <h2 className="text-base sm:text-lg font-black text-white tracking-tight">5. Your Privacy Rights & Deletion</h2>
+                <h2 className="text-base sm:text-lg font-black text-neutral-950 tracking-tight">5. Your Privacy Rights & Deletion</h2>
                 <p>
                   You have the right to request the deletion of your account profile or the delisting of any submitted website at any time. Creators can manage or remove their tools directly from their profile page or contact our administration.
                 </p>
               </section>
 
               <section className="space-y-2.5">
-                <h2 className="text-base sm:text-lg font-black text-white tracking-tight">6. Contact & Inquiries</h2>
+                <h2 className="text-base sm:text-lg font-black text-neutral-950 tracking-tight">6. Contact & Inquiries</h2>
                 <p>
                   For any privacy inquiries, data deletion requests, or questions regarding this policy, please reach out to our team via Twitter/X or through our official community channels.
                 </p>
@@ -188,14 +188,14 @@ export const LegalPage: React.FC<LegalPageProps> = ({
             /* ════════════════ TERMS OF SERVICE ════════════════ */
             <>
               <section className="space-y-2.5">
-                <h2 className="text-base sm:text-lg font-black text-white tracking-tight">1. Acceptance of Terms</h2>
+                <h2 className="text-base sm:text-lg font-black text-neutral-950 tracking-tight">1. Acceptance of Terms</h2>
                 <p>
                   By visiting, browsing, submitting content, or utilizing services on TopSAAS (the &quot;Platform&quot;), you agree to comply with and be bound by these Terms of Service. If you do not agree with any portion of these terms, please discontinue use of the platform.
                 </p>
               </section>
 
               <section className="space-y-2.5">
-                <h2 className="text-base sm:text-lg font-black text-white tracking-tight">2. Directory Submissions & Guidelines</h2>
+                <h2 className="text-base sm:text-lg font-black text-neutral-950 tracking-tight">2. Directory Submissions & Guidelines</h2>
                 <p>By submitting a website or software product to TopSAAS:</p>
                 <ul className="list-disc pl-5 space-y-1.5 text-neutral-400">
                   <li>You confirm that you are the creator, owner, or authorized representative of the product.</li>
@@ -206,7 +206,7 @@ export const LegalPage: React.FC<LegalPageProps> = ({
               </section>
 
               <section className="space-y-2.5">
-                <h2 className="text-base sm:text-lg font-black text-white tracking-tight">3. Fair Play & Anti-Cheat Policy</h2>
+                <h2 className="text-base sm:text-lg font-black text-neutral-950 tracking-tight">3. Fair Play & Anti-Cheat Policy</h2>
                 <p>
                   The TopSAAS Runner is a community feature designed for authentic gameplay and organic product engagement:
                 </p>
@@ -218,28 +218,28 @@ export const LegalPage: React.FC<LegalPageProps> = ({
               </section>
 
               <section className="space-y-2.5">
-                <h2 className="text-base sm:text-lg font-black text-white tracking-tight">4. Featured Spots & Sponsorship Terms</h2>
+                <h2 className="text-base sm:text-lg font-black text-neutral-950 tracking-tight">4. Featured Spots & Sponsorship Terms</h2>
                 <p>
                   Featured Spot placements provide guaranteed prominent display at the top of the homepage and in the TopSAAS Runner header for 30 consecutive days. As digital exposure commences immediately upon payment activation, sponsorship fees are non-refundable.
                 </p>
               </section>
 
               <section className="space-y-2.5">
-                <h2 className="text-base sm:text-lg font-black text-white tracking-tight">5. Trademarks & Intellectual Property</h2>
+                <h2 className="text-base sm:text-lg font-black text-neutral-950 tracking-tight">5. Trademarks & Intellectual Property</h2>
                 <p>
                   All software names, logos, screenshots, and trade names displayed on TopSAAS remain the intellectual property of their respective creators. TopSAAS indexes and showcases these assets solely for discovery, directory aggregation, and fair-use reference.
                 </p>
               </section>
 
               <section className="space-y-2.5">
-                <h2 className="text-base sm:text-lg font-black text-white tracking-tight">6. Limitation of Liability</h2>
+                <h2 className="text-base sm:text-lg font-black text-neutral-950 tracking-tight">6. Limitation of Liability</h2>
                 <p>
                   TopSAAS is provided &quot;as is&quot; without warranties of any kind. TopSAAS does not guarantee specific traffic volume, conversion rates, or uninterrupted server availability. Under no circumstances shall TopSAAS or its operators be liable for indirect, incidental, or consequential damages resulting from platform usage.
                 </p>
               </section>
 
               <section className="space-y-2.5">
-                <h2 className="text-base sm:text-lg font-black text-white tracking-tight">7. Modifications to Terms</h2>
+                <h2 className="text-base sm:text-lg font-black text-neutral-950 tracking-tight">7. Modifications to Terms</h2>
                 <p>
                   We reserve the right to modify these Terms of Service at any time. Revisions take effect immediately upon being posted on this page. Your continued use of the service constitutes agreement to updated terms.
                 </p>
@@ -251,7 +251,7 @@ export const LegalPage: React.FC<LegalPageProps> = ({
         {/* Compliance Footer Note */}
         <div className="flex items-center justify-between px-2 pt-2 text-xs text-neutral-500">
           <div className="flex items-center gap-1.5 font-medium">
-            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+            <CheckCircle2 className="h-4 w-4 text-mint-600" />
             <span>TopSAAS Standards Compliant</span>
           </div>
           <button
@@ -260,7 +260,7 @@ export const LegalPage: React.FC<LegalPageProps> = ({
               playSound('click', soundEnabled);
               onBack();
             }}
-            className="font-bold text-white hover:underline cursor-pointer"
+            className="font-bold text-neutral-950 hover:underline cursor-pointer"
           >
             ← Back to Home
           </button>

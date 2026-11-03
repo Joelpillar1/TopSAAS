@@ -14,10 +14,10 @@ export const SpotlightCard: React.FC<SpotlightCardProps> = ({ soundEnabled, onRe
   return (
     <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-2xs">
       <div className="flex items-center justify-between border-b border-neutral-100 px-4 py-2.5">
-        <span className="text-[9px] font-black uppercase tracking-[0.18em] text-neutral-500">
+        <span className="text-[9px] font-black  text-neutral-500">
           Featured Spotlight
         </span>
-        <span className="inline-flex items-center gap-1 rounded-full bg-mint-50 px-2 py-0.5 text-[8px] font-black uppercase tracking-wider text-mint-700 ring-1 ring-inset ring-mint-200">
+        <span className="inline-flex items-center gap-1 rounded-full bg-mint-50 px-2 py-0.5 text-[8px] font-black  text-mint-700 ring-1 ring-inset ring-mint-200">
           Sponsored
         </span>
       </div>
@@ -36,7 +36,7 @@ export const SpotlightCard: React.FC<SpotlightCardProps> = ({ soundEnabled, onRe
             playSound('click', soundEnabled);
             onRent();
           }}
-          className="mt-4 w-full rounded-xl bg-neutral-950 py-2.5 text-xs font-bold text-white transition-all hover:bg-neutral-800 active:scale-[0.98] cursor-pointer"
+          className="mt-4 w-full btn-primary py-2.5 text-xs font-bold"
         >
           Reserve this spot
         </button>
@@ -61,7 +61,7 @@ export const RailCard: React.FC<RailCardProps> = ({ title, dot = 'neutral', chil
             dot === 'red' ? 'bg-mint-500 animate-pulse' : 'bg-neutral-300'
           }`}
         />
-        <h3 className="text-[10px] font-black uppercase tracking-[0.18em] text-black">
+        <h3 className="text-[10px] font-black  text-black">
           {title}
         </h3>
       </div>
@@ -186,7 +186,7 @@ export const PromotedCard: React.FC<PromotedCardProps> = ({ product, soundEnable
         <span className="text-[10px] font-bold text-neutral-500 underline underline-offset-2 hover:text-black cursor-pointer transition-colors" onClick={() => { playSound('click', soundEnabled); onRent(); }}>
           Advertise ↗
         </span>
-        <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-neutral-500">
+        <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[9px] font-bold  text-neutral-500">
           Promoted
         </span>
       </div>
@@ -212,7 +212,7 @@ export const SponsoredLaunchBanner: React.FC<SponsoredLaunchBannerProps> = ({
     <div className="flex items-stretch gap-0 overflow-hidden rounded-2xl border border-mint-300/70 bg-mint-50/50 shadow-[0_1px_2px_rgba(16,24,40,0.05)]">
       {/* Vertical SPONSORED label */}
       <div className="flex shrink-0 items-center justify-center border-r border-mint-200/70 bg-white px-1.5">
-        <span className="text-[8px] font-black uppercase tracking-[0.25em] text-mint-700 [writing-mode:vertical-rl] rotate-180">
+        <span className="text-[8px] font-black  text-mint-700 [writing-mode:vertical-rl] rotate-180">
           Sponsored
         </span>
       </div>

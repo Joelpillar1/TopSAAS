@@ -1,64 +1,99 @@
 @import "tailwindcss";
 
-/* ── Brand system: deep slate ink + mint accent ── */
+/* ── Anthropic Brand System (Light Mode: Warm Parchment + Claude Terracotta) ── */
 @theme {
-  --color-black: #161616;
+  --color-black: #0b0f19;
   --color-white: #ffffff;
 
-  /* Neutral ramp: pure grays tuned for a #222222 canvas with #2a2a2a cards */
-  --color-neutral-50: #fafafa;
-  --color-neutral-100: #f5f5f5;
-  --color-neutral-200: #e7e7e7;
-  --color-neutral-300: #d4d4d4;
-  --color-neutral-400: #a3a3a3;
-  --color-neutral-500: #757575;
-  --color-neutral-600: #5a5a5a;
-  --color-neutral-700: #4a4a4a;
-  --color-neutral-800: #3a3a3a;
-  --color-neutral-900: #2a2a2a;
-  --color-neutral-950: #1f1f1f;
+  /* Neutral grey ramp */
+  --color-neutral-50: #ffffff;   /* Canvas background */
+  --color-neutral-100: #f3f4f6;  /* Light grey well / inset / subtle container */
+  --color-neutral-200: #e5e7eb;  /* Subtle border */
+  --color-neutral-300: #d1d5db;  /* Hover / medium border */
+  --color-neutral-400: #9ca3af;  /* Muted icons / placeholders */
+  --color-neutral-500: #6b7280;  /* Secondary text / captions */
+  --color-neutral-600: #4b5563;  /* Medium contrast body */
+  --color-neutral-700: #374151;  /* Body text */
+  --color-neutral-800: #1f2937;  /* High contrast text */
+  --color-neutral-900: #111827;  /* Charcoal headers */
+  --color-neutral-950: #0b0f19;  /* Near-black ink */
 
-  /* Brand mint accent (#66CC88) */
-  --color-mint-50: #effbf3;
-  --color-mint-100: #daf6e5;
-  --color-mint-200: #b6edcd;
-  --color-mint-300: #8ce0b2;
-  --color-mint-400: #79d79f;
-  --color-mint-500: #66cc88;
-  --color-mint-600: #47b46e;
-  --color-mint-700: #369359;
-  --color-mint-800: #2b7449;
-  --color-mint-900: #225f3c;
-  --color-mint-950: #103420;
+  /* Primary Accent: Electric Royal Blue (#2563EB) */
+  --color-mint-50: #eff6ff;
+  --color-mint-100: #dbeafe;
+  --color-mint-200: #bfdbfe;
+  --color-mint-300: #93c5fd;
+  --color-mint-400: #60a5fa;
+  --color-mint-500: #2563eb;  /* Primary brand blue */
+  --color-mint-600: #1d4ed8;
+  --color-mint-700: #1e40af;
+  --color-mint-800: #1e3a8a;
+  --color-mint-900: #172554;
+  --color-mint-950: #0f172a;
 
-  /* Success/positive states use the same mint family */
-  --color-emerald-50: #effbf3;
-  --color-emerald-100: #daf6e5;
-  --color-emerald-200: #b6edcd;
-  --color-emerald-300: #8ce0b2;
-  --color-emerald-400: #79d79f;
-  --color-emerald-500: #66cc88;
-  --color-emerald-600: #47b46e;
-  --color-emerald-700: #369359;
-  --color-emerald-800: #2b7449;
-  --color-emerald-900: #225f3c;
+  /* Primary Blue alias */
+  --color-coral-50: #eff6ff;
+  --color-coral-100: #dbeafe;
+  --color-coral-200: #bfdbfe;
+  --color-coral-300: #93c5fd;
+  --color-coral-400: #60a5fa;
+  --color-coral-500: #2563eb;
+  --color-coral-600: #1d4ed8;
+  --color-coral-700: #1e40af;
+  --color-coral-800: #1e3a8a;
+  --color-coral-900: #172554;
+  --color-coral-950: #0f172a;
+
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-300: #93c5fd;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #2563eb;
+  --color-primary-600: #1d4ed8;
+  --color-primary-700: #1e40af;
+  --color-primary-800: #1e3a8a;
+  --color-primary-900: #172554;
+  --color-primary-950: #0f172a;
+
+  /* Natural warm sage for verified / success states */
+  --color-emerald-50: #f0f7f3;
+  --color-emerald-100: #dcefe3;
+  --color-emerald-200: #bce0cb;
+  --color-emerald-300: #93ccac;
+  --color-emerald-400: #61b187;
+  --color-emerald-500: #3b9569;
+  --color-emerald-600: #2b7449;
+  --color-emerald-700: #25603d;
+  --color-emerald-800: #204e33;
+  --color-emerald-900: #1b412b;
+
+  /* Compact corner radii — sharper cards, buttons and frames */
+  --radius-xs: 0.0625rem; /* 1px */
+  --radius-sm: 0.125rem;  /* 2px */
+  --radius-md: 0.1875rem; /* 3px */
+  --radius-lg: 0.25rem;   /* 4px */
+  --radius-xl: 0.375rem;  /* 6px */
+  --radius-2xl: 0.5rem;   /* 8px */
+  --radius-3xl: 0.625rem; /* 10px */
+  --radius-4xl: 0.75rem;  /* 12px */
 }
 
 @layer base {
-    html, body {
-    background-color: #222222;
+  html, body {
+    background-color: #ffffff;
   }
 
   body {
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    color: var(--color-neutral-200);
+    color: #0b0f19;
   }
 
-  /* Subtle premium glow used behind the hero */
+  /* Anthropic warm terracotta ambient glow */
   .brand-glow {
     background:
-      radial-gradient(900px 380px at 18% -12%, rgba(102, 204, 136, 0.16), transparent 65%),
-      radial-gradient(900px 380px at 85% -12%, rgba(102, 204, 136, 0.10), transparent 65%);
+      radial-gradient(900px 380px at 18% -12%, rgba(37, 99, 235, 0.08), transparent 65%),
+      radial-gradient(900px 380px at 85% -12%, rgba(37, 99, 235, 0.05), transparent 65%);
   }
   
   .font-mono-num {
@@ -67,23 +102,23 @@
   }
 }
 
-/* Custom sleek scrollbar */
+/* Custom sleek scrollbar with warm tint */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.04);
+  background: rgba(0, 0, 0, 0.03);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.15);
+  background: rgba(107, 114, 128, 0.35);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(107, 114, 128, 0.55);
 }
 
 @keyframes marquee {
@@ -137,37 +172,39 @@
   }
 }
 
-/* ── Bento Grid Tile Hover System ── */
+/* ── Bento Grid Tile Hover System (Anthropic Light Mode) ── */
 .bento-tile {
   position: relative;
-  background-color: #2a2a2a;
+  background-color: #ffffff;
+  border-color: #e5e7eb;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   cursor: pointer;
 }
 
 .bento-tile:hover {
-  background-color: #353535 !important;
+  background-color: #f3f4f6 !important;
   z-index: 20;
   transform: translateY(-2px);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12), 0 8px 24px -4px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 0 0 1px rgba(217, 119, 87, 0.3), 0 8px 24px -4px rgba(180, 140, 120, 0.14);
 }
 
 .bento-tile-winner {
-  background-color: #2d2d2d;
+  background-color: #ffffff;
+  border-color: #e5e7eb;
 }
 
 .bento-tile-winner:hover {
-  background-color: #383838 !important;
+  background-color: #f3f4f6 !important;
   z-index: 20;
   transform: translateY(-2px);
-  box-shadow: 0 0 0 1px rgba(102, 204, 136, 0.6), 0 8px 24px -4px rgba(71, 180, 110, 0.2);
+  box-shadow: 0 0 0 1px rgba(217, 119, 87, 0.6), 0 8px 24px -4px rgba(217, 119, 87, 0.2);
 }
 
 .bento-tile-sponsor:hover {
-  background-color: #363636 !important;
+  background-color: #f3f4f6 !important;
   z-index: 20;
   transform: translateY(-2px);
-  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.6), 0 8px 24px -4px rgba(245, 158, 11, 0.2);
+  box-shadow: 0 0 0 1px rgba(217, 119, 87, 0.6), 0 8px 24px -4px rgba(217, 119, 87, 0.2);
 }
 
 /* ── Standalone Card Hover ── */
@@ -176,8 +213,229 @@
 }
 
 .product-card-hover:hover {
-  background-color: #333333 !important;
-  border-color: #555555 !important;
-  box-shadow: 0 8px 28px -4px rgba(0, 0, 0, 0.5);
+  background-color: #f3f4f6 !important;
+  border-color: #d1d5db !important;
+  box-shadow: 0 8px 28px -4px rgba(140, 110, 90, 0.12);
   transform: translateY(-2px);
+}
+
+
+/* ── Tactile Glossy Button (User Reference Design) ── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.375rem; /* 6px — matches rounded-xl */
+  background: linear-gradient(180deg, #2d6ff7 0%, #1e5de8 100%);
+  border: 1px solid #1d4ed8;
+  color: #ffffff;
+  font-weight: 700;
+  text-shadow: 0 1px 1.5px rgba(0, 0, 0, 0.2);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.36),
+    inset 0 -1.5px 0 0 rgba(0, 0, 0, 0.22),
+    0 6px 18px -3px rgba(37, 99, 235, 0.45),
+    0 2px 5px -1px rgba(0, 0, 0, 0.12);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  user-select: none;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, #3b7cf8 0%, #2264ee 100%);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.45),
+    inset 0 -1.5px 0 0 rgba(0, 0, 0, 0.25),
+    0 8px 24px -3px rgba(37, 99, 235, 0.58),
+    0 4px 8px -1px rgba(0, 0, 0, 0.16);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active:not(:disabled) {
+  background: linear-gradient(180deg, #1d4ed8 0%, #1e40af 100%);
+  box-shadow:
+    inset 0 2px 4px 0 rgba(0, 0, 0, 0.3),
+    0 2px 6px -1px rgba(37, 99, 235, 0.35);
+  transform: translateY(0.5px) scale(0.985);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.375rem;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  color: #111827;
+  font-weight: 700;
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.8),
+    0 2px 6px -1px rgba(0, 0, 0, 0.05);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  user-select: none;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  border-color: #d1d5db;
+  background: #f3f4f6;
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 1),
+    0 4px 12px -2px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+.btn-secondary:active:not(:disabled) {
+  background: #e5e7eb;
+  transform: translateY(0.5px) scale(0.985);
+}
+
+/* -- Rich text: shared between the editor and the published product page -- */
+.rich-content {
+  overflow-wrap: anywhere;
+}
+
+.rich-content > :first-child {
+  margin-top: 0;
+}
+
+.rich-content > :last-child {
+  margin-bottom: 0;
+}
+
+.rich-content p {
+  margin: 0 0 0.6em;
+}
+
+.rich-content p:last-child {
+  margin-bottom: 0;
+}
+
+.rich-content h2 {
+  margin: 1em 0 0.45em;
+  font-size: 1.05rem;
+  line-height: 1.35;
+  font-weight: 800;
+  color: #0b0f19;
+}
+
+.rich-content h3 {
+  margin: 0.9em 0 0.4em;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  font-weight: 800;
+  color: #0b0f19;
+}
+
+.rich-content h4 {
+  margin: 0.85em 0 0.35em;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  font-weight: 700;
+  color: #0b0f19;
+}
+
+.rich-content ul {
+  margin: 0.4em 0 0.7em;
+  padding-left: 1.25em;
+  list-style: disc;
+}
+
+.rich-content ol {
+  margin: 0.4em 0 0.7em;
+  padding-left: 1.35em;
+  list-style: decimal;
+}
+
+.rich-content li {
+  margin: 0.2em 0;
+}
+
+.rich-content li > p {
+  margin: 0;
+}
+
+.rich-content blockquote {
+  margin: 0.6em 0;
+  padding-left: 0.85em;
+  border-left: 3px solid #d1d5db;
+  color: #4b5563;
+  font-style: italic;
+}
+
+.rich-content a {
+  color: #2563eb;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.rich-content strong,
+.rich-content b {
+  font-weight: 700;
+  color: #111827;
+}
+
+.rich-content em,
+.rich-content i {
+  font-style: italic;
+}
+
+.rich-content u {
+  text-decoration: underline;
+}
+
+.rich-content s,
+.rich-content strike,
+.rich-content del {
+  text-decoration: line-through;
+}
+
+.rich-content code {
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  border: 1px solid #e5e7eb;
+  background: #f3f4f6;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+
+.rich-content pre {
+  margin: 0.6em 0;
+  padding: 0.75em 1em;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+
+.rich-content pre code {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.rich-content hr {
+  margin: 1em 0;
+  border: 0;
+  border-top: 1px solid #e5e7eb;
+}
+
+.rich-editor {
+  outline: none;
+  cursor: text;
+}
+
+.rich-editor:empty::before {
+  content: attr(data-placeholder);
+  color: #9ca3af;
+  pointer-events: none;
 }

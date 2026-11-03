@@ -47,7 +47,7 @@ export const HeroWebsiteInfo: React.FC<HeroWebsiteInfoProps> = ({
             onSelectCategory('All');
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
-          className="text-[11px] font-extrabold uppercase tracking-widest text-neutral-500 font-mono-num cursor-pointer hover:text-black transition-colors"
+          className="text-[11px] font-extrabold  text-neutral-500 font-mono-num cursor-pointer hover:text-black transition-colors"
         >
           TOPSAAS
         </span>
@@ -102,7 +102,7 @@ export const HeroWebsiteInfo: React.FC<HeroWebsiteInfoProps> = ({
             playSound('click', soundEnabled);
             onOpenSubmit();
           }}
-          className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-black px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-xs hover:bg-neutral-900 active:scale-[0.99] transition-all cursor-pointer min-h-[42px]"
+          className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-neutral-950 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-xs hover:bg-neutral-800 active:scale-[0.99] transition-all cursor-pointer min-h-[42px]"
         >
           <Plus className="h-4 w-4 stroke-[2.5]" />
           <span>New Launch</span>

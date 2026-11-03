@@ -7,6 +7,7 @@
     { "name": "Catalog Markdown", "path": "/catalog.md", "method": "GET", "format": "markdown" },
     { "name": "OpenAPI Spec", "path": "/openapi.json", "method": "GET", "format": "json" },
     { "name": "LLMs.txt", "path": "/llms.txt", "method": "GET", "format": "text" },
-    { "name": "Sitemap", "path": "/sitemap.xml", "method": "GET", "format": "xml" }
+    { "name": "Sitemap", "path": "/sitemap.xml", "method": "GET", "format": "xml" },
+    { "name": "Repo Detail Sitemap", "path": "/sitemap/repos.xml", "method": "GET", "format": "xml" }
   ]
 }

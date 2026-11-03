@@ -8,6 +8,7 @@ import { playSound } from '../utils/sound';
 import { getWebsiteFavicon } from '../utils/logo';
 import { publishedProductId } from '../utils/db';
 import { FeaturedProductSelector } from './FeaturedProductSelector';
+import { RichText } from './RichText';
 import { ProductLogo } from './ProductLogo';
 import { RankMedal } from './RankMedal';
 import { VerifiedBadge } from './VerifiedBadge';
@@ -276,22 +277,22 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-[#222222] text-neutral-100 pb-24">
+    <div className="min-h-screen bg-white text-neutral-900 pb-24">
       {/* Top Admin Header */}
-      <header className="sticky top-0 z-30 border-b border-neutral-800 bg-[#222222]/95 backdrop-blur-md px-4 py-3 sm:px-6">
+      <header className="sticky top-0 z-30 border-b border-neutral-200 bg-white/95 backdrop-blur-md px-4 py-3 sm:px-6">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={onBackToDirectory}
-              className="flex items-center gap-1.5 rounded-lg border border-neutral-700 bg-[#2a2a2a] px-3 py-1.5 text-xs font-bold text-neutral-300 hover:border-mint-500/60 hover:bg-[#333333] transition-all cursor-pointer"
+              className="flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-bold text-neutral-300 hover:border-mint-500/60 hover:bg-neutral-100 transition-all cursor-pointer"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
               <span>Back to Home</span>
             </button>
             <div className="h-4 w-px bg-neutral-700" />
             <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-mint-500 text-[#0b0f14] font-black text-xs shadow-2xs">
+              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-mint-500 text-white font-black text-xs shadow-2xs">
                 <ShieldCheck className="h-4 w-4" />
               </div>
               <span className="rounded bg-neutral-800 px-2 py-0.5 text-xs font-mono font-bold text-neutral-300">
@@ -315,14 +316,14 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
 
       <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 space-y-6">
         {/* View Switcher Tabs */}
-        <div className="flex items-center gap-2 border-b border-neutral-800 pb-0 overflow-x-auto">
+        <div className="flex items-center gap-2 border-b border-neutral-200 pb-0 overflow-x-auto">
           <button
             type="button"
             onClick={() => { setActiveView('submissions'); playSound('click', soundEnabled); }}
             className={`flex items-center gap-1.5 rounded-t-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer border border-b-0 whitespace-nowrap ${
               activeView === 'submissions'
-                ? 'bg-[#2a2a2a] border-neutral-800 text-white shadow-2xs'
-                : 'bg-transparent border-transparent text-neutral-400 hover:text-white hover:bg-neutral-800/60'
+                ? 'bg-neutral-950 border-neutral-950 text-white shadow-2xs'
+                : 'bg-transparent border-transparent text-neutral-500 hover:text-neutral-950 hover:bg-neutral-800/60'
             }`}
           >
             <Clock className="h-3.5 w-3.5 text-amber-400" />
@@ -338,13 +339,13 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
             onClick={() => { setActiveView('products'); playSound('click', soundEnabled); }}
             className={`flex items-center gap-1.5 rounded-t-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer border border-b-0 whitespace-nowrap ${
               activeView === 'products'
-                ? 'bg-[#2a2a2a] border-neutral-800 text-white shadow-2xs'
-                : 'bg-transparent border-transparent text-neutral-400 hover:text-white hover:bg-neutral-800/60'
+                ? 'bg-neutral-950 border-neutral-950 text-white shadow-2xs'
+                : 'bg-transparent border-transparent text-neutral-500 hover:text-neutral-950 hover:bg-neutral-800/60'
             }`}
           >
             <LayoutList className="h-3.5 w-3.5" />
             <span>Live Products</span>
-            <span className="ml-1 rounded-full bg-mint-500 text-[#0b0f14] px-1.5 py-0.2 text-[9px] font-bold">
+            <span className="ml-1 rounded-full bg-mint-500 text-white px-1.5 py-0.2 text-[9px] font-bold">
               {products.length}
             </span>
           </button>
@@ -353,8 +354,8 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
             onClick={() => { setActiveView('featured'); playSound('click', soundEnabled); }}
             className={`flex items-center gap-1.5 rounded-t-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer border border-b-0 whitespace-nowrap ${
               activeView === 'featured'
-                ? 'bg-[#2a2a2a] border-neutral-800 text-white shadow-2xs'
-                : 'bg-transparent border-transparent text-neutral-400 hover:text-white hover:bg-neutral-800/60'
+                ? 'bg-neutral-950 border-neutral-950 text-white shadow-2xs'
+                : 'bg-transparent border-transparent text-neutral-500 hover:text-neutral-950 hover:bg-neutral-800/60'
             }`}
           >
             <Crown className="h-3.5 w-3.5" />
@@ -369,7 +370,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
           <>
             {/* Submissions Metrics */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-              <div className="rounded-xl border border-neutral-800 bg-[#2a2a2a] p-4 shadow-2xs">
+              <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-2xs">
                 <div className="flex items-center justify-between text-xs font-bold text-amber-400 mb-1">
                   <span>Pending Approval</span>
                   <Clock className="h-4 w-4" />
@@ -377,7 +378,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                 <div className="text-2xl sm:text-3xl font-black text-white">{pendingCount}</div>
                 <p className="text-[11px] text-neutral-400 mt-1">Awaiting approval</p>
               </div>
-              <div className="rounded-xl border border-neutral-800 bg-[#2a2a2a] p-4 shadow-2xs">
+              <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-2xs">
                 <div className="flex items-center justify-between text-xs font-bold text-emerald-400 mb-1">
                   <span>Approved Submissions</span>
                   <CheckCircle2 className="h-4 w-4" />
@@ -385,7 +386,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                 <div className="text-2xl sm:text-3xl font-black text-white">{approvedCount}</div>
                 <p className="text-[11px] text-neutral-400 mt-1">Active on live directory</p>
               </div>
-              <div className="rounded-xl border border-neutral-800 bg-[#2a2a2a] p-4 shadow-2xs">
+              <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-2xs">
                 <div className="flex items-center justify-between text-xs font-bold text-red-400 mb-1">
                   <span>Rejected Submissions</span>
                   <XCircle className="h-4 w-4" />
@@ -396,7 +397,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
             </div>
 
             {/* Submissions Filter & Search */}
-            <div className="rounded-xl border border-neutral-800 bg-[#2a2a2a] p-3.5 sm:p-4 flex flex-col gap-3">
+            <div className="rounded-xl border border-neutral-200 bg-white p-3.5 sm:p-4 flex flex-col gap-3">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
                 <div className="relative w-full sm:w-80">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400" />
@@ -405,10 +406,10 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search submissions by name, tagline, URL..."
-                    className="w-full rounded-lg border border-neutral-700 bg-[#343434] pl-8.5 pr-3 py-1.5 text-xs text-neutral-100 placeholder-neutral-500 focus:border-mint-500/70 focus:outline-none focus:ring-1 focus:ring-mint-500/30"
+                    className="w-full rounded-lg border border-neutral-200 bg-white pl-8.5 pr-3 py-1.5 text-xs text-neutral-900 placeholder-neutral-400 focus:border-mint-500 focus:outline-none focus:ring-1 focus:ring-mint-500/30"
                   />
                   {searchQuery && (
-                    <button type="button" onClick={() => setSearchQuery('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white">
+                    <button type="button" onClick={() => setSearchQuery('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-950">
                       <X className="h-3 w-3" />
                     </button>
                   )}
@@ -467,7 +468,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
               </div>
 
               {/* Category Filter */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-t border-neutral-800 pt-2.5">
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-t border-neutral-200 pt-2.5">
                 {(['All', 'AI Tools', 'Developer Tools', 'Productivity', 'Design & UI', 'SaaS & Indie', 'Crypto & Web3'] as const).map((cat) => (
                   <button
                     key={cat}
@@ -475,8 +476,8 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                     onClick={() => setSelectedCategory(cat)}
                     className={`rounded-lg px-2.5 py-1 text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap ${
                       selectedCategory === cat
-                        ? 'bg-mint-500 text-[#0b0f14]'
-                        : 'bg-[#343434] text-neutral-400 hover:text-white hover:bg-neutral-700'
+                        ? 'bg-mint-500 text-white'
+                        : 'bg-neutral-100 text-neutral-500 hover:text-neutral-950 hover:bg-neutral-700'
                     }`}
                   >
                     {cat}
@@ -488,7 +489,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
             {/* Submissions List */}
             <div className="space-y-3">
               <div className="flex items-center justify-between px-1">
-                <h2 className="text-xs font-bold uppercase tracking-wider text-neutral-400">
+                <h2 className="text-xs font-bold  text-neutral-400">
                   Submissions Queue
                   <span className="ml-1.5 font-normal text-neutral-500">({filteredSubmissions.length})</span>
                 </h2>
@@ -498,12 +499,12 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
               </div>
 
               {filteredSubmissions.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-neutral-700 bg-[#2a2a2a] p-10 text-center space-y-3">
+                <div className="rounded-2xl border border-dashed border-neutral-200 bg-white p-10 text-center space-y-3">
                   <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-neutral-800 text-neutral-400">
                     <Clock className="h-6 w-6" />
                   </div>
                   <div className="space-y-1">
-                    <h3 className="text-sm font-black text-white">No submissions found</h3>
+                    <h3 className="text-sm font-black text-neutral-950">No submissions found</h3>
                     <p className="text-xs text-neutral-400 max-w-sm mx-auto">
                       {submissions.length > 0
                         ? 'No submissions match your current filters (status or category).'
@@ -517,7 +518,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                           setSelectedCategory('All');
                           setSearchQuery('');
                         }}
-                        className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-mint-500 px-3.5 py-1.5 text-xs font-bold text-[#0b0f14] hover:bg-mint-400 active:scale-95 transition-all cursor-pointer shadow-sm"
+                        className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-mint-500 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-mint-600 active:scale-95 transition-all cursor-pointer"
                       >
                         Reset Filters ({submissions.length} total)
                       </button>
@@ -537,11 +538,11 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                     return (
                       <div
                         key={sub.id}
-                        className={`rounded-xl border bg-[#2a2a2a] p-4 sm:p-5 transition-all space-y-3 ${
+                        className={`rounded-xl border bg-white p-4 sm:p-5 transition-all space-y-3 ${
                           isUnderReview
                             ? 'border-amber-500/50 shadow-md shadow-amber-500/5'
                             : isApproved
-                            ? 'border-neutral-800'
+                            ? 'border-neutral-200'
                             : 'border-red-900/40 opacity-80'
                         }`}
                       >
@@ -554,7 +555,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                 setViewingDetailsSubmission(sub);
                                 playSound('click', soundEnabled);
                               }}
-                              className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-neutral-700 bg-[#222222] shadow-sm hover:border-mint-500/60 transition-all cursor-pointer group"
+                              className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm hover:border-mint-500/60 transition-all cursor-pointer group"
                               title="Click to view full details"
                             >
                               <ProductLogo
@@ -572,7 +573,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                     setViewingDetailsSubmission(sub);
                                     playSound('click', soundEnabled);
                                   }}
-                                  className="text-base font-black text-white tracking-tight truncate hover:text-mint-400 text-left cursor-pointer transition-colors"
+                                  className="text-base font-black text-neutral-950 tracking-tight truncate hover:text-mint-600 text-left cursor-pointer transition-colors"
                                 >
                                   {sub.name}
                                 </button>
@@ -595,15 +596,15 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                   </span>
                                 )}
 
-                                <span className="rounded-md bg-neutral-800 border border-neutral-700 px-2 py-0.5 text-[10px] font-bold text-neutral-300">
+                                <span className="rounded-md bg-neutral-800 border border-neutral-200 px-2 py-0.5 text-[10px] font-bold text-neutral-300">
                                   {sub.category}
                                 </span>
 
                                 {sub.offerDiscount && (
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-mint-500/15 border border-mint-500/40 px-2 py-0.5 text-[10px] font-bold text-mint-300">
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-mint-500/15 border border-mint-500/40 px-2 py-0.5 text-[10px] font-bold text-mint-600">
                                     <Tag className="h-3 w-3" />
                                     <span>Offer: {sub.offerDiscount}</span>
-                                    {sub.offerCode && <span className="font-mono text-mint-200">({sub.offerCode})</span>}
+                                    {sub.offerCode && <span className="font-mono text-mint-700">({sub.offerCode})</span>}
                                   </span>
                                 )}
                               </div>
@@ -616,7 +617,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                   href={sub.url}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1 text-mint-400 font-semibold hover:underline"
+                                  className="inline-flex items-center gap-1 text-mint-600 font-semibold hover:underline"
                                 >
                                   <Globe className="h-3 w-3 text-neutral-400" />
                                   <span className="truncate max-w-[200px]">{sub.url}</span>
@@ -653,10 +654,10 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                 setViewingDetailsSubmission(sub);
                                 playSound('click', soundEnabled);
                               }}
-                              className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-700 bg-[#343434] px-3 py-1.5 text-xs font-bold text-neutral-200 hover:border-mint-500/60 hover:text-white transition-all cursor-pointer shadow-2xs"
+                              className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-neutral-100 px-3 py-1.5 text-xs font-bold text-neutral-700 hover:border-mint-500/60 hover:text-mint-700 hover:bg-mint-50/30 transition-all cursor-pointer shadow-2xs"
                               title="View full submission details, media, and pitch"
                             >
-                              <Eye className="h-3.5 w-3.5 text-mint-400" />
+                              <Eye className="h-3.5 w-3.5 text-mint-600" />
                               <span>Details</span>
                             </button>
 
@@ -665,7 +666,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => handleAccept(sub)}
-                                  className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-500 px-3.5 py-1.5 text-xs font-black text-[#0b0f14] hover:bg-emerald-400 active:scale-[0.98] transition-all cursor-pointer shadow-sm"
+                                  className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-500 px-3.5 py-1.5 text-xs font-black text-white hover:bg-emerald-400 active:scale-[0.98] transition-all cursor-pointer shadow-sm"
                                   title="Approve and publish to live directory"
                                 >
                                   <Check className="h-3.5 w-3.5 stroke-[3]" />
@@ -674,7 +675,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => handleOpenEdit(sub)}
-                                  className="rounded-xl border border-neutral-700 bg-[#343434] p-2 text-neutral-300 hover:border-neutral-500 hover:text-white transition-all cursor-pointer"
+                                  className="rounded-xl border border-neutral-200 bg-neutral-100 p-2 text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-all cursor-pointer"
                                   title="Edit details before approving"
                                 >
                                   <Edit3 className="h-3.5 w-3.5" />
@@ -682,7 +683,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => handleReject(sub.id)}
-                                  className="rounded-xl border border-neutral-700 bg-[#343434] p-2 text-neutral-400 hover:text-red-400 hover:border-red-400/60 hover:bg-red-500/10 transition-all cursor-pointer"
+                                  className="rounded-xl border border-neutral-200 bg-neutral-100 p-2 text-neutral-400 hover:text-red-400 hover:border-red-400/60 hover:bg-red-500/10 transition-all cursor-pointer"
                                   title="Reject submission"
                                 >
                                   <X className="h-3.5 w-3.5" />
@@ -696,7 +697,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                   href={`/product/${liveProduct?.id || sub.id}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="rounded-xl border border-neutral-700 bg-[#343434] px-3 py-1.5 text-xs font-bold text-neutral-300 hover:border-mint-500/60 hover:text-white transition-all cursor-pointer flex items-center gap-1"
+                                  className="rounded-xl border border-neutral-200 bg-neutral-100 px-3 py-1.5 text-xs font-bold text-neutral-700 hover:border-mint-500/60 hover:text-mint-700 hover:bg-mint-50/30 transition-all cursor-pointer flex items-center gap-1"
                                 >
                                   <ExternalLink className="h-3 w-3" />
                                   <span>View Page</span>
@@ -704,7 +705,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => handleOpenEdit(sub)}
-                                  className="rounded-xl border border-neutral-700 bg-[#343434] px-3 py-1.5 text-xs font-bold text-neutral-300 hover:border-neutral-500 hover:text-white transition-all cursor-pointer flex items-center gap-1"
+                                  className="rounded-xl border border-neutral-200 bg-neutral-100 px-3 py-1.5 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-all cursor-pointer flex items-center gap-1"
                                 >
                                   <Edit3 className="h-3 w-3" />
                                   <span>Edit</span>
@@ -712,7 +713,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => setRevokeTarget(sub)}
-                                  className="rounded-xl border border-neutral-700 bg-[#343434] px-3 py-1.5 text-xs font-bold text-red-400 hover:border-red-400/60 hover:bg-red-500/10 transition-all cursor-pointer"
+                                  className="rounded-xl border border-neutral-200 bg-neutral-100 px-3 py-1.5 text-xs font-bold text-red-400 hover:border-red-400/60 hover:bg-red-500/10 transition-all cursor-pointer"
                                 >
                                   Revoke Approval
                                 </button>
@@ -724,7 +725,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => handleAccept(sub)}
-                                  className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-600 bg-emerald-500/15 px-3 py-1.5 text-xs font-bold text-emerald-300 hover:bg-emerald-500 hover:text-[#0b0f14] transition-all cursor-pointer"
+                                  className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-600 bg-emerald-500/15 px-3 py-1.5 text-xs font-bold text-emerald-300 hover:bg-emerald-500 hover:text-white transition-all cursor-pointer"
                                 >
                                   <RotateCcw className="h-3 w-3" />
                                   <span>Restore & Approve</span>
@@ -732,7 +733,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => handleDeleteSubmission(sub)}
-                                  className="rounded-xl border border-neutral-700 bg-[#343434] p-2 text-neutral-400 hover:text-red-400 hover:border-red-400/60 hover:bg-red-500/10 transition-all cursor-pointer"
+                                  className="rounded-xl border border-neutral-200 bg-neutral-100 p-2 text-neutral-400 hover:text-red-400 hover:border-red-400/60 hover:bg-red-500/10 transition-all cursor-pointer"
                                   title="Delete submission record"
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />
@@ -757,7 +758,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
           <>
             {/* Products Metrics */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-              <div className="rounded-xl border border-neutral-800 bg-[#2a2a2a] p-4 shadow-2xs">
+              <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-2xs">
                 <div className="flex items-center justify-between text-xs font-bold text-amber-400 mb-1">
                   <span>Top 3</span>
                   <Trophy className="h-4 w-4" />
@@ -765,7 +766,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                 <div className="text-2xl sm:text-3xl font-black text-white">3</div>
                 <p className="text-[11px] text-neutral-400 mt-1">Top 3 ranking products</p>
               </div>
-              <div className="rounded-xl border border-neutral-800 bg-[#2a2a2a] p-4 shadow-2xs">
+              <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-2xs">
                 <div className="flex items-center justify-between text-xs font-bold text-emerald-500 mb-1">
                   <span>Live Products</span>
                   <CheckCircle2 className="h-4 w-4" />
@@ -773,17 +774,17 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                 <div className="text-2xl sm:text-3xl font-black text-white">{products.length}</div>
                 <p className="text-[11px] text-neutral-400 mt-1">In the directory</p>
               </div>
-              <div className="rounded-xl border border-neutral-800 bg-[#2a2a2a] p-4 shadow-2xs">
-                <div className="flex items-center justify-between text-xs font-bold text-mint-400 mb-1">
+              <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-2xs">
+                <div className="flex items-center justify-between text-xs font-bold text-mint-600 mb-1">
                   <span>Verified Startups</span>
                   <VerifiedBadge className="h-4 w-4" />
                 </div>
-                <div className="text-2xl sm:text-3xl font-black text-mint-300">
+                <div className="text-2xl sm:text-3xl font-black text-mint-600">
                   {products.filter((p) => p.verified).length}
                 </div>
                 <p className="text-[11px] text-neutral-400 mt-1">Verified with badge</p>
               </div>
-              <div className="rounded-xl border border-neutral-800 bg-[#2a2a2a] p-4 shadow-2xs">
+              <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-2xs">
                 <div className="flex items-center justify-between text-xs font-bold text-neutral-400 mb-1">
                   <span>Total Upvotes</span>
                   <ArrowUpDown className="h-4 w-4" />
@@ -803,7 +804,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
             />
 
             {/* Products Search & Filter */}
-            <div className="rounded-xl border border-neutral-800 bg-[#2a2a2a] p-3.5 sm:p-4 flex flex-col gap-3">
+            <div className="rounded-xl border border-neutral-200 bg-white p-3.5 sm:p-4 flex flex-col gap-3">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
                 <div className="relative w-full sm:w-80">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400" />
@@ -812,24 +813,24 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                     value={productSearchQuery}
                     onChange={(e) => setProductSearchQuery(e.target.value)}
                     placeholder="Search live products by name, category, or URL..."
-                    className="w-full rounded-lg border border-neutral-700 bg-[#343434] pl-8.5 pr-3 py-1.5 text-xs text-neutral-100 placeholder-neutral-500 focus:border-mint-500/70 focus:bg-[#343434] focus:outline-none focus:ring-1 focus:ring-mint-500/30"
+                    className="w-full rounded-lg border border-neutral-200 bg-white pl-8.5 pr-3 py-1.5 text-xs text-neutral-900 placeholder-neutral-400 focus:border-mint-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-mint-500/30"
                   />
                   {productSearchQuery && (
-                    <button type="button" onClick={() => setProductSearchQuery('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white">
+                    <button type="button" onClick={() => setProductSearchQuery('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-950">
                       <X className="h-3 w-3" />
                     </button>
                   )}
                 </div>
 
                 {/* Verified Filter Toggles */}
-                <div className="flex items-center gap-1 w-full sm:w-auto shrink-0 rounded-lg bg-neutral-800 p-1 border border-neutral-700/60 overflow-x-auto">
+                <div className="flex items-center gap-1 w-full sm:w-auto shrink-0 rounded-lg bg-neutral-100 p-1 border border-neutral-200 overflow-x-auto">
                   <button
                     type="button"
                     onClick={() => setProductVerifiedFilter('all')}
                     className={`rounded-md px-2.5 py-1 text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                       productVerifiedFilter === 'all'
-                        ? 'bg-[#343434] text-white shadow-xs'
-                        : 'text-neutral-400 hover:text-white'
+                        ? 'bg-neutral-950 text-white shadow-xs'
+                        : 'text-neutral-500 hover:text-neutral-950'
                     }`}
                   >
                     All ({products.length})
@@ -839,8 +840,8 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                     onClick={() => setProductVerifiedFilter('verified')}
                     className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                       productVerifiedFilter === 'verified'
-                        ? 'bg-mint-500 text-[#0b0f14] shadow-xs'
-                        : 'text-neutral-400 hover:text-white'
+                        ? 'bg-mint-500 text-white shadow-xs'
+                        : 'text-neutral-500 hover:text-neutral-950'
                     }`}
                   >
                     <VerifiedBadge className="h-3 w-3" />
@@ -851,8 +852,8 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                     onClick={() => setProductVerifiedFilter('unverified')}
                     className={`rounded-md px-2.5 py-1 text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                       productVerifiedFilter === 'unverified'
-                        ? 'bg-[#343434] text-white shadow-xs'
-                        : 'text-neutral-400 hover:text-white'
+                        ? 'bg-neutral-950 text-white shadow-xs'
+                        : 'text-neutral-500 hover:text-neutral-950'
                     }`}
                   >
                     Unverified ({products.filter((p) => !p.verified).length})
@@ -869,7 +870,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                     onClick={() => setProductCategoryFilter(cat)}
                     className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                       productCategoryFilter === cat
-                        ? 'bg-mint-500 text-[#0b0f14]'
+                        ? 'bg-mint-500 text-white'
                         : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
                     }`}
                   >
@@ -883,7 +884,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
             <div className="space-y-2">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 px-1">
                 <div>
-                  <h2 className="text-xs font-bold uppercase tracking-wider text-neutral-400 flex items-center gap-1.5">
+                  <h2 className="text-xs font-bold  text-neutral-400 flex items-center gap-1.5">
                     <span>Live Products Management</span>
                     <span className="font-normal text-neutral-500">({filteredProducts.length})</span>
                   </h2>
@@ -899,21 +900,21 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                         onAutoRankByUpvotes();
                       }
                     }}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-700 bg-[#343434] px-3 py-1.5 text-xs font-bold text-neutral-200 hover:border-mint-500/50 hover:text-white transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-neutral-100 px-3 py-1.5 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 transition-colors cursor-pointer"
                     title="Automatically re-index all products based on upvote standings"
                   >
-                    <ArrowUpDown className="h-3.5 w-3.5 text-mint-400" />
+                    <ArrowUpDown className="h-3.5 w-3.5 text-mint-600" />
                     <span>Auto-Rank by Upvotes</span>
                   </button>
                 )}
               </div>
               {filteredProducts.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-neutral-700 bg-[#2a2a2a] p-8 sm:p-12 text-center space-y-3">
+                <div className="rounded-2xl border border-dashed border-neutral-200 bg-white p-8 sm:p-12 text-center space-y-3">
                   <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-neutral-800 text-neutral-400">
                     <AlertCircle className="h-6 w-6" />
                   </div>
                   <div className="space-y-1">
-                    <h3 className="text-sm font-black text-white">No products found</h3>
+                    <h3 className="text-sm font-black text-neutral-950">No products found</h3>
                     <p className="text-xs text-neutral-400 max-w-sm mx-auto">Try changing your search or category filter.</p>
                   </div>
                 </div>
@@ -926,7 +927,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                     const productRow = (
                       <div
                         key={product.id}
-                        className="rounded-xl border border-neutral-800 bg-[#2a2a2a] p-4 transition-all hover:border-neutral-700"
+                        className="rounded-xl border border-neutral-200 bg-white p-4 transition-all hover:border-neutral-200"
                       >
                         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                           {/* Rank Badge + Move Up/Down Controls */}
@@ -990,7 +991,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                             />
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2">
-                                <h3 className="text-sm font-black text-white tracking-tight truncate">{product.name}</h3>
+                                <h3 className="text-sm font-black text-neutral-950 tracking-tight truncate">{product.name}</h3>
                                 {product.verified && <VerifiedBadge className="h-4 w-4 shrink-0" title="Verified Startup" />}
                                 {isTopThree && (
                                   <span className="rounded-md bg-white/10 border border-white/30 px-1.5 py-0.5 text-[9px] font-bold text-white shrink-0">
@@ -1004,7 +1005,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
 
                           {/* Meta: Category & Upvotes & Score */}
                           <div className="flex items-center gap-3 shrink-0 text-[11px] text-neutral-500">
-                            <span className="rounded-md bg-neutral-800 border border-neutral-700 px-2 py-0.5 font-bold text-neutral-300">
+                            <span className="rounded-md bg-neutral-800 border border-neutral-200 px-2 py-0.5 font-bold text-neutral-300">
                               {product.category}
                             </span>
 
@@ -1023,8 +1024,8 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                 onClick={() => onToggleVerified(product.id, !product.verified)}
                                 className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition-all cursor-pointer ${
                                   product.verified
-                                    ? 'border-mint-500/50 bg-mint-500/10 text-mint-300 hover:bg-mint-500/20 hover:border-mint-400 shadow-2xs'
-                                    : 'border-neutral-700 bg-[#343434] text-neutral-400 hover:border-mint-500/60 hover:text-white'
+                                    ? 'border-mint-500/50 bg-mint-500/10 text-mint-600 hover:bg-mint-500/20 hover:border-mint-400 shadow-2xs'
+                                    : 'border-neutral-200 bg-neutral-100 text-neutral-500 hover:border-mint-500/60 hover:text-mint-700'
                                 }`}
                                 title={product.verified ? `"${product.name}" is verified — click to remove verification` : `Click to verify "${product.name}"`}
                               >
@@ -1045,7 +1046,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                               href={product.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="rounded-lg border border-neutral-700 bg-[#2a2a2a] p-2 text-neutral-400 hover:border-mint-500/60 hover:text-white transition-all cursor-pointer"
+                              className="rounded-lg border border-neutral-200 bg-white p-2 text-neutral-400 hover:border-mint-500/60 hover:text-white transition-all cursor-pointer"
                               title="Visit website"
                             >
                               <ExternalLink className="h-3.5 w-3.5" />
@@ -1053,7 +1054,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                             <button
                               type="button"
                               onClick={() => handleDelist(product)}
-                              className="rounded-lg border border-neutral-700 bg-[#2a2a2a] p-2 text-neutral-400 hover:text-red-400 hover:border-red-400/70 hover:bg-red-500/10 transition-all cursor-pointer"
+                              className="rounded-lg border border-neutral-200 bg-white p-2 text-neutral-400 hover:text-red-400 hover:border-red-400/70 hover:bg-red-500/10 transition-all cursor-pointer"
                               title={`Delist "${product.name}" from directory`}
                             >
                               <Trash2 className="h-3.5 w-3.5" />
@@ -1078,7 +1079,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
           <>
             {/* Featured Metrics */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              <div className="rounded-xl border border-neutral-800 bg-[#2a2a2a] p-4 shadow-2xs">
+              <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-2xs">
                 <div className="flex items-center justify-between text-xs font-bold text-amber-500 mb-1">
                   <span>Currently Featured</span>
                   <Crown className="h-4 w-4" />
@@ -1098,7 +1099,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                     : 'Showing default reserve spot banner placeholder'}
                 </p>
               </div>
-              <div className="rounded-xl border border-neutral-800 bg-[#2a2a2a] p-4 shadow-2xs">
+              <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-2xs">
                 <div className="flex items-center justify-between text-xs font-bold text-neutral-400 mb-1">
                   <span>Featured Spot Status</span>
                   <Star className="h-4 w-4" />
@@ -1117,10 +1118,10 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
             </div>
 
             {/* Featured Product Selector */}
-            <div className="rounded-xl border border-neutral-800 bg-[#2a2a2a] p-4 shadow-2xs">
+            <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-2xs">
               <div className="flex items-center gap-2 mb-3">
                 <Crown className="h-4 w-4 text-amber-500" />
-                <h3 className="text-sm font-black text-white">Assign Featured Product</h3>
+                <h3 className="text-sm font-black text-neutral-950">Assign Featured Product</h3>
               </div>
               <p className="text-xs text-neutral-400 mb-4">
                 Select which product appears as the featured banner on the homepage. You can override any user-purchased featured spot from here.
@@ -1134,10 +1135,10 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
 
             {/* Current Featured Detail */}
             {featuredProduct && (
-              <div className="rounded-xl border border-amber-400/70 ring-1 ring-amber-400/30 bg-[#2a2a2a] p-4 sm:p-5">
+              <div className="rounded-xl border border-amber-400/70 ring-1 ring-amber-400/30 bg-white p-4 sm:p-5">
                 <div className="flex items-center gap-2 mb-3">
                   <Crown className="h-4 w-4 text-amber-500" />
-                  <h3 className="text-sm font-black text-white">Featured Product Details</h3>
+                  <h3 className="text-sm font-black text-neutral-950">Featured Product Details</h3>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-2xs">
@@ -1150,17 +1151,17 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                         onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
                       />
                     ) : (
-                      <span className="text-sm font-black text-white">{featuredProduct.name.slice(0, 2).toUpperCase()}</span>
+                      <span className="text-sm font-black text-neutral-950">{featuredProduct.name.slice(0, 2).toUpperCase()}</span>
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <h4 className="text-base font-black text-white truncate">{featuredProduct.name}</h4>
-                      {featuredProduct.verified && <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />}
+                      <h4 className="text-base font-black text-neutral-950 truncate">{featuredProduct.name}</h4>
+                      {featuredProduct.verified && <CheckCircle2 className="h-4 w-4 text-mint-600 shrink-0" />}
                     </div>
                     <p className="text-xs text-neutral-400 truncate">{featuredProduct.tagline}</p>
                     <div className="flex items-center gap-3 mt-1.5 text-[11px] text-neutral-400">
-                      <span className="rounded-md bg-neutral-800 border border-neutral-700 px-2 py-0.5 font-bold text-neutral-300">
+                      <span className="rounded-md bg-neutral-800 border border-neutral-200 px-2 py-0.5 font-bold text-neutral-300">
                         {featuredProduct.category}
                       </span>
 
@@ -1180,7 +1181,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                     <button
                       type="button"
                       onClick={() => onSetFeatured(null)}
-                      className="flex items-center gap-1.5 rounded-xl border border-neutral-700 bg-[#2a2a2a] px-3 py-2 text-xs font-bold text-neutral-300 hover:border-mint-500/60 hover:bg-[#333333] transition-all cursor-pointer"
+                      className="flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-300 hover:border-mint-500/60 hover:bg-neutral-100 transition-all cursor-pointer"
                     >
                       <X className="h-3.5 w-3.5" />
                       <span>Clear Featured</span>
@@ -1191,8 +1192,8 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
             )}
 
             {/* How It Works */}
-            <div className="rounded-xl border border-neutral-800 bg-[#2a2a2a] p-4">
-              <h4 className="text-xs font-bold text-white mb-2">How Featured Works</h4>
+            <div className="rounded-xl border border-neutral-200 bg-white p-4">
+              <h4 className="text-xs font-bold text-neutral-950 mb-2">How Featured Works</h4>
               <ul className="space-y-1.5">
                 <li className="flex items-start gap-2 text-xs text-neutral-400">
                   <span className="font-bold">1.</span>
@@ -1219,7 +1220,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
       {/* Edit Submission Modal */}
       {editingSubmission && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3.5 sm:p-4 bg-black/75 backdrop-blur-md overflow-y-auto font-sans">
-          <div className="relative w-full max-w-md rounded-2xl border border-neutral-800 bg-[#222222] shadow-2xl p-5 sm:p-6 text-neutral-100 animate-in fade-in zoom-in-95 duration-150">
+          <div className="relative w-full max-w-md rounded-2xl border border-neutral-200 bg-white shadow-2xl p-5 sm:p-6 text-neutral-100 animate-in fade-in zoom-in-95 duration-150">
             <button
               type="button"
               onClick={() => setEditingSubmission(null)}
@@ -1229,11 +1230,11 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
             </button>
 
             <div className="flex items-center gap-2.5 mb-4">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-neutral-800 text-mint-300 border border-neutral-700 font-bold text-xs shadow-2xs">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-neutral-800 text-mint-600 border border-neutral-200 font-bold text-xs shadow-2xs">
                 <Edit3 className="h-4 w-4" />
               </div>
               <div>
-                <h3 className="text-base font-black text-white">Edit Submission</h3>
+                <h3 className="text-base font-black text-neutral-950">Edit Submission</h3>
                 <p className="text-xs text-neutral-400">Modify details before approving</p>
               </div>
             </div>
@@ -1241,19 +1242,19 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
             <form onSubmit={handleSaveEdit} className="space-y-3.5">
               <div>
                 <label className="block text-xs font-bold text-neutral-300 mb-1">Website Name</label>
-                <input type="text" required value={editName} onChange={(e) => setEditName(e.target.value)} className="w-full rounded-xl border border-neutral-700 bg-[#1e1e1e] px-3 py-2 text-xs text-white focus:border-mint-500 focus:outline-none focus:ring-1 focus:ring-mint-500" />
+                <input type="text" required value={editName} onChange={(e) => setEditName(e.target.value)} className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs text-white focus:border-mint-500 focus:outline-none focus:ring-1 focus:ring-mint-500" />
               </div>
               <div>
                 <label className="block text-xs font-bold text-neutral-300 mb-1">Website URL</label>
-                <input type="text" required value={editUrl} onChange={(e) => setEditUrl(e.target.value)} className="w-full rounded-xl border border-neutral-700 bg-[#1e1e1e] px-3 py-2 text-xs text-white focus:border-mint-500 focus:outline-none focus:ring-1 focus:ring-mint-500" />
+                <input type="text" required value={editUrl} onChange={(e) => setEditUrl(e.target.value)} className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs text-white focus:border-mint-500 focus:outline-none focus:ring-1 focus:ring-mint-500" />
               </div>
               <div>
                 <label className="block text-xs font-bold text-neutral-300 mb-1">Tagline</label>
-                <textarea required rows={2} value={editTagline} onChange={(e) => setEditTagline(e.target.value)} className="w-full rounded-xl border border-neutral-700 bg-[#1e1e1e] px-3 py-2 text-xs text-white focus:border-mint-500 focus:outline-none focus:ring-1 focus:ring-mint-500" />
+                <textarea required rows={2} value={editTagline} onChange={(e) => setEditTagline(e.target.value)} className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs text-white focus:border-mint-500 focus:outline-none focus:ring-1 focus:ring-mint-500" />
               </div>
               <div>
                 <label className="block text-xs font-bold text-neutral-300 mb-1">Category</label>
-                <select value={editCategory} onChange={(e) => setEditCategory(e.target.value as Category)} className="w-full rounded-xl border border-neutral-700 bg-[#1e1e1e] px-3 py-2 text-xs text-white focus:border-mint-500 focus:outline-none focus:ring-1 focus:ring-mint-500">
+                <select value={editCategory} onChange={(e) => setEditCategory(e.target.value as Category)} className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs text-white focus:border-mint-500 focus:outline-none focus:ring-1 focus:ring-mint-500">
                   <option value="AI Tools">AI Tools</option>
                   <option value="Developer Tools">Developer Tools</option>
                   <option value="Productivity">Productivity</option>
@@ -1264,7 +1265,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
               </div>
 
               {/* Offer / Discount Details */}
-              <div className="rounded-xl border border-neutral-800 bg-[#1e1e1e] p-3 space-y-2.5">
+              <div className="rounded-xl border border-neutral-200 bg-white p-3 space-y-2.5">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-amber-400">
                   <Tag className="h-3.5 w-3.5" />
                   <span>Offer / Discount Details (Optional)</span>
@@ -1277,7 +1278,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                       placeholder="e.g. 20% OFF"
                       value={editOfferDiscount}
                       onChange={(e) => setEditOfferDiscount(e.target.value)}
-                      className="w-full rounded-lg border border-neutral-700 bg-[#252525] px-2.5 py-1.5 text-xs text-white placeholder-neutral-500 focus:border-mint-500 focus:outline-none"
+                      className="w-full rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-xs text-neutral-900 placeholder-neutral-400 focus:border-mint-500 focus:outline-none"
                     />
                   </div>
                   <div>
@@ -1287,7 +1288,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                       placeholder="e.g. TOPSAAS20"
                       value={editOfferCode}
                       onChange={(e) => setEditOfferCode(e.target.value.toUpperCase())}
-                      className="w-full rounded-lg border border-neutral-700 bg-[#252525] px-2.5 py-1.5 text-xs font-mono text-white placeholder-neutral-500 focus:border-mint-500 focus:outline-none"
+                      className="w-full rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-xs font-mono text-neutral-900 placeholder-neutral-400 focus:border-mint-500 focus:outline-none"
                     />
                   </div>
                 </div>
@@ -1298,7 +1299,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                     placeholder="https://example.com/pricing?code=TOPSAAS"
                     value={editOfferUrl}
                     onChange={(e) => setEditOfferUrl(e.target.value)}
-                    className="w-full rounded-lg border border-neutral-700 bg-[#252525] px-2.5 py-1.5 text-xs text-white placeholder-neutral-500 focus:border-mint-500 focus:outline-none"
+                    className="w-full rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-xs text-neutral-900 placeholder-neutral-400 focus:border-mint-500 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -1308,12 +1309,12 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                     placeholder="e.g. First 3 months for early adopters"
                     value={editOfferDetails}
                     onChange={(e) => setEditOfferDetails(e.target.value)}
-                    className="w-full rounded-lg border border-neutral-700 bg-[#252525] px-2.5 py-1.5 text-xs text-white placeholder-neutral-500 focus:border-mint-500 focus:outline-none"
+                    className="w-full rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-xs text-neutral-900 placeholder-neutral-400 focus:border-mint-500 focus:outline-none"
                   />
                 </div>
               </div>
               <div className="pt-2 flex items-center justify-end gap-2">
-                <button type="button" onClick={() => setEditingSubmission(null)} className="rounded-xl border border-neutral-700 bg-[#2a2a2a] px-4 py-2 text-xs font-bold text-neutral-300 hover:border-neutral-500 hover:text-white">Cancel</button>
+                <button type="button" onClick={() => setEditingSubmission(null)} className="rounded-xl border border-neutral-200 bg-white px-4 py-2 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50">Cancel</button>
                 <button type="submit" className="rounded-xl bg-white px-4 py-2 text-xs font-black text-black hover:bg-neutral-200">Save Changes</button>
               </div>
             </form>
@@ -1324,11 +1325,11 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
       {/* Revoke Confirmation Modal */}
       {revokeTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md font-sans">
-          <div className="relative w-full max-w-sm rounded-2xl border border-neutral-800 bg-[#222222] shadow-2xl p-6 text-center animate-in fade-in zoom-in-95 duration-150 text-white">
+          <div className="relative w-full max-w-sm rounded-2xl border border-neutral-200 bg-white shadow-2xl p-6 text-center animate-in fade-in zoom-in-95 duration-150 text-white">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-red-950/40 border border-red-800/60 mb-4">
               <XCircle className="h-6 w-6 text-red-400" />
             </div>
-            <h3 className="text-base font-black text-white mb-1">Revoke Approval?</h3>
+            <h3 className="text-base font-black text-neutral-950 mb-1">Revoke Approval?</h3>
             <p className="text-xs text-neutral-400 mb-5">
               <span className="font-bold text-white">{revokeTarget.name}</span> will be removed from the live directory. This action can be undone by restoring the submission.
             </p>
@@ -1336,7 +1337,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
               <button
                 type="button"
                 onClick={() => setRevokeTarget(null)}
-                className="rounded-xl border border-neutral-700 bg-[#2a2a2a] px-4 py-2 text-xs font-bold text-neutral-300 hover:border-neutral-500 hover:text-white transition-all cursor-pointer"
+                className="rounded-xl border border-neutral-200 bg-white px-4 py-2 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-all cursor-pointer"
               >
                 Cancel
               </button>
@@ -1346,7 +1347,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                   handleReject(revokeTarget.id);
                   setRevokeTarget(null);
                 }}
-                className="rounded-xl bg-red-600 px-4 py-2 text-xs font-bold text-white hover:bg-red-700 transition-all cursor-pointer active:scale-[0.98]"
+                className="rounded-xl bg-red-600 px-4 py-2 text-xs font-bold text-neutral-950 hover:bg-red-700 transition-all cursor-pointer active:scale-[0.98]"
               >
                 Yes, Revoke
               </button>
@@ -1373,16 +1374,16 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
             onClick={() => setViewingDetailsSubmission(null)}
           >
             <div 
-              className="relative w-full max-w-4xl max-h-[92vh] flex flex-col rounded-2xl border border-neutral-800 bg-[#1e1e1e] shadow-2xl overflow-hidden text-white animate-in fade-in zoom-in-95 duration-150"
+              className="relative w-full max-w-4xl max-h-[92vh] flex flex-col rounded-2xl border border-neutral-200 bg-white shadow-2xl overflow-hidden text-white animate-in fade-in zoom-in-95 duration-150"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Modal Header */}
-              <div className="flex items-start justify-between gap-4 p-5 sm:p-6 border-b border-neutral-800 bg-[#242424]">
+              <div className="flex items-start justify-between gap-4 p-5 sm:p-6 border-b border-neutral-200 bg-[#242424]">
                 <div className="flex items-start gap-4 min-w-0">
                   <ProductLogo
                     src={logoSrc}
                     alt={sub.name}
-                    containerClassName="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-neutral-700 bg-[#1a1a1a] shadow-md"
+                    containerClassName="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-100 shadow-md"
                     iconClassName="h-7 w-7 text-neutral-400 shrink-0"
                   />
                   <div className="min-w-0 space-y-1">
@@ -1405,7 +1406,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                         </span>
                       )}
 
-                      <span className="rounded-lg bg-neutral-800 border border-neutral-700 px-2.5 py-0.5 text-xs font-bold text-neutral-300">
+                      <span className="rounded-lg bg-neutral-800 border border-neutral-200 px-2.5 py-0.5 text-xs font-bold text-neutral-300">
                         {sub.category}
                       </span>
                     </div>
@@ -1417,9 +1418,9 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                         href={sub.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-mint-400 font-bold hover:underline"
+                        className="inline-flex items-center gap-1 text-mint-600 font-bold hover:underline"
                       >
-                        <Globe className="h-3.5 w-3.5 text-mint-400" />
+                        <Globe className="h-3.5 w-3.5 text-mint-600" />
                         <span>{sub.url}</span>
                         <ExternalLink className="h-3 w-3" />
                       </a>
@@ -1431,14 +1432,14 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                 <button
                   type="button"
                   onClick={() => setViewingDetailsSubmission(null)}
-                  className="rounded-xl border border-neutral-700 bg-[#2a2a2a] p-2 text-neutral-400 hover:text-white hover:bg-neutral-700 transition-all cursor-pointer shrink-0"
+                  className="rounded-xl border border-neutral-200 bg-white p-2 text-neutral-500 hover:text-neutral-950 hover:bg-neutral-700 transition-all cursor-pointer shrink-0"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
 
               {/* Action Toolbar Header */}
-              <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-3 border-b border-neutral-800 bg-[#1a1a1a]">
+              <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-3 border-b border-neutral-200 bg-neutral-100">
                 <span className="text-xs font-bold text-neutral-400">
                   Admin Actions for this Launch:
                 </span>
@@ -1452,7 +1453,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                           handleAccept(sub);
                           setViewingDetailsSubmission({ ...sub, status: 'approved' });
                         }}
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-500 px-4 py-2 text-xs font-black text-[#0b0f14] hover:bg-emerald-400 active:scale-[0.98] transition-all cursor-pointer shadow-md"
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-500 px-4 py-2 text-xs font-black text-white hover:bg-emerald-400 active:scale-[0.98] transition-all cursor-pointer shadow-md"
                       >
                         <Check className="h-4 w-4 stroke-[3]" />
                         <span>Approve & Go Live</span>
@@ -1462,7 +1463,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                         onClick={() => {
                           handleOpenEdit(sub);
                         }}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-700 bg-[#2a2a2a] px-3.5 py-2 text-xs font-bold text-neutral-200 hover:border-neutral-500 hover:text-white transition-all cursor-pointer"
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3.5 py-2 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-all cursor-pointer"
                       >
                         <Edit3 className="h-3.5 w-3.5" />
                         <span>Edit</span>
@@ -1489,8 +1490,8 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                           onClick={() => onToggleVerified(liveProduct.id, !liveProduct.verified)}
                           className={`inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-bold transition-all cursor-pointer ${
                             liveProduct.verified
-                              ? 'border-mint-500/50 bg-mint-500/10 text-mint-300 hover:bg-mint-500/20 shadow-2xs'
-                              : 'border-neutral-700 bg-[#2a2a2a] text-neutral-300 hover:border-mint-500/50 hover:text-white'
+                              ? 'border-mint-500/50 bg-mint-500/10 text-mint-600 hover:bg-mint-500/20 shadow-2xs'
+                              : 'border-neutral-200 bg-white text-neutral-300 hover:border-mint-500/50 hover:text-white'
                           }`}
                           title={liveProduct.verified ? 'Verified Startup — click to remove verification' : 'Click to mark as Verified Startup'}
                         >
@@ -1511,7 +1512,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                         href={`/product/${liveProduct?.id || sub.id}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-mint-500 px-4 py-2 text-xs font-black text-[#0b0f14] hover:bg-mint-400 transition-all cursor-pointer shadow-md"
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-mint-500 px-4 py-2 text-xs font-black text-white hover:bg-mint-400 transition-all cursor-pointer shadow-md"
                       >
                         <ExternalLink className="h-4 w-4" />
                         <span>View Live Product Page</span>
@@ -1521,7 +1522,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                         onClick={() => {
                           handleOpenEdit(sub);
                         }}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-700 bg-[#2a2a2a] px-3.5 py-2 text-xs font-bold text-neutral-200 hover:border-neutral-500 hover:text-white transition-all cursor-pointer"
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3.5 py-2 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-all cursor-pointer"
                       >
                         <Edit3 className="h-3.5 w-3.5" />
                         <span>Edit</span>
@@ -1544,7 +1545,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                           handleAccept(sub);
                           setViewingDetailsSubmission({ ...sub, status: 'approved' });
                         }}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-600 bg-emerald-500/15 px-4 py-2 text-xs font-bold text-emerald-300 hover:bg-emerald-500 hover:text-[#0b0f14] transition-all cursor-pointer"
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-600 bg-emerald-500/15 px-4 py-2 text-xs font-bold text-emerald-300 hover:bg-emerald-500 hover:text-white transition-all cursor-pointer"
                       >
                         <RotateCcw className="h-3.5 w-3.5" />
                         <span>Restore & Approve</span>
@@ -1555,7 +1556,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                           handleDeleteSubmission(sub);
                           setViewingDetailsSubmission(null);
                         }}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-700 bg-[#2a2a2a] px-3.5 py-2 text-xs font-bold text-red-400 hover:border-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3.5 py-2 text-xs font-bold text-red-400 hover:border-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                         <span>Delete Record</span>
@@ -1568,11 +1569,11 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
               {/* Scrollable Body Details */}
               <div className="p-6 space-y-6 overflow-y-auto max-h-[calc(92vh-160px)]">
                 {/* 1. All Links & Distribution Channels */}
-                <div className="rounded-xl border border-neutral-800 bg-[#252525] p-4 sm:p-5 space-y-3">
-                  <div className="flex items-center justify-between border-b border-neutral-700/60 pb-2.5">
+                <div className="rounded-xl border border-neutral-200 bg-neutral-100 p-4 sm:p-5 space-y-3">
+                  <div className="flex items-center justify-between border-b border-neutral-200/60 pb-2.5">
                     <div className="flex items-center gap-2">
-                      <Globe className="h-4 w-4 text-mint-400" />
-                      <h3 className="text-xs font-black uppercase tracking-wider text-white">All Submitted Links & Socials</h3>
+                      <Globe className="h-4 w-4 text-mint-600" />
+                      <h3 className="text-xs font-black  text-neutral-950">All Submitted Links & Socials</h3>
                     </div>
                     <span className="text-[11px] text-neutral-400 font-medium">
                       {(sub.socials?.length || 0) + 1} distribution channels
@@ -1585,10 +1586,10 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                       href={sub.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center justify-between gap-2 rounded-lg border border-neutral-700 bg-[#1e1e1e] px-3 py-2 text-xs font-semibold text-mint-300 hover:border-mint-500 hover:text-mint-200 transition-all group"
+                      className="flex items-center justify-between gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-semibold text-mint-600 hover:border-mint-500 hover:text-mint-700 transition-all group"
                     >
                       <div className="flex items-center gap-2 min-w-0">
-                        <Globe className="h-3.5 w-3.5 text-neutral-400 group-hover:text-mint-400 shrink-0" />
+                        <Globe className="h-3.5 w-3.5 text-neutral-400 group-hover:text-mint-600 shrink-0" />
                         <span className="truncate">Website: {sub.url.replace(/^https?:\/\//, '')}</span>
                       </div>
                       <ExternalLink className="h-3 w-3 shrink-0 opacity-70" />
@@ -1600,7 +1601,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                         href={`https://x.com/${sub.twitterHandle.replace('@', '')}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center justify-between gap-2 rounded-lg border border-neutral-700 bg-[#1e1e1e] px-3 py-2 text-xs font-semibold text-neutral-200 hover:border-neutral-500 hover:text-white transition-all"
+                        className="flex items-center justify-between gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-semibold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-all"
                       >
                         <div className="flex items-center gap-2 min-w-0">
                           <Twitter className="h-3.5 w-3.5 text-sky-400 shrink-0" />
@@ -1634,7 +1635,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                           href={s.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center justify-between gap-2 rounded-lg border border-neutral-700 bg-[#1e1e1e] px-3 py-2 text-xs font-semibold text-neutral-200 hover:border-mint-500/60 hover:text-white transition-all group"
+                          className="flex items-center justify-between gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-semibold text-neutral-700 hover:border-mint-500/60 hover:text-mint-700 hover:bg-mint-50/30 transition-all group"
                         >
                           <div className="flex items-center gap-2 min-w-0">
                             <span className="h-2 w-2 rounded-full bg-mint-400 shrink-0" />
@@ -1652,11 +1653,11 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                   <div className="rounded-xl border border-mint-500/40 bg-[#1a2a25] p-4 sm:p-5 space-y-3">
                     <div className="flex items-center justify-between border-b border-mint-500/30 pb-2.5">
                       <div className="flex items-center gap-2">
-                        <Tag className="h-4 w-4 text-mint-400" />
-                        <h3 className="text-xs font-black uppercase tracking-wider text-mint-300">Exclusive TopSAAS Offer</h3>
+                        <Tag className="h-4 w-4 text-mint-600" />
+                        <h3 className="text-xs font-black  text-mint-600">Exclusive TopSAAS Offer</h3>
                       </div>
                       {sub.offerDiscount && (
-                        <span className="rounded-full bg-mint-500 text-[#0b0f14] px-2.5 py-0.5 text-xs font-black">
+                        <span className="rounded-full bg-mint-500 text-white px-2.5 py-0.5 text-xs font-black">
                           {sub.offerDiscount}
                         </span>
                       )}
@@ -1665,11 +1666,11 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                       {sub.offerCode && (
                         <div>
-                          <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1">Promo / Discount Code</label>
+                          <label className="block text-[10px] font-bold text-neutral-400  mb-1">Promo / Discount Code</label>
                           <button
                             type="button"
                             onClick={() => handleCopyOfferCode(sub.offerCode!)}
-                            className="w-full flex items-center justify-between gap-2 rounded-lg border-2 border-dashed border-mint-400/80 bg-[#1a1a1a] px-3 py-2 text-xs font-mono font-bold text-mint-300 hover:bg-mint-400/10 transition-all cursor-pointer"
+                            className="w-full flex items-center justify-between gap-2 rounded-lg border-2 border-dashed border-mint-400/80 bg-neutral-100 px-3 py-2 text-xs font-mono font-bold text-mint-600 hover:bg-mint-400/10 transition-all cursor-pointer"
                           >
                             <span>{sub.offerCode}</span>
                             {copiedOfferCode ? (
@@ -1685,12 +1686,12 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
 
                       {sub.offerUrl && (
                         <div>
-                          <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1">Redeem Deal URL</label>
+                          <label className="block text-[10px] font-bold text-neutral-400  mb-1">Redeem Deal URL</label>
                           <a
                             href={sub.offerUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center justify-between gap-2 rounded-lg border border-neutral-700 bg-[#1a1a1a] px-3 py-2 text-xs font-medium text-mint-300 hover:underline"
+                            className="flex items-center justify-between gap-2 rounded-lg border border-neutral-200 bg-neutral-100 px-3 py-2 text-xs font-medium text-mint-600 hover:underline"
                           >
                             <span className="truncate">{sub.offerUrl}</span>
                             <ExternalLink className="h-3 w-3 shrink-0" />
@@ -1710,24 +1711,24 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
 
                 {/* 3. Demo Video Player */}
                 {videoData && (
-                  <div className="rounded-xl border border-neutral-800 bg-[#252525] p-4 sm:p-5 space-y-3">
-                    <div className="flex items-center justify-between border-b border-neutral-700/60 pb-2.5">
+                  <div className="rounded-xl border border-neutral-200 bg-neutral-100 p-4 sm:p-5 space-y-3">
+                    <div className="flex items-center justify-between border-b border-neutral-200/60 pb-2.5">
                       <div className="flex items-center gap-2">
-                        <Video className="h-4 w-4 text-mint-400" />
-                        <h3 className="text-xs font-black uppercase tracking-wider text-white">Product Demo Video</h3>
+                        <Video className="h-4 w-4 text-mint-600" />
+                        <h3 className="text-xs font-black  text-neutral-950">Product Demo Video</h3>
                       </div>
                       <a
                         href={sub.demoVideoUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-[11px] font-bold text-mint-300 hover:text-mint-200"
+                        className="inline-flex items-center gap-1 text-[11px] font-bold text-mint-600 hover:text-mint-700"
                       >
                         <span>Open Video URL</span>
                         <ExternalLink className="h-3 w-3" />
                       </a>
                     </div>
 
-                    <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-neutral-800 bg-black">
+                    <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-neutral-200 bg-black">
                       {videoData.type === 'iframe' ? (
                         <iframe
                           src={videoData.embedUrl}
@@ -1745,13 +1746,13 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                         />
                       ) : (
                         <div className="flex h-full w-full flex-col items-center justify-center gap-3 p-6 text-center">
-                          <Play className="h-10 w-10 text-mint-400" />
+                          <Play className="h-10 w-10 text-mint-600" />
                           <p className="text-xs text-neutral-300">Click below to watch the demo video.</p>
                           <a
                             href={videoData.embedUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 rounded-xl bg-mint-500 px-4 py-2 text-xs font-black text-[#0b0f14]"
+                            className="inline-flex items-center gap-1.5 rounded-xl bg-mint-500 px-4 py-2 text-xs font-black text-white"
                           >
                             <span>Open Demo</span>
                             <ExternalLink className="h-3.5 w-3.5" />
@@ -1764,11 +1765,11 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
 
                 {/* 4. Screenshots Gallery */}
                 {sub.screenshots && sub.screenshots.length > 0 && (
-                  <div className="rounded-xl border border-neutral-800 bg-[#252525] p-4 sm:p-5 space-y-3">
-                    <div className="flex items-center justify-between border-b border-neutral-700/60 pb-2.5">
+                  <div className="rounded-xl border border-neutral-200 bg-neutral-100 p-4 sm:p-5 space-y-3">
+                    <div className="flex items-center justify-between border-b border-neutral-200/60 pb-2.5">
                       <div className="flex items-center gap-2">
-                        <ImageIcon className="h-4 w-4 text-mint-400" />
-                        <h3 className="text-xs font-black uppercase tracking-wider text-white">Product Screenshots</h3>
+                        <ImageIcon className="h-4 w-4 text-mint-600" />
+                        <h3 className="text-xs font-black  text-neutral-950">Product Screenshots</h3>
                       </div>
                       <span className="text-[11px] text-neutral-400 font-medium">
                         {sub.screenshots.length} {sub.screenshots.length === 1 ? 'image' : 'images'}
@@ -1781,7 +1782,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                           key={i}
                           type="button"
                           onClick={() => setLightboxImage(src)}
-                          className="group relative aspect-video overflow-hidden rounded-xl border border-neutral-700 bg-[#1e1e1e] cursor-pointer hover:border-mint-500 transition-all"
+                          className="group relative aspect-video overflow-hidden rounded-xl border border-neutral-200 bg-white cursor-pointer hover:border-mint-500 transition-all"
                         >
                           <img
                             src={src}
@@ -1795,52 +1796,60 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                 )}
 
                 {/* 5. Pitch & Specifications */}
-                <div className="rounded-xl border border-neutral-800 bg-[#252525] p-4 sm:p-5 space-y-4">
-                  <div className="flex items-center gap-2 border-b border-neutral-700/60 pb-2.5">
-                    <Sparkles className="h-4 w-4 text-mint-400" />
-                    <h3 className="text-xs font-black uppercase tracking-wider text-white">Pitch Copy & Detailed Information</h3>
+                <div className="rounded-xl border border-neutral-200 bg-neutral-100 p-4 sm:p-5 space-y-4">
+                  <div className="flex items-center gap-2 border-b border-neutral-200/60 pb-2.5">
+                    <Sparkles className="h-4 w-4 text-mint-600" />
+                    <h3 className="text-xs font-black  text-neutral-950">Pitch Copy & Detailed Information</h3>
                   </div>
 
                   <div className="space-y-3 text-xs leading-relaxed">
                     {sub.description && (
                       <div>
-                        <span className="block font-bold uppercase text-[10px] tracking-wider text-neutral-400 mb-1">Executive Description</span>
-                        <p className="text-neutral-200 bg-[#1e1e1e] p-3 rounded-lg border border-neutral-700">{sub.description}</p>
+                        <span className="block font-bold text-[10px] tracking-wider text-neutral-400 mb-1">Executive Description</span>
+                        <div className="bg-white p-3 rounded-lg border border-neutral-200">
+                          <RichText html={sub.description} className="text-neutral-700 text-xs leading-relaxed" />
+                        </div>
                       </div>
                     )}
 
                     {sub.problemItSolves && (
                       <div>
-                        <span className="block font-bold uppercase text-[10px] tracking-wider text-neutral-400 mb-1">Problem It Solves</span>
-                        <p className="text-neutral-200 bg-[#1e1e1e] p-3 rounded-lg border border-neutral-700">{sub.problemItSolves}</p>
+                        <span className="block font-bold text-[10px] tracking-wider text-neutral-400 mb-1">Problem It Solves</span>
+                        <div className="bg-white p-3 rounded-lg border border-neutral-200">
+                          <RichText html={sub.problemItSolves} className="text-neutral-700 text-xs leading-relaxed" />
+                        </div>
                       </div>
                     )}
 
                     {sub.solution && (
                       <div>
-                        <span className="block font-bold uppercase text-[10px] tracking-wider text-neutral-400 mb-1">Solution Offered</span>
-                        <p className="text-neutral-200 bg-[#1e1e1e] p-3 rounded-lg border border-neutral-700">{sub.solution}</p>
+                        <span className="block font-bold text-[10px] tracking-wider text-neutral-400 mb-1">Solution Offered</span>
+                        <div className="bg-white p-3 rounded-lg border border-neutral-200">
+                          <RichText html={sub.solution} className="text-neutral-700 text-xs leading-relaxed" />
+                        </div>
                       </div>
                     )}
 
                     {sub.uniqueSellingPoint && (
                       <div>
-                        <span className="block font-bold uppercase text-[10px] tracking-wider text-neutral-400 mb-1">Unique Selling Point (USP)</span>
-                        <p className="text-neutral-200 bg-[#1e1e1e] p-3 rounded-lg border border-neutral-700">{sub.uniqueSellingPoint}</p>
+                        <span className="block font-bold text-[10px] tracking-wider text-neutral-400 mb-1">Unique Selling Point (USP)</span>
+                        <div className="bg-white p-3 rounded-lg border border-neutral-200">
+                          <RichText html={sub.uniqueSellingPoint} className="text-neutral-700 text-xs leading-relaxed" />
+                        </div>
                       </div>
                     )}
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                       {sub.targetAudience && (
                         <div>
-                          <span className="block font-bold uppercase text-[10px] tracking-wider text-neutral-400 mb-1">Target Audience</span>
-                          <p className="text-neutral-200 bg-[#1e1e1e] p-2.5 rounded-lg border border-neutral-700">{sub.targetAudience}</p>
+                          <span className="block font-bold text-[10px] tracking-wider text-neutral-400 mb-1">Target Audience</span>
+                          <p className="text-neutral-200 bg-white p-2.5 rounded-lg border border-neutral-200">{sub.targetAudience}</p>
                         </div>
                       )}
                       {sub.pricingModel && (
                         <div>
-                          <span className="block font-bold uppercase text-[10px] tracking-wider text-neutral-400 mb-1">Pricing Model</span>
-                          <p className="text-neutral-200 bg-[#1e1e1e] p-2.5 rounded-lg border border-neutral-700">{sub.pricingModel}</p>
+                          <span className="block font-bold text-[10px] tracking-wider text-neutral-400 mb-1">Pricing Model</span>
+                          <p className="text-neutral-200 bg-white p-2.5 rounded-lg border border-neutral-200">{sub.pricingModel}</p>
                         </div>
                       )}
                     </div>
@@ -1848,18 +1857,18 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                 </div>
 
                 {/* 6. Founder Profile & Submitter Metadata */}
-                <div className="rounded-xl border border-neutral-800 bg-[#252525] p-4 sm:p-5 space-y-3">
-                  <div className="flex items-center gap-2 border-b border-neutral-700/60 pb-2.5">
-                    <User className="h-4 w-4 text-mint-400" />
-                    <h3 className="text-xs font-black uppercase tracking-wider text-white">Founder & Submitter Details</h3>
+                <div className="rounded-xl border border-neutral-200 bg-neutral-100 p-4 sm:p-5 space-y-3">
+                  <div className="flex items-center gap-2 border-b border-neutral-200/60 pb-2.5">
+                    <User className="h-4 w-4 text-mint-600" />
+                    <h3 className="text-xs font-black  text-neutral-950">Founder & Submitter Details</h3>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                    <div className="flex items-center gap-3 bg-[#1e1e1e] p-3 rounded-lg border border-neutral-700">
+                    <div className="flex items-center gap-3 bg-white p-3 rounded-lg border border-neutral-200">
                       {sub.creatorAvatar ? (
                         <img src={sub.creatorAvatar} alt={sub.creatorName || 'Founder'} className="h-10 w-10 rounded-full object-cover border border-neutral-600" />
                       ) : (
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-mint-500 text-black font-black text-sm">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-mint-500 text-white font-black text-sm">
                           {(sub.creatorName || sub.backerName || 'F')[0].toUpperCase()}
                         </div>
                       )}
@@ -1872,7 +1881,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                       </div>
                     </div>
 
-                    <div className="space-y-1 bg-[#1e1e1e] p-3 rounded-lg border border-neutral-700 text-neutral-300">
+                    <div className="space-y-1 bg-white p-3 rounded-lg border border-neutral-200 text-neutral-300">
                       <div><span className="text-neutral-500">Submitter Backer:</span> {sub.backerName || 'Community Creator'}</div>
                       {sub.backerEmail && <div><span className="text-neutral-500">Contact Email:</span> {sub.backerEmail}</div>}
                       <div><span className="text-neutral-500">Submission ID:</span> <span className="font-mono text-[10px]">{sub.id}</span></div>
@@ -1882,14 +1891,14 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
               </div>
 
               {/* Modal Footer */}
-              <div className="flex items-center justify-between p-4 border-t border-neutral-800 bg-[#242424]">
+              <div className="flex items-center justify-between p-4 border-t border-neutral-200 bg-[#242424]">
                 <span className="text-xs text-neutral-400">
                   Status: <span className="font-bold text-white capitalize">{sub.status || 'under_review'}</span>
                 </span>
                 <button
                   type="button"
                   onClick={() => setViewingDetailsSubmission(null)}
-                  className="rounded-xl border border-neutral-700 bg-[#2a2a2a] px-4 py-2 text-xs font-bold text-neutral-300 hover:border-neutral-500 hover:text-white transition-all cursor-pointer"
+                  className="rounded-xl border border-neutral-200 bg-white px-4 py-2 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-all cursor-pointer"
                 >
                   Close Preview
                 </button>
@@ -1909,7 +1918,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
             <img
               src={lightboxImage}
               alt="Screenshot Preview"
-              className="max-h-[85vh] max-w-full rounded-xl object-contain shadow-2xl border border-neutral-800"
+              className="max-h-[85vh] max-w-full rounded-xl object-contain shadow-2xl border border-neutral-200"
             />
             <button
               type="button"

@@ -4,10 +4,10 @@ import React, { useState, useEffect } from 'react';
 export const GridFillerCell: React.FC = () => (
   <div
     aria-hidden="true"
-    className="bg-[#2a2a2a]"
+    className="bg-white"
     style={{
       backgroundImage:
-        'repeating-linear-gradient(45deg, rgba(148,163,184,0.06) 0px, rgba(148,163,184,0.06) 1px, transparent 1px, transparent 10px)',
+        'repeating-linear-gradient(45deg, rgba(37, 99, 235, 0.04) 0px, rgba(37, 99, 235, 0.04) 1px, transparent 1px, transparent 10px)',
     }}
   />
 );
