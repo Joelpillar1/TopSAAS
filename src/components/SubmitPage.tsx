@@ -2161,7 +2161,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
               <button
                 type="button"
                 onClick={() => handleTabClick(step - 1)}
-                className="rounded-xl border border-neutral-200 bg-neutral-100 px-4 py-2.5 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-all cursor-pointer"
+                className="btn-secondary px-4 py-2.5 text-xs font-bold"
               >
                 Back
               </button>
@@ -2180,7 +2180,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                 type="button"
                 onClick={handleLaunch}
                 disabled={isSubmitting}
-                className="rounded-xl px-5 py-2.5 text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 shadow-sm bg-neutral-950 text-white hover:bg-neutral-800 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn-primary px-5 py-2.5 text-xs font-black"
                 title="Submit website for review"
               >
                 {isSubmitting ? (
@@ -2199,7 +2199,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
               <button
                 type="button"
                 onClick={onSignInRequest}
-                className="rounded-xl bg-neutral-950 px-5 py-2.5 text-xs font-black text-white hover:bg-neutral-800 active:scale-[0.98] transition-all cursor-pointer"
+                className="btn-primary px-5 py-2.5 text-xs font-black"
               >
                 Sign in to submit
               </button>
