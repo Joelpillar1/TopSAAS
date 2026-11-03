@@ -746,6 +746,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
               currentProductId={product.id}
               soundEnabled={soundEnabled}
               onSelectProduct={onSelectProduct}
+              onTrackClick={onTrackClick}
               onOpenFeaturedSpotModal={onOpenFeaturedSpotModal}
             />
 
@@ -923,8 +924,13 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                     key={sponsor.id}
                     onClick={() => {
                       playSound('click', soundEnabled);
-                      onSelectProduct(sponsor);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                      if (sponsor.url) {
+                        onTrackClick(sponsor.id, sponsor.url);
+                        window.open(sponsor.url, '_blank', 'noopener,noreferrer');
+                      } else {
+                        onSelectProduct(sponsor);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }
                     }}
                     className="rounded-xl border border-amber-200/80 bg-amber-50/20 p-4 hover:border-amber-300 hover:bg-amber-50/50 transition-all cursor-pointer space-y-2 group shadow-2xs"
                   >

@@ -11,6 +11,7 @@ interface SponsorTileProps {
   product?: Product | null;
   onOpenFeaturedSpotModal: () => void;
   onOpenProduct?: (product: Product) => void;
+  onTrackClick?: (productId: string, url: string) => void;
   onUpvote?: (product: Product) => void;
   upvoted?: boolean;
 }
@@ -20,13 +21,19 @@ export const SponsorTile: React.FC<SponsorTileProps> = ({
   product,
   onOpenFeaturedSpotModal,
   onOpenProduct,
+  onTrackClick,
   onUpvote,
   upvoted = false,
 }) => {
   const handleClick = () => {
     playSound('click', soundEnabled);
-    if (product && onOpenProduct) {
-      onOpenProduct(product);
+    if (product) {
+      if (product.url) {
+        onTrackClick?.(product.id, product.url);
+        window.open(product.url, '_blank', 'noopener,noreferrer');
+      } else if (onOpenProduct) {
+        onOpenProduct(product);
+      }
     } else {
       onOpenFeaturedSpotModal();
     }

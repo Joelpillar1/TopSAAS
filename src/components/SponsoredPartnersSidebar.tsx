@@ -9,6 +9,7 @@ interface SponsoredPartnersSidebarProps {
   currentProductId?: string;
   soundEnabled: boolean;
   onSelectProduct: (product: Product) => void;
+  onTrackClick?: (productId: string, url: string) => void;
   onOpenFeaturedSpotModal?: () => void;
 }
 
@@ -17,6 +18,7 @@ export const SponsoredPartnersSidebar: React.FC<SponsoredPartnersSidebarProps> =
   currentProductId,
   soundEnabled,
   onSelectProduct,
+  onTrackClick,
   onOpenFeaturedSpotModal,
 }) => {
   // Exclude current product if it happens to be one of the sponsors
@@ -50,13 +52,23 @@ export const SponsoredPartnersSidebar: React.FC<SponsoredPartnersSidebarProps> =
             tabIndex={0}
             onClick={() => {
               playSound('click', soundEnabled);
-              onSelectProduct(sponsor);
+              if (sponsor.url) {
+                onTrackClick?.(sponsor.id, sponsor.url);
+                window.open(sponsor.url, '_blank', 'noopener,noreferrer');
+              } else {
+                onSelectProduct(sponsor);
+              }
             }}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
                 playSound('click', soundEnabled);
-                onSelectProduct(sponsor);
+                if (sponsor.url) {
+                  onTrackClick?.(sponsor.id, sponsor.url);
+                  window.open(sponsor.url, '_blank', 'noopener,noreferrer');
+                } else {
+                  onSelectProduct(sponsor);
+                }
               }
             }}
             className={`group flex items-start gap-3 text-left transition-colors cursor-pointer ${

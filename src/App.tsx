@@ -2156,6 +2156,7 @@ export default function App() {
               sponsors={products.filter((p) => p.isSponsored)}
               isLoading={!productsLoaded}
               soundEnabled={soundEnabled}
+              onTrackClick={handleTrackClick}
               onOpenProduct={handleOpenProduct}
               onOpenFeaturedSpotModal={() => {
                 if (!user) {
@@ -2430,6 +2431,7 @@ export default function App() {
                           soundEnabled={soundEnabled}
                           product={explicitFeaturedProduct}
                           onOpenProduct={handleOpenProduct}
+                          onTrackClick={handleTrackClick}
                           onUpvote={handleUpvote}
                           upvoted={explicitFeaturedProduct ? isProductUpvoted(explicitFeaturedProduct.id, userUpvotes) : false}
                           onOpenFeaturedSpotModal={() => {

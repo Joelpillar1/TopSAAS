@@ -9,6 +9,7 @@ interface HeroSponsorRailsProps {
   sponsors?: Product[];
   soundEnabled: boolean;
   isLoading?: boolean;
+  onTrackClick?: (productId: string, url: string) => void;
   onOpenProduct?: (product: Product) => void;
   onOpenFeaturedSpotModal?: () => void;
   children: React.ReactNode; // The HomeHero and leaderboard components in the center
@@ -81,11 +82,17 @@ export const SkeletonAdCard: React.FC = () => (
 const ActiveSponsorCard: React.FC<{
   product: Product;
   soundEnabled: boolean;
+  onTrackClick?: (productId: string, url: string) => void;
   onOpenProduct?: (product: Product) => void;
-}> = ({ product, soundEnabled, onOpenProduct }) => {
+}> = ({ product, soundEnabled, onTrackClick, onOpenProduct }) => {
   const handleClick = () => {
     playSound('click', soundEnabled);
-    onOpenProduct?.(product);
+    if (product.url) {
+      onTrackClick?.(product.id, product.url);
+      window.open(product.url, '_blank', 'noopener,noreferrer');
+    } else {
+      onOpenProduct?.(product);
+    }
   };
 
   const isTrial = product.sponsorTier === 'trial';
@@ -201,6 +208,7 @@ export const HeroSponsorRails: React.FC<HeroSponsorRailsProps> = ({
   sponsors = [],
   soundEnabled,
   isLoading = false,
+  onTrackClick,
   onOpenProduct,
   onOpenFeaturedSpotModal,
   children,
@@ -227,6 +235,7 @@ export const HeroSponsorRails: React.FC<HeroSponsorRailsProps> = ({
                     key={`active-left-${sponsoredItem.id}`}
                     product={sponsoredItem}
                     soundEnabled={soundEnabled}
+                    onTrackClick={onTrackClick}
                     onOpenProduct={onOpenProduct}
                   />
                 ) : (
@@ -272,6 +281,7 @@ export const HeroSponsorRails: React.FC<HeroSponsorRailsProps> = ({
                     key={`active-right-${sponsoredItem.id}`}
                     product={sponsoredItem}
                     soundEnabled={soundEnabled}
+                    onTrackClick={onTrackClick}
                     onOpenProduct={onOpenProduct}
                   />
                 ) : (
