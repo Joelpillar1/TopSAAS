@@ -323,6 +323,9 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
   const [badgeTheme, setBadgeTheme] = useState<BadgeTheme>('dark');
   const [badgeFormat, setBadgeFormat] = useState<BadgeFormat>('html');
   const [copiedBadge, setCopiedBadge] = useState(false);
+  // PNG badge variant selected by the user in Step 5
+  type BadgeVariant = 'type1-blue' | 'type1-light' | 'type2-blue' | 'type2-light';
+  const [badgeVariant, setBadgeVariant] = useState<BadgeVariant>('type1-blue');
 
   const categoryRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -581,7 +584,19 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
     updatedAt: Date.now(),
   };
 
-  const badgeEmbedSnippet = generateBadgeSnippet(previewProduct, badgeStyle, badgeTheme, badgeFormat);
+  // PNG badge snippet — links back to the product's TopSAAS listing so the verifier detects topsaas.space
+  const BADGE_IMG_SRCS: Record<string, string> = {
+    'type1-blue':  'https://topsaas.space/Share%20Badge/TopSAAS%20Type%201%20-%20blue.png',
+    'type1-light': 'https://topsaas.space/Share%20Badge/TopSAAS%20Type%201%20-%20light.png',
+    'type2-blue':  'https://topsaas.space/Share%20Badge/TopSAAS%20Type%202%20-%20blue.png',
+    'type2-light': 'https://topsaas.space/Share%20Badge/TopSAAS%20Type%202%20-%20light.png',
+  };
+  const badgeImgSrc = BADGE_IMG_SRCS[badgeVariant];
+  const productListingUrl = `https://topsaas.space/product/${encodeURIComponent(previewProduct.id)}`;
+  const badgeAltText = 'Featured on TopSAAS';
+  const badgeEmbedSnippet = badgeFormat === 'markdown'
+    ? `[![${badgeAltText}](${badgeImgSrc})](${productListingUrl})`
+    : `<a href="${productListingUrl}" target="_blank" rel="noopener noreferrer">\n  <img src="${badgeImgSrc}" alt="${badgeAltText}" height="36" />\n</a>`;
 
   const handleCopyBadgeSnippet = async () => {
     playSound('click', soundEnabled);
@@ -1962,104 +1977,42 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                 </div>
               </div>
 
-              {/* 1. Customizer & Live Preview */}
+              {/* 1. Pick a badge */}
               <div className="space-y-3">
-                <div className="flex items-center justify-between text-xs font-bold text-neutral-600">
-                  <span>1. CHOOSE BADGE STYLE & THEME</span>
-                  <span className="text-mint-600 font-medium">Live SVG Preview</span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* Style */}
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-bold text-neutral-700 block">
-                      Badge Style
-                    </label>
-                    <div className="grid grid-cols-3 gap-1 rounded-xl bg-white p-1 border border-neutral-200">
-                      <button
-                        type="button"
-                        onClick={() => { playSound('click', soundEnabled); setBadgeStyle('featured'); }}
-                        className={`py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                          badgeStyle === 'featured'
-                            ? 'bg-mint-500 text-white'
-                            : 'text-neutral-600 hover:text-neutral-950 hover:bg-neutral-50'
-                        }`}
-                        title="Featured with mint chevron button"
-                      >
-                        Featured
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { playSound('click', soundEnabled); setBadgeStyle('classic'); }}
-                        className={`py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                          badgeStyle === 'classic'
-                            ? 'bg-mint-500 text-white'
-                            : 'text-neutral-600 hover:text-neutral-950 hover:bg-neutral-50'
-                        }`}
-                        title="Classic DanielLaunches style"
-                      >
-                        Classic
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { playSound('click', soundEnabled); setBadgeStyle('rank'); }}
-                        className={`py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                          badgeStyle === 'rank'
-                            ? 'bg-mint-500 text-white'
-                            : 'text-neutral-600 hover:text-neutral-950 hover:bg-neutral-50'
-                        }`}
-                        title="Directory Leaderboard Rank"
-                      >
-                        Rank
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Theme */}
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-bold text-neutral-700 block">
-                      Theme
-                    </label>
-                    <div className="grid grid-cols-2 gap-1 rounded-xl bg-white p-1 border border-neutral-200">
-                      <button
-                        type="button"
-                        onClick={() => { playSound('click', soundEnabled); setBadgeTheme('dark'); }}
-                        className={`py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                          badgeTheme === 'dark'
-                            ? 'bg-neutral-950 text-white shadow-xs'
-                            : 'text-neutral-600 hover:text-neutral-950 hover:bg-neutral-50'
-                        }`}
-                      >
-                        Dark Mode
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { playSound('click', soundEnabled); setBadgeTheme('light'); }}
-                        className={`py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                          badgeTheme === 'light'
-                            ? 'bg-neutral-950 text-white shadow-xs'
-                            : 'text-neutral-600 hover:text-neutral-950 hover:bg-neutral-50'
-                        }`}
-                      >
-                        Light Mode
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Badge visual box */}
-                <div
-                  className={`flex items-center justify-center rounded-2xl p-6 border transition-all ${
-                    badgeTheme === 'dark'
-                      ? 'bg-[#121214] border-neutral-200'
-                      : 'bg-[#f4f4f5] border-neutral-300'
-                  }`}
-                >
-                  <div
-                    dangerouslySetInnerHTML={{
-                      __html: generateBadgeSvg(previewProduct, { style: badgeStyle, theme: badgeTheme }),
-                    }}
-                  />
+                <p className="text-xs font-bold text-neutral-600">1. CHOOSE YOUR BADGE</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {([
+                    { id: 'type1-blue',  src: '/Share%20Badge/TopSAAS%20Type%201%20-%20blue.png',  label: 'Type 1 · Blue',  bg: 'bg-[#1a2580]' },
+                    { id: 'type1-light', src: '/Share%20Badge/TopSAAS%20Type%201%20-%20light.png', label: 'Type 1 · Light', bg: 'bg-white' },
+                    { id: 'type2-blue',  src: '/Share%20Badge/TopSAAS%20Type%202%20-%20blue.png',  label: 'Type 2 · Blue',  bg: 'bg-[#1a2580]' },
+                    { id: 'type2-light', src: '/Share%20Badge/TopSAAS%20Type%202%20-%20light.png', label: 'Type 2 · Light', bg: 'bg-white' },
+                  ] as { id: BadgeVariant; src: string; label: string; bg: string }[]).map(({ id, src, label, bg }) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => { playSound('click', soundEnabled); setBadgeVariant(id); }}
+                      className={`relative flex flex-col items-center gap-2 rounded-2xl border-2 p-4 transition-all cursor-pointer ${
+                        badgeVariant === id
+                          ? 'border-mint-500 shadow-md shadow-mint-500/20'
+                          : 'border-neutral-200 hover:border-neutral-400'
+                      } ${bg}`}
+                    >
+                      {badgeVariant === id && (
+                        <span className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-mint-500">
+                          <Check className="h-3 w-3 text-white" />
+                        </span>
+                      )}
+                      <img
+                        src={src}
+                        alt={label}
+                        className="h-9 w-auto object-contain"
+                        draggable={false}
+                      />
+                      <span className={`text-[10px] font-bold ${
+                        id.endsWith('light') ? 'text-neutral-700' : 'text-white/80'
+                      }`}>{label}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -2099,7 +2052,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                   </button>
                 </div>
                 <p className="text-[11px] text-neutral-500">
-                  Tip: Place this badge into your landing page footer, hero, or README. Visitors can click it directly to discover and upvote your product.
+                  Tip: Place this badge in your website footer, hero section, or README. Visitors click it to upvote your listing on TopSAAS.
                 </p>
               </div>
 

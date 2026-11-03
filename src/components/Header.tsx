@@ -38,8 +38,8 @@ const TabSwitcher: React.FC<TabSwitcherProps> = ({ activeTab, onTabChange }) => 
             onClick={() => onTabChange(t.key)}
             aria-current={active ? 'page' : undefined}
             className={`flex items-center rounded-md px-3 py-1 text-[13px] transition-colors cursor-pointer ${active
-                ? 'bg-neutral-950 font-bold text-white'
-                : 'font-semibold text-gray-500 hover:bg-white hover:text-neutral-950'
+              ? 'bg-neutral-950 font-bold text-white'
+              : 'font-semibold text-gray-500 hover:bg-white hover:text-neutral-950'
               }`}
           >
             <span>{t.label}</span>
@@ -207,8 +207,8 @@ export const Header: React.FC<HeaderProps> = ({
                             }}
                             aria-current={active ? 'page' : undefined}
                             className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] transition-colors cursor-pointer ${active
-                                ? 'bg-neutral-950 font-bold text-white'
-                                : 'font-semibold text-neutral-700 hover:bg-neutral-100 hover:text-neutral-950'
+                              ? 'bg-neutral-950 font-bold text-white'
+                              : 'font-semibold text-neutral-700 hover:bg-neutral-100 hover:text-neutral-950'
                               }`}
                           >
                             <span>{t.label}</span>
