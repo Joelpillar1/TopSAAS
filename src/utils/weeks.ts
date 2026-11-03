@@ -1,45 +1,39 @@
-// Monday-based (ISO-8601 style) week utilities for the weekly launch board
+// TopSAAS Platform Launch Week utilities
+// Platform officially kicks off with Week 1 starting Monday, Nov 2, 2026.
 
 export interface WeekInfo {
-  key: string; // '2026-W45'
-  label: string; // 'Week 45'
-  weekNumber: number; // 45
+  key: string; // 'W1'
+  label: string; // 'Week 1'
+  weekNumber: number; // 1
   start: number; // Monday 00:00 local (inclusive)
   end: number; // next Monday 00:00 local (exclusive)
   isCurrent?: boolean;
   isFuture?: boolean;
 }
 
-const WEEK_MS = 7 * 86400000;
+export const WEEK_MS = 7 * 86400000;
 
-/** ISO-8601 week number for a given date (Monday-start weeks) */
-export function getISOWeek(date: Date): number {
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  // Move to Thursday of the same week (ISO weeks belong to the year of their Thursday)
-  const dayNum = (d.getUTCDay() + 6) % 7; // Mon=0 ... Sun=6
-  d.setUTCDate(d.getUTCDate() - dayNum + 3);
-  const firstThursday = new Date(Date.UTC(d.getUTCFullYear(), 0, 4));
-  const firstDayNum = (firstThursday.getUTCDay() + 6) % 7;
-  firstThursday.setUTCDate(firstThursday.getUTCDate() - firstDayNum + 3);
-  return 1 + Math.round((d.getTime() - firstThursday.getTime()) / WEEK_MS);
+// TopSAAS Week 1 Launch Epoch — Monday, Nov 2, 2026 00:00:00 local
+export const LAUNCH_EPOCH_START = new Date(2026, 10, 2, 0, 0, 0, 0).getTime();
+
+/** Returns the 1-based TopSAAS launch week number */
+export function getWeekNumber(ts: number = Date.now()): number {
+  if (ts < LAUNCH_EPOCH_START) return 1;
+  return Math.floor((ts - LAUNCH_EPOCH_START) / WEEK_MS) + 1;
 }
 
-/** Week info (start/end/label) for the week containing the given timestamp */
-export function getWeekInfo(ts: number): WeekInfo {
-  const d = new Date(ts);
-  const day = d.getDay(); // 0 = Sun
-  const diffToMonday = day === 0 ? -6 : 1 - day;
-  const monday = new Date(d.getFullYear(), d.getMonth(), d.getDate() + diffToMonday, 0, 0, 0, 0);
-  const start = monday.getTime();
+/** Returns WeekInfo for a specific 1-based week number */
+export function getWeekByNumber(num: number): WeekInfo {
+  const n = Math.max(1, num);
+  const start = LAUNCH_EPOCH_START + (n - 1) * WEEK_MS;
   const end = start + WEEK_MS;
-  const weekNumber = getISOWeek(monday);
   const now = Date.now();
   const isCurrent = now >= start && now < end;
   const isFuture = start > now;
   return {
-    key: `${monday.getFullYear()}-W${String(weekNumber).padStart(2, '0')}`,
-    label: `Week ${weekNumber}`,
-    weekNumber,
+    key: `W${n}`,
+    label: `Week ${n}`,
+    weekNumber: n,
     start,
     end,
     isCurrent,
@@ -47,32 +41,53 @@ export function getWeekInfo(ts: number): WeekInfo {
   };
 }
 
-/** Week info for an offset in weeks from now (0 = current week, -1 = last week, +1 = next week) */
+/** Week info for the week containing the given timestamp (defaults to now = Week 1) */
+export function getWeekInfo(ts: number = Date.now()): WeekInfo {
+  const n = getWeekNumber(ts);
+  return getWeekByNumber(n);
+}
+
+/** Week info for an offset in weeks from current week (0 = current week, 1 = next week) */
 export function getWeekByOffset(offset = 0): WeekInfo {
-  const now = Date.now();
-  return getWeekInfo(now + offset * WEEK_MS);
+  const current = getWeekNumber();
+  return getWeekByNumber(current + offset);
 }
 
-/** Get a sequence of weeks around an offset (e.g. 3 past, current, 3 future) */
-export function getWeeksWindow(centerOffset = 0, countBefore = 3, countAfter = 3): WeekInfo[] {
+/** Get a sequence of `count` weeks starting at `startWeek` (default startWeek = 1, count = 7) */
+export function getWeeksRange(startWeek = 1, count = 7): WeekInfo[] {
+  const s = Math.max(1, startWeek);
   const out: WeekInfo[] = [];
-  for (let i = -countBefore; i <= countAfter; i++) {
-    out.push(getWeekByOffset(centerOffset + i));
+  for (let i = 0; i < count; i++) {
+    out.push(getWeekByNumber(s + i));
   }
   return out;
 }
 
-/** Week info for the `count` most recent weeks, oldest first (last entry = current week) */
+/** Kept for backwards compatibility: returns recent weeks up to current */
 export function getRecentWeeks(count = 6): WeekInfo[] {
-  const now = Date.now();
+  const current = getWeekNumber();
+  const start = Math.max(1, current - count + 1);
   const out: WeekInfo[] = [];
-  for (let i = count - 1; i >= 0; i--) {
-    out.push(getWeekInfo(now - i * WEEK_MS));
+  for (let i = start; i <= current; i++) {
+    out.push(getWeekByNumber(i));
   }
   return out;
+}
+
+/** Returns a 7-week window centered around centerOffset */
+export function getWeeksWindow(centerOffset = 0, countBefore = 3, countAfter = 3): WeekInfo[] {
+  const current = getWeekNumber();
+  const center = Math.max(1, current + centerOffset);
+  const start = Math.max(1, center - countBefore);
+  const total = countBefore + 1 + countAfter;
+  return getWeeksRange(start, total);
 }
 
 /** True if the timestamp falls inside the week range */
-export function isInWeek(ts: number, week: { start: number; end: number }): boolean {
+export function isInWeek(ts: number, week: WeekInfo | { start: number; end: number; weekNumber?: number }): boolean {
+  // Week 1 captures all early launches up to Week 1 end
+  if (('weekNumber' in week && week.weekNumber === 1) || week.start <= LAUNCH_EPOCH_START) {
+    return ts < week.end;
+  }
   return ts >= week.start && ts < week.end;
 }

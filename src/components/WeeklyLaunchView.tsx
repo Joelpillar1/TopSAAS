@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { WeekInfo, getWeeksWindow, getWeekInfo } from '../utils/weeks';
+import { WeekInfo, getWeeksRange, getWeekInfo } from '../utils/weeks';
 import { playSound } from '../utils/sound';
 
 interface WeeklyLaunchViewProps {
@@ -18,28 +18,31 @@ export const WeeklyLaunchView: React.FC<WeeklyLaunchViewProps> = ({
   soundEnabled,
   className = '',
 }) => {
-  // Center offset for the 7-week window (0 = current week at center)
-  const [windowOffset, setWindowOffset] = useState<number>(0);
-
-  // Current calendar week (e.g. Week 45 in 2026)
+  // Current calendar launch week (Week 1 at kickoff)
   const currentWeek = getWeekInfo(Date.now());
 
-  // Generate 7 weeks around the windowOffset (3 before, center, 3 after)
-  const weeks = getWeeksWindow(windowOffset, 3, 3);
+  // Starting week index to display 7 weeks (minimum 1)
+  const [startWeek, setStartWeek] = useState<number>(1);
+
+  // Generate 7 consecutive weeks starting at startWeek
+  const weeks = getWeeksRange(startWeek, 7);
+
+  const canGoPrev = startWeek > 1;
 
   const handlePrev = () => {
+    if (!canGoPrev) return;
     playSound('click', soundEnabled);
-    setWindowOffset((prev) => prev - 1);
+    setStartWeek((prev) => Math.max(1, prev - 1));
   };
 
   const handleNext = () => {
     playSound('click', soundEnabled);
-    setWindowOffset((prev) => prev + 1);
+    setStartWeek((prev) => prev + 1);
   };
 
   const handleWeekClick = (week: WeekInfo) => {
     playSound('click', soundEnabled);
-    // If user clicks the already active week, toggle to all time or keep active
+    // If user clicks the currently selected week, toggle back to show all launches
     if (selectedWeek?.key === week.key) {
       onSelectWeek(null);
     } else {
@@ -57,9 +60,14 @@ export const WeeklyLaunchView: React.FC<WeeklyLaunchViewProps> = ({
         <button
           type="button"
           onClick={handlePrev}
+          disabled={!canGoPrev}
           aria-label="Previous weeks"
-          title="Previous weeks"
-          className="flex h-7 w-7 shrink-0 items-center justify-center text-neutral-500 hover:text-neutral-900 active:scale-95 transition-all cursor-pointer"
+          title={canGoPrev ? 'Previous weeks' : 'Week 1 is the first launch round'}
+          className={`flex h-7 w-7 shrink-0 items-center justify-center transition-all ${
+            canGoPrev
+              ? 'text-neutral-500 hover:text-neutral-900 active:scale-95 cursor-pointer'
+              : 'text-neutral-300 opacity-40 cursor-not-allowed'
+          }`}
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
@@ -69,8 +77,8 @@ export const WeeklyLaunchView: React.FC<WeeklyLaunchViewProps> = ({
           {weeks.map((week) => {
             const isSelected = selectedWeek?.key === week.key;
             const isCurrentCalendarWeek = week.key === currentWeek.key;
-            const isPast = week.end <= currentWeek.start;
-            const isFuture = week.start > currentWeek.start && !isCurrentCalendarWeek;
+            const isPast = week.weekNumber < currentWeek.weekNumber;
+            const isFuture = week.weekNumber > currentWeek.weekNumber;
 
             return (
               <button
@@ -81,7 +89,7 @@ export const WeeklyLaunchView: React.FC<WeeklyLaunchViewProps> = ({
                   isSelected
                     ? `${week.label} (Active • Click to view all launches)`
                     : isCurrentCalendarWeek
-                    ? `${week.label} (Current week)`
+                    ? `${week.label} (Current round)`
                     : week.label
                 }
                 className={`relative shrink-0 text-[13px] sm:text-sm transition-all cursor-pointer ${
