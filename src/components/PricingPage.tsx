@@ -68,6 +68,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   const [freeWeeklyRelaunch, setFreeWeeklyRelaunch] = useState(false);
   const [sponsorTier, setSponsorTier] = useState<'1mo' | '3mo' | '1yr'>('3mo');
+  const [isIncludesOpen, setIsIncludesOpen] = useState(false);
 
   const toggleFaq = (index: number) => {
     playSound('click', soundEnabled);
@@ -349,88 +350,119 @@ export const PricingPage: React.FC<PricingPageProps> = ({
           </BorderBeam>
         </div>
 
-        {/* ── What you actually get ── */}
-        <div className="rounded-2xl border border-neutral-200 bg-white divide-y divide-neutral-200 overflow-hidden">
-          <div className="px-5 py-4">
-            <h2 className="text-sm font-bold text-neutral-950">What each plan includes</h2>
-            <p className="text-xs text-neutral-500 mt-0.5">Every row is a specific feature, not a marketing category.</p>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b border-neutral-200 bg-neutral-100 text-neutral-500">
-                  <th className="p-4 text-left font-semibold w-1/2">Feature</th>
-                  <th className="p-4 text-center font-semibold">Free</th>
-                  <th className="p-4 text-center font-semibold text-neutral-700">Lifetime</th>
-                  <th className="p-4 text-center font-semibold text-mint-600 bg-mint-500/5 border-x border-mint-500/15">Pro</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-200/60">
-                {comparisonRows.map((row, idx) => (
-                  <tr key={idx} className="hover:bg-neutral-50 transition-colors">
-                    <td className="p-4 font-medium text-neutral-700">{row.feature}</td>
-                    <td className="p-4 text-center text-neutral-500">
-                      {typeof row.free === 'boolean'
-                        ? row.free
-                          ? <Check className="h-3.5 w-3.5 text-neutral-500 mx-auto" />
-                          : <X className="h-3.5 w-3.5 text-neutral-400 mx-auto" />
-                        : row.free === '+$5 toggle'
-                          ? <span className="inline-flex rounded bg-blue-50 border border-blue-200 px-1.5 py-0.5 text-[10px] font-bold text-blue-700">+$5 toggle</span>
-                          : row.free}
-                    </td>
-                    <td className="p-4 text-center text-neutral-700">
-                      {typeof row.lifetime === 'boolean'
-                        ? row.lifetime
-                          ? <Check className="h-3.5 w-3.5 text-mint-600 mx-auto" />
-                          : <X className="h-3.5 w-3.5 text-neutral-700 mx-auto" />
-                        : row.lifetime === 'Included (Every Week)'
-                          ? <span className="inline-flex items-center gap-1 font-bold text-xs text-neutral-900"><Check className="h-3.5 w-3.5 text-mint-600 shrink-0" /> Every Week</span>
-                          : row.lifetime}
-                    </td>
-                    <td className="p-4 text-center text-mint-600 font-medium bg-mint-500/5 border-x border-mint-500/15">
-                      {typeof row.pro === 'boolean'
-                        ? row.pro
-                          ? <Check className="h-3.5 w-3.5 text-mint-600 mx-auto" />
-                          : <X className="h-3.5 w-3.5 text-neutral-700 mx-auto" />
-                        : row.pro === 'Included (Every Week)'
-                          ? <span className="inline-flex items-center gap-1 font-bold text-xs text-mint-700"><Check className="h-3.5 w-3.5 text-mint-600 shrink-0" /> Every Week</span>
-                          : row.pro}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* ── Homepage & Directory Sponsorship (Option A: $29/mo, $69/3mo, $199/yr) ── */}
-        <div className="rounded-2xl border-2 border-neutral-900 bg-neutral-950 text-white p-6 sm:p-8 space-y-6 shadow-xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-          
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-neutral-800 pb-6 relative z-10">
+        {/* ── What each plan includes (collapsible dropdown) ── */}
+        <div className="rounded-2xl border border-neutral-200 bg-white overflow-hidden transition-all shadow-2xs">
+          <button
+            type="button"
+            onClick={() => {
+              playSound('click', soundEnabled);
+              setIsIncludesOpen((prev) => !prev);
+            }}
+            className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-neutral-50/80 transition-colors cursor-pointer select-none"
+          >
             <div>
               <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/20 border border-blue-500/40 px-3 py-1 text-xs font-black text-blue-400">
-                  <Star className="h-3 w-3 fill-blue-400 text-blue-400" />
+                <h2 className="text-sm font-bold text-neutral-950">What each plan includes</h2>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600 border border-neutral-200">
+                  Feature Comparison
+                </span>
+              </div>
+              <p className="text-xs text-neutral-500 mt-0.5">
+                {isIncludesOpen
+                  ? 'Every row is a specific feature, not a marketing category.'
+                  : 'Click to expand detailed side-by-side feature comparison table.'}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0 text-xs font-bold text-neutral-600">
+              <span className="hidden sm:inline">{isIncludesOpen ? 'Hide comparison' : 'Compare plans'}</span>
+              <div className="h-7 w-7 rounded-lg border border-neutral-200 flex items-center justify-center bg-neutral-50">
+                {isIncludesOpen ? (
+                  <ChevronUp className="h-4 w-4 text-neutral-950" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 text-neutral-700" />
+                )}
+              </div>
+            </div>
+          </button>
+
+          {isIncludesOpen && (
+            <div className="border-t border-neutral-200 overflow-x-auto animate-in fade-in-50 duration-150">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-neutral-200 bg-neutral-100 text-neutral-500">
+                    <th className="p-4 text-left font-semibold w-1/2">Feature</th>
+                    <th className="p-4 text-center font-semibold">Free</th>
+                    <th className="p-4 text-center font-semibold text-neutral-700">Lifetime</th>
+                    <th className="p-4 text-center font-semibold text-mint-600 bg-mint-500/5 border-x border-mint-500/15">Pro</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-200/60">
+                  {comparisonRows.map((row, idx) => (
+                    <tr key={idx} className="hover:bg-neutral-50 transition-colors">
+                      <td className="p-4 font-medium text-neutral-700">{row.feature}</td>
+                      <td className="p-4 text-center text-neutral-500">
+                        {typeof row.free === 'boolean'
+                          ? row.free
+                            ? <Check className="h-3.5 w-3.5 text-neutral-500 mx-auto" />
+                            : <X className="h-3.5 w-3.5 text-neutral-400 mx-auto" />
+                          : row.free === '+$5 toggle'
+                            ? <span className="inline-flex rounded bg-blue-50 border border-blue-200 px-1.5 py-0.5 text-[10px] font-bold text-blue-700">+$5 toggle</span>
+                            : row.free}
+                      </td>
+                      <td className="p-4 text-center text-neutral-700">
+                        {typeof row.lifetime === 'boolean'
+                          ? row.lifetime
+                            ? <Check className="h-3.5 w-3.5 text-mint-600 mx-auto" />
+                            : <X className="h-3.5 w-3.5 text-neutral-700 mx-auto" />
+                          : row.lifetime === 'Included (Every Week)'
+                            ? <span className="inline-flex items-center gap-1 font-bold text-xs text-neutral-900"><Check className="h-3.5 w-3.5 text-mint-600 shrink-0" /> Every Week</span>
+                            : row.lifetime}
+                      </td>
+                      <td className="p-4 text-center text-mint-600 font-medium bg-mint-500/5 border-x border-mint-500/15">
+                        {typeof row.pro === 'boolean'
+                          ? row.pro
+                            ? <Check className="h-3.5 w-3.5 text-mint-600 mx-auto" />
+                            : <X className="h-3.5 w-3.5 text-neutral-700 mx-auto" />
+                          : row.pro === 'Included (Every Week)'
+                            ? <span className="inline-flex items-center gap-1 font-bold text-xs text-mint-700"><Check className="h-3.5 w-3.5 text-mint-600 shrink-0" /> Every Week</span>
+                            : row.pro}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* ── Homepage & Directory Sponsorship (App Blue, not deep) ── */}
+        <div className="rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50/90 via-white to-blue-50/60 p-6 sm:p-8 space-y-6 shadow-sm relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+          
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-blue-200/80 pb-6 relative z-10">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-100 border border-blue-300 px-3 py-1 text-xs font-black text-blue-700">
+                  <Star className="h-3 w-3 fill-blue-600 text-blue-600" />
                   <span>PREMIUM SPONSORSHIP</span>
                 </span>
-                <span className="text-[11px] font-bold text-neutral-400">Above-the-Fold Placement</span>
+                <span className="text-[11px] font-bold text-neutral-500">Above-the-Fold Placement</span>
               </div>
-              <h2 className="text-xl sm:text-2xl font-black text-white mt-2 tracking-tight">
+              <h2 className="text-xl sm:text-2xl font-black text-neutral-950 mt-2 tracking-tight">
                 Spotlight Your Product on TopSAAS
               </h2>
-              <p className="text-xs sm:text-sm text-neutral-400 max-w-xl mt-1 leading-relaxed">
+              <p className="text-xs sm:text-sm text-neutral-600 max-w-xl mt-1 leading-relaxed">
                 Take over our sticky hero rails, get pinned at the top of your category, and get guaranteed auto-relaunch visibility into every weekly round.
               </p>
             </div>
 
             {/* Duration Selector */}
-            <div className="flex items-center gap-1.5 bg-neutral-900 p-1 rounded-xl border border-neutral-800 self-start sm:self-auto shrink-0">
+            <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-blue-200 shadow-2xs self-start sm:self-auto shrink-0">
               <button
                 type="button"
                 onClick={() => { playSound('click', soundEnabled); setSponsorTier('1mo'); }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  sponsorTier === '1mo' ? 'bg-white text-neutral-950 shadow-xs' : 'text-neutral-400 hover:text-white'
+                  sponsorTier === '1mo' ? 'bg-blue-600 text-white shadow-xs' : 'text-neutral-600 hover:text-neutral-950'
                 }`}
               >
                 1 Month
@@ -439,11 +471,13 @@ export const PricingPage: React.FC<PricingPageProps> = ({
                 type="button"
                 onClick={() => { playSound('click', soundEnabled); setSponsorTier('3mo'); }}
                 className={`relative px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  sponsorTier === '3mo' ? 'bg-white text-neutral-950 shadow-xs' : 'text-neutral-400 hover:text-white'
+                  sponsorTier === '3mo' ? 'bg-blue-600 text-white shadow-xs' : 'text-neutral-600 hover:text-neutral-950'
                 }`}
               >
                 3 Months
-                <span className="ml-1 text-[9px] font-black text-amber-400 bg-amber-500/20 px-1 py-0.5 rounded">
+                <span className={`ml-1 text-[9px] font-black px-1.5 py-0.5 rounded ${
+                  sponsorTier === '3mo' ? 'bg-white/25 text-white' : 'text-blue-700 bg-blue-100'
+                }`}>
                   Save 20%
                 </span>
               </button>
@@ -451,11 +485,13 @@ export const PricingPage: React.FC<PricingPageProps> = ({
                 type="button"
                 onClick={() => { playSound('click', soundEnabled); setSponsorTier('1yr'); }}
                 className={`relative px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  sponsorTier === '1yr' ? 'bg-white text-neutral-950 shadow-xs' : 'text-neutral-400 hover:text-white'
+                  sponsorTier === '1yr' ? 'bg-blue-600 text-white shadow-xs' : 'text-neutral-600 hover:text-neutral-950'
                 }`}
               >
                 1 Year
-                <span className="ml-1 text-[9px] font-black text-purple-400 bg-purple-500/20 px-1 py-0.5 rounded">
+                <span className={`ml-1 text-[9px] font-black px-1.5 py-0.5 rounded ${
+                  sponsorTier === '1yr' ? 'bg-white/25 text-white' : 'text-purple-700 bg-purple-100'
+                }`}>
                   Save 43%
                 </span>
               </button>
@@ -465,20 +501,20 @@ export const PricingPage: React.FC<PricingPageProps> = ({
           {/* Pricing & Features Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
             {/* Price block */}
-            <div className="md:col-span-1 rounded-xl bg-neutral-900 border border-neutral-800 p-5 flex flex-col justify-between">
+            <div className="md:col-span-1 rounded-xl bg-white border border-blue-200 p-5 flex flex-col justify-between shadow-xs">
               <div>
-                <p className="text-xs font-bold text-neutral-400">
+                <p className="text-xs font-bold text-neutral-500">
                   {sponsorTier === '1mo' ? '1-Month Flexible' : sponsorTier === '3mo' ? '3-Month Growth Campaign' : '1-Year Annual Partner'}
                 </p>
                 <div className="flex items-baseline gap-2 mt-1">
-                  <span className="text-4xl font-black text-white font-mono-num">
+                  <span className="text-4xl font-black text-neutral-950 font-mono-num">
                     {sponsorTier === '1mo' ? '$29' : sponsorTier === '3mo' ? '$69' : '$199'}
                   </span>
-                  <span className="text-xs font-semibold text-neutral-400">
+                  <span className="text-xs font-semibold text-neutral-500">
                     {sponsorTier === '1mo' ? '/ month' : sponsorTier === '3mo' ? 'total ($23/mo)' : 'total ($16.50/mo)'}
                   </span>
                 </div>
-                <p className="text-xs text-neutral-400 mt-2 leading-relaxed">
+                <p className="text-xs text-neutral-600 mt-2 leading-relaxed">
                   {sponsorTier === '1mo'
                     ? 'Flexible 30-day trial for founders testing traffic and conversion.'
                     : sponsorTier === '3mo'
@@ -494,7 +530,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({
                     playSound('click', soundEnabled);
                     if (onOpenSponsor) onOpenSponsor(sponsorTier);
                   }}
-                  className="w-full btn-primary bg-blue-500 hover:bg-blue-400 text-white font-black py-3 text-xs rounded-xl transition-all shadow-lg shadow-blue-500/20 cursor-pointer"
+                  className="w-full btn-primary bg-blue-600 hover:bg-blue-500 text-white font-black py-3 text-xs rounded-xl transition-all shadow-md shadow-blue-500/20 cursor-pointer"
                 >
                   Sponsor with {sponsorTier === '1mo' ? '1 Month ($29)' : sponsorTier === '3mo' ? '3 Months ($69)' : '1 Year ($199)'}
                 </button>
@@ -502,33 +538,33 @@ export const PricingPage: React.FC<PricingPageProps> = ({
             </div>
 
             {/* Included Perks block */}
-            <div className="md:col-span-2 rounded-xl bg-neutral-900/60 border border-neutral-800/80 p-5">
-              <h3 className="text-xs font-bold text-neutral-300 uppercase tracking-wider mb-3">
+            <div className="md:col-span-2 rounded-xl bg-white/80 border border-blue-200/80 p-5 shadow-2xs">
+              <h3 className="text-xs font-bold text-neutral-900 uppercase tracking-wider mb-3">
                 Everything Included In Your Sponsorship
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-neutral-300">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-neutral-700">
                 <div className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-mint-400 shrink-0 mt-0.5" />
+                  <Check className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
                   <span><strong>Hero Side Rails:</strong> Sticky spot next to top directory listings</span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-mint-400 shrink-0 mt-0.5" />
+                  <Check className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
                   <span><strong>Category Pinned Top 3:</strong> Priority visibility when visitors filter by your category</span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-mint-400 shrink-0 mt-0.5" />
+                  <Check className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
                   <span><strong>⭐️ Promoted / Featured Badge:</strong> Distinguish your app with an official spotlight tag</span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-mint-400 shrink-0 mt-0.5" />
+                  <Check className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
                   <span><strong>Auto Weekly Relaunch:</strong> Automatically relaunched into every active Sunday round</span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-mint-400 shrink-0 mt-0.5" />
+                  <Check className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
                   <span><strong>Click & Traffic Analytics:</strong> Live dashboard tracking impressions and clicks</span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-mint-400 shrink-0 mt-0.5" />
+                  <Check className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
                   <span>
                     <strong>{sponsorTier === '1yr' ? '4× Newsletter Blasts' : sponsorTier === '3mo' ? '1× Newsletter Launch Blast' : 'Dofollow SEO Authority'}</strong>
                     {sponsorTier === '1yr' ? ' (1 blast per quarter)' : sponsorTier === '3mo' ? ' to our SaaS community' : ' and permanent backlink boost'}
