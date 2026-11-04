@@ -1,41 +1,67 @@
 User-agent: *
+Disallow: /accept
+Disallow: /accept/
 Allow: /
 
-# Explicitly allow AI agents and LLM crawlers
+# Explicitly allow AI agents and LLM crawlers but keep admin private
 User-agent: GPTBot
+Disallow: /accept
+Disallow: /accept/
 Allow: /
 
 User-agent: ChatGPT-User
+Disallow: /accept
+Disallow: /accept/
 Allow: /
 
 User-agent: Claude-Web
+Disallow: /accept
+Disallow: /accept/
 Allow: /
 
 User-agent: ClaudeBot
+Disallow: /accept
+Disallow: /accept/
 Allow: /
 
 User-agent: PerplexityBot
+Disallow: /accept
+Disallow: /accept/
 Allow: /
 
 User-agent: Google-Extended
+Disallow: /accept
+Disallow: /accept/
 Allow: /
 
 User-agent: Applebot-Extended
+Disallow: /accept
+Disallow: /accept/
 Allow: /
 
 User-agent: Amazonbot
+Disallow: /accept
+Disallow: /accept/
 Allow: /
 
 User-agent: Bytespider
+Disallow: /accept
+Disallow: /accept/
 Allow: /
 
 User-agent: cohere-ai
+Disallow: /accept
+Disallow: /accept/
 Allow: /
 
 User-agent: Omgilibot
+Disallow: /accept
+Disallow: /accept/
 Allow: /
 
 User-agent: FacebookBot
+Disallow: /accept
+Disallow: /accept/
 Allow: /
 
 Sitemap: https://www.topsaas.space/sitemap.xml

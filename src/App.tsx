@@ -42,6 +42,8 @@ import { MOCK_SPONSORS } from './data/mockSponsors';
 import { HeroSponsorRails } from './components/HeroSponsorRails';
 import { WeeklyLaunchView } from './components/WeeklyLaunchView';
 import { ProductLogo } from './components/ProductLogo';
+import { AdminLoginGate } from './components/AdminLoginGate';
+import { isAdminSessionActive, clearAdminSession } from './utils/adminAuth';
 
 // Map a Supabase DB row to our WebsiteSubmission type
 const mapDbSubmission = (row: Record<string, unknown>): WebsiteSubmission => ({
@@ -328,6 +330,7 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [authLoaded, setAuthLoaded] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [adminSessionUnlocked, setAdminSessionUnlocked] = useState<boolean>(() => isAdminSessionActive());
   const [userUpvotes, setUserUpvotes] = useState<Set<string>>(new Set());
   const [productsLoaded, setProductsLoaded] = useState(() => products.length > 0);
 
@@ -440,10 +443,9 @@ export default function App() {
   const [sponsorRailsEnabled, setSponsorRailsEnabledState] = useState<boolean>(() => {
     try {
       const raw = localStorage.getItem(LOCAL_SPONSOR_RAILS_KEY);
-      return raw !== null ? raw !== 'false' : true;
-    } catch {
-      return true;
-    }
+      if (raw !== null) return raw === 'true';
+    } catch { }
+    return false; // Default OFF so it never flashes open ad spots when disabled
   });
 
   // Load master sponsor rails state from Supabase on mount
@@ -598,6 +600,24 @@ export default function App() {
       window.removeEventListener('hashchange', handleRouteCheck);
     };
   }, []);
+
+  // Ensure /accept is strictly unindexed and private from all search engines & crawlers
+  useEffect(() => {
+    let metaRobots = document.querySelector('meta[name="robots"]') as HTMLMetaElement | null;
+    if (currentRoute === '/accept') {
+      if (!metaRobots) {
+        metaRobots = document.createElement('meta');
+        metaRobots.name = 'robots';
+        document.head.appendChild(metaRobots);
+      }
+      metaRobots.content = 'noindex, nofollow, noarchive, nosnippet';
+      document.title = 'Admin Portal · TopSAAS';
+    } else {
+      if (metaRobots) {
+        metaRobots.content = 'index, follow';
+      }
+    }
+  }, [currentRoute]);
 
   // Honor ?q= deep links (the SearchAction target advertised in the homepage
   // JSON-LD), so search-engine site-search results land with the query applied.
@@ -777,11 +797,13 @@ export default function App() {
     async function load() {
       if (productsLoadedRef.current) return;
       productsLoadedRef.current = true;
-      const [dbProducts, activeSponsors, upvoteCounts] = await Promise.all([
+      const [dbProducts, activeSponsors, upvoteCounts, railsEnabled] = await Promise.all([
         loadProducts(),
         getActiveSponsors(),
         getUpvoteCounts(),
+        getSponsorRailsEnabled(),
       ]);
+      setSponsorRailsEnabledState(railsEnabled);
 
       // Repair the products table whenever a stored count is lower than reality.
       // Uses the security-definer increment RPC so even anonymous visitors can heal
@@ -2246,27 +2268,22 @@ export default function App() {
 
   // 1. ADMIN ACCEPT PAGE ROUTE (/accept)
   if (currentRoute === '/accept') {
-    // Non-admins get redirected to homepage
-    if (user && !isAdmin) {
+    // If admin session is not unlocked, show dedicated Admin Login Gate (no main site header)
+    if (!adminSessionUnlocked) {
       return (
-        <>
-          {globalHeader}
-          <div className="min-h-screen bg-white text-neutral-900 flex items-center justify-center font-sans">
-            <div className="text-center space-y-3">
-              <ShieldCheck className="mx-auto h-10 w-10 text-neutral-500" />
-              <h2 className="text-lg font-bold">Admin Access Required</h2>
-              <p className="text-sm text-neutral-400">You don't have admin privileges.</p>
-              <button onClick={handleBackToLeaderboard} className="mt-2 rounded-xl bg-white text-black px-4 py-2 text-xs font-bold cursor-pointer">Back to Home</button>
-            </div>
-          </div>
-        </>
+        <AdminLoginGate
+          soundEnabled={soundEnabled}
+          onSuccess={() => {
+            setAdminSessionUnlocked(true);
+            setIsAdmin(true);
+          }}
+          onBackToHome={handleBackToLeaderboard}
+        />
       );
     }
     return (
-      <>
-        {globalHeader}
-        <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between font-sans">
-          <AdminAcceptPage
+      <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between font-sans">
+        <AdminAcceptPage
             submissions={submissions}
             products={products}
             onAcceptSubmission={handleAcceptSubmission}
@@ -2295,6 +2312,10 @@ export default function App() {
             onSetFeaturedPosition={handleSetFeaturedPosition}
             featuredPositions={featuredPositions}
             onSetProductFeaturedPosition={handleSetProductFeaturedPosition}
+            onSignOutAdmin={() => {
+              clearAdminSession();
+              setAdminSessionUnlocked(false);
+            }}
           />
 
           <SignInModal
@@ -2303,9 +2324,8 @@ export default function App() {
             onSignIn={handleSignIn}
           />
         </div>
-      </>
-    );
-  }
+      );
+    }
 
   // Legal Page Route (Privacy Policy & Terms of Service)
   if (currentRoute === '/privacy' || currentRoute === '/terms') {
@@ -2460,10 +2480,12 @@ export default function App() {
                               : 'border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 hover:text-neutral-950'
                               }`}
                           >
-                            <span>{cat}</span>
-                            <span className={`rounded-md px-1.5 py-px text-[9px] font-black font-mono-num ${active ? 'bg-mint-500/20 text-mint-700' : 'bg-neutral-100 text-neutral-600'}`}>
-                              {count}
-                            </span>
+                            <span className="whitespace-nowrap">{cat}</span>
+                            {productsLoaded && (
+                              <span className={`rounded-md px-1.5 py-px text-[9px] font-black font-mono-num ${active ? 'bg-mint-500/20 text-mint-700' : 'bg-neutral-100 text-neutral-600'}`}>
+                                {count}
+                              </span>
+                            )}
                           </button>
                         );
                       })}

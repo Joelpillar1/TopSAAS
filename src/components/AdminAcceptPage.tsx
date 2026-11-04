@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { 
-  ArrowLeft, ArrowUpDown, Check, X, Clock, ExternalLink, ShieldCheck, Search, Trash2, Eye, RotateCcw, Globe, Twitter, User, Calendar, CheckCircle2, XCircle, AlertCircle, Edit3, Plus, Trophy, Crown, ChevronUp, ChevronDown, Star, LayoutList, Mail, Flame, Tag, Play, Video, Copy, Image as ImageIcon, MessageSquareQuote, Target, Layers, Info, Sparkles, BadgeCheck, Megaphone, Award
+  ArrowLeft, ArrowUpDown, Check, X, Clock, ExternalLink, ShieldCheck, Search, Trash2, Eye, RotateCcw, Globe, Twitter, User, Calendar, CheckCircle2, XCircle, AlertCircle, Edit3, Plus, Trophy, Crown, ChevronUp, ChevronDown, Star, LayoutList, Mail, Flame, Tag, Play, Video, Copy, Image as ImageIcon, MessageSquareQuote, Target, Layers, Info, Sparkles, BadgeCheck, Megaphone, Award, LogOut
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { WebsiteSubmission, Category, Product } from '../types';
@@ -74,6 +74,7 @@ interface AdminAcceptPageProps {
   onSetFeaturedPosition?: (position: number) => void;
   featuredPositions?: Record<string, number>;
   onSetProductFeaturedPosition?: (productId: string, position: number) => void;
+  onSignOutAdmin?: () => void;
 }
 
 export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
@@ -103,6 +104,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
   onSetFeaturedPosition,
   featuredPositions = {},
   onSetProductFeaturedPosition,
+  onSignOutAdmin,
 }) => {
   // Counts
   const pendingCount = submissions.filter((s) => (s.status || 'under_review') === 'under_review').length;
@@ -407,6 +409,18 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
               <Plus className="h-3.5 w-3.5" />
               <span>Test New Submission</span>
             </button>
+
+            {onSignOutAdmin && (
+              <button
+                type="button"
+                onClick={onSignOutAdmin}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50/70 hover:bg-red-100 text-red-700 px-3 py-1.5 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+                title="Lock admin session and sign out"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                <span>Lock Admin</span>
+              </button>
+            )}
           </div>
         </div>
       </header>

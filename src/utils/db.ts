@@ -180,6 +180,11 @@ export const toDbProduct = (p: Product) => {
     offer_code: p.offerCode || null,
     offer_url: p.offerUrl || null,
     offer_details: p.offerDetails || null,
+    is_sponsored: p.isSponsored || false,
+    sponsor_expires_at: p.sponsorExpiresAt || null,
+    auto_relaunch: p.autoRelaunch || false,
+    relaunch_weeks: p.relaunchWeeks || [],
+    last_relaunched_at: p.lastRelaunchedAt || null,
   };
 };
 
@@ -483,7 +488,7 @@ export async function getUpvoteCounts(): Promise<Map<string, number>> {
       const alt = pid.startsWith('prod-') ? pid.replace(/^prod-/, '') : `prod-${pid}`;
       counts.set(alt, n);
     }
-  } catch {}
+  } catch { }
   return counts;
 }
 
@@ -513,7 +518,7 @@ async function preserveExistingCounters(rows: Record<string, unknown>[]): Promis
       row.dino_score = Math.max((cur.dino_score as number) ?? 0, (row.dino_score as number) ?? 0);
       row.total_bid = Math.max((cur.total_bid as number) ?? 0, (row.total_bid as number) ?? 0);
     }
-  } catch {}
+  } catch { }
 }
 
 const GUEST_UPVOTES_KEY = 'topsaas_guest_upvotes';
@@ -538,7 +543,7 @@ export function getGuestUpvotes(): Set<string> {
       }
       return set;
     }
-  } catch {}
+  } catch { }
   return new Set();
 }
 
@@ -547,7 +552,7 @@ export function saveGuestUpvotes(upvotes: Set<string>): void {
   try {
     const list = Array.from(upvotes);
     localStorage.setItem(GUEST_UPVOTES_KEY, JSON.stringify(list));
-  } catch {}
+  } catch { }
 }
 
 /** Direct increment or decrement of product upvotes in Supabase (fallback or guest) */
@@ -598,7 +603,7 @@ function getStoredCommentsCache(): { timestamp: number; data: Comment[] } | null
       commentsMemoryCache = parsed;
       return parsed;
     }
-  } catch {}
+  } catch { }
   return null;
 }
 
@@ -607,7 +612,7 @@ function persistCommentsCache(comments: Comment[]): void {
   commentsMemoryCache = cacheObj;
   try {
     localStorage.setItem(COMMENTS_CACHE_KEY, JSON.stringify(cacheObj));
-  } catch {}
+  } catch { }
 }
 
 /** Get currently cached comments synchronously without network roundtrip */
@@ -671,7 +676,7 @@ export async function addComment(input: {
   content: string;
 }): Promise<Comment | null> {
   const now = Date.now();
-  
+
   // Try inserting with user_avatar first
   let payload: Record<string, unknown> = {
     product_id: input.productId,
@@ -708,23 +713,23 @@ export async function addComment(input: {
 
   const savedComment: Comment = data
     ? {
-        id: data.id as string,
-        productId: data.product_id as string,
-        userName: data.user_name as string,
-        userEmail: (data.user_email as string) || undefined,
-        userAvatar: (data.user_avatar as string) || input.userAvatar || undefined,
-        content: data.content as string,
-        createdAt: Number(data.created_at) || now,
-      }
+      id: data.id as string,
+      productId: data.product_id as string,
+      userName: data.user_name as string,
+      userEmail: (data.user_email as string) || undefined,
+      userAvatar: (data.user_avatar as string) || input.userAvatar || undefined,
+      content: data.content as string,
+      createdAt: Number(data.created_at) || now,
+    }
     : {
-        id: `local-${now}-${Math.random().toString(36).slice(2, 7)}`,
-        productId: input.productId,
-        userName: input.userName,
-        userEmail: input.userEmail,
-        userAvatar: input.userAvatar,
-        content: input.content,
-        createdAt: now,
-      };
+      id: `local-${now}-${Math.random().toString(36).slice(2, 7)}`,
+      productId: input.productId,
+      userName: input.userName,
+      userEmail: input.userEmail,
+      userAvatar: input.userAvatar,
+      content: input.content,
+      createdAt: now,
+    };
 
   // Update memory and localStorage cache immediately
   const existing = getStoredCommentsCache()?.data || [];
@@ -755,7 +760,7 @@ let productsSyncTimeout: ReturnType<typeof setTimeout> | null = null;
 export function debouncedSyncProducts(products: Product[]): void {
   if (productsSyncTimeout) clearTimeout(productsSyncTimeout);
   productsSyncTimeout = setTimeout(() => {
-    saveAllProducts(products).catch(() => {});
+    saveAllProducts(products).catch(() => { });
   }, 2000);
 }
 
@@ -790,11 +795,11 @@ export async function getFeaturedPosition(): Promise<number> {
       if (!isNaN(parsed) && parsed >= 0) {
         try {
           localStorage.setItem(LOCAL_FEATURED_POSITION_KEY, parsed.toString());
-        } catch {}
+        } catch { }
         return parsed;
       }
     }
-  } catch {}
+  } catch { }
 
   try {
     const local = localStorage.getItem(LOCAL_FEATURED_POSITION_KEY);
@@ -802,7 +807,7 @@ export async function getFeaturedPosition(): Promise<number> {
       const parsed = parseInt(local, 10);
       if (!isNaN(parsed) && parsed >= 0) return parsed;
     }
-  } catch {}
+  } catch { }
 
   return 0; // Default: 0 (top, above rank 1)
 }
@@ -812,7 +817,7 @@ export async function setFeaturedPosition(position: number): Promise<void> {
   const pos = Math.max(0, position);
   try {
     localStorage.setItem(LOCAL_FEATURED_POSITION_KEY, pos.toString());
-  } catch {}
+  } catch { }
 
   try {
     await supabase.from('site_settings').upsert({
@@ -853,7 +858,7 @@ export async function getGlobalFeaturedProduct(): Promise<FeaturedProductConfig>
           if (Array.isArray(parsed)) {
             productIds = parsed.filter((id) => typeof id === 'string' && id.trim().length > 0);
           }
-        } catch {}
+        } catch { }
       }
 
       let positions: Record<string, number> = {};
@@ -863,17 +868,17 @@ export async function getGlobalFeaturedProduct(): Promise<FeaturedProductConfig>
           if (parsed && typeof parsed === 'object') {
             positions = parsed;
           }
-        } catch {}
+        } catch { }
       }
 
       if (posRow?.value) {
-        try { localStorage.setItem(LOCAL_FEATURED_POSITION_KEY, position.toString()); } catch {}
+        try { localStorage.setItem(LOCAL_FEATURED_POSITION_KEY, position.toString()); } catch { }
       }
       if (idsRow?.value) {
-        try { localStorage.setItem(LOCAL_FEATURED_PRODUCTS_KEY, JSON.stringify(productIds)); } catch {}
+        try { localStorage.setItem(LOCAL_FEATURED_PRODUCTS_KEY, JSON.stringify(productIds)); } catch { }
       }
       if (positionsRow?.value) {
-        try { localStorage.setItem(LOCAL_FEATURED_POSITIONS_MAP_KEY, JSON.stringify(positions)); } catch {}
+        try { localStorage.setItem(LOCAL_FEATURED_POSITIONS_MAP_KEY, JSON.stringify(positions)); } catch { }
       }
 
       if (rawVal === 'empty' || rawVal === '') {
@@ -897,7 +902,7 @@ export async function getGlobalFeaturedProduct(): Promise<FeaturedProductConfig>
 
       return { productId: rawVal, productIds, positions, expiresAt, position };
     }
-  } catch {}
+  } catch { }
 
   // Fallback to local storage
   try {
@@ -917,7 +922,7 @@ export async function getGlobalFeaturedProduct(): Promise<FeaturedProductConfig>
         if (Array.isArray(parsed)) {
           productIds = parsed.filter((id) => typeof id === 'string' && id.trim().length > 0);
         }
-      } catch {}
+      } catch { }
     }
 
     let positions: Record<string, number> = {};
@@ -927,7 +932,7 @@ export async function getGlobalFeaturedProduct(): Promise<FeaturedProductConfig>
         if (parsed && typeof parsed === 'object') {
           positions = parsed;
         }
-      } catch {}
+      } catch { }
     }
 
     if (localId === 'empty' || localId === '') {
@@ -963,8 +968,8 @@ export async function setGlobalFeaturedProducts(
   positions?: Record<string, number>
 ): Promise<void> {
   const normalizedIds = Array.from(new Set(productIds.filter(Boolean)));
-  const primaryId = normalizedIds.length > 0 
-    ? normalizedIds[0] 
+  const primaryId = normalizedIds.length > 0
+    ? normalizedIds[0]
     : (mode === 'empty' ? 'empty' : 'default');
 
   // 1. Sync to local storage
@@ -979,7 +984,7 @@ export async function setGlobalFeaturedProducts(
     } else {
       localStorage.setItem('topsaas_featured_product', primaryId);
     }
-  } catch {}
+  } catch { }
 
   // 2. Sync to Supabase site_settings
   try {
@@ -1009,7 +1014,7 @@ export async function setProductFeaturedPosition(
   try {
     const raw = localStorage.getItem(LOCAL_FEATURED_POSITIONS_MAP_KEY);
     if (raw) positions = JSON.parse(raw);
-  } catch {}
+  } catch { }
   positions[productId] = Math.max(0, position);
   try {
     localStorage.setItem(LOCAL_FEATURED_POSITIONS_MAP_KEY, JSON.stringify(positions));
@@ -1030,11 +1035,11 @@ export async function setGlobalFeaturedProduct(
   productId: string | null,
   durationDays: number = 30
 ): Promise<void> {
-  const normalizedId = (!productId || productId === 'default') 
-    ? 'default' 
-    : (productId === 'empty' || productId === '') 
-    ? 'empty' 
-    : productId;
+  const normalizedId = (!productId || productId === 'default')
+    ? 'default'
+    : (productId === 'empty' || productId === '')
+      ? 'empty'
+      : productId;
 
   const isCustomProduct = normalizedId !== 'default' && normalizedId !== 'empty';
   const expiresAt = isCustomProduct ? Date.now() + durationDays * 86400000 : 0;
@@ -1050,7 +1055,7 @@ export async function setGlobalFeaturedProduct(
       localStorage.setItem('topsaas_featured_product', normalizedId);
       localStorage.setItem('topsaas_featured_expiry', expiresAt.toString());
     }
-  } catch {}
+  } catch { }
 
   // 2. Sync to Supabase site_settings
   try {
@@ -1059,7 +1064,7 @@ export async function setGlobalFeaturedProduct(
       { key: 'featured_product_id', value: normalizedId },
       { key: 'featured_expires_at', value: expiresAt.toString() },
     ]);
-  } catch {}
+  } catch { }
 }
 
 // ── Global Sponsor Rails Enabled Toggle ──
@@ -1067,7 +1072,7 @@ export async function setGlobalFeaturedProduct(
 export const SPONSOR_RAILS_ENABLED_KEY = 'sponsor_rails_enabled';
 export const LOCAL_SPONSOR_RAILS_KEY = 'topsaas_sponsor_rails_enabled';
 
-/** Get whether homepage side sponsor rails are enabled (default: true) */
+/** Get whether homepage side sponsor rails are enabled (default: false) */
 export async function getSponsorRailsEnabled(): Promise<boolean> {
   try {
     const { data, error } = await supabase
@@ -1077,29 +1082,29 @@ export async function getSponsorRailsEnabled(): Promise<boolean> {
       .maybeSingle();
 
     if (!error && data && data.value !== undefined && data.value !== null) {
-      const isEnabled = data.value !== 'false';
+      const isEnabled = data.value === 'true';
       try {
         localStorage.setItem(LOCAL_SPONSOR_RAILS_KEY, isEnabled ? 'true' : 'false');
-      } catch {}
+      } catch { }
       return isEnabled;
     }
-  } catch {}
+  } catch { }
 
   try {
     const local = localStorage.getItem(LOCAL_SPONSOR_RAILS_KEY);
     if (local !== null) {
-      return local !== 'false';
+      return local === 'true';
     }
-  } catch {}
+  } catch { }
 
-  return true; // Default ON
+  return false; // Default OFF so it never flashes open ad spots when disabled
 }
 
 /** Set whether homepage side sponsor rails are enabled */
 export async function setSponsorRailsEnabled(enabled: boolean): Promise<void> {
   try {
     localStorage.setItem(LOCAL_SPONSOR_RAILS_KEY, enabled ? 'true' : 'false');
-  } catch {}
+  } catch { }
 
   try {
     await supabase.from('site_settings').upsert({
@@ -1142,7 +1147,7 @@ export async function getActiveSponsors(): Promise<ActiveSponsorConfig[]> {
       if (Array.isArray(parsed)) {
         try {
           localStorage.setItem(LOCAL_SPONSORS_KEY, JSON.stringify(parsed));
-        } catch {}
+        } catch { }
         return parsed;
       }
     }
@@ -1157,7 +1162,7 @@ export async function getActiveSponsors(): Promise<ActiveSponsorConfig[]> {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) return parsed;
     }
-  } catch {}
+  } catch { }
 
   return [];
 }
@@ -1167,7 +1172,7 @@ export async function saveActiveSponsors(sponsors: ActiveSponsorConfig[]): Promi
   // Sync to local storage first for instant responsiveness
   try {
     localStorage.setItem(LOCAL_SPONSORS_KEY, JSON.stringify(sponsors));
-  } catch {}
+  } catch { }
 
   // Sync to Supabase site_settings
   try {
@@ -1187,8 +1192,8 @@ export async function recordSponsorUpdate(config: ActiveSponsorConfig): Promise<
   const current = await getActiveSponsors();
   const index = current.findIndex(
     (s) => s.productId === config.productId ||
-           s.productId === `prod-${config.productId}` ||
-           `prod-${s.productId}` === config.productId
+      s.productId === `prod-${config.productId}` ||
+      `prod-${s.productId}` === config.productId
   );
 
   let next: ActiveSponsorConfig[];
