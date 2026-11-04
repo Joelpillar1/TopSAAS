@@ -55,11 +55,11 @@ export const RichFooter: React.FC<RichFooterProps> = ({
               software, real people discover it, and the best rise to the top.
             </p>
 
-            {/* Seamless Infinite Marquee Badges (PC & Mobile) */}
-            <div className="relative w-full max-w-md sm:max-w-lg overflow-hidden pt-1">
-              <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white to-transparent z-10" />
-              <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent z-10" />
-              <div className="flex w-max items-center gap-5 animate-marquee-infinite py-1">
+            {/* Seamless Infinite Marquee Badges (Constrained to ~2 badges at a time) */}
+            <div className="relative w-full max-w-[270px] overflow-hidden pt-1.5">
+              <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-white to-transparent z-10" />
+              <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-white to-transparent z-10" />
+              <div className="flex w-max items-center gap-4 animate-marquee-infinite py-1">
                 {/* Set 1 */}
                 <a
                   href="https://www.topsaas.space/"
