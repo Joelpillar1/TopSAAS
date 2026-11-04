@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Check, Copy, Code2, Download, ExternalLink } from 'lucide-react';
+import { X, Check, Copy, Code2, ExternalLink } from 'lucide-react';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
 
@@ -95,24 +95,6 @@ export const EmbedBadgeModal: React.FC<EmbedBadgeModalProps> = ({
     } catch {
       setCopied(true);
       setTimeout(() => setCopied(false), 2200);
-    }
-  };
-
-  const handleDownload = async () => {
-    playSound('click', soundEnabled);
-    try {
-      const response = await fetch(selectedBadge.src);
-      const blob = await response.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = blobUrl;
-      a.download = `topsaas-badge-${selectedVariant}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(blobUrl);
-    } catch {
-      window.open(selectedBadge.src, '_blank');
     }
   };
 
@@ -276,22 +258,6 @@ export const EmbedBadgeModal: React.FC<EmbedBadgeModalProps> = ({
                 )}
               </button>
             </div>
-          </div>
-
-          {/* Quick instructions & Download */}
-          <div className="flex items-center justify-between gap-3 rounded-xl border border-neutral-200/80 bg-neutral-50 p-3 text-[11px] text-neutral-600">
-            <p className="leading-relaxed">
-              Embed this badge in your footer, navbar, or GitHub README to showcase your launch on TopSAAS.
-            </p>
-            <button
-              type="button"
-              onClick={handleDownload}
-              className="inline-flex items-center gap-1 shrink-0 rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-neutral-700 hover:text-neutral-950 hover:bg-neutral-100 transition-colors cursor-pointer shadow-2xs"
-              title="Download Badge PNG file"
-            >
-              <Download className="h-3 w-3" />
-              <span>Download PNG</span>
-            </button>
           </div>
         </div>
 
