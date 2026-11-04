@@ -72,6 +72,8 @@ interface AdminAcceptPageProps {
   onToggleSponsorRails?: (enabled: boolean) => void;
   featuredPosition?: number;
   onSetFeaturedPosition?: (position: number) => void;
+  featuredPositions?: Record<string, number>;
+  onSetProductFeaturedPosition?: (productId: string, position: number) => void;
 }
 
 export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
@@ -99,6 +101,8 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
   onToggleSponsorRails,
   featuredPosition = 0,
   onSetFeaturedPosition,
+  featuredPositions = {},
+  onSetProductFeaturedPosition,
 }) => {
   // Counts
   const pendingCount = submissions.filter((s) => (s.status || 'under_review') === 'under_review').length;
@@ -1588,94 +1592,180 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                     return (
                       <div
                         key={p.id}
-                        className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 rounded-xl border border-amber-300/80 bg-gradient-to-r from-amber-50/40 via-amber-50/15 to-white p-4 shadow-2xs transition-all hover:border-amber-400"
+                        className="flex flex-col gap-3 rounded-xl border border-amber-300/80 bg-gradient-to-r from-amber-50/40 via-amber-50/15 to-white p-4 shadow-2xs transition-all hover:border-amber-400"
                       >
-                        {/* Left: Priority Badge & Move Controls */}
-                        <div className="flex items-center gap-3 shrink-0">
-                          <div className="flex items-center gap-1.5">
-                            <span className="inline-flex items-center gap-1 rounded-lg bg-amber-500 px-2.5 py-1 text-xs font-black text-white shadow-xs">
-                              <Crown className="h-3 w-3" />
-                              <span>#{index + 1}</span>
-                            </span>
-
-                            <div className="flex flex-col gap-0.5">
-                              <button
-                                type="button"
-                                onClick={() => handleMoveFeaturedUp(index)}
-                                disabled={isFirst}
-                                className={`rounded p-1 text-xs transition-colors cursor-pointer ${
-                                  isFirst ? 'text-neutral-300 cursor-not-allowed' : 'text-neutral-600 hover:bg-neutral-100 hover:text-black'
-                                }`}
-                                title={isFirst ? 'Already top priority' : 'Move Up in Priority'}
-                              >
-                                <ChevronUp className="h-3.5 w-3.5" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleMoveFeaturedDown(index)}
-                                disabled={isLast}
-                                className={`rounded p-1 text-xs transition-colors cursor-pointer ${
-                                  isLast ? 'text-neutral-300 cursor-not-allowed' : 'text-neutral-600 hover:bg-neutral-100 hover:text-black'
-                                }`}
-                                title={isLast ? 'Already lowest priority' : 'Move Down in Priority'}
-                              >
-                                <ChevronDown className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          </div>
-
-                          <ProductLogo
-                            src={p.logoUrl}
-                            alt={p.name}
-                            containerClassName="h-12 w-12 rounded-xl border border-neutral-200 bg-white shrink-0 overflow-hidden relative flex items-center justify-center shadow-2xs"
-                          />
-
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                              <h4 className="text-sm font-black text-neutral-950 truncate">{p.name}</h4>
-                              {p.verified && <CheckCircle2 className="h-3.5 w-3.5 text-mint-600 shrink-0" />}
-                              <span className="rounded-md bg-neutral-100 border border-neutral-200 px-1.5 py-0.5 text-[10px] font-bold text-neutral-600">
-                                {p.category}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
+                          {/* Left: Priority Badge & Move Controls */}
+                          <div className="flex items-center gap-3 shrink-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="inline-flex items-center gap-1 rounded-lg bg-amber-500 px-2.5 py-1 text-xs font-black text-white shadow-xs">
+                                <Crown className="h-3 w-3" />
+                                <span>#{index + 1}</span>
                               </span>
+
+                              <div className="flex flex-col gap-0.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleMoveFeaturedUp(index)}
+                                  disabled={isFirst}
+                                  className={`rounded p-1 text-xs transition-colors cursor-pointer ${
+                                    isFirst ? 'text-neutral-300 cursor-not-allowed' : 'text-neutral-600 hover:bg-neutral-100 hover:text-black'
+                                  }`}
+                                  title={isFirst ? 'Already top priority' : 'Move Up in Priority'}
+                                >
+                                  <ChevronUp className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleMoveFeaturedDown(index)}
+                                  disabled={isLast}
+                                  className={`rounded p-1 text-xs transition-colors cursor-pointer ${
+                                    isLast ? 'text-neutral-300 cursor-not-allowed' : 'text-neutral-600 hover:bg-neutral-100 hover:text-black'
+                                  }`}
+                                  title={isLast ? 'Already lowest priority' : 'Move Down in Priority'}
+                                >
+                                  <ChevronDown className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
                             </div>
-                            <p className="text-xs text-neutral-500 truncate mt-0.5">{p.tagline}</p>
-                            <div className="flex items-center gap-3 mt-1 text-[11px] text-neutral-400">
-                              <span className="font-bold text-neutral-600">{p.upvotes ?? 0} upvotes</span>
-                              <a
-                                href={p.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-neutral-500 hover:text-black font-semibold hover:underline"
-                              >
-                                <Globe className="h-3 w-3" />
-                                <span className="truncate max-w-[180px]">{p.url.replace(/^https?:\/\//, '')}</span>
-                                <ExternalLink className="h-2.5 w-2.5" />
-                              </a>
+
+                            <ProductLogo
+                              src={p.logoUrl}
+                              alt={p.name}
+                              containerClassName="h-12 w-12 rounded-xl border border-neutral-200 bg-white shrink-0 overflow-hidden relative flex items-center justify-center shadow-2xs"
+                            />
+
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <h4 className="text-sm font-black text-neutral-950 truncate">{p.name}</h4>
+                                {p.verified && <CheckCircle2 className="h-3.5 w-3.5 text-mint-600 shrink-0" />}
+                                <span className="rounded-md bg-neutral-100 border border-neutral-200 px-1.5 py-0.5 text-[10px] font-bold text-neutral-600">
+                                  {p.category}
+                                </span>
+                              </div>
+                              <p className="text-xs text-neutral-500 truncate mt-0.5">{p.tagline}</p>
+                              <div className="flex items-center gap-3 mt-1 text-[11px] text-neutral-400">
+                                <span className="font-bold text-neutral-600">{p.upvotes ?? 0} upvotes</span>
+                                <a
+                                  href={p.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-neutral-500 hover:text-black font-semibold hover:underline"
+                                >
+                                  <Globe className="h-3 w-3" />
+                                  <span className="truncate max-w-[180px]">{p.url.replace(/^https?:\/\//, '')}</span>
+                                  <ExternalLink className="h-2.5 w-2.5" />
+                                </a>
+                              </div>
                             </div>
+                          </div>
+
+                          {/* Right: Actions */}
+                          <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                            <a
+                              href={p.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="rounded-lg border border-neutral-200 bg-white p-2 text-neutral-500 hover:border-neutral-400 hover:text-neutral-950 transition-all cursor-pointer"
+                              title="Visit website"
+                            >
+                              <ExternalLink className="h-3.5 w-3.5" />
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveFeatured(p.id)}
+                              className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-white px-2.5 py-1.5 text-xs font-bold text-red-600 hover:bg-red-50 hover:border-red-300 transition-all cursor-pointer"
+                              title="Remove from featured spotlight"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                              <span>Remove</span>
+                            </button>
                           </div>
                         </div>
 
-                        {/* Right: Actions */}
-                        <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                          <a
-                            href={p.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="rounded-lg border border-neutral-200 bg-white p-2 text-neutral-500 hover:border-neutral-400 hover:text-neutral-950 transition-all cursor-pointer"
-                            title="Visit website"
-                          >
-                            <ExternalLink className="h-3.5 w-3.5" />
-                          </a>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveFeatured(p.id)}
-                            className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-white px-2.5 py-1.5 text-xs font-bold text-red-600 hover:bg-red-50 hover:border-red-300 transition-all cursor-pointer"
-                            title="Remove from featured spotlight"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                            <span>Remove</span>
-                          </button>
-                        </div>
+                        {/* Directory Position Controls on Card */}
+                        {(() => {
+                          const curPos = featuredPositions[p.id] !== undefined ? featuredPositions[p.id] : featuredPosition;
+                          return (
+                            <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2.5 border-t border-amber-200/70">
+                              <div className="flex items-center gap-2">
+                                <span className="inline-flex items-center gap-1 text-[11px] font-black text-neutral-800">
+                                  <ArrowUpDown className="h-3 w-3 text-amber-600" />
+                                  <span>Listing Position:</span>
+                                </span>
+
+                                <span className="rounded-md bg-amber-100 border border-amber-300 px-2 py-0.5 text-[10px] font-black text-amber-900 shadow-2xs">
+                                  {curPos === 0 ? 'Top (Above #1)' : `After Rank #${curPos}`}
+                                </span>
+                              </div>
+
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                {/* Quick Preset Buttons */}
+                                {[
+                                  { pos: 0, label: 'Top' },
+                                  { pos: 1, label: 'After #1' },
+                                  { pos: 2, label: 'After #2' },
+                                  { pos: 3, label: 'After #3' },
+                                  { pos: 4, label: 'After #4' },
+                                  { pos: 5, label: 'After #5' },
+                                  { pos: 10, label: 'After #10' },
+                                ].map(({ pos, label }) => {
+                                  const isActive = curPos === pos;
+                                  return (
+                                    <button
+                                      key={pos}
+                                      type="button"
+                                      onClick={() => onSetProductFeaturedPosition?.(p.id, pos)}
+                                      className={`px-2 py-0.5 rounded-md text-[11px] font-bold transition-all cursor-pointer border ${
+                                        isActive
+                                          ? 'bg-neutral-950 border-neutral-950 text-white shadow-xs'
+                                          : 'bg-white border-neutral-200 text-neutral-700 hover:border-amber-400 hover:bg-amber-50/50'
+                                      }`}
+                                    >
+                                      {label}
+                                    </button>
+                                  );
+                                })}
+
+                                {/* Stepper & Custom Rank Input */}
+                                <div className="flex items-center gap-1 pl-1">
+                                  <div className="flex items-center rounded-lg border border-neutral-200 bg-white shadow-2xs overflow-hidden">
+                                    <button
+                                      type="button"
+                                      onClick={() => onSetProductFeaturedPosition?.(p.id, Math.max(0, curPos - 1))}
+                                      className="px-2 py-0.5 text-xs font-black text-neutral-600 hover:bg-neutral-100 cursor-pointer"
+                                      title="Decrease position"
+                                    >
+                                      -
+                                    </button>
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      max={100}
+                                      value={curPos}
+                                      onChange={(e) => {
+                                        const val = parseInt(e.target.value, 10);
+                                        if (!isNaN(val) && val >= 0) {
+                                          onSetProductFeaturedPosition?.(p.id, val);
+                                        }
+                                      }}
+                                      className="w-10 text-center text-xs font-black text-neutral-900 outline-none py-0.5"
+                                      title="Custom position index"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => onSetProductFeaturedPosition?.(p.id, curPos + 1)}
+                                      className="px-2 py-0.5 text-xs font-black text-neutral-600 hover:bg-neutral-100 cursor-pointer"
+                                      title="Increase position"
+                                    >
+                                      +
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </div>
                     );
                   })}

@@ -764,6 +764,7 @@ export function debouncedSyncProducts(products: Product[]): void {
 export interface FeaturedProductConfig {
   productId: string | null;
   productIds: string[];
+  positions: Record<string, number>;
   expiresAt: number | null;
   position?: number;
 }
@@ -772,6 +773,8 @@ export const FEATURED_POSITION_KEY = 'featured_position';
 export const LOCAL_FEATURED_POSITION_KEY = 'topsaas_featured_position';
 export const FEATURED_PRODUCTS_KEY = 'featured_product_ids';
 export const LOCAL_FEATURED_PRODUCTS_KEY = 'topsaas_featured_product_ids';
+export const FEATURED_POSITIONS_MAP_KEY = 'featured_product_positions';
+export const LOCAL_FEATURED_POSITIONS_MAP_KEY = 'topsaas_featured_product_positions';
 
 /** Get whether a custom position is set for the featured card in the listing (default: 0 = top above #1) */
 export async function getFeaturedPosition(): Promise<number> {
@@ -829,13 +832,14 @@ export async function getGlobalFeaturedProduct(): Promise<FeaturedProductConfig>
     const { data, error } = await supabase
       .from('site_settings')
       .select('key, value')
-      .in('key', ['featured_product_id', 'featured_expires_at', FEATURED_POSITION_KEY, FEATURED_PRODUCTS_KEY]);
+      .in('key', ['featured_product_id', 'featured_expires_at', FEATURED_POSITION_KEY, FEATURED_PRODUCTS_KEY, FEATURED_POSITIONS_MAP_KEY]);
 
     if (!error && data && data.length > 0) {
       const idRow = data.find((r) => r.key === 'featured_product_id');
       const expRow = data.find((r) => r.key === 'featured_expires_at');
       const posRow = data.find((r) => r.key === FEATURED_POSITION_KEY);
       const idsRow = data.find((r) => r.key === FEATURED_PRODUCTS_KEY);
+      const positionsRow = data.find((r) => r.key === FEATURED_POSITIONS_MAP_KEY);
 
       const rawVal = idRow?.value;
       const expiresAt = expRow?.value ? parseInt(expRow.value, 10) : null;
@@ -852,33 +856,46 @@ export async function getGlobalFeaturedProduct(): Promise<FeaturedProductConfig>
         } catch {}
       }
 
+      let positions: Record<string, number> = {};
+      if (positionsRow?.value) {
+        try {
+          const parsed = JSON.parse(positionsRow.value);
+          if (parsed && typeof parsed === 'object') {
+            positions = parsed;
+          }
+        } catch {}
+      }
+
       if (posRow?.value) {
         try { localStorage.setItem(LOCAL_FEATURED_POSITION_KEY, position.toString()); } catch {}
       }
       if (idsRow?.value) {
         try { localStorage.setItem(LOCAL_FEATURED_PRODUCTS_KEY, JSON.stringify(productIds)); } catch {}
       }
+      if (positionsRow?.value) {
+        try { localStorage.setItem(LOCAL_FEATURED_POSITIONS_MAP_KEY, JSON.stringify(positions)); } catch {}
+      }
 
       if (rawVal === 'empty' || rawVal === '') {
-        return { productId: 'empty', productIds: [], expiresAt: null, position };
+        return { productId: 'empty', productIds: [], positions, expiresAt: null, position };
       }
       if (rawVal === 'default' || !rawVal) {
         if (productIds.length > 0) {
-          return { productId: productIds[0], productIds, expiresAt: null, position };
+          return { productId: productIds[0], productIds, positions, expiresAt: null, position };
         }
-        return { productId: null, productIds: [], expiresAt: null, position };
+        return { productId: null, productIds: [], positions, expiresAt: null, position };
       }
 
       // If expired, clear it
       if (expiresAt && expiresAt < Date.now()) {
-        return { productId: null, productIds: [], expiresAt: null, position };
+        return { productId: null, productIds: [], positions, expiresAt: null, position };
       }
 
       if (productIds.length === 0 && rawVal) {
         productIds = [rawVal];
       }
 
-      return { productId: rawVal, productIds, expiresAt, position };
+      return { productId: rawVal, productIds, positions, expiresAt, position };
     }
   } catch {}
 
@@ -888,6 +905,7 @@ export async function getGlobalFeaturedProduct(): Promise<FeaturedProductConfig>
     const localExp = localStorage.getItem('topsaas_featured_expiry');
     const localPos = localStorage.getItem(LOCAL_FEATURED_POSITION_KEY);
     const localIdsRaw = localStorage.getItem(LOCAL_FEATURED_PRODUCTS_KEY);
+    const localPositionsRaw = localStorage.getItem(LOCAL_FEATURED_POSITIONS_MAP_KEY);
     const exp = localExp ? parseInt(localExp, 10) : null;
     const pos = localPos ? parseInt(localPos, 10) : 0;
     const position = !isNaN(pos) && pos >= 0 ? pos : 0;
@@ -902,36 +920,47 @@ export async function getGlobalFeaturedProduct(): Promise<FeaturedProductConfig>
       } catch {}
     }
 
+    let positions: Record<string, number> = {};
+    if (localPositionsRaw) {
+      try {
+        const parsed = JSON.parse(localPositionsRaw);
+        if (parsed && typeof parsed === 'object') {
+          positions = parsed;
+        }
+      } catch {}
+    }
+
     if (localId === 'empty' || localId === '') {
-      return { productId: 'empty', productIds: [], expiresAt: null, position };
+      return { productId: 'empty', productIds: [], positions, expiresAt: null, position };
     }
     if (localId === 'default' || !localId) {
       if (productIds.length > 0) {
-        return { productId: productIds[0], productIds, expiresAt: null, position };
+        return { productId: productIds[0], productIds, positions, expiresAt: null, position };
       }
-      return { productId: null, productIds: [], expiresAt: null, position };
+      return { productId: null, productIds: [], positions, expiresAt: null, position };
     }
 
     if (exp && exp < Date.now()) {
       localStorage.removeItem('topsaas_featured_product');
       localStorage.removeItem('topsaas_featured_expiry');
-      return { productId: null, productIds: [], expiresAt: null, position };
+      return { productId: null, productIds: [], positions, expiresAt: null, position };
     }
 
     if (productIds.length === 0 && localId) {
       productIds = [localId];
     }
 
-    return { productId: localId, productIds, expiresAt: exp, position };
+    return { productId: localId, productIds, positions, expiresAt: exp, position };
   } catch {
-    return { productId: null, productIds: [], expiresAt: null, position: 0 };
+    return { productId: null, productIds: [], positions: {}, expiresAt: null, position: 0 };
   }
 }
 
 /** Set global featured products (multiple) in Supabase and localStorage */
 export async function setGlobalFeaturedProducts(
   productIds: string[],
-  mode: 'active' | 'default' | 'empty' = 'active'
+  mode: 'active' | 'default' | 'empty' = 'active',
+  positions?: Record<string, number>
 ): Promise<void> {
   const normalizedIds = Array.from(new Set(productIds.filter(Boolean)));
   const primaryId = normalizedIds.length > 0 
@@ -941,6 +970,9 @@ export async function setGlobalFeaturedProducts(
   // 1. Sync to local storage
   try {
     localStorage.setItem(LOCAL_FEATURED_PRODUCTS_KEY, JSON.stringify(normalizedIds));
+    if (positions) {
+      localStorage.setItem(LOCAL_FEATURED_POSITIONS_MAP_KEY, JSON.stringify(positions));
+    }
     if (primaryId === 'default') {
       localStorage.removeItem('topsaas_featured_product');
       localStorage.removeItem('topsaas_featured_expiry');
@@ -951,13 +983,46 @@ export async function setGlobalFeaturedProducts(
 
   // 2. Sync to Supabase site_settings
   try {
-    await supabase.from('site_settings').upsert([
+    const upserts: Array<{ key: string; value: string; description?: string }> = [
       { key: FEATURED_PRODUCTS_KEY, value: JSON.stringify(normalizedIds), description: 'List of featured product IDs in priority order' },
       { key: 'featured_product_id', value: primaryId, description: 'Primary featured product ID or default/empty' },
-    ]);
+    ];
+    if (positions) {
+      upserts.push({
+        key: FEATURED_POSITIONS_MAP_KEY,
+        value: JSON.stringify(positions),
+        description: 'Per-product listing position map for featured cards',
+      });
+    }
+    await supabase.from('site_settings').upsert(upserts);
   } catch (err) {
     console.warn('setGlobalFeaturedProducts error:', err);
   }
+}
+
+/** Set per-product listing position for a featured product */
+export async function setProductFeaturedPosition(
+  productId: string,
+  position: number
+): Promise<Record<string, number>> {
+  let positions: Record<string, number> = {};
+  try {
+    const raw = localStorage.getItem(LOCAL_FEATURED_POSITIONS_MAP_KEY);
+    if (raw) positions = JSON.parse(raw);
+  } catch {}
+  positions[productId] = Math.max(0, position);
+  try {
+    localStorage.setItem(LOCAL_FEATURED_POSITIONS_MAP_KEY, JSON.stringify(positions));
+    await supabase.from('site_settings').upsert({
+      key: FEATURED_POSITIONS_MAP_KEY,
+      value: JSON.stringify(positions),
+      description: 'Per-product listing position for featured cards',
+      updated_at: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.warn('setProductFeaturedPosition note:', err);
+  }
+  return positions;
 }
 
 /** Set global featured product in Supabase and localStorage */
