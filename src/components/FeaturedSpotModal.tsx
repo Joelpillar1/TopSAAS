@@ -589,32 +589,6 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Platform Performance box (from Image 2) */}
-                  <div className="rounded-2xl border border-neutral-200 bg-white p-4 space-y-2">
-                    <div>
-                      <h4 className="text-xs font-bold text-neutral-900">Platform Performance</h4>
-                      <p className="text-[11px] text-neutral-500">
-                        Real metrics from our analytics (results may vary)
-                      </p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4 pt-1">
-                      <div>
-                        <p className="text-[11px] font-medium text-neutral-500">Recent Platform Activity</p>
-                        <span className="text-xl sm:text-2xl font-black text-blue-600 font-mono-num">
-                          ~4,000
-                        </span>
-                        <p className="text-[11px] text-neutral-500">Monthly visitors</p>
-                      </div>
-                      <div>
-                        <p className="text-[11px] font-medium text-neutral-500">Active Community</p>
-                        <span className="text-xl sm:text-2xl font-black text-blue-600 font-mono-num">
-                          3,000+
-                        </span>
-                        <p className="text-[11px] text-neutral-500">Registered users</p>
-                      </div>
-                    </div>
-                  </div>
-
                   {/* Main Continue Button */}
                   <button
                     type="button"
