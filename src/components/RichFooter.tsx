@@ -154,7 +154,9 @@ export const RichFooter: React.FC<RichFooterProps> = ({
       <div className="border-t border-neutral-200">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 py-5">
           <h4 className="text-xs font-bold text-neutral-500 mb-3 text-center">Featured on</h4>
-          <div className="flex flex-wrap items-center justify-center gap-4">
+
+          {/* Desktop: Centered row */}
+          <div className="hidden sm:flex flex-wrap items-center justify-center gap-5">
             <a
               href="https://www.topsaas.space/"
               target="_blank"
@@ -213,6 +215,133 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                 onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
               />
             </a>
+          </div>
+
+          {/* Mobile: Smooth infinite marquee */}
+          <div className="sm:hidden relative w-full overflow-hidden">
+            <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white to-transparent z-10" />
+            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent z-10" />
+            <div className="flex w-max items-center gap-6 animate-marquee-infinite py-1">
+              {/* Set 1 */}
+              <a
+                href="https://www.topsaas.space/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transition-opacity hover:opacity-85 inline-flex items-center shrink-0"
+              >
+                <img
+                  src="https://topsaas.space/Share%20Badge/TopSAAS%20Type%202%20-%20light.png"
+                  alt="Featured on TopSAAS"
+                  height={36}
+                  className="h-9 w-auto"
+                  loading="lazy"
+                />
+              </a>
+              <a
+                href="https://spacerrapps.com/apps/topsaas?utm_source=badge&utm_medium=referral&utm_campaign=featured"
+                target="_blank"
+                rel="noopener"
+                className="transition-opacity hover:opacity-80 inline-flex items-center shrink-0"
+              >
+                <img
+                  src="https://spacerrapps.com/badge/topsaas.svg?v=2&theme=light"
+                  alt="TopSAAS is featured on Spacerr"
+                  className="h-8 w-auto"
+                  loading="lazy"
+                  onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                />
+              </a>
+              <a
+                href="https://launchit.fast"
+                target="_blank"
+                rel="noopener"
+                className="transition-opacity hover:opacity-80 inline-flex items-center shrink-0"
+              >
+                <img
+                  src="https://launchit.fast/img/launching.svg"
+                  alt="Featured on LaunchIt"
+                  className="h-8 w-auto"
+                  loading="lazy"
+                  onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                />
+              </a>
+              <a
+                href="https://verifieddr.com/website/topsaas-space"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transition-opacity hover:opacity-80 inline-flex items-center shrink-0"
+              >
+                <img
+                  src="https://verifieddr.com/badge/topsaas-space.svg?metric=truedr"
+                  alt="Verified DR - Verified Domain Rating for topsaas.space"
+                  width={220}
+                  height={68}
+                  className="h-8.5 w-auto"
+                  loading="lazy"
+                  onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                />
+              </a>
+
+              {/* Set 2 (for seamless loop) */}
+              <a
+                href="https://www.topsaas.space/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transition-opacity hover:opacity-85 inline-flex items-center shrink-0"
+              >
+                <img
+                  src="https://topsaas.space/Share%20Badge/TopSAAS%20Type%202%20-%20light.png"
+                  alt="Featured on TopSAAS"
+                  height={36}
+                  className="h-9 w-auto"
+                  loading="lazy"
+                />
+              </a>
+              <a
+                href="https://spacerrapps.com/apps/topsaas?utm_source=badge&utm_medium=referral&utm_campaign=featured"
+                target="_blank"
+                rel="noopener"
+                className="transition-opacity hover:opacity-80 inline-flex items-center shrink-0"
+              >
+                <img
+                  src="https://spacerrapps.com/badge/topsaas.svg?v=2&theme=light"
+                  alt="TopSAAS is featured on Spacerr"
+                  className="h-8 w-auto"
+                  loading="lazy"
+                  onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                />
+              </a>
+              <a
+                href="https://launchit.fast"
+                target="_blank"
+                rel="noopener"
+                className="transition-opacity hover:opacity-80 inline-flex items-center shrink-0"
+              >
+                <img
+                  src="https://launchit.fast/img/launching.svg"
+                  alt="Featured on LaunchIt"
+                  className="h-8 w-auto"
+                  loading="lazy"
+                  onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                />
+              </a>
+              <a
+                href="https://verifieddr.com/website/topsaas-space"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transition-opacity hover:opacity-80 inline-flex items-center shrink-0"
+              >
+                <img
+                  src="https://verifieddr.com/badge/topsaas-space.svg?metric=truedr"
+                  alt="Verified DR - Verified Domain Rating for topsaas.space"
+                  width={220}
+                  height={68}
+                  className="h-8.5 w-auto"
+                  loading="lazy"
+                  onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                />
+              </a>
+            </div>
           </div>
         </div>
       </div>
