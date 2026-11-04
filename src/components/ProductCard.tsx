@@ -114,11 +114,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             type="button"
             onClick={handleUpvote}
             title={upvoted ? 'Remove your upvote' : 'Upvote this product'}
-            className={`inline-flex shrink-0 items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-bold transition-all cursor-pointer active:scale-95 ${
-              upvoted
+            className={`inline-flex shrink-0 items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-bold transition-all cursor-pointer active:scale-95 ${upvoted
                 ? 'border-mint-500 bg-mint-500 text-white'
                 : 'border-neutral-200 bg-white text-neutral-700 hover:border-mint-500/60 hover:text-mint-600 hover:bg-mint-50'
-            }`}
+              }`}
           >
             <ChevronUp className="h-3.5 w-3.5" />
             <span className="font-mono-num">{product.upvotes ?? 0}</span>

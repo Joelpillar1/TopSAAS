@@ -2221,8 +2221,8 @@ export default function App() {
                       })}
                     </div>
 
-                    {/* Controls on the right edge: Search + Steals Only */}
-                    <div className="shrink-0 flex items-center gap-2 pl-1">
+                    {/* Controls on the right edge: Search + Steals Only (hidden on mobile) */}
+                    <div className="shrink-0 hidden sm:flex items-center gap-2 pl-1">
                       <div className="relative hidden sm:block w-36 xl:w-44">
                         <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neutral-400" />
                         <input
@@ -2276,7 +2276,7 @@ export default function App() {
                           setCurrentPage(1);
                         }}
                         title={stealsOnly ? 'Turn off Steals Only filter' : 'Show only tools with exclusive discounts (50% OFF, lifetime deals, promo codes)'}
-                        className={`group inline-flex items-center gap-2 rounded-lg border px-2.5 py-1 text-xs font-bold transition-all cursor-pointer select-none ${stealsOnly
+                        className={`group hidden sm:inline-flex items-center gap-2 rounded-lg border px-2.5 py-1 text-xs font-bold transition-all cursor-pointer select-none ${stealsOnly
                           ? 'border-amber-400/70 bg-amber-50 text-amber-800 ring-1 ring-amber-400/40'
                           : 'border-neutral-200 bg-white text-neutral-500 hover:border-neutral-300 hover:text-neutral-950'
                           }`}

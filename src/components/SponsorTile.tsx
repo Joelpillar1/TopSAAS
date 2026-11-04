@@ -150,11 +150,10 @@ export const SponsorTile: React.FC<SponsorTileProps> = ({
                 onUpvote(product);
               }}
               title={upvoted ? 'Remove your upvote' : 'Upvote this product'}
-              className={`flex flex-col items-center justify-center rounded-xl sm:rounded-2xl border py-1 sm:py-1.5 w-11 transition-all cursor-pointer active:scale-95 ${
-                upvoted
+              className={`flex flex-col items-center justify-center rounded-xl sm:rounded-2xl border py-1 sm:py-1.5 w-11 transition-all cursor-pointer active:scale-95 ${upvoted
                   ? 'border-mint-500 bg-mint-500 text-white shadow-2xs'
                   : 'border-neutral-200 bg-white text-neutral-800 hover:border-neutral-400 shadow-2xs'
-              }`}
+                }`}
             >
               <ChevronUp className={`h-4 w-4 ${upvoted ? 'text-white' : 'text-neutral-900 fill-neutral-900'}`} />
               <span className="text-xs font-black font-mono-num leading-tight">{product.upvotes ?? 0}</span>
