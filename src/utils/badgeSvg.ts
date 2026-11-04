@@ -154,7 +154,7 @@ export function generateBadgeDataUrl(product: Product, options: BadgeOptions = {
  * Get canonical public product URL on TopSAAS
  */
 export function getProductTopSaasUrl(product: Product, baseOrigin?: string): string {
-  const origin = baseOrigin || (typeof window !== 'undefined' ? window.location.origin : 'https://topsaas.org');
+  const origin = baseOrigin || (typeof window !== 'undefined' ? window.location.origin : 'https://topsaas.space');
   return `${origin}/product/${encodeURIComponent(product.id)}`;
 }
 
@@ -169,8 +169,8 @@ export function generateBadgeSnippet(
   baseOrigin?: string
 ): string {
   const productUrl = getProductTopSaasUrl(product, baseOrigin);
-  const origin = baseOrigin || (typeof window !== 'undefined' ? window.location.origin : 'https://topsaas.org');
-  const badgeImageUrl = `${origin}/badge/${encodeURIComponent(product.id)}?style=${style}&theme=${theme}`;
+  const origin = baseOrigin || (typeof window !== 'undefined' ? window.location.origin : 'https://topsaas.space');
+  const badgeImageUrl = `${origin}/Share%20Badge/TopSAAS%20Type%201%20-%20blue.png`;
   const altText = `${product.name} - Featured on TopSAAS`;
 
   if (format === 'markdown') {
@@ -179,10 +179,10 @@ export function generateBadgeSnippet(
 
   if (format === 'html') {
     return `<a href="${productUrl}" target="_blank" rel="noopener noreferrer">
-  <img src="${badgeImageUrl}" alt="${altText}" width="250" height="54" />
+  <img src="${badgeImageUrl}" alt="${altText}" height="36" />
 </a>`;
   }
 
-  // Raw Image / SVG URL
+  // Raw Image URL
   return badgeImageUrl;
 }
