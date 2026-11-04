@@ -513,11 +513,11 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
     }
   };
 
-  // ── Feature screenshots (up to 10) ──
+  // ── Feature screenshots (up to 6) ──
   const applyScreenshotFiles = async (files: FileList | File[]) => {
-    const remaining = 10 - form.screenshots.length;
+    const remaining = 6 - form.screenshots.length;
     if (remaining <= 0) {
-      setBanner('You can add up to 10 screenshots.');
+      setBanner('You can add up to 6 screenshots.');
       return;
     }
     setIsAddingShots(true);
@@ -532,7 +532,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
         }
       }
       if (added.length > 0) {
-        set('screenshots', [...form.screenshots, ...added].slice(0, 10));
+        set('screenshots', [...form.screenshots, ...added].slice(0, 6));
         playSound('click', soundEnabled);
       }
     } finally {
@@ -1089,7 +1089,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                 </div>
               </div>
 
-              {/* Feature screenshots gallery (up to 10) */}
+              {/* Feature screenshots gallery (up to 6) */}
               <div className="mt-6 border-t border-neutral-200 pt-6">
                 <div className="mb-2 flex items-baseline justify-between gap-2">
                   <div>
@@ -1099,7 +1099,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                     </p>
                   </div>
                   <span className="font-mono-num text-[11px] font-bold text-neutral-700 bg-neutral-50 px-2 py-0.5 rounded-md border border-neutral-200 shrink-0">
-                    {form.screenshots.length}/10
+                    {form.screenshots.length}/6
                   </span>
                 </div>
 
@@ -1233,7 +1233,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                     );
                   })}
 
-                  {form.screenshots.length < 10 && (
+                  {form.screenshots.length < 6 && (
                     <button
                       type="button"
                       onClick={() => screenshotsInputRef.current?.click()}
@@ -1268,7 +1268,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                   }}
                 />
                 <p className="mt-2 text-[11px] font-medium text-neutral-500">
-                  Optional — up to 10 screenshots, shown in a gallery on your listing page in this exact order.
+                  Optional — up to 6 screenshots, shown in a gallery on your listing page in this exact order.
                 </p>
               </div>
 

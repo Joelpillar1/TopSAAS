@@ -1072,7 +1072,7 @@ export default function App() {
       tagline,
       url,
       logoUrl,
-      screenshots: details.screenshots && details.screenshots.length > 0 ? details.screenshots.slice(0, 10) : undefined,
+      screenshots: details.screenshots && details.screenshots.length > 0 ? details.screenshots.slice(0, 6) : undefined,
       demoVideoUrl: details.demoVideoUrl?.trim() || undefined,
       twitterHandle: details.twitterHandle || undefined,
       socials: details.socials && details.socials.length > 0 ? details.socials : undefined,

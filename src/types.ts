@@ -67,7 +67,7 @@ export interface Product {
   tagline: string;
   url: string;
   logoUrl?: string;
-  /** Up to 10 feature screenshots shown in a gallery on the listing page */
+  /** Up to 6 feature screenshots shown in a gallery on the listing page */
   screenshots?: string[];
   demoVideoUrl?: string;
   twitterHandle?: string;

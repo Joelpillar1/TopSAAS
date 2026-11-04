@@ -18,7 +18,10 @@ import {
   Upload,
   Plus,
   Clock,
-  Code2
+  Code2,
+  ChevronLeft,
+  ChevronRight,
+  Star
 } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '../utils/supabase';
@@ -179,6 +182,8 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const founderPhotoInputRef = useRef<HTMLInputElement>(null);
   const screenshotsInputRef = useRef<HTMLInputElement>(null);
+  const [draggedScreenshotIndex, setDraggedScreenshotIndex] = useState<number | null>(null);
+  const [dragOverScreenshotIndex, setDragOverScreenshotIndex] = useState<number | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -487,9 +492,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
   const applyScreenshotFiles = async (files: FileList | File[]) => {
     const current = editForm.screenshots || [];
-    const remaining = 10 - current.length;
+    const remaining = 6 - current.length;
     if (remaining <= 0) {
-      setEditError('You can add up to 10 screenshots.');
+      setEditError('You can add up to 6 screenshots.');
       return;
     }
     setIsAddingShots(true);
@@ -507,13 +512,25 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
       if (added.length > 0) {
         setEditForm((prev) => ({
           ...prev,
-          screenshots: [...(prev.screenshots || []), ...added].slice(0, 10),
+          screenshots: [...(prev.screenshots || []), ...added].slice(0, 6),
         }));
         playSound('click', soundEnabled);
       }
     } finally {
       setIsAddingShots(false);
     }
+  };
+
+  const moveScreenshot = (fromIndex: number, toIndex: number) => {
+    const current = editForm.screenshots || [];
+    if (toIndex < 0 || toIndex >= current.length || fromIndex === toIndex) return;
+    setEditForm((prev) => {
+      const updated = [...(prev.screenshots || [])];
+      const [moved] = updated.splice(fromIndex, 1);
+      updated.splice(toIndex, 0, moved);
+      return { ...prev, screenshots: updated };
+    });
+    playSound('click', soundEnabled);
   };
 
   const removeScreenshot = (index: number) => {
@@ -1120,40 +1137,147 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                           <Upload className="h-3.5 w-3.5 text-mint-600" />
                           <span>Feature Screenshots</span>
                         </label>
-                        <p className="text-[11px] text-neutral-400 mt-0.5">
-                          Upload up to 10 screenshots to showcase your UI, features, and app in the listing gallery.
+                        <p className="text-[11px] text-neutral-500 mt-0.5">
+                          Upload up to 6 screenshots. Drag to reorder or use the arrow buttons. The first image (#1) is your primary listing cover.
                         </p>
                       </div>
-                      <span className="font-mono-num text-[11px] font-bold text-neutral-400 bg-white px-2.5 py-0.5 rounded-full border border-neutral-200 shrink-0">
-                        {editForm.screenshots.length}/10
+                      <span className="font-mono-num text-[11px] font-bold text-neutral-700 bg-neutral-100 px-2.5 py-0.5 rounded-full border border-neutral-200 shrink-0">
+                        {editForm.screenshots.length}/6
                       </span>
                     </div>
 
-                    {/* Screenshots Grid */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1">
-                      {editForm.screenshots.map((src, idx) => (
-                        <div
-                          key={idx}
-                          className="group relative aspect-video overflow-hidden rounded-xl border border-neutral-200 bg-neutral-100"
-                        >
-                          <img
-                            src={src}
-                            alt={`Screenshot ${idx + 1}`}
-                            className="h-full w-full object-cover"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => removeScreenshot(idx)}
-                            aria-label={`Remove screenshot ${idx + 1}`}
-                            className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-lg bg-black/80 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500 cursor-pointer"
-                            title="Remove screenshot"
-                          >
-                            <X className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      ))}
+                    {/* Screenshots Grid with Reordering */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 pt-1">
+                      {editForm.screenshots.map((src, idx) => {
+                        const isFirst = idx === 0;
+                        const isLast = idx === editForm.screenshots.length - 1;
+                        const isDragging = draggedScreenshotIndex === idx;
+                        const isDragOver = dragOverScreenshotIndex === idx;
 
-                      {editForm.screenshots.length < 10 && (
+                        return (
+                          <div
+                            key={idx}
+                            draggable
+                            onDragStart={(e) => {
+                              setDraggedScreenshotIndex(idx);
+                              e.dataTransfer.effectAllowed = 'move';
+                              e.dataTransfer.setData('text/plain', String(idx));
+                            }}
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              e.dataTransfer.dropEffect = 'move';
+                              if (dragOverScreenshotIndex !== idx) {
+                                setDragOverScreenshotIndex(idx);
+                              }
+                            }}
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              if (draggedScreenshotIndex !== null && draggedScreenshotIndex !== idx) {
+                                moveScreenshot(draggedScreenshotIndex, idx);
+                              }
+                              setDraggedScreenshotIndex(null);
+                              setDragOverScreenshotIndex(null);
+                            }}
+                            onDragEnd={() => {
+                              setDraggedScreenshotIndex(null);
+                              setDragOverScreenshotIndex(null);
+                            }}
+                            className={`group relative aspect-video overflow-hidden rounded-xl border bg-neutral-900 shadow-xs transition-all duration-150 cursor-grab active:cursor-grabbing ${
+                              isDragOver
+                                ? 'border-mint-500 ring-2 ring-mint-500/50 scale-[1.02] z-10'
+                                : isDragging
+                                ? 'opacity-40 border-neutral-500'
+                                : isFirst
+                                ? 'border-mint-500/60 hover:border-mint-500'
+                                : 'border-neutral-200 hover:border-neutral-400'
+                            }`}
+                          >
+                            <img
+                              src={src}
+                              alt={`Screenshot ${idx + 1}`}
+                              className="h-full w-full object-cover pointer-events-none select-none"
+                            />
+
+                            {/* Order / Cover Badge */}
+                            <div className="absolute left-2 top-2 z-10">
+                              {isFirst ? (
+                                <span className="inline-flex items-center gap-1 rounded-md bg-mint-500 px-2 py-0.5 text-[10px] font-black text-white shadow-md">
+                                  <Star className="h-3 w-3 fill-white" />
+                                  <span>#1 Cover</span>
+                                </span>
+                              ) : (
+                                <span className="rounded-md bg-black/80 backdrop-blur-xs border border-white/20 px-1.5 py-0.5 text-[10px] font-mono font-bold text-white shadow-md">
+                                  #{idx + 1}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Delete Button (Top Right) */}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeScreenshot(idx);
+                              }}
+                              aria-label={`Remove screenshot ${idx + 1}`}
+                              className="absolute right-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-lg bg-black/80 text-neutral-300 hover:bg-red-600 hover:text-white border border-white/20 hover:border-red-500 transition-all cursor-pointer shadow-md opacity-90 group-hover:opacity-100"
+                              title="Delete screenshot"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+
+                            {/* Bottom Overlay Controls: Move Left, Make Cover, Move Right */}
+                            <div className="absolute inset-x-0 bottom-0 z-10 flex items-center justify-between p-1.5 bg-gradient-to-t from-black/90 via-black/60 to-transparent">
+                              {/* Move Left Button */}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  moveScreenshot(idx, idx - 1);
+                                }}
+                                disabled={isFirst}
+                                aria-label="Move left"
+                                className="flex h-6 w-6 items-center justify-center rounded-md bg-neutral-800/90 border border-white/20 text-white hover:bg-mint-500 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+                                title="Move earlier in gallery"
+                              >
+                                <ChevronLeft className="h-3.5 w-3.5" />
+                              </button>
+
+                              {/* Quick 'Set as Cover' button for non-cover images */}
+                              {!isFirst && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    moveScreenshot(idx, 0);
+                                  }}
+                                  className="rounded-md bg-neutral-800/90 border border-white/20 px-2 py-0.5 text-[9px] font-bold text-neutral-200 hover:text-mint-400 hover:border-mint-500/60 transition-all cursor-pointer"
+                                  title="Set this screenshot as main cover (#1)"
+                                >
+                                  Set as Cover
+                                </button>
+                              )}
+
+                              {/* Move Right Button */}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  moveScreenshot(idx, idx + 1);
+                                }}
+                                disabled={isLast}
+                                aria-label="Move right"
+                                className="flex h-6 w-6 items-center justify-center rounded-md bg-neutral-800/90 border border-white/20 text-white hover:bg-mint-500 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+                                title="Move later in gallery"
+                              >
+                                <ChevronRight className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      {editForm.screenshots.length < 6 && (
                         <button
                           type="button"
                           onClick={() => screenshotsInputRef.current?.click()}
