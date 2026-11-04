@@ -104,12 +104,6 @@ export const SponsorTile: React.FC<SponsorTileProps> = ({
               <Star className="h-2.5 w-2.5 fill-neutral-300 text-neutral-300 shrink-0" />
               <span>Featured</span>
             </span>
-            {(product.autoRelaunch || product.isRelaunched) && (
-              <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-blue-50 border border-blue-200/80 px-1.5 py-0.5 text-[10px] font-bold text-blue-700 shadow-2xs select-none">
-                <span>🚀</span>
-                <span>Relaunched</span>
-              </span>
-            )}
           </div>
           <p className="mt-1 truncate text-[12.5px] font-medium leading-relaxed text-neutral-600 sm:text-[13px]">
             {product.tagline}

@@ -7,7 +7,6 @@ import { WebsiteSubmission, Category, Product } from '../types';
 import { playSound } from '../utils/sound';
 import { getWebsiteFavicon } from '../utils/logo';
 import { publishedProductId } from '../utils/db';
-import { FeaturedProductSelector } from './FeaturedProductSelector';
 import { RichText } from './RichText';
 import { ProductLogo } from './ProductLogo';
 import { RankMedal } from './RankMedal';
@@ -65,8 +64,14 @@ interface AdminAcceptPageProps {
   onToggleSound: () => void;
   featuredProductId: string | null;
   onSetFeatured: (productId: string | null) => void;
+  featuredProductIds?: string[];
+  onSetFeaturedProducts?: (productIds: string[], mode?: 'active' | 'default' | 'empty') => void;
   onToggleVerified?: (productId: string, verified: boolean) => void;
   onUpdateProduct?: (product: Product) => void;
+  sponsorRailsEnabled?: boolean;
+  onToggleSponsorRails?: (enabled: boolean) => void;
+  featuredPosition?: number;
+  onSetFeaturedPosition?: (position: number) => void;
 }
 
 export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
@@ -86,8 +91,14 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
   soundEnabled,
   featuredProductId,
   onSetFeatured,
+  featuredProductIds = [],
+  onSetFeaturedProducts,
   onToggleVerified,
   onUpdateProduct,
+  sponsorRailsEnabled = true,
+  onToggleSponsorRails,
+  featuredPosition = 0,
+  onSetFeaturedPosition,
 }) => {
   // Counts
   const pendingCount = submissions.filter((s) => (s.status || 'under_review') === 'under_review').length;
@@ -182,12 +193,88 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
     return true;
   });
 
-  // Current explicit featured product (only set if a specific product ID is selected)
+  // Current featured products (multiple supported)
   const isDefaultFeatured = featuredProductId === null || featuredProductId === 'default';
   const isEmptyFeatured = featuredProductId === '' || featuredProductId === 'empty';
-  const featuredProduct = (!isDefaultFeatured && !isEmptyFeatured && featuredProductId)
-    ? products.find((p) => p.id === featuredProductId) || null
-    : null;
+
+  const activeFeaturedIds = featuredProductIds.length > 0
+    ? featuredProductIds
+    : (!isDefaultFeatured && !isEmptyFeatured && featuredProductId ? [featuredProductId] : []);
+
+  const activeFeaturedProducts: Product[] = activeFeaturedIds
+    .map((id) => products.find((p) => p.id === id))
+    .filter((p): p is Product => !!p);
+
+  const featuredProduct = activeFeaturedProducts[0] || null;
+
+  // Search state for Add Featured Product dropdown
+  const [featuredSearchQuery, setFeaturedSearchQuery] = useState('');
+  const [isFeaturedSearchOpen, setIsFeaturedSearchOpen] = useState(false);
+
+  const handleAddFeatured = (productId: string) => {
+    if (activeFeaturedIds.includes(productId)) return;
+    const nextIds = [...activeFeaturedIds, productId];
+    if (onSetFeaturedProducts) {
+      onSetFeaturedProducts(nextIds, 'active');
+    } else {
+      onSetFeatured(nextIds[0]);
+    }
+    playSound('success', soundEnabled);
+    try {
+      confetti({
+        particleCount: 20,
+        spread: 45,
+        origin: { y: 0.6 },
+      });
+    } catch {}
+  };
+
+  const handleRemoveFeatured = (productId: string) => {
+    const nextIds = activeFeaturedIds.filter((id) => id !== productId);
+    const nextMode = nextIds.length === 0 ? 'default' : 'active';
+    if (onSetFeaturedProducts) {
+      onSetFeaturedProducts(nextIds, nextMode);
+    } else {
+      onSetFeatured(nextIds.length > 0 ? nextIds[0] : null);
+    }
+    playSound('click', soundEnabled);
+  };
+
+  const handleMoveFeaturedUp = (index: number) => {
+    if (index <= 0) return;
+    const copy = [...activeFeaturedIds];
+    const temp = copy[index - 1];
+    copy[index - 1] = copy[index];
+    copy[index] = temp;
+    if (onSetFeaturedProducts) {
+      onSetFeaturedProducts(copy, 'active');
+    } else {
+      onSetFeatured(copy[0]);
+    }
+    playSound('click', soundEnabled);
+  };
+
+  const handleMoveFeaturedDown = (index: number) => {
+    if (index >= activeFeaturedIds.length - 1) return;
+    const copy = [...activeFeaturedIds];
+    const temp = copy[index + 1];
+    copy[index + 1] = copy[index];
+    copy[index] = temp;
+    if (onSetFeaturedProducts) {
+      onSetFeaturedProducts(copy, 'active');
+    } else {
+      onSetFeatured(copy[0]);
+    }
+    playSound('click', soundEnabled);
+  };
+
+  const handleSetFeaturedMode = (mode: 'default' | 'empty') => {
+    if (onSetFeaturedProducts) {
+      onSetFeaturedProducts([], mode);
+    }
+    onSetFeatured(mode);
+    playSound('click', soundEnabled);
+  };
 
   const handleMoveUp = (product: Product) => {
     if (!onAssignRank) return;
@@ -321,67 +408,99 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 space-y-6">
-        {/* View Switcher Tabs */}
-        <div className="flex items-center gap-2 border-b border-neutral-200 pb-0 overflow-x-auto">
-          <button
-            type="button"
-            onClick={() => { setActiveView('submissions'); playSound('click', soundEnabled); }}
-            className={`flex items-center gap-1.5 rounded-t-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer border border-b-0 whitespace-nowrap ${
-              activeView === 'submissions'
-                ? 'bg-neutral-950 border-neutral-950 text-white shadow-2xs'
-                : 'bg-transparent border-transparent text-neutral-500 hover:text-neutral-950 hover:bg-neutral-800/60'
-            }`}
-          >
-            <Clock className="h-3.5 w-3.5 text-amber-400" />
-            <span>Submissions Queue</span>
-            <span className={`ml-1 rounded-full px-1.5 py-0.2 text-[9px] font-bold ${
-              pendingCount > 0 ? 'bg-amber-400 text-black font-black animate-pulse' : 'bg-neutral-700 text-neutral-300'
-            }`}>
-              {pendingCount}
+        {/* View Switcher Tabs & Master Sponsor Rails Switch */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-neutral-200 pb-0">
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-none">
+            <button
+              type="button"
+              onClick={() => { setActiveView('submissions'); playSound('click', soundEnabled); }}
+              className={`flex items-center gap-1.5 rounded-t-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer border border-b-0 whitespace-nowrap ${
+                activeView === 'submissions'
+                  ? 'bg-neutral-950 border-neutral-950 text-white shadow-2xs'
+                  : 'bg-transparent border-transparent text-neutral-500 hover:text-neutral-950 hover:bg-neutral-800/60'
+              }`}
+            >
+              <Clock className="h-3.5 w-3.5 text-amber-400" />
+              <span>Submissions Queue</span>
+              <span className={`ml-1 rounded-full px-1.5 py-0.2 text-[9px] font-bold ${
+                pendingCount > 0 ? 'bg-amber-400 text-black font-black animate-pulse' : 'bg-neutral-700 text-neutral-300'
+              }`}>
+                {pendingCount}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => { setActiveView('products'); playSound('click', soundEnabled); }}
+              className={`flex items-center gap-1.5 rounded-t-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer border border-b-0 whitespace-nowrap ${
+                activeView === 'products'
+                  ? 'bg-neutral-950 border-neutral-950 text-white shadow-2xs'
+                  : 'bg-transparent border-transparent text-neutral-500 hover:text-neutral-950 hover:bg-neutral-800/60'
+              }`}
+            >
+              <LayoutList className="h-3.5 w-3.5" />
+              <span>Live Products</span>
+              <span className="ml-1 rounded-full bg-mint-500 text-white px-1.5 py-0.2 text-[9px] font-bold">
+                {products.length}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => { setActiveView('featured'); playSound('click', soundEnabled); }}
+              className={`flex items-center gap-1.5 rounded-t-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer border border-b-0 whitespace-nowrap ${
+                activeView === 'featured'
+                  ? 'bg-neutral-950 border-neutral-950 text-white shadow-2xs'
+                  : 'bg-transparent border-transparent text-neutral-500 hover:text-neutral-950 hover:bg-neutral-800/60'
+              }`}
+            >
+              <Crown className="h-3.5 w-3.5 text-amber-500" />
+              <span>Featured</span>
+              {activeFeaturedProducts.length > 0 && (
+                <span className="ml-1 rounded-full bg-amber-500 text-white px-1.5 py-0.2 text-[9px] font-bold">
+                  {activeFeaturedProducts.length}
+                </span>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setActiveView('sponsors'); playSound('click', soundEnabled); }}
+              className={`flex items-center gap-1.5 rounded-t-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer border border-b-0 whitespace-nowrap ${
+                activeView === 'sponsors'
+                  ? 'bg-neutral-950 border-neutral-950 text-white shadow-2xs'
+                  : 'bg-transparent border-transparent text-neutral-500 hover:text-neutral-950 hover:bg-neutral-800/60'
+              }`}
+            >
+              <Megaphone className="h-3.5 w-3.5 text-emerald-400" />
+              <span>Sponsors &amp; Trials</span>
+              <span className="ml-1 rounded-full bg-emerald-500 text-white px-1.5 py-0.2 text-[9px] font-bold">
+                {activeSponsorsCount}
+              </span>
+            </button>
+          </div>
+
+          {/* Quick Master Sponsor Rails Toggle */}
+          <div className="flex items-center gap-2 pb-2 sm:pb-1.5 px-1 shrink-0 self-start sm:self-center">
+            <span className="text-[11px] font-bold text-neutral-400 hidden md:inline">
+              Homepage Rails:
             </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => { setActiveView('products'); playSound('click', soundEnabled); }}
-            className={`flex items-center gap-1.5 rounded-t-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer border border-b-0 whitespace-nowrap ${
-              activeView === 'products'
-                ? 'bg-neutral-950 border-neutral-950 text-white shadow-2xs'
-                : 'bg-transparent border-transparent text-neutral-500 hover:text-neutral-950 hover:bg-neutral-800/60'
-            }`}
-          >
-            <LayoutList className="h-3.5 w-3.5" />
-            <span>Live Products</span>
-            <span className="ml-1 rounded-full bg-mint-500 text-white px-1.5 py-0.2 text-[9px] font-bold">
-              {products.length}
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => { setActiveView('featured'); playSound('click', soundEnabled); }}
-            className={`flex items-center gap-1.5 rounded-t-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer border border-b-0 whitespace-nowrap ${
-              activeView === 'featured'
-                ? 'bg-neutral-950 border-neutral-950 text-white shadow-2xs'
-                : 'bg-transparent border-transparent text-neutral-500 hover:text-neutral-950 hover:bg-neutral-800/60'
-            }`}
-          >
-            <Crown className="h-3.5 w-3.5" />
-            <span>Featured</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => { setActiveView('sponsors'); playSound('click', soundEnabled); }}
-            className={`flex items-center gap-1.5 rounded-t-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer border border-b-0 whitespace-nowrap ${
-              activeView === 'sponsors'
-                ? 'bg-neutral-950 border-neutral-950 text-white shadow-2xs'
-                : 'bg-transparent border-transparent text-neutral-500 hover:text-neutral-950 hover:bg-neutral-800/60'
-            }`}
-          >
-            <Megaphone className="h-3.5 w-3.5 text-emerald-400" />
-            <span>Sponsors & Trials</span>
-            <span className="ml-1 rounded-full bg-emerald-500 text-white px-1.5 py-0.2 text-[9px] font-bold">
-              {activeSponsorsCount}
-            </span>
-          </button>
+            <button
+              type="button"
+              role="switch"
+              title="Master toggle: switch on or off all homepage side sponsor cards at once"
+              aria-checked={sponsorRailsEnabled}
+              onClick={() => {
+                playSound('click', soundEnabled);
+                onToggleSponsorRails?.(!sponsorRailsEnabled);
+              }}
+              className={`inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-bold transition-all cursor-pointer shadow-2xs ${
+                sponsorRailsEnabled
+                  ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
+                  : 'border-neutral-800 bg-neutral-800/80 text-neutral-400 hover:bg-neutral-700/80'
+              }`}
+            >
+              <span className={`h-2.5 w-2.5 rounded-full ${sponsorRailsEnabled ? 'bg-emerald-400 animate-pulse' : 'bg-neutral-500'}`} />
+              <span>Side Sponsors: {sponsorRailsEnabled ? 'ON' : 'OFF'}</span>
+            </button>
+          </div>
         </div>
 
         {/* ============================================================ */}
@@ -817,12 +936,35 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
               </div>
             </div>
 
-            {/* Featured Product Selector */}
-            <FeaturedProductSelector
-              products={products}
-              featuredId={featuredProductId}
-              onSelect={onSetFeatured}
-            />
+            {/* Featured Spotlight Summary Banner */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 rounded-xl border border-amber-300/80 bg-gradient-to-r from-amber-50/50 via-amber-50/20 to-white p-3 mb-2">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500 text-white shadow-2xs">
+                  <Crown className="h-4 w-4" />
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-neutral-950">
+                    Featured Spotlight: {activeFeaturedProducts.length > 0 ? `${activeFeaturedProducts.length} tool${activeFeaturedProducts.length > 1 ? 's' : ''} active` : isEmptyFeatured ? 'Empty (Hidden)' : 'Default Open Bid Banner'}
+                  </span>
+                  <p className="text-[11px] text-neutral-500">
+                    {activeFeaturedProducts.length > 0
+                      ? activeFeaturedProducts.map((p) => p.name).join(', ')
+                      : 'You can feature any product below using the "Feature" button.'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveView('featured');
+                  playSound('click', soundEnabled);
+                }}
+                className="inline-flex items-center gap-1 rounded-lg border border-amber-300 bg-white px-2.5 py-1 text-xs font-bold text-amber-800 hover:bg-amber-100 transition-colors cursor-pointer self-start sm:self-auto"
+              >
+                <span>Manage Featured</span>
+                <Crown className="h-3 w-3" />
+              </button>
+            </div>
 
             {/* Products Search & Filter */}
             <div className="rounded-xl border border-neutral-200 bg-white p-3.5 sm:p-4 flex flex-col gap-3">
@@ -1068,7 +1210,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                       sponsorTier: '1mo',
                                       sponsorStartedAt: Date.now(),
                                       sponsorExpiresAt: Date.now() + 30 * 86400 * 1000,
-                                      autoRelaunch: true,
+                                      autoRelaunch: product.autoRelaunch,
                                     });
                                   }}
                                   className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 bg-white px-2 py-1 text-xs font-bold text-neutral-600 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 transition-all cursor-pointer"
@@ -1079,6 +1221,37 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                 </button>
                               )
                             )}
+
+                            {/* Featured Spotlight Toggle */}
+                            {(() => {
+                              const isFeat = activeFeaturedIds.includes(product.id);
+                              const featRank = isFeat ? activeFeaturedIds.indexOf(product.id) + 1 : null;
+                              return (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (isFeat) {
+                                      handleRemoveFeatured(product.id);
+                                    } else {
+                                      handleAddFeatured(product.id);
+                                    }
+                                  }}
+                                  className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition-all cursor-pointer ${
+                                    isFeat
+                                      ? 'border-amber-400 bg-amber-50 text-amber-800 shadow-2xs hover:bg-amber-100 hover:border-amber-500'
+                                      : 'border-neutral-200 bg-white text-neutral-600 hover:border-amber-400 hover:text-amber-700 hover:bg-amber-50/50'
+                                  }`}
+                                  title={
+                                    isFeat
+                                      ? `"${product.name}" is #${featRank} Featured — click to remove`
+                                      : `Click to add "${product.name}" to Featured spotlight`
+                                  }
+                                >
+                                  <Crown className={`h-3.5 w-3.5 shrink-0 ${isFeat ? 'text-amber-500 fill-amber-500' : 'text-neutral-400'}`} />
+                                  <span>{isFeat ? `Featured (#${featRank})` : 'Feature'}</span>
+                                </button>
+                              );
+                            })()}
 
                             {onToggleVerified && (
                               <button
@@ -1135,147 +1308,476 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
         )}
 
         {/* ============================================================ */}
-        {/* FEATURED MANAGEMENT VIEW */}
+        {/* FEATURED MANAGEMENT VIEW (MULTIPLE FEATURED PRODUCTS) */}
         {/* ============================================================ */}
         {activeView === 'featured' && (
-          <>
+          <div className="space-y-6">
             {/* Featured Metrics */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
               <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-2xs">
                 <div className="flex items-center justify-between text-xs font-bold text-amber-500 mb-1">
-                  <span>Currently Featured</span>
+                  <span>Active Featured Tools</span>
                   <Crown className="h-4 w-4" />
                 </div>
-                <div className="text-2xl sm:text-3xl font-black text-white">
-                  {featuredProduct 
-                    ? featuredProduct.name 
-                    : isEmptyFeatured 
-                    ? 'None (Empty)' 
-                    : 'Default (Open Spot)'}
+                <div className="text-2xl sm:text-3xl font-black text-neutral-950">
+                  {activeFeaturedProducts.length}
                 </div>
-                <p className="text-[11px] text-neutral-400 mt-1">
-                  {featuredProduct
-                    ? `Showing at top of directory — ${featuredProduct.category}`
+                <p className="text-[11px] text-neutral-500 mt-1">
+                  {activeFeaturedProducts.length === 1
+                    ? `1 tool featured: ${activeFeaturedProducts[0].name}`
+                    : activeFeaturedProducts.length > 1
+                    ? `${activeFeaturedProducts.length} tools featured in priority order`
                     : isEmptyFeatured
-                    ? 'Featured spot is hidden/empty'
-                    : 'Showing default reserve spot banner placeholder'}
+                    ? 'Featured spotlight is completely hidden'
+                    : 'Showing default reserve spot banner'}
                 </p>
               </div>
+
               <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-2xs">
-                <div className="flex items-center justify-between text-xs font-bold text-neutral-400 mb-1">
-                  <span>Featured Spot Status</span>
+                <div className="flex items-center justify-between text-xs font-bold text-neutral-500 mb-1">
+                  <span>Spotlight Status</span>
                   <Star className="h-4 w-4" />
                 </div>
-                <div className="text-2xl sm:text-3xl font-black text-white">
-                  {featuredProduct ? 'Active Website' : isEmptyFeatured ? 'Cleared / Empty' : 'Default Placeholder'}
-                </div>
-                <p className="text-[11px] text-neutral-400 mt-1">
-                  {featuredProduct
-                    ? 'Custom banner visible on site'
+                <div className="text-2xl sm:text-3xl font-black text-neutral-950">
+                  {activeFeaturedProducts.length > 0
+                    ? `${activeFeaturedProducts.length} Active Website${activeFeaturedProducts.length > 1 ? 's' : ''}`
                     : isEmptyFeatured
-                    ? 'No banner displayed'
-                    : 'Reserve spot banner active'}
+                    ? 'Cleared / Empty'
+                    : 'Default Placeholder'}
+                </div>
+                <p className="text-[11px] text-neutral-500 mt-1">
+                  {activeFeaturedProducts.length > 0
+                    ? 'Custom spotlight card(s) visible on directory'
+                    : isEmptyFeatured
+                    ? 'No featured cards displayed'
+                    : 'Reserve spot card visible'}
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-2xs">
+                <div className="flex items-center justify-between text-xs font-bold text-neutral-500 mb-1">
+                  <span>Directory Placement</span>
+                  <ArrowUpDown className="h-4 w-4" />
+                </div>
+                <div className="text-xl sm:text-2xl font-black text-neutral-950 truncate">
+                  {featuredPosition === 0 ? 'Top (Above #1)' : `After Rank #${featuredPosition}`}
+                </div>
+                <p className="text-[11px] text-neutral-500 mt-1">
+                  Homepage directory placement location
                 </p>
               </div>
             </div>
 
-            {/* Featured Product Selector */}
-            <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-2xs">
-              <div className="flex items-center gap-2 mb-3">
-                <Crown className="h-4 w-4 text-amber-500" />
-                <h3 className="text-sm font-black text-neutral-950">Assign Featured Product</h3>
-              </div>
-              <p className="text-xs text-neutral-400 mb-4">
-                Select which product appears as the featured banner on the homepage. You can override any user-purchased featured spot from here.
-              </p>
-              <FeaturedProductSelector
-                products={products}
-                featuredId={featuredProductId}
-                onSelect={onSetFeatured}
-              />
-            </div>
-
-            {/* Current Featured Detail */}
-            {featuredProduct && (
-              <div className="rounded-xl border border-amber-400/70 ring-1 ring-amber-400/30 bg-white p-4 sm:p-5">
-                <div className="flex items-center gap-2 mb-3">
-                  <Crown className="h-4 w-4 text-amber-500" />
-                  <h3 className="text-sm font-black text-neutral-950">Featured Product Details</h3>
+            {/* Add Featured Product Card */}
+            <div className="rounded-xl border border-neutral-200 bg-white p-4 sm:p-5 shadow-2xs space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 border border-amber-300">
+                    <Plus className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-neutral-950">Add Product to Featured Spotlight</h3>
+                    <p className="text-xs text-neutral-500">Search and feature any product from your live directory</p>
+                  </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-2xs">
-                    {featuredProduct.logoUrl ? (
-                      <img
-                        src={featuredProduct.logoUrl}
-                        alt={featuredProduct.name}
-                        className="h-full w-full object-cover"
-                        referrerPolicy="no-referrer"
-                        onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-                      />
-                    ) : (
-                      <span className="text-sm font-black text-neutral-950">{featuredProduct.name.slice(0, 2).toUpperCase()}</span>
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <h4 className="text-base font-black text-neutral-950 truncate">{featuredProduct.name}</h4>
-                      {featuredProduct.verified && <CheckCircle2 className="h-4 w-4 text-mint-600 shrink-0" />}
-                    </div>
-                    <p className="text-xs text-neutral-400 truncate">{featuredProduct.tagline}</p>
-                    <div className="flex items-center gap-3 mt-1.5 text-[11px] text-neutral-400">
-                      <span className="rounded-md bg-neutral-800 border border-neutral-200 px-2 py-0.5 font-bold text-neutral-300">
-                        {featuredProduct.category}
-                      </span>
 
-                      <a
-                        href={featuredProduct.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-white font-semibold hover:underline"
-                      >
-                        <Globe className="h-3 w-3 text-neutral-400" />
-                        <span className="truncate max-w-[200px]">{featuredProduct.url}</span>
-                        <ExternalLink className="h-2.5 w-2.5 text-neutral-400" />
-                      </a>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
+                {/* Quick Presets / Mode Controls */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleSetFeaturedMode('default')}
+                    className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition-all cursor-pointer ${
+                      isDefaultFeatured && activeFeaturedProducts.length === 0
+                        ? 'border-neutral-950 bg-neutral-950 text-white'
+                        : 'border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50'
+                    }`}
+                    title="Show default reserve/bid banner when no custom featured products"
+                  >
+                    <span>Default Banner</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSetFeaturedMode('empty')}
+                    className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition-all cursor-pointer ${
+                      isEmptyFeatured
+                        ? 'border-neutral-950 bg-neutral-950 text-white'
+                        : 'border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50'
+                    }`}
+                    title="Hide featured spotlight cards completely from directory"
+                  >
+                    <span>Hide (Empty)</span>
+                  </button>
+                  {activeFeaturedProducts.length > 0 && (
                     <button
                       type="button"
-                      onClick={() => onSetFeatured(null)}
-                      className="flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-300 hover:border-mint-500/60 hover:bg-neutral-100 transition-all cursor-pointer"
+                      onClick={() => {
+                        if (window.confirm('Remove all products from the featured spotlight?')) {
+                          handleSetFeaturedMode('default');
+                        }
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-2.5 py-1.5 text-xs font-bold text-red-600 hover:bg-red-50 transition-all cursor-pointer"
+                      title="Clear all featured products"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                      <span>Clear All</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Search & Add Picker */}
+              <div className="relative">
+                <div className="relative">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+                  <input
+                    type="text"
+                    value={featuredSearchQuery}
+                    onChange={(e) => {
+                      setFeaturedSearchQuery(e.target.value);
+                      setIsFeaturedSearchOpen(true);
+                    }}
+                    onFocus={() => setIsFeaturedSearchOpen(true)}
+                    placeholder="Search by name, category, or tagline to feature..."
+                    className="w-full rounded-xl border border-neutral-200 bg-white pl-10 pr-9 py-2.5 text-xs text-neutral-900 placeholder:text-neutral-400 outline-none focus:border-neutral-950 focus:ring-1 focus:ring-neutral-950/20"
+                  />
+                  {featuredSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setFeaturedSearchQuery('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-700"
                     >
                       <X className="h-3.5 w-3.5" />
-                      <span>Clear Featured</span>
                     </button>
+                  )}
+                </div>
+
+                {/* Dropdown Results */}
+                {isFeaturedSearchOpen && (
+                  <div className="mt-2 max-h-72 w-full overflow-y-auto rounded-xl border border-neutral-200 bg-white shadow-xl divide-y divide-neutral-100 z-20">
+                    <div className="p-2 bg-neutral-50 text-[11px] font-bold text-neutral-500 flex items-center justify-between">
+                      <span>Click any product to add to Featured Spotlight</span>
+                      <button
+                        type="button"
+                        onClick={() => setIsFeaturedSearchOpen(false)}
+                        className="text-neutral-400 hover:text-neutral-700"
+                      >
+                        Close
+                      </button>
+                    </div>
+
+                    {products
+                      .filter((p) => {
+                        if (!featuredSearchQuery.trim()) return true;
+                        const q = featuredSearchQuery.toLowerCase();
+                        return (
+                          p.name.toLowerCase().includes(q) ||
+                          p.tagline.toLowerCase().includes(q) ||
+                          p.category.toLowerCase().includes(q)
+                        );
+                      })
+                      .slice(0, 20)
+                      .map((p) => {
+                        const isFeat = activeFeaturedIds.includes(p.id);
+                        const featRank = isFeat ? activeFeaturedIds.indexOf(p.id) + 1 : null;
+
+                        return (
+                          <div
+                            key={p.id}
+                            className={`flex items-center justify-between gap-3 p-3 transition-colors ${
+                              isFeat ? 'bg-amber-50/50' : 'hover:bg-neutral-50 cursor-pointer'
+                            }`}
+                            onClick={() => {
+                              if (!isFeat) {
+                                handleAddFeatured(p.id);
+                                setFeaturedSearchQuery('');
+                              }
+                            }}
+                          >
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                              <ProductLogo
+                                src={p.logoUrl}
+                                alt={p.name}
+                                containerClassName="h-9 w-9 rounded-lg border border-neutral-200 bg-white shrink-0 overflow-hidden relative flex items-center justify-center"
+                              />
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-xs font-bold text-neutral-950 truncate">{p.name}</span>
+                                  {p.verified && <CheckCircle2 className="h-3.5 w-3.5 text-mint-600 shrink-0" />}
+                                  <span className="text-[10px] text-neutral-400 bg-neutral-100 px-1.5 py-0.5 rounded">
+                                    {p.category}
+                                  </span>
+                                </div>
+                                <p className="text-[11px] text-neutral-500 truncate">{p.tagline}</p>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 shrink-0">
+                              {isFeat ? (
+                                <div className="flex items-center gap-1.5">
+                                  <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 border border-amber-300 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+                                    <Crown className="h-3 w-3 text-amber-600" />
+                                    <span>#{featRank} Featured</span>
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRemoveFeatured(p.id);
+                                    }}
+                                    className="p-1 rounded text-neutral-400 hover:text-red-600 hover:bg-red-50"
+                                    title="Remove from featured"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleAddFeatured(p.id);
+                                    setFeaturedSearchQuery('');
+                                  }}
+                                  className="inline-flex items-center gap-1 rounded-lg bg-neutral-950 px-2.5 py-1 text-xs font-bold text-white hover:bg-neutral-800 transition-colors cursor-pointer"
+                                >
+                                  <Plus className="h-3 w-3" />
+                                  <span>Feature</span>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Active Featured Products List */}
+            <div className="rounded-xl border border-neutral-200 bg-white p-4 sm:p-5 shadow-2xs space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Crown className="h-4 w-4 text-amber-500" />
+                  <h3 className="text-sm font-black text-neutral-950">
+                    Active Featured Products ({activeFeaturedProducts.length})
+                  </h3>
+                </div>
+                {activeFeaturedProducts.length > 1 && (
+                  <span className="text-[11px] text-neutral-400">
+                    Use arrows to reorder priority on homepage
+                  </span>
+                )}
+              </div>
+
+              {activeFeaturedProducts.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-neutral-200 p-8 text-center bg-neutral-50/50">
+                  <Crown className="mx-auto h-8 w-8 text-neutral-300 mb-2" />
+                  <h4 className="text-xs font-bold text-neutral-700">No Custom Featured Products</h4>
+                  <p className="text-[11px] text-neutral-400 mt-1 max-w-sm mx-auto">
+                    {isEmptyFeatured
+                      ? 'The featured spotlight is currently set to Empty (hidden from directory).'
+                      : 'The homepage is currently displaying the default "Reserve Spot" promotional card.'}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {activeFeaturedProducts.map((p, index) => {
+                    const isFirst = index === 0;
+                    const isLast = index === activeFeaturedProducts.length - 1;
+
+                    return (
+                      <div
+                        key={p.id}
+                        className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 rounded-xl border border-amber-300/80 bg-gradient-to-r from-amber-50/40 via-amber-50/15 to-white p-4 shadow-2xs transition-all hover:border-amber-400"
+                      >
+                        {/* Left: Priority Badge & Move Controls */}
+                        <div className="flex items-center gap-3 shrink-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="inline-flex items-center gap-1 rounded-lg bg-amber-500 px-2.5 py-1 text-xs font-black text-white shadow-xs">
+                              <Crown className="h-3 w-3" />
+                              <span>#{index + 1}</span>
+                            </span>
+
+                            <div className="flex flex-col gap-0.5">
+                              <button
+                                type="button"
+                                onClick={() => handleMoveFeaturedUp(index)}
+                                disabled={isFirst}
+                                className={`rounded p-1 text-xs transition-colors cursor-pointer ${
+                                  isFirst ? 'text-neutral-300 cursor-not-allowed' : 'text-neutral-600 hover:bg-neutral-100 hover:text-black'
+                                }`}
+                                title={isFirst ? 'Already top priority' : 'Move Up in Priority'}
+                              >
+                                <ChevronUp className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleMoveFeaturedDown(index)}
+                                disabled={isLast}
+                                className={`rounded p-1 text-xs transition-colors cursor-pointer ${
+                                  isLast ? 'text-neutral-300 cursor-not-allowed' : 'text-neutral-600 hover:bg-neutral-100 hover:text-black'
+                                }`}
+                                title={isLast ? 'Already lowest priority' : 'Move Down in Priority'}
+                              >
+                                <ChevronDown className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </div>
+
+                          <ProductLogo
+                            src={p.logoUrl}
+                            alt={p.name}
+                            containerClassName="h-12 w-12 rounded-xl border border-neutral-200 bg-white shrink-0 overflow-hidden relative flex items-center justify-center shadow-2xs"
+                          />
+
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <h4 className="text-sm font-black text-neutral-950 truncate">{p.name}</h4>
+                              {p.verified && <CheckCircle2 className="h-3.5 w-3.5 text-mint-600 shrink-0" />}
+                              <span className="rounded-md bg-neutral-100 border border-neutral-200 px-1.5 py-0.5 text-[10px] font-bold text-neutral-600">
+                                {p.category}
+                              </span>
+                            </div>
+                            <p className="text-xs text-neutral-500 truncate mt-0.5">{p.tagline}</p>
+                            <div className="flex items-center gap-3 mt-1 text-[11px] text-neutral-400">
+                              <span className="font-bold text-neutral-600">{p.upvotes ?? 0} upvotes</span>
+                              <a
+                                href={p.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-neutral-500 hover:text-black font-semibold hover:underline"
+                              >
+                                <Globe className="h-3 w-3" />
+                                <span className="truncate max-w-[180px]">{p.url.replace(/^https?:\/\//, '')}</span>
+                                <ExternalLink className="h-2.5 w-2.5" />
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Right: Actions */}
+                        <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                          <a
+                            href={p.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="rounded-lg border border-neutral-200 bg-white p-2 text-neutral-500 hover:border-neutral-400 hover:text-neutral-950 transition-all cursor-pointer"
+                            title="Visit website"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveFeatured(p.id)}
+                            className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-white px-2.5 py-1.5 text-xs font-bold text-red-600 hover:bg-red-50 hover:border-red-300 transition-all cursor-pointer"
+                            title="Remove from featured spotlight"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                            <span>Remove</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Featured Card Placement Position */}
+            <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-2xs">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+                <div className="flex items-center gap-2">
+                  <ArrowUpDown className="h-4 w-4 text-amber-500" />
+                  <h3 className="text-sm font-black text-neutral-950">Featured Card Position in Listing</h3>
+                </div>
+                <span className="text-[11px] font-bold text-neutral-600 bg-neutral-100 border border-neutral-200 px-2.5 py-0.5 rounded-full self-start sm:self-auto">
+                  Live on Homepage: {featuredPosition === 0 ? 'Top (Above #1)' : `After Rank #${featuredPosition}`}
+                </span>
+              </div>
+              <p className="text-xs text-neutral-500 mb-3.5">
+                Choose where the featured spotlight card(s) appear on the homepage directory listing.
+              </p>
+
+              <div className="space-y-3">
+                {/* Preset Position Buttons */}
+                <div className="flex flex-wrap items-center gap-2">
+                  {[
+                    { pos: 0, label: 'Top (Above #1)' },
+                    { pos: 1, label: 'After #1' },
+                    { pos: 2, label: 'After #2' },
+                    { pos: 3, label: 'After #3' },
+                    { pos: 4, label: 'After #4' },
+                    { pos: 5, label: 'After #5' },
+                    { pos: 10, label: 'After #10' },
+                  ].map(({ pos, label }) => (
+                    <button
+                      key={pos}
+                      type="button"
+                      onClick={() => {
+                        playSound('click', soundEnabled);
+                        onSetFeaturedPosition?.(pos);
+                      }}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                        featuredPosition === pos
+                          ? 'bg-neutral-950 border-neutral-950 text-white shadow-xs'
+                          : 'bg-white border-neutral-200 text-neutral-700 hover:border-neutral-400 hover:bg-neutral-50'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Custom Rank Input */}
+                <div className="flex flex-wrap items-center gap-3 pt-2.5 border-t border-neutral-100">
+                  <span className="text-xs font-semibold text-neutral-600">
+                    Or custom position (after rank #):
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={featuredPosition}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value, 10);
+                        if (!isNaN(val) && val >= 0) {
+                          onSetFeaturedPosition?.(val);
+                        }
+                      }}
+                      className="w-20 rounded-lg border border-neutral-200 bg-white px-2.5 py-1 text-xs font-bold text-neutral-900 outline-none focus:border-neutral-950 focus:ring-1 focus:ring-neutral-950/20"
+                    />
+                    <span className="text-[11px] text-neutral-400">
+                      (0 = Top/Above #1, 1 = After #1, 2 = After #2, etc.)
+                    </span>
                   </div>
                 </div>
               </div>
-            )}
+            </div>
 
-            {/* How It Works */}
+            {/* How Multiple Featured Works Guide */}
             <div className="rounded-xl border border-neutral-200 bg-white p-4">
-              <h4 className="text-xs font-bold text-neutral-950 mb-2">How Featured Works</h4>
-              <ul className="space-y-1.5">
-                <li className="flex items-start gap-2 text-xs text-neutral-400">
-                  <span className="font-bold">1.</span>
-                  <span>Users can purchase a featured spot (7 or 30 days) which auto-sets the product.</span>
+              <h4 className="text-xs font-bold text-neutral-950 mb-2">How Featured Spotlights Work</h4>
+              <ul className="space-y-1.5 text-xs text-neutral-500">
+                <li className="flex items-start gap-2">
+                  <span className="font-bold text-neutral-700">1.</span>
+                  <span>You can feature multiple products simultaneously. Each appears as a full-width featured card on the directory listing.</span>
                 </li>
-                <li className="flex items-start gap-2 text-xs text-neutral-400">
-                  <span className="font-bold">2.</span>
-                  <span>As admin, you can override any user-purchased featured spot from this panel.</span>
+                <li className="flex items-start gap-2">
+                  <span className="font-bold text-neutral-700">2.</span>
+                  <span>Use the priority arrows (Up/Down) to reorder which featured card appears first, second, etc.</span>
                 </li>
-                <li className="flex items-start gap-2 text-xs text-neutral-400">
-                  <span className="font-bold">3.</span>
-                  <span>The featured product appears at the top of the directory as the Featured spotlight.</span>
+                <li className="flex items-start gap-2">
+                  <span className="font-bold text-neutral-700">3.</span>
+                  <span>You can also feature or unfeature any product with one click from the Live Products tab using the &quot;Feature&quot; button.</span>
                 </li>
-                <li className="flex items-start gap-2 text-xs text-neutral-400">
-                  <span className="font-bold">4.</span>
-                  <span>Set to &quot;Default&quot; to show the bid placeholder, or &quot;Empty&quot; to hide the featured section entirely.</span>
+                <li className="flex items-start gap-2">
+                  <span className="font-bold text-neutral-700">4.</span>
+                  <span>Use &quot;Default Banner&quot; to show the open bid card, or &quot;Hide (Empty)&quot; to remove the spotlight section completely.</span>
                 </li>
               </ul>
             </div>
-          </>
+          </div>
         )}
 
         {/* ============================================================ */}
@@ -1286,6 +1788,8 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
             products={products}
             soundEnabled={soundEnabled}
             onUpdateProduct={onUpdateProduct || (() => {})}
+            sponsorRailsEnabled={sponsorRailsEnabled}
+            onToggleSponsorRails={onToggleSponsorRails}
           />
         )}
       </main>

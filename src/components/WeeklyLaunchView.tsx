@@ -28,6 +28,7 @@ export const WeeklyLaunchView: React.FC<WeeklyLaunchViewProps> = ({
   const weeks = getWeeksRange(startWeek, 7);
 
   const canGoPrev = startWeek > 1;
+  const canGoNext = weeks[weeks.length - 1].weekNumber < currentWeek.weekNumber;
 
   const handlePrev = () => {
     if (!canGoPrev) return;
@@ -36,11 +37,15 @@ export const WeeklyLaunchView: React.FC<WeeklyLaunchViewProps> = ({
   };
 
   const handleNext = () => {
+    if (!canGoNext) return;
     playSound('click', soundEnabled);
     setStartWeek((prev) => prev + 1);
   };
 
   const handleWeekClick = (week: WeekInfo) => {
+    // Only previous weeks and present week can be selected; future weeks are disabled
+    if (week.weekNumber > currentWeek.weekNumber) return;
+
     playSound('click', soundEnabled);
     // If user clicks the currently selected week, toggle back to show all launches
     if (selectedWeek?.key === week.key) {
@@ -84,22 +89,25 @@ export const WeeklyLaunchView: React.FC<WeeklyLaunchViewProps> = ({
               <button
                 key={week.key}
                 type="button"
-                onClick={() => handleWeekClick(week)}
+                onClick={() => !isFuture && handleWeekClick(week)}
+                disabled={isFuture}
                 title={
-                  isSelected
+                  isFuture
+                    ? `${week.label} (Upcoming round)`
+                    : isSelected
                     ? `${week.label} (Active • Click to view all launches)`
                     : isCurrentCalendarWeek
                     ? `${week.label} (Current round)`
                     : week.label
                 }
-                className={`relative shrink-0 text-[13px] sm:text-sm transition-all cursor-pointer ${
-                  isSelected
-                    ? 'rounded-xl bg-[#0f172a] px-4 py-1.5 font-bold text-white shadow-xs'
-                    : isFuture
-                    ? 'font-medium text-[#94a3b8] hover:text-slate-600'
+                className={`relative shrink-0 text-[13px] sm:text-sm transition-all ${
+                  isFuture
+                    ? 'font-medium text-neutral-300 opacity-40 cursor-not-allowed select-none'
+                    : isSelected
+                    ? 'rounded-xl bg-[#0f172a] px-4 py-1.5 font-bold text-white shadow-xs cursor-pointer'
                     : isPast || isCurrentCalendarWeek
-                    ? 'font-semibold text-neutral-700 hover:text-neutral-950'
-                    : 'font-semibold text-neutral-600 hover:text-neutral-950'
+                    ? 'font-semibold text-neutral-700 hover:text-neutral-950 cursor-pointer'
+                    : 'font-semibold text-neutral-600 hover:text-neutral-950 cursor-pointer'
                 }`}
               >
                 <span>{week.label}</span>
@@ -112,9 +120,14 @@ export const WeeklyLaunchView: React.FC<WeeklyLaunchViewProps> = ({
         <button
           type="button"
           onClick={handleNext}
+          disabled={!canGoNext}
           aria-label="Next weeks"
-          title="Next weeks"
-          className="flex h-7 w-7 shrink-0 items-center justify-center text-neutral-500 hover:text-neutral-900 active:scale-95 transition-all cursor-pointer"
+          title={canGoNext ? 'Next weeks' : 'Future weeks cannot be viewed'}
+          className={`flex h-7 w-7 shrink-0 items-center justify-center transition-all ${
+            canGoNext
+              ? 'text-neutral-500 hover:text-neutral-900 active:scale-95 cursor-pointer'
+              : 'text-neutral-300 opacity-40 cursor-not-allowed'
+          }`}
         >
           <ChevronRight className="h-4 w-4" />
         </button>

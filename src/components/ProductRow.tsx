@@ -1,5 +1,5 @@
 import React from 'react';
-import { ExternalLink, MessageCircle, Star, Flame, ChevronUp } from 'lucide-react';
+import { ExternalLink, MessageCircle, Flame, ChevronUp } from 'lucide-react';
 import { VerifiedBadge } from './VerifiedBadge';
 import { RankMedal } from './RankMedal';
 import { Product } from '../types';
@@ -89,13 +89,10 @@ export const ProductRow: React.FC<ProductRowProps> = ({
           handleOpen();
         }
       }}
-      className={`group relative flex w-full items-center gap-3.5 rounded-2xl border p-4 text-left transition-all duration-200 ease-out cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 sm:gap-4 ${product.isSponsored
-          ? 'border-neutral-300/80 bg-gradient-to-r from-neutral-200/65 via-neutral-100/35 to-white/95 shadow-[0_2px_12px_rgba(0,0,0,0.05)] hover:border-neutral-400 hover:shadow-[0_4px_18px_rgba(0,0,0,0.08)]'
-          : 'border-neutral-200/80 bg-white hover:border-neutral-300 hover:bg-neutral-50/70 shadow-2xs'
-        }`}
+      className="group relative flex w-full items-center gap-3.5 rounded-2xl border border-neutral-200/80 bg-white p-4 text-left transition-all duration-200 ease-out cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 sm:gap-4 hover:border-neutral-300 hover:bg-neutral-50/70 shadow-2xs"
     >
       {/* Rank medal / number */}
-      {rank !== undefined && rank > 0 && !product.isSponsored && (
+      {rank !== undefined && rank > 0 && (
         <div className="flex shrink-0 items-center justify-center">
           {rank === 1 || rank === 2 || rank === 3 ? (
             <RankMedal rank={rank as 1 | 2 | 3} className="h-8 w-8 sm:h-9 sm:w-9" variant="coin" />
@@ -126,13 +123,7 @@ export const ProductRow: React.FC<ProductRowProps> = ({
           {showVerified && product.verified && (
             <VerifiedBadge className="h-4 w-4 shrink-0" title="Verified Startup" />
           )}
-          {product.isSponsored && (
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-gradient-to-r from-neutral-800 to-neutral-950 px-2 py-0.5 text-[10px] font-black tracking-tight text-white shadow-xs shadow-neutral-950/20 select-none hover:scale-105 transition-transform">
-              <Star className="h-2.5 w-2.5 fill-neutral-300 text-neutral-300 shrink-0" />
-              <span>Promoted</span>
-            </span>
-          )}
-          {(product.autoRelaunch || product.isRelaunched) && (
+          {(product.autoRelaunch || product.isRelaunched) && !product.isSponsored && (
             <span
               className="inline-flex shrink-0 items-center gap-1 rounded-md bg-blue-50 border border-blue-200/80 px-1.5 py-0.5 text-[10px] font-bold text-blue-700 shadow-2xs select-none"
               title="Relaunched tool in this weekly round"
@@ -191,8 +182,8 @@ export const ProductRow: React.FC<ProductRowProps> = ({
             onClick={handleUpvote}
             title={upvoted ? 'Remove your upvote' : 'Upvote this product'}
             className={`flex flex-col items-center justify-center rounded-xl sm:rounded-2xl border py-1 sm:py-1.5 w-11 transition-all cursor-pointer active:scale-95 ${upvoted
-                ? 'border-mint-500 bg-mint-500 text-white shadow-2xs'
-                : 'border-neutral-200 bg-white text-neutral-800 hover:border-neutral-400 shadow-2xs'
+              ? 'border-mint-500 bg-mint-500 text-white shadow-2xs'
+              : 'border-neutral-200 bg-white text-neutral-800 hover:border-neutral-400 shadow-2xs'
               }`}
           >
             <ChevronUp className={`h-4 w-4 ${upvoted ? 'text-white' : 'text-neutral-900 fill-neutral-900'}`} />

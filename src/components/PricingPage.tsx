@@ -452,7 +452,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({
                 Spotlight Your Product on TopSAAS
               </h2>
               <p className="text-xs sm:text-sm text-neutral-600 max-w-xl mt-1 leading-relaxed">
-                Take over our sticky hero rails, get pinned at the top of your category, and get guaranteed auto-relaunch visibility into every weekly round.
+                Take over our sticky hero rails 24/7, get pinned at the top of your category, and drive targeted, high-intent SaaS founder traffic.
               </p>
             </div>
 
@@ -553,11 +553,11 @@ export const PricingPage: React.FC<PricingPageProps> = ({
                 </div>
                 <div className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
-                  <span><strong>⭐️ Promoted / Featured Badge:</strong> Distinguish your app with an official spotlight tag</span>
+                  <span><strong>⭐️ Verified Sponsor Badge:</strong> Distinguish your app with an official spotlight tag</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
-                  <span><strong>Auto Weekly Relaunch:</strong> Automatically relaunched into every active Sunday round</span>
+                  <span><strong>24/7 Sticky Hero Placement:</strong> Prominent homepage side rails visibility that stays active 24/7</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />

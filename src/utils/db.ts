@@ -763,7 +763,64 @@ export function debouncedSyncProducts(products: Product[]): void {
 
 export interface FeaturedProductConfig {
   productId: string | null;
+  productIds: string[];
   expiresAt: number | null;
+  position?: number;
+}
+
+export const FEATURED_POSITION_KEY = 'featured_position';
+export const LOCAL_FEATURED_POSITION_KEY = 'topsaas_featured_position';
+export const FEATURED_PRODUCTS_KEY = 'featured_product_ids';
+export const LOCAL_FEATURED_PRODUCTS_KEY = 'topsaas_featured_product_ids';
+
+/** Get whether a custom position is set for the featured card in the listing (default: 0 = top above #1) */
+export async function getFeaturedPosition(): Promise<number> {
+  try {
+    const { data, error } = await supabase
+      .from('site_settings')
+      .select('value')
+      .eq('key', FEATURED_POSITION_KEY)
+      .maybeSingle();
+
+    if (!error && data && data.value !== undefined && data.value !== null) {
+      const parsed = parseInt(data.value, 10);
+      if (!isNaN(parsed) && parsed >= 0) {
+        try {
+          localStorage.setItem(LOCAL_FEATURED_POSITION_KEY, parsed.toString());
+        } catch {}
+        return parsed;
+      }
+    }
+  } catch {}
+
+  try {
+    const local = localStorage.getItem(LOCAL_FEATURED_POSITION_KEY);
+    if (local !== null) {
+      const parsed = parseInt(local, 10);
+      if (!isNaN(parsed) && parsed >= 0) return parsed;
+    }
+  } catch {}
+
+  return 0; // Default: 0 (top, above rank 1)
+}
+
+/** Set position for the featured card in the directory listing */
+export async function setFeaturedPosition(position: number): Promise<void> {
+  const pos = Math.max(0, position);
+  try {
+    localStorage.setItem(LOCAL_FEATURED_POSITION_KEY, pos.toString());
+  } catch {}
+
+  try {
+    await supabase.from('site_settings').upsert({
+      key: FEATURED_POSITION_KEY,
+      value: pos.toString(),
+      description: 'Position index of the featured spotlight card in the listing (0 = top, N = after rank N)',
+      updated_at: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.warn('setFeaturedPosition note:', err);
+  }
 }
 
 /** Get global featured product from Supabase (with fallback to localStorage) */
@@ -772,28 +829,56 @@ export async function getGlobalFeaturedProduct(): Promise<FeaturedProductConfig>
     const { data, error } = await supabase
       .from('site_settings')
       .select('key, value')
-      .in('key', ['featured_product_id', 'featured_expires_at']);
+      .in('key', ['featured_product_id', 'featured_expires_at', FEATURED_POSITION_KEY, FEATURED_PRODUCTS_KEY]);
 
     if (!error && data && data.length > 0) {
       const idRow = data.find((r) => r.key === 'featured_product_id');
       const expRow = data.find((r) => r.key === 'featured_expires_at');
+      const posRow = data.find((r) => r.key === FEATURED_POSITION_KEY);
+      const idsRow = data.find((r) => r.key === FEATURED_PRODUCTS_KEY);
 
       const rawVal = idRow?.value;
       const expiresAt = expRow?.value ? parseInt(expRow.value, 10) : null;
+      const posVal = posRow?.value ? parseInt(posRow.value, 10) : 0;
+      const position = !isNaN(posVal) && posVal >= 0 ? posVal : 0;
+
+      let productIds: string[] = [];
+      if (idsRow?.value) {
+        try {
+          const parsed = JSON.parse(idsRow.value);
+          if (Array.isArray(parsed)) {
+            productIds = parsed.filter((id) => typeof id === 'string' && id.trim().length > 0);
+          }
+        } catch {}
+      }
+
+      if (posRow?.value) {
+        try { localStorage.setItem(LOCAL_FEATURED_POSITION_KEY, position.toString()); } catch {}
+      }
+      if (idsRow?.value) {
+        try { localStorage.setItem(LOCAL_FEATURED_PRODUCTS_KEY, JSON.stringify(productIds)); } catch {}
+      }
 
       if (rawVal === 'empty' || rawVal === '') {
-        return { productId: 'empty', expiresAt: null };
+        return { productId: 'empty', productIds: [], expiresAt: null, position };
       }
       if (rawVal === 'default' || !rawVal) {
-        return { productId: null, expiresAt: null };
+        if (productIds.length > 0) {
+          return { productId: productIds[0], productIds, expiresAt: null, position };
+        }
+        return { productId: null, productIds: [], expiresAt: null, position };
       }
 
       // If expired, clear it
       if (expiresAt && expiresAt < Date.now()) {
-        return { productId: null, expiresAt: null };
+        return { productId: null, productIds: [], expiresAt: null, position };
       }
 
-      return { productId: rawVal, expiresAt };
+      if (productIds.length === 0 && rawVal) {
+        productIds = [rawVal];
+      }
+
+      return { productId: rawVal, productIds, expiresAt, position };
     }
   } catch {}
 
@@ -801,23 +886,77 @@ export async function getGlobalFeaturedProduct(): Promise<FeaturedProductConfig>
   try {
     const localId = localStorage.getItem('topsaas_featured_product');
     const localExp = localStorage.getItem('topsaas_featured_expiry');
+    const localPos = localStorage.getItem(LOCAL_FEATURED_POSITION_KEY);
+    const localIdsRaw = localStorage.getItem(LOCAL_FEATURED_PRODUCTS_KEY);
     const exp = localExp ? parseInt(localExp, 10) : null;
+    const pos = localPos ? parseInt(localPos, 10) : 0;
+    const position = !isNaN(pos) && pos >= 0 ? pos : 0;
+
+    let productIds: string[] = [];
+    if (localIdsRaw) {
+      try {
+        const parsed = JSON.parse(localIdsRaw);
+        if (Array.isArray(parsed)) {
+          productIds = parsed.filter((id) => typeof id === 'string' && id.trim().length > 0);
+        }
+      } catch {}
+    }
 
     if (localId === 'empty' || localId === '') {
-      return { productId: 'empty', expiresAt: null };
+      return { productId: 'empty', productIds: [], expiresAt: null, position };
     }
     if (localId === 'default' || !localId) {
-      return { productId: null, expiresAt: null };
+      if (productIds.length > 0) {
+        return { productId: productIds[0], productIds, expiresAt: null, position };
+      }
+      return { productId: null, productIds: [], expiresAt: null, position };
     }
 
     if (exp && exp < Date.now()) {
       localStorage.removeItem('topsaas_featured_product');
       localStorage.removeItem('topsaas_featured_expiry');
-      return { productId: null, expiresAt: null };
+      return { productId: null, productIds: [], expiresAt: null, position };
     }
-    return { productId: localId, expiresAt: exp };
+
+    if (productIds.length === 0 && localId) {
+      productIds = [localId];
+    }
+
+    return { productId: localId, productIds, expiresAt: exp, position };
   } catch {
-    return { productId: null, expiresAt: null };
+    return { productId: null, productIds: [], expiresAt: null, position: 0 };
+  }
+}
+
+/** Set global featured products (multiple) in Supabase and localStorage */
+export async function setGlobalFeaturedProducts(
+  productIds: string[],
+  mode: 'active' | 'default' | 'empty' = 'active'
+): Promise<void> {
+  const normalizedIds = Array.from(new Set(productIds.filter(Boolean)));
+  const primaryId = normalizedIds.length > 0 
+    ? normalizedIds[0] 
+    : (mode === 'empty' ? 'empty' : 'default');
+
+  // 1. Sync to local storage
+  try {
+    localStorage.setItem(LOCAL_FEATURED_PRODUCTS_KEY, JSON.stringify(normalizedIds));
+    if (primaryId === 'default') {
+      localStorage.removeItem('topsaas_featured_product');
+      localStorage.removeItem('topsaas_featured_expiry');
+    } else {
+      localStorage.setItem('topsaas_featured_product', primaryId);
+    }
+  } catch {}
+
+  // 2. Sync to Supabase site_settings
+  try {
+    await supabase.from('site_settings').upsert([
+      { key: FEATURED_PRODUCTS_KEY, value: JSON.stringify(normalizedIds), description: 'List of featured product IDs in priority order' },
+      { key: 'featured_product_id', value: primaryId, description: 'Primary featured product ID or default/empty' },
+    ]);
+  } catch (err) {
+    console.warn('setGlobalFeaturedProducts error:', err);
   }
 }
 
@@ -834,9 +973,11 @@ export async function setGlobalFeaturedProduct(
 
   const isCustomProduct = normalizedId !== 'default' && normalizedId !== 'empty';
   const expiresAt = isCustomProduct ? Date.now() + durationDays * 86400000 : 0;
+  const productIds = isCustomProduct ? [normalizedId] : [];
 
   // 1. Sync to local storage
   try {
+    localStorage.setItem(LOCAL_FEATURED_PRODUCTS_KEY, JSON.stringify(productIds));
     if (normalizedId === 'default') {
       localStorage.removeItem('topsaas_featured_product');
       localStorage.removeItem('topsaas_featured_expiry');
@@ -849,10 +990,62 @@ export async function setGlobalFeaturedProduct(
   // 2. Sync to Supabase site_settings
   try {
     await supabase.from('site_settings').upsert([
+      { key: FEATURED_PRODUCTS_KEY, value: JSON.stringify(productIds), description: 'List of featured product IDs' },
       { key: 'featured_product_id', value: normalizedId },
       { key: 'featured_expires_at', value: expiresAt.toString() },
     ]);
   } catch {}
+}
+
+// ── Global Sponsor Rails Enabled Toggle ──
+
+export const SPONSOR_RAILS_ENABLED_KEY = 'sponsor_rails_enabled';
+export const LOCAL_SPONSOR_RAILS_KEY = 'topsaas_sponsor_rails_enabled';
+
+/** Get whether homepage side sponsor rails are enabled (default: true) */
+export async function getSponsorRailsEnabled(): Promise<boolean> {
+  try {
+    const { data, error } = await supabase
+      .from('site_settings')
+      .select('value')
+      .eq('key', SPONSOR_RAILS_ENABLED_KEY)
+      .maybeSingle();
+
+    if (!error && data && data.value !== undefined && data.value !== null) {
+      const isEnabled = data.value !== 'false';
+      try {
+        localStorage.setItem(LOCAL_SPONSOR_RAILS_KEY, isEnabled ? 'true' : 'false');
+      } catch {}
+      return isEnabled;
+    }
+  } catch {}
+
+  try {
+    const local = localStorage.getItem(LOCAL_SPONSOR_RAILS_KEY);
+    if (local !== null) {
+      return local !== 'false';
+    }
+  } catch {}
+
+  return true; // Default ON
+}
+
+/** Set whether homepage side sponsor rails are enabled */
+export async function setSponsorRailsEnabled(enabled: boolean): Promise<void> {
+  try {
+    localStorage.setItem(LOCAL_SPONSOR_RAILS_KEY, enabled ? 'true' : 'false');
+  } catch {}
+
+  try {
+    await supabase.from('site_settings').upsert({
+      key: SPONSOR_RAILS_ENABLED_KEY,
+      value: enabled ? 'true' : 'false',
+      description: 'Master toggle to enable or disable homepage side sponsor rails',
+      updated_at: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.warn('setSponsorRailsEnabled note:', err);
+  }
 }
 
 // ── Global Sponsor Settings (Persisted via site_settings) ──
@@ -991,7 +1184,7 @@ export function mergeSponsorsIntoProducts(products: Product[], sponsors: ActiveS
       sponsorExpiresAt: s.expiresAt,
       sponsorContactEmail: s.contactEmail || p.sponsorContactEmail,
       sponsorClicks: s.clicks !== undefined ? s.clicks : (p.sponsorClicks || 0),
-      autoRelaunch: isStillActive ? true : p.autoRelaunch,
+      autoRelaunch: p.autoRelaunch,
     };
   });
 }
@@ -1028,6 +1221,6 @@ export async function setProductSponsorship(
     sponsorStartedAt: isSponsored ? now : product.sponsorStartedAt,
     sponsorExpiresAt: isSponsored ? expiresAt : (now - 1000),
     sponsorContactEmail: email || product.sponsorContactEmail,
-    autoRelaunch: isSponsored ? true : product.autoRelaunch,
+    autoRelaunch: product.autoRelaunch,
   };
 }

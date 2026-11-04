@@ -26,7 +26,7 @@ import { LegalTab } from './components/LegalModal';
 import { playSound } from './utils/sound';
 import confetti from 'canvas-confetti';
 import { supabase } from './utils/supabase';
-import { loadProducts, saveAllProducts, saveProductRanksDirect, debouncedSyncProducts, toggleUpvote, getUserUpvotes, getUpvoteCounts, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, insertProductDirect, fetchComments, addComment, getCachedCommentsSync, submissionToProduct, publishedProductId, isProductUpvoted, getGuestUpvotes, saveGuestUpvotes, incrementProductUpvotesDirect, getActiveSponsors, mergeSponsorsIntoProducts, recordSponsorUpdate, recordSponsorEnd } from './utils/db';
+import { loadProducts, saveAllProducts, saveProductRanksDirect, debouncedSyncProducts, toggleUpvote, getUserUpvotes, getUpvoteCounts, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, setGlobalFeaturedProducts, LOCAL_FEATURED_PRODUCTS_KEY, insertProductDirect, fetchComments, addComment, getCachedCommentsSync, submissionToProduct, publishedProductId, isProductUpvoted, getGuestUpvotes, saveGuestUpvotes, incrementProductUpvotesDirect, getActiveSponsors, mergeSponsorsIntoProducts, recordSponsorUpdate, recordSponsorEnd, getSponsorRailsEnabled, setSponsorRailsEnabled, LOCAL_SPONSOR_RAILS_KEY, getFeaturedPosition, setFeaturedPosition, LOCAL_FEATURED_POSITION_KEY } from './utils/db';
 import { getRecentWeeks, isInWeek, getWeekInfo, WeekInfo } from './utils/weeks';
 import { getWebsiteFavicon } from './utils/logo';
 import { Trophy, X, Plus, ShieldCheck, Loader2, Star, MessageCircle, Flame, Search } from 'lucide-react';
@@ -40,7 +40,6 @@ import { SponsorTile } from './components/SponsorTile';
 import { MOCK_SPONSORS } from './data/mockSponsors';
 import { HeroSponsorRails } from './components/HeroSponsorRails';
 import { WeeklyLaunchView } from './components/WeeklyLaunchView';
-import { SpotlightCard, RailCard, FeedRow, PromotedCard, SponsoredLaunchBanner } from './components/DirectoryRails';
 import { ProductLogo } from './components/ProductLogo';
 
 // Map a Supabase DB row to our WebsiteSubmission type
@@ -331,7 +330,22 @@ export default function App() {
   const [userUpvotes, setUserUpvotes] = useState<Set<string>>(new Set());
   const [productsLoaded, setProductsLoaded] = useState(() => products.length > 0);
 
-  // Featured product (admin can set any product as featured, or user paid for it)
+  // Featured products (admin can set multiple products as featured, or user paid for it)
+  const [featuredProductIds, setFeaturedProductIds] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem(LOCAL_FEATURED_PRODUCTS_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed.filter((id) => typeof id === 'string' && id.trim().length > 0);
+      }
+      const single = localStorage.getItem('topsaas_featured_product');
+      if (single && single !== 'default' && single !== 'empty') {
+        return [single];
+      }
+    } catch {}
+    return [];
+  });
+
   const [featuredProductId, setFeaturedProductId] = useState<string | null>(() => {
     try {
       const id = localStorage.getItem('topsaas_featured_product');
@@ -347,21 +361,76 @@ export default function App() {
     } catch { return null; }
   });
 
-  // Load global featured product from Supabase on mount and check periodically
+  // Featured product position in the directory listing (0 = top/above #1, N = after rank N)
+  const [featuredPosition, setFeaturedPositionState] = useState<number>(() => {
+    try {
+      const raw = localStorage.getItem(LOCAL_FEATURED_POSITION_KEY);
+      if (raw !== null) {
+        const parsed = parseInt(raw, 10);
+        if (!isNaN(parsed) && parsed >= 0) return parsed;
+      }
+      return 0;
+    } catch {
+      return 0;
+    }
+  });
+
+  // Load global featured product & position from Supabase on mount and check periodically
   useEffect(() => {
     getGlobalFeaturedProduct().then((config) => {
+      if (config.productIds !== undefined) {
+        setFeaturedProductIds(config.productIds);
+      }
       if (config.productId !== undefined) {
         setFeaturedProductId(config.productId);
+      }
+      if (config.position !== undefined) {
+        setFeaturedPositionState(config.position);
       }
     });
 
     const interval = setInterval(() => {
       getGlobalFeaturedProduct().then((config) => {
-        setFeaturedProductId(config.productId);
+        if (config.productIds !== undefined) {
+          setFeaturedProductIds(config.productIds);
+        }
+        if (config.productId !== undefined) {
+          setFeaturedProductId(config.productId);
+        }
+        if (config.position !== undefined) {
+          setFeaturedPositionState(config.position);
+        }
       });
     }, 60_000); // Check every 60 seconds
     return () => clearInterval(interval);
   }, []);
+
+  const handleSetFeaturedPosition = async (pos: number) => {
+    setFeaturedPositionState(pos);
+    await setFeaturedPosition(pos);
+  };
+
+  // Master toggle for homepage side sponsor rails (persisted via site_settings and localStorage)
+  const [sponsorRailsEnabled, setSponsorRailsEnabledState] = useState<boolean>(() => {
+    try {
+      const raw = localStorage.getItem(LOCAL_SPONSOR_RAILS_KEY);
+      return raw !== null ? raw !== 'false' : true;
+    } catch {
+      return true;
+    }
+  });
+
+  // Load master sponsor rails state from Supabase on mount
+  useEffect(() => {
+    getSponsorRailsEnabled().then((enabled) => {
+      setSponsorRailsEnabledState(enabled);
+    });
+  }, []);
+
+  const handleToggleSponsorRails = async (enabled: boolean) => {
+    setSponsorRailsEnabledState(enabled);
+    await setSponsorRailsEnabled(enabled);
+  };
 
   // Submitter name auto-filled from Google profile
   const submitterName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || '';
@@ -1210,7 +1279,7 @@ export default function App() {
             expiresAt: p.sponsorExpiresAt || now + 30 * 86400 * 1000,
             contactEmail: p.sponsorContactEmail,
             clicks: updatedSponsorClicks,
-          }).catch(() => {});
+          }).catch(() => { });
         }
         return {
           ...p,
@@ -1282,8 +1351,8 @@ export default function App() {
       sponsorExpiresAt: expiresAt,
       sponsorClicks: product.sponsorClicks || 0,
       sponsorContactEmail: email || product.sponsorContactEmail || (user ? user.email : undefined),
-      autoRelaunch: isPaid ? true : product.autoRelaunch,
-      lastRelaunchedAt: isPaid ? now : product.lastRelaunchedAt,
+      autoRelaunch: product.autoRelaunch,
+      lastRelaunchedAt: product.lastRelaunchedAt,
     };
 
     // Immediately persist to Supabase site_settings
@@ -1328,8 +1397,9 @@ export default function App() {
       return updated;
     });
 
-    if (featuredProductId === productId) {
-      handleSetFeatured(null);
+    if (featuredProductId === productId || featuredProductIds.includes(productId)) {
+      const nextIds = featuredProductIds.filter((id) => id !== productId);
+      handleSetFeaturedProducts(nextIds, nextIds.length === 0 ? 'default' : 'active');
     }
 
     try {
@@ -1453,11 +1523,28 @@ export default function App() {
     }
   };
 
-  // Admin: set any product as the featured product (null = default/placeholder, '' = empty, 'prod-X' = specific product)
-  const handleSetFeatured = (productId: string | null) => {
-    setFeaturedProductId(productId);
-    setGlobalFeaturedProduct(productId);
+  // Admin: set multiple products as featured, or change mode ('active' | 'default' | 'empty')
+  const handleSetFeaturedProducts = async (
+    ids: string[],
+    mode: 'active' | 'default' | 'empty' = 'active'
+  ) => {
+    setFeaturedProductIds(ids);
+    const primary = ids.length > 0 ? ids[0] : (mode === 'empty' ? 'empty' : null);
+    setFeaturedProductId(primary);
     playSound('click', soundEnabled);
+    await setGlobalFeaturedProducts(ids, mode);
+  };
+
+  // Admin: set any product as the featured product (backwards-compatible wrapper)
+  const handleSetFeatured = (productId: string | null) => {
+    if (!productId || productId === 'default') {
+      handleSetFeaturedProducts([], 'default');
+    } else if (productId === 'empty') {
+      handleSetFeaturedProducts([], 'empty');
+    } else {
+      const nextIds = [productId, ...featuredProductIds.filter((id) => id !== productId)];
+      handleSetFeaturedProducts(nextIds, 'active');
+    }
   };
 
   // Save full products order to local storage and remote DB
@@ -1477,9 +1564,19 @@ export default function App() {
 
   const isDefaultFeatured = featuredProductId === null || featuredProductId === 'default';
   const isEmptyFeatured = featuredProductId === '' || featuredProductId === 'empty';
-  const explicitFeaturedProduct = (!isDefaultFeatured && !isEmptyFeatured && featuredProductId)
-    ? products.find((p) => p.id === featuredProductId) || null
-    : null;
+
+  // Resolved list of all featured products in order
+  const featuredProducts: Product[] = (() => {
+    if (isEmptyFeatured) return [];
+    const ids = featuredProductIds.length > 0
+      ? featuredProductIds
+      : (featuredProductId && !isDefaultFeatured ? [featuredProductId] : []);
+    return ids
+      .map((id) => products.find((p) => p.id === id))
+      .filter((p): p is Product => !!p);
+  })();
+
+  const explicitFeaturedProduct = featuredProducts[0] || null;
 
   const sortedByRankProducts = [...products].sort(compareProductsByRank);
   const topProduct = explicitFeaturedProduct || sortedByRankProducts[0] || null;
@@ -1583,13 +1680,13 @@ export default function App() {
   const weeks = getRecentWeeks(6);
   const weekScopedProducts = selectedWeek
     ? products.filter((p) => {
-        if (isInWeek(p.createdAt, selectedWeek)) return true;
-        // Auto weekly relaunch for paid users and users who opted for $5/mo weekly relaunch
-        if (p.autoRelaunch || p.isSponsored || p.sponsorTier === 'paid') return true;
-        if (p.relaunchWeeks && selectedWeek.weekNumber && p.relaunchWeeks.includes(selectedWeek.weekNumber)) return true;
-        if (p.lastRelaunchedAt && isInWeek(p.lastRelaunchedAt, selectedWeek)) return true;
-        return false;
-      })
+      if (isInWeek(p.createdAt, selectedWeek)) return true;
+      // Auto weekly relaunch for users who opted for $5/mo weekly relaunch
+      if (p.autoRelaunch) return true;
+      if (p.relaunchWeeks && selectedWeek.weekNumber && p.relaunchWeeks.includes(selectedWeek.weekNumber)) return true;
+      if (p.lastRelaunchedAt && isInWeek(p.lastRelaunchedAt, selectedWeek)) return true;
+      return false;
+    })
     : products;
 
   // Helper to determine if a product has an active deal/discount/promo code
@@ -1725,7 +1822,7 @@ export default function App() {
             if (plan === 'free_relaunch') {
               try {
                 localStorage.setItem('topsaas_submit_auto_relaunch', 'true');
-              } catch {}
+              } catch { }
             }
             handleOpenSubmit();
           }}
@@ -1807,7 +1904,7 @@ export default function App() {
     // If someone visits /product/sub-topsaas or /product/topsaas, redirect to home
     if (routeId.toLowerCase() === 'sub-topsaas' || routeId.toLowerCase() === 'topsaas') {
       if (typeof window !== 'undefined') {
-        try { window.history.replaceState('', document.title, '/'); } catch {}
+        try { window.history.replaceState('', document.title, '/'); } catch { }
         window.location.replace('/');
       }
       return null;
@@ -2124,9 +2221,15 @@ export default function App() {
             onToggleSound={() => setSoundEnabled(!soundEnabled)}
             featuredProductId={featuredProductId}
             onSetFeatured={handleSetFeatured}
+            featuredProductIds={featuredProductIds}
+            onSetFeaturedProducts={handleSetFeaturedProducts}
             onSaveProductsOrder={handleSaveProductsOrder}
             onToggleVerified={handleToggleVerifiedProduct}
             onUpdateProduct={handleUpdateProduct}
+            sponsorRailsEnabled={sponsorRailsEnabled}
+            onToggleSponsorRails={handleToggleSponsorRails}
+            featuredPosition={featuredPosition}
+            onSetFeaturedPosition={handleSetFeaturedPosition}
           />
 
           <SignInModal
@@ -2226,7 +2329,8 @@ export default function App() {
           <>
             {/* ── Hero: brand statement + search ── */}
             <HeroSponsorRails
-              sponsors={products.filter((p) => p.isSponsored)}
+              enabled={sponsorRailsEnabled}
+              sponsors={sponsorRailsEnabled ? products.filter((p) => p.isSponsored) : []}
               soundEnabled={soundEnabled}
               onTrackClick={handleTrackClick}
               onOpenProduct={handleOpenProduct}
@@ -2300,34 +2404,8 @@ export default function App() {
                       })}
                     </div>
 
-                    {/* Controls on the right edge: Search + Steals Only (hidden on mobile) */}
+                    {/* Controls on the right edge: Steals Only (hidden on mobile) */}
                     <div className="shrink-0 hidden sm:flex items-center gap-2 pl-1">
-                      <div className="relative hidden sm:block w-36 xl:w-44">
-                        <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neutral-400" />
-                        <input
-                          type="text"
-                          value={searchQuery}
-                          onChange={(e) => {
-                            setSearchQuery(e.target.value);
-                            setCurrentPage(1);
-                          }}
-                          placeholder="Search tools…"
-                          className="w-full rounded-lg border border-neutral-200 bg-white py-1 pl-8 pr-6 text-[11px] font-medium text-neutral-900 placeholder-neutral-400 outline-none transition-all focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900/10"
-                        />
-                        {searchQuery && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSearchQuery('');
-                              setCurrentPage(1);
-                            }}
-                            className="absolute right-1.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-700"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        )}
-                      </div>
-
                       <button
                         type="button"
                         role="switch"
@@ -2504,40 +2582,112 @@ export default function App() {
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {/* Featured sponsor — full-width card above the list */}
-                      {currentPage === 1 && !isEmptyFeatured && (
-                        <SponsorTile
-                          soundEnabled={soundEnabled}
-                          product={explicitFeaturedProduct}
-                          onOpenProduct={handleOpenProduct}
-                          onTrackClick={handleTrackClick}
-                          onUpvote={handleUpvote}
-                          upvoted={explicitFeaturedProduct ? isProductUpvoted(explicitFeaturedProduct.id, userUpvotes) : false}
-                          onOpenFeaturedSpotModal={() => {
-                            if (!user) {
-                              setIsSignInModalOpen(true);
-                            } else {
-                              setIsFeaturedSpotModalOpen(true);
-                            }
-                          }}
-                        />
+                      {/* Featured sponsor(s) — full-width card placed at top if featuredPosition === 0 */}
+                      {currentPage === 1 && !isEmptyFeatured && featuredPosition === 0 && (
+                        featuredProducts.length > 0 ? (
+                          <div className="space-y-3">
+                            {featuredProducts.map((fp) => (
+                              <SponsorTile
+                                key={fp.id}
+                                soundEnabled={soundEnabled}
+                                product={fp}
+                                onOpenProduct={handleOpenProduct}
+                                onTrackClick={handleTrackClick}
+                                onUpvote={handleUpvote}
+                                upvoted={isProductUpvoted(fp.id, userUpvotes)}
+                                onOpenFeaturedSpotModal={() => {
+                                  if (!user) {
+                                    setIsSignInModalOpen(true);
+                                  } else {
+                                    setIsFeaturedSpotModalOpen(true);
+                                  }
+                                }}
+                              />
+                            ))}
+                          </div>
+                        ) : (
+                          <SponsorTile
+                            soundEnabled={soundEnabled}
+                            product={null}
+                            onOpenProduct={handleOpenProduct}
+                            onTrackClick={handleTrackClick}
+                            onUpvote={handleUpvote}
+                            upvoted={false}
+                            onOpenFeaturedSpotModal={() => {
+                              if (!user) {
+                                setIsSignInModalOpen(true);
+                              } else {
+                                setIsFeaturedSpotModalOpen(true);
+                              }
+                            }}
+                          />
+                        )
                       )}
 
                       {/* Single-column row list */}
                       {paginatedProducts.map((p, index) => {
                         const currentRank = startIndex + index + 1;
+                        // Insert after rank N (on page 1)
+                        const showFeaturedAfterThis =
+                          currentPage === 1 &&
+                          !isEmptyFeatured &&
+                          featuredPosition > 0 &&
+                          (featuredPosition === currentRank ||
+                            (index === paginatedProducts.length - 1 && featuredPosition > currentRank));
+
                         return (
-                          <ProductRow
-                            key={p.id}
-                            product={p}
-                            rank={currentRank}
-                            soundEnabled={soundEnabled}
-                            showVerified
-                            commentCount={commentCounts[p.id] ?? 0}
-                            onOpen={handleOpenProduct}
-                            onUpvote={handleUpvote}
-                            upvoted={isProductUpvoted(p.id, userUpvotes)}
-                          />
+                          <React.Fragment key={p.id}>
+                            <ProductRow
+                              product={p}
+                              rank={currentRank}
+                              soundEnabled={soundEnabled}
+                              showVerified
+                              commentCount={commentCounts[p.id] ?? 0}
+                              onOpen={handleOpenProduct}
+                              onUpvote={handleUpvote}
+                              upvoted={isProductUpvoted(p.id, userUpvotes)}
+                            />
+                            {showFeaturedAfterThis && (
+                              <div className="pt-0.5 space-y-3">
+                                {featuredProducts.length > 0 ? (
+                                  featuredProducts.map((fp) => (
+                                    <SponsorTile
+                                      key={fp.id}
+                                      soundEnabled={soundEnabled}
+                                      product={fp}
+                                      onOpenProduct={handleOpenProduct}
+                                      onTrackClick={handleTrackClick}
+                                      onUpvote={handleUpvote}
+                                      upvoted={isProductUpvoted(fp.id, userUpvotes)}
+                                      onOpenFeaturedSpotModal={() => {
+                                        if (!user) {
+                                          setIsSignInModalOpen(true);
+                                        } else {
+                                          setIsFeaturedSpotModalOpen(true);
+                                        }
+                                      }}
+                                    />
+                                  ))
+                                ) : (
+                                  <SponsorTile
+                                    soundEnabled={soundEnabled}
+                                    product={null}
+                                    onOpenProduct={handleOpenProduct}
+                                    onTrackClick={handleTrackClick}
+                                    onUpvote={handleUpvote}
+                                    upvoted={false}
+                                    onOpenFeaturedSpotModal={() => {
+                                      if (!user) {
+                                        setIsSignInModalOpen(true);
+                                      } else {
+                                        setIsFeaturedSpotModalOpen(true);
+                                      }
+                                    }}
+                                  />
+                                )}
+                              </div>
+                            )}
+                          </React.Fragment>
                         );
                       })}
 

@@ -707,10 +707,15 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                       <span className="text-[9px] font-bold text-mint-600 bg-mint-500/15 border border-mint-500/30 px-1.5 py-0.5 rounded">
                         Live
                       </span>
-                      {(product.autoRelaunch || product.isSponsored || product.sponsorTier === 'paid') && (
+                      {product.autoRelaunch && !product.isSponsored && (
                         <span className="inline-flex items-center gap-1 text-[9px] font-bold text-blue-700 bg-blue-50 border border-blue-200/80 px-1.5 py-0.5 rounded shadow-2xs">
                           <span>🚀</span>
                           <span>Weekly Relaunch Active</span>
+                        </span>
+                      )}
+                      {product.isSponsored && (
+                        <span className="inline-flex items-center gap-1 text-[9px] font-bold text-neutral-800 bg-neutral-100 border border-neutral-300 px-1.5 py-0.5 rounded shadow-2xs">
+                          <span>Sponsor Rails</span>
                         </span>
                       )}
                     </div>
@@ -734,7 +739,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
                   {/* Actions: Relaunch, Embed Badge, Edit & Delete */}
                   <div className="flex items-center gap-1.5 shrink-0">
-                    {!(product.autoRelaunch || product.isSponsored || product.sponsorTier === 'paid') && (
+                    {!product.autoRelaunch && (
                       <button
                         type="button"
                         onClick={() => {

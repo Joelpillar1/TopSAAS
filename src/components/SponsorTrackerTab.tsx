@@ -28,6 +28,8 @@ interface SponsorTrackerTabProps {
   products: Product[];
   soundEnabled: boolean;
   onUpdateProduct: (product: Product) => void;
+  sponsorRailsEnabled?: boolean;
+  onToggleSponsorRails?: (enabled: boolean) => void;
 }
 
 interface OutreachModalState {
@@ -43,6 +45,8 @@ export const SponsorTrackerTab: React.FC<SponsorTrackerTabProps> = ({
   products,
   soundEnabled,
   onUpdateProduct,
+  sponsorRailsEnabled = true,
+  onToggleSponsorRails,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [tierFilter, setTierFilter] = useState<'all' | 'active_trial' | 'paid' | 'expiring' | 'expired'>('all');
@@ -130,7 +134,7 @@ export const SponsorTrackerTab: React.FC<SponsorTrackerTabProps> = ({
       isSponsored: true,
       sponsorTier: product.sponsorTier || (days > 7 ? '1mo' : 'trial'),
       sponsorExpiresAt: currentExpiry + days * 86400 * 1000,
-      autoRelaunch: isPaid ? true : product.autoRelaunch,
+      autoRelaunch: product.autoRelaunch,
     };
     onUpdateProduct(updated);
     confetti({ particleCount: 40, spread: 60, origin: { y: 0.6 } });
@@ -144,15 +148,14 @@ export const SponsorTrackerTab: React.FC<SponsorTrackerTabProps> = ({
     else if (tier === '3mo') days = 90;
     else if (tier === '1yr') days = 365;
 
-    const isPaid = tier !== 'trial';
     const updated: Product = {
       ...product,
       isSponsored: true,
       sponsorTier: tier,
       sponsorStartedAt: product.sponsorStartedAt || now,
       sponsorExpiresAt: now + days * 86400 * 1000,
-      autoRelaunch: isPaid ? true : product.autoRelaunch,
-      lastRelaunchedAt: isPaid ? now : product.lastRelaunchedAt,
+      autoRelaunch: product.autoRelaunch,
+      lastRelaunchedAt: product.lastRelaunchedAt,
     };
     onUpdateProduct(updated);
     confetti({ particleCount: 50, spread: 70, origin: { y: 0.6 } });
@@ -199,8 +202,8 @@ export const SponsorTrackerTab: React.FC<SponsorTrackerTabProps> = ({
       sponsorStartedAt: now,
       sponsorExpiresAt: now + days * 86400 * 1000,
       sponsorContactEmail: grantEmail.trim() || selectedGrantProduct.sponsorContactEmail,
-      autoRelaunch: isPaid ? true : selectedGrantProduct.autoRelaunch,
-      lastRelaunchedAt: isPaid ? now : selectedGrantProduct.lastRelaunchedAt,
+      autoRelaunch: selectedGrantProduct.autoRelaunch,
+      lastRelaunchedAt: selectedGrantProduct.lastRelaunchedAt,
     };
 
     onUpdateProduct(updated);
@@ -350,6 +353,66 @@ https://topsaas.space`,
 
   return (
     <div className="space-y-6">
+      {/* ── Master Homepage Sponsor Rails Switch ── */}
+      <div className={`rounded-2xl border p-4 sm:p-5 transition-all ${
+        sponsorRailsEnabled
+          ? 'bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-white border-emerald-300/80 shadow-2xs'
+          : 'bg-neutral-50/90 border-neutral-200 text-neutral-500'
+      }`}>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-start sm:items-center gap-3">
+            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl font-bold transition-colors ${
+              sponsorRailsEnabled
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'bg-neutral-200 text-neutral-500'
+            }`}>
+              <Megaphone className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm sm:text-base font-black text-neutral-950">
+                  Homepage Side Sponsored Rails
+                </h3>
+                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider ${
+                  sponsorRailsEnabled
+                    ? 'bg-emerald-100 text-emerald-800 ring-1 ring-emerald-300'
+                    : 'bg-neutral-200 text-neutral-700'
+                }`}>
+                  {sponsorRailsEnabled ? 'Active (ON)' : 'Disabled (OFF)'}
+                </span>
+              </div>
+              <p className="mt-0.5 text-xs text-neutral-600">
+                Master switch to toggle off or on all homepage left &amp; right sponsor cards at once.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
+            <span className="text-xs font-bold text-neutral-500">
+              {sponsorRailsEnabled ? 'Showing on Homepage' : 'Hidden from Homepage'}
+            </span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={sponsorRailsEnabled}
+              onClick={() => {
+                playSound('click', soundEnabled);
+                onToggleSponsorRails?.(!sponsorRailsEnabled);
+              }}
+              className={`relative inline-flex h-7 w-14 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 ${
+                sponsorRailsEnabled ? 'bg-emerald-600' : 'bg-neutral-300'
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                  sponsorRailsEnabled ? 'translate-x-7' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* ── Top Metric Cards ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-2xs">

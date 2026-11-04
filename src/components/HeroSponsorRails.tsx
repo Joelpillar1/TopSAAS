@@ -13,12 +13,10 @@ interface HeroSponsorRailsProps {
   onOpenProduct?: (product: Product) => void;
   onOpenFeaturedSpotModal?: () => void;
   children: React.ReactNode; // The HomeHero and leaderboard components in the center
+  enabled?: boolean;
 }
 
 interface OpenAdCardProps {
-  title?: string;
-  subtitle?: string;
-  duration?: string;
   soundEnabled: boolean;
   onOpenModal?: () => void;
 }
@@ -111,8 +109,11 @@ const ActiveSponsorCard: React.FC<{
           handleClick();
         }
       }}
-      className="group relative flex w-full flex-col justify-between rounded-2xl border border-neutral-200/90 bg-white p-3.5 xl:p-4 text-left shadow-2xs transition-all duration-200 hover:border-neutral-900/30 hover:shadow-xs cursor-pointer overflow-hidden min-h-[112px] xl:min-h-[120px] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+      className="group relative flex w-full flex-col justify-between rounded-2xl border border-blue-100/90 bg-gradient-to-br from-white via-white to-blue-50/50 p-3.5 xl:p-4 text-left shadow-2xs transition-all duration-200 hover:border-blue-300 hover:shadow-xs cursor-pointer overflow-hidden min-h-[112px] xl:min-h-[120px] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
     >
+      {/* Subtle ambient corner glow */}
+      <div className="pointer-events-none absolute -top-10 -right-10 h-24 w-24 rounded-full bg-gradient-to-br from-blue-400/12 via-indigo-400/8 to-transparent blur-xl transition-opacity group-hover:opacity-100" />
+
       <div className="relative flex items-center gap-2.5 min-w-0">
         <ProductLogo
           src={product.logoUrl}
@@ -135,15 +136,9 @@ const ActiveSponsorCard: React.FC<{
       </p>
 
       <div className="relative mt-2 flex items-center justify-between text-[10.5px] xl:text-[11px] font-bold">
-        {isTrial ? (
-          <span className="inline-flex items-center rounded-md bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 text-[10px] xl:text-[10.5px] font-bold text-emerald-700">
-            Sponsored{daysLeft ? ` • ${daysLeft}d left` : ''}
-          </span>
-        ) : (
-          <span className="inline-flex items-center rounded-md bg-amber-50 border border-amber-200/80 px-2 py-0.5 text-[10px] xl:text-[10.5px] font-bold text-amber-700">
-            ⭐ Featured Sponsor
-          </span>
-        )}
+        <span className="text-[10.5px] xl:text-[11px] font-medium text-neutral-400">
+          Sponsored
+        </span>
         <span className="text-[10.5px] font-semibold text-neutral-600 opacity-80 group-hover:opacity-100 group-hover:underline transition-opacity">
           Visit →
         </span>
@@ -153,9 +148,6 @@ const ActiveSponsorCard: React.FC<{
 };
 
 const OpenAdCard: React.FC<OpenAdCardProps> = ({
-  title = 'Ad spot open',
-  subtitle = 'Put your product at top of TopSAAS',
-  duration = 'Free 7 days',
   soundEnabled,
   onOpenModal,
 }) => {
@@ -175,30 +167,16 @@ const OpenAdCard: React.FC<OpenAdCardProps> = ({
           handleClick();
         }
       }}
-      className="group relative flex w-full flex-col justify-between rounded-2xl border border-neutral-200/90 bg-white p-3.5 xl:p-4 text-left shadow-2xs transition-all duration-200 hover:border-blue-300 hover:shadow-xs cursor-pointer overflow-hidden min-h-[112px] xl:min-h-[120px] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+      className="group relative flex w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed border-neutral-300 hover:border-neutral-400 bg-white/70 p-4 text-center transition-all duration-200 hover:bg-neutral-50/80 cursor-pointer overflow-hidden min-h-[112px] xl:min-h-[120px] focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 select-none shadow-2xs"
     >
-      <div className="pointer-events-none absolute -top-6 -right-6 h-16 w-16 rounded-full bg-gradient-to-br from-pink-300/20 via-purple-300/10 to-transparent blur-xl" />
-
-      <div className="relative flex items-center gap-2 min-w-0">
-        <div className="flex h-7 w-7 xl:h-8 xl:w-8 shrink-0 items-center justify-center rounded-xl border border-neutral-200/90 bg-white text-blue-600 shadow-2xs transition-transform group-hover:scale-105">
-          <Megaphone className="h-3.5 w-3.5" />
-        </div>
-        <h4 className="truncate text-xs xl:text-[13px] font-bold text-neutral-950 group-hover:text-blue-600 transition-colors">
-          {title}
+      <div className="flex flex-col items-center justify-center space-y-1">
+        <Megaphone className="h-5 w-5 text-neutral-600 group-hover:text-neutral-900 stroke-[1.8] group-hover:scale-110 transition-transform" />
+        <h4 className="text-xs xl:text-sm font-bold text-neutral-800 group-hover:text-neutral-950 tracking-tight leading-tight">
+          Advertise
         </h4>
-      </div>
-
-      <p className="relative mt-2 text-[11px] xl:text-[11.5px] font-medium text-neutral-500 line-clamp-2 leading-relaxed">
-        {subtitle}
-      </p>
-
-      <div className="relative mt-2 flex items-center justify-between text-[10.5px] xl:text-[11px] font-bold">
-        <span className="inline-flex items-center rounded-md bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 text-[10.5px] xl:text-[11px] font-bold text-emerald-700">
-          {duration}
-        </span>
-        <span className="text-[10.5px] font-semibold text-blue-600 opacity-80 group-hover:opacity-100 group-hover:underline transition-opacity">
-          Place ad →
-        </span>
+        <p className="text-[11px] font-medium text-neutral-400 group-hover:text-neutral-600 leading-tight">
+          Open spot
+        </p>
       </div>
     </div>
   );
@@ -212,7 +190,20 @@ export const HeroSponsorRails: React.FC<HeroSponsorRailsProps> = ({
   onOpenProduct,
   onOpenFeaturedSpotModal,
   children,
+  enabled = true,
 }) => {
+  if (!enabled) {
+    return (
+      <div className="relative w-full">
+        <div className="flex flex-col items-center justify-center pt-1">
+          <div className="flex-1 w-full max-w-2xl xl:max-w-[760px] mx-auto min-w-0">
+            {children}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Filter active sponsors that have not expired
   const activeSponsors = (sponsors || []).filter(
     (p) => p.isSponsored && (p.sponsorExpiresAt ? p.sponsorExpiresAt > Date.now() : true)
@@ -239,15 +230,12 @@ export const HeroSponsorRails: React.FC<HeroSponsorRailsProps> = ({
             ) : (
               <OpenAdCard
                 key={slot.id}
-                title={slot.title}
-                subtitle={slot.subtitle}
-                duration={slot.duration}
                 soundEnabled={soundEnabled}
                 onOpenModal={onOpenFeaturedSpotModal}
               />
             );
 
-            if (index !== 0) return card;
+            if (index !== 0 || !sponsoredItem) return card;
             return (
               <BorderBeam
                 key={slot.id}
@@ -283,15 +271,12 @@ export const HeroSponsorRails: React.FC<HeroSponsorRailsProps> = ({
             ) : (
               <OpenAdCard
                 key={slot.id}
-                title={slot.title}
-                subtitle={slot.subtitle}
-                duration={slot.duration}
                 soundEnabled={soundEnabled}
                 onOpenModal={onOpenFeaturedSpotModal}
               />
             );
 
-            if (index !== 0) return card;
+            if (index !== 0 || !sponsoredItem) return card;
             return (
               <BorderBeam
                 key={slot.id}

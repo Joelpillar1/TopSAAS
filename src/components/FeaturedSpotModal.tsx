@@ -70,8 +70,8 @@ export const SPONSOR_PLANS: SponsorPlanItem[] = [
     features: [
       'Top hero side rails & above-the-fold spotlight banner',
       'Pinned top placement in your product category',
-      '⭐️ Promoted / Featured badge on directory card',
-      'Auto Weekly Relaunch into every Sunday round (4 rounds)',
+      '⭐️ Sponsored badge on partner rails',
+      '24/7 Sticky hero side rails above the fold',
       'Live analytics & outbound click tracker',
     ],
     cta: 'Get Monthly',
@@ -91,9 +91,9 @@ export const SPONSOR_PLANS: SponsorPlanItem[] = [
     description: 'Continuous 3-month high-visibility growth campaign for serious founders',
     features: [
       '90 days continuous homepage & category priority placement',
-      'Auto Weekly Relaunch every Sunday (12 rounds)',
+      '24/7 Persistent homepage side rails placement',
       '1x Dedicated Newsletter Launch Mention to subscribers',
-      '⭐️ Promoted badge on directory listing',
+      '⭐️ Sponsored partner badge on sidebar',
     ],
     cta: 'Get 3-Month',
   },
@@ -111,8 +111,7 @@ export const SPONSOR_PLANS: SponsorPlanItem[] = [
     bestValue: true,
     description: 'Full-year premier sponsorship & continuous top authority placement',
     features: [
-      '365 days permanent premier visibility across TopSAAS',
-      'Auto Weekly Relaunch all year round (52 rounds)',
+      '365 days permanent premier visibility on hero side rails',
       'Quarterly Newsletter Blasts (4x/year)',
       'Permanent Dofollow backlink & Top Partner directory badge',
       'Dedicated Product of the Day priority spotlight day',
@@ -384,33 +383,60 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
                         </button>
                       </div>
                     ) : (
-                      filteredProducts.map((p) => (
-                        <div
-                          key={p.id}
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => handleSelectProduct(p)}
-                          className="flex items-center justify-between p-3 rounded-xl border border-neutral-200 bg-white hover:border-blue-500/50 hover:bg-neutral-50 transition-all cursor-pointer group text-left"
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <ProductLogo
-                              src={p.logoUrl}
-                              alt={p.name}
-                              containerClassName="h-9 w-9 rounded-lg border border-neutral-200 bg-white shrink-0 overflow-hidden relative flex items-center justify-center"
-                              iconClassName="h-4 w-4 text-neutral-700 shrink-0"
-                            />
-                            <div className="min-w-0">
-                              <h4 className="text-xs font-bold text-neutral-950 group-hover:text-blue-600 transition-colors truncate">
-                                {p.name}
-                              </h4>
-                              <p className="text-[11px] text-neutral-500 truncate max-w-sm">
-                                {p.tagline}
-                              </p>
+                      filteredProducts.map((p) => {
+                        const isAlreadySponsored = Boolean(
+                          p.isSponsored && (p.sponsorExpiresAt ? p.sponsorExpiresAt > Date.now() : true)
+                        );
+                        return (
+                          <div
+                            key={p.id}
+                            role="button"
+                            tabIndex={isAlreadySponsored ? -1 : 0}
+                            onClick={() => {
+                              if (isAlreadySponsored) return;
+                              handleSelectProduct(p);
+                            }}
+                            className={`flex items-center justify-between p-3 rounded-xl border transition-all text-left ${
+                              isAlreadySponsored
+                                ? 'border-neutral-200 bg-neutral-50/70 opacity-60 cursor-not-allowed'
+                                : 'border-neutral-200 bg-white hover:border-blue-500/50 hover:bg-neutral-50 cursor-pointer group'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <ProductLogo
+                                src={p.logoUrl}
+                                alt={p.name}
+                                containerClassName="h-9 w-9 rounded-lg border border-neutral-200 bg-white shrink-0 overflow-hidden relative flex items-center justify-center"
+                                iconClassName="h-4 w-4 text-neutral-700 shrink-0"
+                              />
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <h4 className="text-xs font-bold text-neutral-950 group-hover:text-blue-600 transition-colors truncate">
+                                    {p.name}
+                                  </h4>
+                                  {isAlreadySponsored && (
+                                    <span className="inline-flex shrink-0 items-center rounded-md bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 text-[9px] font-bold text-emerald-700">
+                                      Active on Sponsor Rails
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-[11px] text-neutral-500 truncate max-w-sm">
+                                  {isAlreadySponsored
+                                    ? 'This product is already live on the homepage sponsor rails'
+                                    : p.tagline}
+                                </p>
+                              </div>
                             </div>
+                            {!isAlreadySponsored ? (
+                              <ArrowRight className="h-4 w-4 text-neutral-400 group-hover:text-blue-600 transition-colors shrink-0 ml-2" />
+                            ) : (
+                              <span className="text-[10px] font-bold text-neutral-400 shrink-0 ml-2">
+                                Active
+                              </span>
+                            )}
                           </div>
-                          <ArrowRight className="h-4 w-4 text-neutral-400 group-hover:text-blue-600 transition-colors shrink-0 ml-2" />
-                        </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
 
@@ -579,13 +605,6 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
                           <span>{feat}</span>
                         </div>
                       ))}
-                    </div>
-
-                    <div className="pt-2 border-t border-neutral-200/80 flex items-center justify-between text-[11px] text-neutral-500">
-                      <span>Only 6 spots available at a time</span>
-                      <a href="mailto:support@topsaas.space" className="text-blue-600 hover:underline">
-                        Questions?
-                      </a>
                     </div>
                   </div>
 

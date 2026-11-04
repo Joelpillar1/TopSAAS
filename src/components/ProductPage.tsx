@@ -177,12 +177,11 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                     <VerifiedBadge className="h-5 w-5 sm:h-6 sm:w-6 shrink-0" title="Verified Startup" />
                   )}
                   {product.isSponsored && (
-                    <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 px-2 py-0.5 text-xs font-black tracking-tight text-white shadow-xs shadow-amber-600/25 select-none">
-                      <Star className="h-3 w-3 fill-amber-200 text-amber-200 shrink-0" />
-                      <span>Featured</span>
+                    <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-neutral-900 px-2 py-0.5 text-xs font-bold tracking-tight text-white shadow-xs select-none">
+                      <span>Sponsored</span>
                     </span>
                   )}
-                  {(product.autoRelaunch || product.isRelaunched) && (
+                  {(product.autoRelaunch || product.isRelaunched) && !product.isSponsored && (
                     <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-blue-50 border border-blue-200/80 px-2 py-0.5 text-xs font-bold text-blue-700 shadow-2xs select-none">
                       <span>🚀</span>
                       <span>Weekly Relaunch</span>

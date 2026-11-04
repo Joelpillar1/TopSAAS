@@ -120,15 +120,15 @@ export const FeedRow: React.FC<FeedRowProps> = ({
   );
 };
 
-interface PromotedCardProps {
+interface SponsoredCardProps {
   product: Product | null;
   soundEnabled: boolean;
   onOpen: (product: Product) => void;
   onRent: () => void;
 }
 
-/** "Promoted" product card (paid surface) with a reserve placeholder when unclaimed */
-export const PromotedCard: React.FC<PromotedCardProps> = ({ product, soundEnabled, onOpen, onRent }) => {
+/** "Sponsored" product card (paid surface) with a reserve placeholder when unclaimed */
+export const SponsoredCard: React.FC<SponsoredCardProps> = ({ product, soundEnabled, onOpen, onRent }) => {
   if (!product) {
     return (
       <button
@@ -186,8 +186,8 @@ export const PromotedCard: React.FC<PromotedCardProps> = ({ product, soundEnable
         <span className="text-[10px] font-bold text-neutral-500 underline underline-offset-2 hover:text-black cursor-pointer transition-colors" onClick={() => { playSound('click', soundEnabled); onRent(); }}>
           Advertise ↗
         </span>
-        <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[9px] font-bold  text-neutral-500">
-          Promoted
+        <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[9px] font-bold text-neutral-500">
+          Sponsored
         </span>
       </div>
     </div>
