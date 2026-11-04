@@ -5,7 +5,7 @@ import { BorderBeam } from './BorderBeam';
 import { playSound } from '../utils/sound';
 
 interface PricingPageProps {
-  onOpenSubmit: (plan?: 'free' | 'lifetime' | 'monthly_pro') => void;
+  onOpenSubmit: (plan?: 'free' | 'free_relaunch' | 'lifetime' | 'monthly_pro') => void;
   onGoHome: () => void;
   soundEnabled: boolean;
 }
@@ -48,6 +48,7 @@ const comparisonRows: Array<{
   { feature: 'SEO backlink type',               free: 'nofollow',       lifetime: 'dofollow',                   pro: 'dofollow' },
   { feature: 'Verified badge (directory card)', free: false,            lifetime: true,                         pro: true },
   { feature: 'Embeddable badge (your site)',    free: false,            lifetime: true,                         pro: true },
+  { feature: 'Weekly Relaunch (active rounds)', free: '+$5 toggle',     lifetime: 'Included (Every Week)',      pro: 'Included (Every Week)' },
   { feature: 'Included in /llms.txt',           free: false,            lifetime: true,                         pro: true },
   { feature: 'Newsletter launch blast (1×)',    free: false,            lifetime: true,                         pro: true },
   { feature: 'Category pinned placement',       free: false,            lifetime: false,                        pro: true },
@@ -63,6 +64,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({
   soundEnabled,
 }) => {
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+  const [freeWeeklyRelaunch, setFreeWeeklyRelaunch] = useState(false);
 
   const toggleFaq = (index: number) => {
     playSound('click', soundEnabled);
@@ -97,14 +99,62 @@ export const PricingPage: React.FC<PricingPageProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
           {/* Free */}
-          <div className="flex flex-col rounded-2xl border border-neutral-200 bg-white p-6 space-y-6">
+          <div className="flex flex-col rounded-2xl border border-neutral-200 bg-white p-6 space-y-5">
             <div className="space-y-1">
-              <p className="text-[11px] font-bold  text-neutral-500">Free</p>
+              <p className="text-[11px] font-bold text-neutral-500">Free</p>
               <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-black text-neutral-950">$0</span>
-                <span className="text-xs text-neutral-500 font-medium">forever</span>
+                <span className="text-3xl font-black text-neutral-950">
+                  {freeWeeklyRelaunch ? '$5' : '$0'}
+                </span>
+                <span className="text-xs text-neutral-500 font-medium">
+                  {freeWeeklyRelaunch ? '/month' : 'forever free'}
+                </span>
               </div>
-              <p className="text-xs text-neutral-500 pt-1">Standard queue submission. Good for testing if your product resonates.</p>
+              <p className="text-xs text-neutral-500 pt-1">
+                {freeWeeklyRelaunch
+                  ? 'Standard submission with Auto Weekly Relaunch into every new weekly round.'
+                  : 'Standard queue submission. Good for testing if your product resonates.'}
+              </p>
+            </div>
+
+            {/* $5 Weekly Relaunch Toggle */}
+            <div
+              onClick={() => {
+                playSound('click', soundEnabled);
+                setFreeWeeklyRelaunch((prev) => !prev);
+              }}
+              className={`p-3 rounded-xl border transition-all cursor-pointer select-none ${
+                freeWeeklyRelaunch
+                  ? 'border-blue-500 bg-blue-50/70 ring-1 ring-blue-500/30'
+                  : 'border-neutral-200 bg-neutral-50 hover:border-neutral-300'
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-base shrink-0">🚀</span>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-neutral-950 flex items-center gap-1.5">
+                      <span>Weekly Relaunch</span>
+                      <span className="text-[10px] font-black px-1.5 py-px rounded bg-blue-100 text-blue-700">+$5</span>
+                    </p>
+                    <p className="text-[10.5px] text-neutral-500 truncate mt-0.5">
+                      Relaunches into active week every Sunday
+                    </p>
+                  </div>
+                </div>
+                {/* Switch track */}
+                <span
+                  className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full p-0.5 transition-colors duration-200 ${
+                    freeWeeklyRelaunch ? 'bg-blue-600' : 'bg-neutral-300'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                      freeWeeklyRelaunch ? 'translate-x-4' : 'translate-x-0'
+                    }`}
+                  />
+                </span>
+              </div>
             </div>
 
             <ul className="space-y-2.5 text-xs text-neutral-600 flex-1">
@@ -119,6 +169,19 @@ export const PricingPage: React.FC<PricingPageProps> = ({
               <li className="flex items-center gap-2">
                 <Check className="h-3.5 w-3.5 text-neutral-500 shrink-0" />
                 Click analytics
+              </li>
+              <li className="flex items-center gap-2">
+                {freeWeeklyRelaunch ? (
+                  <>
+                    <Check className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+                    <span className="font-semibold text-neutral-900">Auto Weekly Relaunch active</span>
+                  </>
+                ) : (
+                  <>
+                    <X className="h-3.5 w-3.5 text-neutral-400 shrink-0" />
+                    <span className="text-neutral-500">No weekly relaunch (1 launch round)</span>
+                  </>
+                )}
               </li>
               <li className="flex items-center gap-2 text-neutral-600">
                 <X className="h-3.5 w-3.5 shrink-0" />
@@ -136,10 +199,24 @@ export const PricingPage: React.FC<PricingPageProps> = ({
 
             <button
               type="button"
-              onClick={() => { playSound('click', soundEnabled); onOpenSubmit('free'); }}
-              className="w-full rounded-xl border border-neutral-200 bg-neutral-100 py-2.5 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-all cursor-pointer"
+              onClick={() => {
+                playSound('click', soundEnabled);
+                try {
+                  if (freeWeeklyRelaunch) {
+                    localStorage.setItem('topsaas_submit_auto_relaunch', 'true');
+                  } else {
+                    localStorage.removeItem('topsaas_submit_auto_relaunch');
+                  }
+                } catch {}
+                onOpenSubmit(freeWeeklyRelaunch ? 'free_relaunch' : 'free');
+              }}
+              className={`w-full rounded-xl py-2.5 text-xs font-bold transition-all cursor-pointer shadow-xs ${
+                freeWeeklyRelaunch
+                  ? 'bg-blue-600 text-white hover:bg-blue-500 shadow-blue-500/20'
+                  : 'border border-neutral-200 bg-neutral-100 text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50'
+              }`}
             >
-              Submit for Free
+              {freeWeeklyRelaunch ? 'Submit with Weekly Relaunch — $5' : 'Submit for Free'}
             </button>
           </div>
 
@@ -161,6 +238,10 @@ export const PricingPage: React.FC<PricingPageProps> = ({
               <li className="flex items-center gap-2">
                 <Check className="h-3.5 w-3.5 text-mint-600 shrink-0" />
                 Everything in Free
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="h-3.5 w-3.5 text-mint-600 shrink-0" />
+                <span className="font-semibold text-neutral-900">Auto Weekly Relaunch included</span>
               </li>
               <li className="flex items-center gap-2">
                 <Check className="h-3.5 w-3.5 text-mint-600 shrink-0" />
@@ -230,6 +311,10 @@ export const PricingPage: React.FC<PricingPageProps> = ({
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="h-3.5 w-3.5 text-mint-600 shrink-0" />
+                  <span className="font-semibold text-neutral-900">Auto Weekly Relaunch included</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-3.5 w-3.5 text-mint-600 shrink-0" />
                   Pinned Top 3 in your category
                 </li>
                 <li className="flex items-center gap-2">
@@ -286,21 +371,27 @@ export const PricingPage: React.FC<PricingPageProps> = ({
                         ? row.free
                           ? <Check className="h-3.5 w-3.5 text-neutral-500 mx-auto" />
                           : <X className="h-3.5 w-3.5 text-neutral-400 mx-auto" />
-                        : row.free}
+                        : row.free === '+$5 toggle'
+                          ? <span className="inline-flex rounded bg-blue-50 border border-blue-200 px-1.5 py-0.5 text-[10px] font-bold text-blue-700">+$5 toggle</span>
+                          : row.free}
                     </td>
                     <td className="p-4 text-center text-neutral-700">
                       {typeof row.lifetime === 'boolean'
                         ? row.lifetime
                           ? <Check className="h-3.5 w-3.5 text-mint-600 mx-auto" />
                           : <X className="h-3.5 w-3.5 text-neutral-700 mx-auto" />
-                        : row.lifetime}
+                        : row.lifetime === 'Included (Every Week)'
+                          ? <span className="inline-flex items-center gap-1 font-bold text-xs text-neutral-900"><Check className="h-3.5 w-3.5 text-mint-600 shrink-0" /> Every Week</span>
+                          : row.lifetime}
                     </td>
                     <td className="p-4 text-center text-mint-600 font-medium bg-mint-500/5 border-x border-mint-500/15">
                       {typeof row.pro === 'boolean'
                         ? row.pro
                           ? <Check className="h-3.5 w-3.5 text-mint-600 mx-auto" />
                           : <X className="h-3.5 w-3.5 text-neutral-700 mx-auto" />
-                        : row.pro}
+                        : row.pro === 'Included (Every Week)'
+                          ? <span className="inline-flex items-center gap-1 font-bold text-xs text-mint-700"><Check className="h-3.5 w-3.5 text-mint-600 shrink-0" /> Every Week</span>
+                          : row.pro}
                     </td>
                   </tr>
                 ))}

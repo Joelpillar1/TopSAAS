@@ -129,6 +129,10 @@ export const mapDbProduct = (row: Record<string, unknown>): Product => ({
   offerCode: (row.offer_code as string) || undefined,
   offerUrl: (row.offer_url as string) || undefined,
   offerDetails: (row.offer_details as string) || undefined,
+  autoRelaunch: Boolean(row.auto_relaunch ?? row.autoRelaunch) || undefined,
+  relaunchWeeks: (row.relaunch_weeks as number[]) || (row.relaunchWeeks as number[]) || undefined,
+  isRelaunched: Boolean(row.is_relaunched ?? row.isRelaunched) || undefined,
+  lastRelaunchedAt: (row.last_relaunched_at as number) || (row.lastRelaunchedAt as number) || undefined,
 });
 
 /** Map a Product to Supabase insert/update format */
@@ -182,6 +186,10 @@ export const toDbProduct = (p: Product) => {
     offer_code: p.offerCode || null,
     offer_url: p.offerUrl || null,
     offer_details: p.offerDetails || null,
+    auto_relaunch: p.autoRelaunch || false,
+    relaunch_weeks: p.relaunchWeeks || null,
+    is_relaunched: p.isRelaunched || false,
+    last_relaunched_at: p.lastRelaunchedAt || null,
   };
 };
 
@@ -264,6 +272,10 @@ export function submissionToProduct(sub: WebsiteSubmission, rank: number = 1): P
       { label: 'Status', value: 'Live on Directory' }
     ],
     bidHistory: [],
+    autoRelaunch: sub.autoRelaunch,
+    relaunchWeeks: sub.relaunchWeeks,
+    isRelaunched: sub.isRelaunched,
+    lastRelaunchedAt: sub.lastRelaunchedAt,
   };
 }
 

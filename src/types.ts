@@ -110,6 +110,10 @@ export interface Product {
   problemItSolves?: string;
   solution?: string;
   uniqueSellingPoint?: string;
+  autoRelaunch?: boolean;
+  relaunchWeeks?: number[];
+  isRelaunched?: boolean;
+  lastRelaunchedAt?: number;
 }
 
 export interface Comment {
@@ -185,6 +189,7 @@ export interface SubmitProductDetails {
   offerCode?: string;
   offerUrl?: string;
   offerDetails?: string;
+  autoRelaunch?: boolean;
 }
 
 export interface WebsiteSubmission {
@@ -220,4 +225,8 @@ export interface WebsiteSubmission {
   problemItSolves?: string;
   solution?: string;
   uniqueSellingPoint?: string;
+  autoRelaunch?: boolean;
+  relaunchWeeks?: number[];
+  isRelaunched?: boolean;
+  lastRelaunchedAt?: number;
 }

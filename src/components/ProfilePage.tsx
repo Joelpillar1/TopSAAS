@@ -31,6 +31,7 @@ import { playSound } from '../utils/sound';
 import { EmbedBadgeModal } from './EmbedBadgeModal';
 import { RichTextEditor } from './RichTextEditor';
 import { prepareRichText } from '../utils/richText';
+import confetti from 'canvas-confetti';
 
 interface ProfilePageProps {
   user: User;
@@ -105,6 +106,8 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   const [editError, setEditError] = useState<string | null>(null);
   const [isAddingShots, setIsAddingShots] = useState(false);
   const [badgeProduct, setBadgeProduct] = useState<Product | null>(null);
+  const [relaunchProduct, setRelaunchProduct] = useState<Product | null>(null);
+  const [isRelaunching, setIsRelaunching] = useState(false);
 
   // Form State for editing
   const [editForm, setEditForm] = useState<{
@@ -266,6 +269,31 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
       isMounted = false;
     };
   }, [user.id, user.email, allProducts, allSubmissions]);
+
+  const handleConfirmRelaunch = async () => {
+    if (!relaunchProduct) return;
+    setIsRelaunching(true);
+    try {
+      const updated: Product = {
+        ...relaunchProduct,
+        autoRelaunch: true,
+        isRelaunched: true,
+        lastRelaunchedAt: Date.now(),
+      };
+      await updateProductDirect(updated);
+      setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+      onUpdateProduct?.(updated);
+      playSound('success', soundEnabled);
+      try {
+        confetti({ particleCount: 75, spread: 65, origin: { y: 0.6 } });
+      } catch {}
+      setRelaunchProduct(null);
+    } catch (err) {
+      console.error('Relaunch failed:', err);
+    } finally {
+      setIsRelaunching(false);
+    }
+  };
 
   const handleDelete = async (productId: string) => {
     if (!window.confirm('Remove this product from the directory?')) return;
@@ -679,6 +707,12 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                       <span className="text-[9px] font-bold text-mint-600 bg-mint-500/15 border border-mint-500/30 px-1.5 py-0.5 rounded">
                         Live
                       </span>
+                      {(product.autoRelaunch || product.isSponsored || product.sponsorTier === 'paid') && (
+                        <span className="inline-flex items-center gap-1 text-[9px] font-bold text-blue-700 bg-blue-50 border border-blue-200/80 px-1.5 py-0.5 rounded shadow-2xs">
+                          <span>🚀</span>
+                          <span>Weekly Relaunch Active</span>
+                        </span>
+                      )}
                     </div>
                     <p className="text-xs text-neutral-500 truncate mt-0.5">{product.tagline}</p>
                     <div className="flex flex-wrap items-center gap-2 mt-2">
@@ -698,8 +732,22 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                     </div>
                   </div>
 
-                  {/* Actions: Embed Badge, Edit & Delete */}
+                  {/* Actions: Relaunch, Embed Badge, Edit & Delete */}
                   <div className="flex items-center gap-1.5 shrink-0">
+                    {!(product.autoRelaunch || product.isSponsored || product.sponsorTier === 'paid') && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playSound('click', soundEnabled);
+                          setRelaunchProduct(product);
+                        }}
+                        className="flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50/80 px-2.5 py-1.5 text-xs font-black text-blue-700 hover:bg-blue-100 hover:border-blue-300 transition-all cursor-pointer shadow-2xs"
+                        title="Relaunch into active weekly round ($5)"
+                      >
+                        <span>🚀</span>
+                        <span className="hidden sm:inline">Relaunch ($5)</span>
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => {
@@ -1507,6 +1555,99 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           product={badgeProduct}
           soundEnabled={soundEnabled}
         />
+      )}
+
+      {/* ── Weekly Relaunch Modal ── */}
+      {relaunchProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in-0 duration-150">
+          <div className="relative w-full max-w-md rounded-2xl border border-neutral-200 bg-white p-6 shadow-2xl space-y-5 animate-in zoom-in-95 duration-150">
+            <button
+              type="button"
+              onClick={() => {
+                playSound('click', soundEnabled);
+                setRelaunchProduct(null);
+              }}
+              className="absolute top-4 right-4 rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-950 transition-colors cursor-pointer"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            <div className="flex items-start gap-3.5">
+              <ProductLogo
+                src={relaunchProduct.logoUrl || getWebsiteFavicon(relaunchProduct.url)}
+                alt={relaunchProduct.name}
+                containerClassName="h-12 w-12 rounded-xl overflow-hidden border border-neutral-200 bg-neutral-50 shrink-0 flex items-center justify-center shadow-xs"
+                iconClassName="h-6 w-6 text-neutral-400 shrink-0"
+              />
+              <div className="min-w-0 flex-1">
+                <span className="inline-flex items-center gap-1 rounded bg-blue-100 text-blue-700 text-[10px] font-black px-2 py-0.5 mb-1">
+                  <span>🚀</span> Weekly Relaunch
+                </span>
+                <h3 className="text-base font-black text-neutral-950 truncate">
+                  Relaunch {relaunchProduct.name}
+                </h3>
+                <p className="text-xs text-neutral-500 mt-0.5 truncate">
+                  {relaunchProduct.tagline}
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-blue-200/80 bg-blue-50/60 p-4 space-y-3">
+              <div className="flex items-baseline justify-between">
+                <span className="text-xs font-bold text-neutral-700">Relaunch Upgrade</span>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-2xl font-black text-neutral-950">$5</span>
+                  <span className="text-xs font-semibold text-neutral-500">/ month</span>
+                </div>
+              </div>
+              <ul className="space-y-2 text-xs text-neutral-700 pt-1 border-t border-blue-200/60">
+                <li className="flex items-center gap-2">
+                  <Check className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+                  <span>Automatically enters every active weekly voting round</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+                  <span>Featured <span className="font-bold text-blue-700">🚀 Relaunched</span> badge on directory card</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+                  <span>Reach fresh homepage visitors & early adopters weekly</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  playSound('click', soundEnabled);
+                  setRelaunchProduct(null);
+                }}
+                className="btn-secondary px-4 py-2.5 text-xs font-bold"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmRelaunch}
+                disabled={isRelaunching}
+                className="btn-primary bg-blue-600 hover:bg-blue-500 shadow-blue-500/25 px-5 py-2.5 text-xs font-black"
+              >
+                {isRelaunching ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Relaunching…
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5">
+                    <span>🚀</span>
+                    <span>Confirm & Relaunch ($5)</span>
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -77,6 +77,10 @@ const mapDbSubmission = (row: Record<string, unknown>): WebsiteSubmission => ({
   problemItSolves: (row.problem_it_solves as string) || undefined,
   solution: (row.solution as string) || undefined,
   uniqueSellingPoint: (row.unique_selling_point as string) || undefined,
+  autoRelaunch: Boolean(row.auto_relaunch ?? row.autoRelaunch) || undefined,
+  relaunchWeeks: (row.relaunch_weeks as number[]) || (row.relaunchWeeks as number[]) || undefined,
+  isRelaunched: Boolean(row.is_relaunched ?? row.isRelaunched) || undefined,
+  lastRelaunchedAt: (row.last_relaunched_at as number) || (row.lastRelaunchedAt as number) || undefined,
 });
 
 // Map a WebsiteSubmission to Supabase insert/update format
@@ -115,6 +119,10 @@ const toDbSubmission = (sub: WebsiteSubmission) => {
     problem_it_solves: sub.problemItSolves || null,
     solution: sub.solution || null,
     unique_selling_point: sub.uniqueSellingPoint || null,
+    auto_relaunch: sub.autoRelaunch || false,
+    relaunch_weeks: sub.relaunchWeeks || null,
+    is_relaunched: sub.isRelaunched || false,
+    last_relaunched_at: sub.lastRelaunchedAt || null,
   };
 };
 
@@ -992,6 +1000,8 @@ export default function App() {
       problemItSolves: details.problemItSolves?.trim() || undefined,
       solution: details.solution?.trim() || undefined,
       uniqueSellingPoint: details.uniqueSellingPoint?.trim() || undefined,
+      autoRelaunch: details.autoRelaunch || undefined,
+      lastRelaunchedAt: details.autoRelaunch ? now : undefined,
     };
 
     // Clear any previous deletion record for this URL or ID so it is completely fresh
@@ -1235,6 +1245,8 @@ export default function App() {
       sponsorExpiresAt: expiresAt,
       sponsorClicks: product.sponsorClicks || 0,
       sponsorContactEmail: email || product.sponsorContactEmail || (user ? user.email : undefined),
+      autoRelaunch: tier === 'paid' ? true : product.autoRelaunch,
+      lastRelaunchedAt: tier === 'paid' ? now : product.lastRelaunchedAt,
     };
 
     handleUpdateProduct(updatedProduct);
@@ -1523,7 +1535,14 @@ export default function App() {
   // Weekly launch rounds: scope products to the selected week, upvote-ranked
   const weeks = getRecentWeeks(6);
   const weekScopedProducts = selectedWeek
-    ? products.filter((p) => isInWeek(p.createdAt, selectedWeek))
+    ? products.filter((p) => {
+        if (isInWeek(p.createdAt, selectedWeek)) return true;
+        // Auto weekly relaunch for paid users and users who opted for $5/mo weekly relaunch
+        if (p.autoRelaunch || p.isSponsored || p.sponsorTier === 'paid') return true;
+        if (p.relaunchWeeks && selectedWeek.weekNumber && p.relaunchWeeks.includes(selectedWeek.weekNumber)) return true;
+        if (p.lastRelaunchedAt && isInWeek(p.lastRelaunchedAt, selectedWeek)) return true;
+        return false;
+      })
     : products;
 
   // Helper to determine if a product has an active deal/discount/promo code
@@ -1656,6 +1675,11 @@ export default function App() {
         {globalHeader}
         <PricingPage
           onOpenSubmit={(plan) => {
+            if (plan === 'free_relaunch') {
+              try {
+                localStorage.setItem('topsaas_submit_auto_relaunch', 'true');
+              } catch {}
+            }
             handleOpenSubmit();
           }}
           onGoHome={handleBackToLeaderboard}
@@ -1703,7 +1727,7 @@ export default function App() {
           onBack={handleBackToLeaderboard}
           onSignOut={handleSignOut}
           onDeleteProduct={(productId) => setProducts((prev) => prev.filter((p) => p.id !== productId))}
-          onUpdateProduct={(updated) => setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))}
+          onUpdateProduct={handleUpdateProduct}
           onSelectProduct={handleOpenProduct}
           soundEnabled={soundEnabled}
         />

@@ -132,6 +132,15 @@ export const ProductRow: React.FC<ProductRowProps> = ({
               <span>Promoted</span>
             </span>
           )}
+          {(product.autoRelaunch || product.isRelaunched) && (
+            <span
+              className="inline-flex shrink-0 items-center gap-1 rounded-md bg-blue-50 border border-blue-200/80 px-1.5 py-0.5 text-[10px] font-bold text-blue-700 shadow-2xs select-none"
+              title="Relaunched tool in this weekly round"
+            >
+              <span>🚀</span>
+              <span>Relaunched</span>
+            </span>
+          )}
           {product.offerDiscount && (
             <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 px-2 py-0.5 text-[10px] font-black tracking-tight text-white shadow-xs shadow-orange-500/25 transition-transform hover:scale-105 select-none">
               <Flame className="h-2.5 w-2.5 fill-white stroke-white shrink-0" />

@@ -182,6 +182,12 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                       <span>Featured</span>
                     </span>
                   )}
+                  {(product.autoRelaunch || product.isRelaunched) && (
+                    <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-blue-50 border border-blue-200/80 px-2 py-0.5 text-xs font-bold text-blue-700 shadow-2xs select-none">
+                      <span>🚀</span>
+                      <span>Weekly Relaunch</span>
+                    </span>
+                  )}
                   {product.offerDiscount && (
                     <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 px-2 py-0.5 text-xs font-black tracking-tight text-white shadow-xs shadow-orange-500/25 select-none">
                       <Flame className="h-3 w-3 fill-white stroke-white shrink-0" />

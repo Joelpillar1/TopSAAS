@@ -288,6 +288,16 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
   const [banner, setBanner] = useState<string | null>(null);
 
   const [step, setStep] = useState<number>(() => loadSavedStep());
+  const [autoRelaunch, setAutoRelaunch] = useState<boolean>(() => {
+    try {
+      const fromPricing = localStorage.getItem('topsaas_submit_auto_relaunch');
+      if (fromPricing === 'true') {
+        localStorage.removeItem('topsaas_submit_auto_relaunch');
+        return true;
+      }
+    } catch {}
+    return false;
+  });
 
   // Automatically persist form inputs and active step on every change
   useEffect(() => {
@@ -302,6 +312,11 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
         localStorage.removeItem('topsaas_submit_initial_url');
         setForm((prev) => ({ ...prev, url: autoFormatUrl(prefillUrl) }));
         setStep(0);
+      }
+      const fromPricing = localStorage.getItem('topsaas_submit_auto_relaunch');
+      if (fromPricing === 'true') {
+        localStorage.removeItem('topsaas_submit_auto_relaunch');
+        setAutoRelaunch(true);
       }
     } catch {}
   }, []);
@@ -739,6 +754,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
         offerCode: form.offerCode.trim() || undefined,
         offerUrl: form.offerUrl.trim() ? autoFormatUrl(form.offerUrl) : undefined,
         offerDetails: form.offerDetails.trim() || undefined,
+        autoRelaunch: autoRelaunch || undefined,
       });
 
       if (!newId) {
@@ -2142,6 +2158,48 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                   </div>
                 )}
               </div>
+
+              {/* 4. Weekly Relaunch Add-on */}
+              <div
+                onClick={() => {
+                  playSound('click', soundEnabled);
+                  setAutoRelaunch((prev) => !prev);
+                }}
+                className={`rounded-2xl border p-4 sm:p-5 transition-all cursor-pointer select-none ${
+                  autoRelaunch
+                    ? 'border-blue-500 bg-blue-50/70 ring-1 ring-blue-500/30 shadow-xs'
+                    : 'border-neutral-200 bg-white hover:border-neutral-300'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="h-10 w-10 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center shrink-0 text-xl font-bold">
+                      🚀
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-black text-neutral-950">Auto Weekly Relaunch</span>
+                        <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700">+$5 / month</span>
+                      </div>
+                      <p className="text-xs text-neutral-600 mt-1 leading-relaxed">
+                        Relaunch into active weekly voting rounds every Sunday automatically. Re-engage the community and get fresh homepage exposure every week.
+                      </p>
+                    </div>
+                  </div>
+                  {/* Switch */}
+                  <span
+                    className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
+                      autoRelaunch ? 'bg-blue-600' : 'bg-neutral-300'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-xs transition-transform ${
+                        autoRelaunch ? 'translate-x-4.5' : 'translate-x-1'
+                      }`}
+                    />
+                  </span>
+                </div>
+              </div>
             </section>
           )}
         </div>
@@ -2180,13 +2238,20 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                 type="button"
                 onClick={handleLaunch}
                 disabled={isSubmitting}
-                className="btn-primary px-5 py-2.5 text-xs font-black"
-                title="Submit website for review"
+                className={`btn-primary px-5 py-2.5 text-xs font-black transition-all ${
+                  autoRelaunch ? 'bg-blue-600 hover:bg-blue-500 shadow-blue-500/25' : ''
+                }`}
+                title={autoRelaunch ? 'Submit website with Weekly Relaunch ($5/mo)' : 'Submit website for review'}
               >
                 {isSubmitting ? (
                   <span className="inline-flex items-center gap-1.5">
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     Submitting…
+                  </span>
+                ) : autoRelaunch ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    <span>🚀</span>
+                    <span>Submit with Weekly Relaunch — $5</span>
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1.5">
