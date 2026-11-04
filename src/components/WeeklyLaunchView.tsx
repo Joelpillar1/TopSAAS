@@ -57,10 +57,10 @@ export const WeeklyLaunchView: React.FC<WeeklyLaunchViewProps> = ({
 
   return (
     <div
-      className={`relative w-full py-3 my-1 select-none ${className}`}
+      className={`sticky top-[53px] z-30 w-full py-2.5 bg-white/95 backdrop-blur-md border-b border-neutral-200/70 shadow-2xs select-none transition-all ${className}`}
       aria-label="Weekly launches navigation"
     >
-      <div className="flex items-center justify-center gap-2 sm:gap-4 md:gap-6 overflow-x-auto scrollbar-none px-1">
+      <div className="flex items-center justify-center gap-2 sm:gap-4 md:gap-6 overflow-x-auto scrollbar-none px-2">
         {/* Left Arrow Button */}
         <button
           type="button"
