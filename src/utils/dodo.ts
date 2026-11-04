@@ -4,12 +4,12 @@
 
 import { supabase } from './supabase';
 
-export type PlanType = '7days' | '30days';
+export type PlanType = '7days' | '30days' | '1mo' | '3mo' | '1yr';
 
 /**
  * Get product IDs from the config table (for display/validation only — no secrets exposed)
  */
-export async function getProductIds(): Promise<{ product7days: string; product30days: string }> {
+export async function getProductIds(): Promise<{ product7days: string; product30days: string; product1mo?: string; product3mo?: string; product1yr?: string }> {
   const { data, error } = await supabase
     .from('dodo_payments_config')
     .select('key, value');
@@ -29,6 +29,9 @@ export async function getProductIds(): Promise<{ product7days: string; product30
   return {
     product7days: configRecord.product_7days || '',
     product30days: configRecord.product_30days || '',
+    product1mo: configRecord.product_1mo || configRecord.product_30days || '',
+    product3mo: configRecord.product_3mo || '',
+    product1yr: configRecord.product_1yr || '',
   };
 }
 
@@ -37,7 +40,11 @@ export async function getProductIds(): Promise<{ product7days: string; product30
  */
 export async function getProductId(plan: PlanType): Promise<string> {
   const ids = await getProductIds();
-  const productId = plan === '7days' ? ids.product7days : ids.product30days;
+  let productId = ids.product30days;
+  if (plan === '7days') productId = ids.product7days;
+  else if (plan === '1mo') productId = ids.product1mo || ids.product30days;
+  else if (plan === '3mo') productId = ids.product3mo || ids.product30days;
+  else if (plan === '1yr') productId = ids.product1yr || ids.product30days;
 
   if (!productId) {
     throw new Error(`Product not configured for ${plan} plan. Please add the product ID in the admin panel.`);

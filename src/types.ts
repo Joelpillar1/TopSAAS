@@ -91,7 +91,7 @@ export interface Product {
   featuredQuote?: string;
   verified?: boolean;
   isSponsored?: boolean;
-  sponsorTier?: 'trial' | 'paid' | 'none';
+  sponsorTier?: 'trial' | 'paid' | '1mo' | '3mo' | '1yr' | 'none';
   sponsorStartedAt?: number;
   sponsorExpiresAt?: number;
   sponsorClicks?: number;

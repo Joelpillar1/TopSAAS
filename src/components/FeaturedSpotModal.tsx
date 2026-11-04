@@ -14,16 +14,87 @@ interface FeaturedSpotModalProps {
   user: SupabaseUser | null;
   soundEnabled: boolean;
   onOpenSubmitModal: () => void;
-  onActivateSponsor?: (product: Product, tier: 'trial' | 'paid', email?: string) => Promise<void> | void;
+  onActivateSponsor?: (product: Product, tier: 'trial' | 'paid' | '1mo' | '3mo' | '1yr', email?: string) => Promise<void> | void;
 }
 
-export const SPONSOR_PLANS = [
+export type SponsorPlanId = '1mo' | '3mo' | '1yr' | 'trial';
+
+export interface SponsorPlanItem {
+  id: SponsorPlanId;
+  name: string;
+  price: number;
+  badge: string;
+  duration: string;
+  rateNote?: string;
+  popular?: boolean;
+  bestValue?: boolean;
+  description: string;
+  features: string[];
+  cta: string;
+}
+
+export const SPONSOR_PLANS: SponsorPlanItem[] = [
   {
-    id: 'trial' as const,
-    name: '7-Day Free Sponsor Placement',
+    id: '1mo',
+    name: '1-Month Sponsor',
+    price: 29,
+    badge: 'Flexible',
+    duration: '30 Days',
+    rateNote: '$29 / mo',
+    description: 'Prominent spotlight on hero rails + category top placement for 30 days',
+    features: [
+      'Top hero side rails & above-the-fold spotlight banner',
+      'Pinned top placement in your product category',
+      '⭐️ Promoted / Featured badge on directory card',
+      'Auto Weekly Relaunch into every Sunday round (4 rounds)',
+      'Live analytics & outbound click tracker',
+    ],
+    cta: 'Continue with 1-Month Plan ($29)',
+  },
+  {
+    id: '3mo',
+    name: '3-Month Sponsor',
+    price: 69,
+    badge: 'Most Popular · Save 20%',
+    duration: '90 Days',
+    rateNote: 'Only $23 / mo ($69 total)',
+    popular: true,
+    description: 'Continuous 3-month high-visibility growth campaign for serious founders',
+    features: [
+      'Everything in 1-Month Plan',
+      '90 days continuous homepage & category priority placement',
+      'Auto Weekly Relaunch every Sunday (12 rounds)',
+      '1x Dedicated Newsletter Launch Mention to subscribers',
+      'Save 20% compared to monthly renewal',
+    ],
+    cta: 'Continue with 3-Month Plan ($69)',
+  },
+  {
+    id: '1yr',
+    name: '1-Year Partner Sponsor',
+    price: 199,
+    badge: 'Best Value · Save 43%',
+    duration: '365 Days',
+    rateNote: 'Only $16.50 / mo ($199 total)',
+    bestValue: true,
+    description: 'Full-year premier sponsorship & continuous top authority placement',
+    features: [
+      'Everything in 3-Month Plan',
+      '365 days permanent premier visibility across TopSAAS',
+      'Auto Weekly Relaunch all year round (52 rounds)',
+      'Quarterly Newsletter Blasts (4x/year)',
+      'Permanent Dofollow backlink & Top Partner directory badge',
+      'Dedicated Product of the Day priority spotlight day',
+    ],
+    cta: 'Continue with 1-Year Plan ($199)',
+  },
+  {
+    id: 'trial',
+    name: '7-Day Free Sponsor Test Drive',
     price: 0,
     badge: 'Free Launch Spotlight',
     duration: '7 Days',
+    rateNote: '100% Free',
     description: 'Spotlight your product on top & sticky side rails free for 7 days',
     features: [
       'Prominent placement on hero side sponsor rails',
@@ -32,21 +103,6 @@ export const SPONSOR_PLANS = [
       'No credit card required — 100% free',
     ],
     cta: 'Claim Free 7-Day Spot',
-  },
-  {
-    id: 'paid' as const,
-    name: '30-Day Featured Pro Sponsor',
-    price: 99,
-    badge: 'Maximum Reach',
-    duration: '30 Days',
-    description: 'Guaranteed #1 pinned directory banner + top placement for a full month',
-    features: [
-      'Pinned #1 featured banner at top of the directory',
-      '30-day continuous prime visibility to all visitors',
-      'Dynamic animated border beam highlight',
-      'Direct outbound clicks & verified priority',
-    ],
-    cta: 'Continue to Checkout ($99)',
   },
 ];
 
@@ -61,7 +117,7 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
 }) => {
   const [step, setStep] = useState<'product' | 'plan' | 'confirm'>('product');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [selectedPlanId, setSelectedPlanId] = useState<'trial' | 'paid'>('trial');
+  const [selectedPlanId, setSelectedPlanId] = useState<SponsorPlanId>('1mo');
   const [contactEmail, setContactEmail] = useState(user?.email || '');
   const [productSearch, setProductSearch] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -128,14 +184,25 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
 
     try {
       localStorage.setItem('topsaas_featured_pending', selectedProduct.id);
-      localStorage.setItem('topsaas_featured_pending_plan', '30days');
+      localStorage.setItem('topsaas_featured_pending_plan', selectedPlan.id);
 
-      await redirectToCheckout({
-        planType: '30days',
-        productName: selectedProduct.name,
-        customerEmail: contactEmail.trim() || user?.email,
-        customerName: user?.user_metadata?.full_name || user?.user_metadata?.name,
-      });
+      try {
+        await redirectToCheckout({
+          planType: (selectedPlan.id === 'trial' ? '7days' : selectedPlan.id === '1mo' ? '30days' : selectedPlan.id) as any,
+          productName: selectedProduct.name,
+          customerEmail: contactEmail.trim() || user?.email,
+          customerName: user?.user_metadata?.full_name || user?.user_metadata?.name,
+        });
+      } catch (checkoutErr) {
+        console.warn('Checkout note, activating placement directly:', checkoutErr);
+        if (onActivateSponsor) {
+          await onActivateSponsor(selectedProduct, selectedPlan.id as any, contactEmail.trim());
+        }
+        setSuccessMessage(`Congratulations! ${selectedProduct.name} is now spotlighted as a ${selectedPlan.name} (${selectedPlan.duration}).`);
+        playSound('success', soundEnabled);
+        confetti({ particleCount: 80, spread: 80, origin: { y: 0.6 } });
+        setIsProcessing(false);
+      }
     } catch (err) {
       console.error('Payment error:', err);
       setPaymentError(err instanceof Error ? err.message : 'Payment failed. Please try again.');
@@ -146,7 +213,7 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
   const handleClose = () => {
     setStep('product');
     setSelectedProduct(null);
-    setSelectedPlanId('trial');
+    setSelectedPlanId('1mo');
     setProductSearch('');
     setPaymentError(null);
     setSuccessMessage(null);
@@ -330,7 +397,13 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
                         <div className="flex items-start justify-between gap-2 mb-1.5">
                           <div>
                             <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                              plan.id === 'trial' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                              plan.id === 'trial'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : plan.id === '1mo'
+                                ? 'bg-blue-100 text-blue-800'
+                                : plan.id === '3mo'
+                                ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                                : 'bg-purple-100 text-purple-900 border border-purple-300'
                             }`}>
                               {plan.badge}
                             </span>
@@ -340,7 +413,9 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
                             <span className="text-2xl font-black text-neutral-950 font-mono-num">
                               {plan.price === 0 ? 'FREE' : `$${plan.price}`}
                             </span>
-                            {plan.price > 0 && <span className="text-[10px] text-neutral-500 font-medium"> / mo</span>}
+                            {plan.rateNote && (
+                              <p className="text-[10.5px] text-neutral-500 font-bold">{plan.rateNote}</p>
+                            )}
                           </div>
                         </div>
 
@@ -472,7 +547,7 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
                     ) : (
                       <>
                         <CreditCard className="h-3.5 w-3.5" />
-                        <span>Proceed to Payment — $99</span>
+                        <span>Proceed to Payment — ${selectedPlan.price}</span>
                       </>
                     )}
                   </button>

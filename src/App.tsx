@@ -1231,11 +1231,21 @@ export default function App() {
     });
   };
 
-  // Activate sponsor placement (7-day free trial or 30-day paid)
-  const handleActivateSponsorTrial = async (product: Product, tier: 'trial' | 'paid', email?: string) => {
-    const durationDays = tier === 'paid' ? 30 : 7;
+  // Activate sponsor placement (7-day free trial or 1mo / 3mo / 1yr paid)
+  const handleActivateSponsorTrial = async (
+    product: Product,
+    tier: 'trial' | 'paid' | '1mo' | '3mo' | '1yr',
+    email?: string
+  ) => {
+    let durationDays = 30;
+    if (tier === 'trial') durationDays = 7;
+    else if (tier === '1mo' || tier === 'paid') durationDays = 30;
+    else if (tier === '3mo') durationDays = 90;
+    else if (tier === '1yr') durationDays = 365;
+
     const now = Date.now();
     const expiresAt = now + durationDays * 86400 * 1000;
+    const isPaid = tier !== 'trial';
 
     const updatedProduct: Product = {
       ...product,
@@ -1245,8 +1255,8 @@ export default function App() {
       sponsorExpiresAt: expiresAt,
       sponsorClicks: product.sponsorClicks || 0,
       sponsorContactEmail: email || product.sponsorContactEmail || (user ? user.email : undefined),
-      autoRelaunch: tier === 'paid' ? true : product.autoRelaunch,
-      lastRelaunchedAt: tier === 'paid' ? now : product.lastRelaunchedAt,
+      autoRelaunch: isPaid ? true : product.autoRelaunch,
+      lastRelaunchedAt: isPaid ? now : product.lastRelaunchedAt,
     };
 
     handleUpdateProduct(updatedProduct);
@@ -1681,6 +1691,14 @@ export default function App() {
               } catch {}
             }
             handleOpenSubmit();
+          }}
+          onOpenSponsor={(_tier) => {
+            playSound('click', soundEnabled);
+            if (!user) {
+              setIsSignInModalOpen(true);
+            } else {
+              setIsFeaturedSpotModalOpen(true);
+            }
           }}
           onGoHome={handleBackToLeaderboard}
           soundEnabled={soundEnabled}
