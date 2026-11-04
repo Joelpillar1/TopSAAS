@@ -197,6 +197,22 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                 onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
               />
             </a>
+            <a
+              href="https://verifieddr.com/website/topsaas-space"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition-opacity hover:opacity-80 inline-flex items-center"
+            >
+              <img
+                src="https://verifieddr.com/badge/topsaas-space.svg?metric=truedr"
+                alt="Verified DR - Verified Domain Rating for topsaas.space"
+                width={220}
+                height={68}
+                className="h-8.5 w-auto"
+                loading="lazy"
+                onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+              />
+            </a>
           </div>
         </div>
       </div>
