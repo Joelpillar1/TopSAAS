@@ -215,6 +215,22 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                 onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
               />
             </a>
+            <a
+              href="https://www.scrolllaunch.com/products/topsaas?ref=badge"
+              target="_blank"
+              rel="noopener"
+              className="transition-opacity hover:opacity-80 inline-flex items-center"
+            >
+              <img
+                src="https://www.scrolllaunch.com/api/badge/topsaas?variant=launched&theme=light"
+                alt="TopSAAS - Featured on ScrollLaunch"
+                width={220}
+                height={48}
+                className="h-8.5 w-auto"
+                loading="lazy"
+                onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+              />
+            </a>
           </div>
 
           {/* Mobile: Smooth infinite marquee */}
@@ -281,6 +297,22 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                   onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
                 />
               </a>
+              <a
+                href="https://www.scrolllaunch.com/products/topsaas?ref=badge"
+                target="_blank"
+                rel="noopener"
+                className="transition-opacity hover:opacity-80 inline-flex items-center shrink-0"
+              >
+                <img
+                  src="https://www.scrolllaunch.com/api/badge/topsaas?variant=launched&theme=light"
+                  alt="TopSAAS - Featured on ScrollLaunch"
+                  width={220}
+                  height={48}
+                  className="h-8.5 w-auto"
+                  loading="lazy"
+                  onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                />
+              </a>
 
               {/* Set 2 (for seamless loop) */}
               <a
@@ -336,6 +368,22 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                   alt="Verified DR - Verified Domain Rating for topsaas.space"
                   width={220}
                   height={68}
+                  className="h-8.5 w-auto"
+                  loading="lazy"
+                  onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                />
+              </a>
+              <a
+                href="https://www.scrolllaunch.com/products/topsaas?ref=badge"
+                target="_blank"
+                rel="noopener"
+                className="transition-opacity hover:opacity-80 inline-flex items-center shrink-0"
+              >
+                <img
+                  src="https://www.scrolllaunch.com/api/badge/topsaas?variant=launched&theme=light"
+                  alt="TopSAAS - Featured on ScrollLaunch"
+                  width={220}
+                  height={48}
                   className="h-8.5 w-auto"
                   loading="lazy"
                   onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
