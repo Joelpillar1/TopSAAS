@@ -26,7 +26,7 @@ import { LegalTab } from './components/LegalModal';
 import { playSound } from './utils/sound';
 import confetti from 'canvas-confetti';
 import { supabase } from './utils/supabase';
-import { loadProducts, saveAllProducts, saveProductRanksDirect, debouncedSyncProducts, toggleUpvote, getUserUpvotes, getUpvoteCounts, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, insertProductDirect, fetchComments, addComment, getCachedCommentsSync, submissionToProduct, publishedProductId, isProductUpvoted, getGuestUpvotes, saveGuestUpvotes, incrementProductUpvotesDirect } from './utils/db';
+import { loadProducts, saveAllProducts, saveProductRanksDirect, debouncedSyncProducts, toggleUpvote, getUserUpvotes, getUpvoteCounts, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, insertProductDirect, fetchComments, addComment, getCachedCommentsSync, submissionToProduct, publishedProductId, isProductUpvoted, getGuestUpvotes, saveGuestUpvotes, incrementProductUpvotesDirect, getActiveSponsors, mergeSponsorsIntoProducts, recordSponsorUpdate, recordSponsorEnd } from './utils/db';
 import { getRecentWeeks, isInWeek, getWeekInfo, WeekInfo } from './utils/weeks';
 import { getWebsiteFavicon } from './utils/logo';
 import { Trophy, X, Plus, ShieldCheck, Loader2, Star, MessageCircle, Flame, Search } from 'lucide-react';
@@ -682,10 +682,11 @@ export default function App() {
     async function load() {
       if (productsLoadedRef.current) return;
       productsLoadedRef.current = true;
-      const dbProducts = await loadProducts();
-      // Real upvote counts from the upvotes table (source of truth) — the stored
-      // products.upvotes count can lag or be wiped by stale client syncs.
-      const upvoteCounts = await getUpvoteCounts();
+      const [dbProducts, activeSponsors, upvoteCounts] = await Promise.all([
+        loadProducts(),
+        getActiveSponsors(),
+        getUpvoteCounts(),
+      ]);
 
       // Repair the products table whenever a stored count is lower than reality.
       // Uses the security-definer increment RPC so even anonymous visitors can heal
@@ -728,7 +729,9 @@ export default function App() {
         });
 
         const ranked = sorted.map((p, idx) => ({ ...p, rank: idx + 1 }));
-        const withCounts = applyRealUpvoteCounts(ranked);
+        // Merge active sponsors from site_settings so reloading never wipes them
+        const withSponsors = mergeSponsorsIntoProducts(ranked, activeSponsors);
+        const withCounts = applyRealUpvoteCounts(withSponsors);
         repairStoredUpvoteCounts(ranked); // heal DB rows whose stored counts lag reality
         setProducts(withCounts);
         try {
@@ -1199,6 +1202,16 @@ export default function App() {
         if (p.id !== productId) return p;
         const updatedClicks = (p.clicks || 0) + 1;
         const updatedSponsorClicks = p.isSponsored ? (p.sponsorClicks || 0) + 1 : p.sponsorClicks;
+        if (p.isSponsored) {
+          recordSponsorUpdate({
+            productId: p.id,
+            tier: p.sponsorTier || '1mo',
+            startedAt: p.sponsorStartedAt || now,
+            expiresAt: p.sponsorExpiresAt || now + 30 * 86400 * 1000,
+            contactEmail: p.sponsorContactEmail,
+            clicks: updatedSponsorClicks,
+          }).catch(() => {});
+        }
         return {
           ...p,
           clicks: updatedClicks,
@@ -1219,6 +1232,20 @@ export default function App() {
 
   // Update a single product in state and database
   const handleUpdateProduct = (updatedProduct: Product) => {
+    // If sponsor status is being updated or granted, sync to site_settings
+    if (updatedProduct.isSponsored) {
+      recordSponsorUpdate({
+        productId: updatedProduct.id,
+        tier: (updatedProduct.sponsorTier && updatedProduct.sponsorTier !== 'none' ? updatedProduct.sponsorTier : '1mo'),
+        startedAt: updatedProduct.sponsorStartedAt || Date.now(),
+        expiresAt: updatedProduct.sponsorExpiresAt || Date.now() + 30 * 86400 * 1000,
+        contactEmail: updatedProduct.sponsorContactEmail,
+        clicks: updatedProduct.sponsorClicks || 0,
+      }).catch(console.warn);
+    } else if (updatedProduct.isSponsored === false && (updatedProduct.sponsorTier || updatedProduct.sponsorExpiresAt)) {
+      recordSponsorEnd(updatedProduct.id).catch(console.warn);
+    }
+
     setProducts((prev) => {
       const next = prev.map((p) => (p.id === updatedProduct.id ? updatedProduct : p));
       try {
@@ -1258,6 +1285,16 @@ export default function App() {
       autoRelaunch: isPaid ? true : product.autoRelaunch,
       lastRelaunchedAt: isPaid ? now : product.lastRelaunchedAt,
     };
+
+    // Immediately persist to Supabase site_settings
+    await recordSponsorUpdate({
+      productId: updatedProduct.id,
+      tier,
+      startedAt: now,
+      expiresAt,
+      contactEmail: updatedProduct.sponsorContactEmail,
+      clicks: updatedProduct.sponsorClicks || 0,
+    });
 
     handleUpdateProduct(updatedProduct);
   };

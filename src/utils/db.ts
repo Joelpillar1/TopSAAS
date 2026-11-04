@@ -165,12 +165,6 @@ export const toDbProduct = (p: Product) => {
     is_user_owned: false,
     submitted_by: isUuid ? p.submittedBy : null,
     verified: p.verified || false,
-    is_sponsored: p.isSponsored || false,
-    sponsor_tier: p.sponsorTier || null,
-    sponsor_started_at: p.sponsorStartedAt || null,
-    sponsor_expires_at: p.sponsorExpiresAt || null,
-    sponsor_clicks: p.sponsorClicks || 0,
-    sponsor_contact_email: p.sponsorContactEmail || null,
     description: p.description || null,
     problem_it_solves: p.problemItSolves || null,
     solution: p.solution || null,
@@ -186,10 +180,6 @@ export const toDbProduct = (p: Product) => {
     offer_code: p.offerCode || null,
     offer_url: p.offerUrl || null,
     offer_details: p.offerDetails || null,
-    auto_relaunch: p.autoRelaunch || false,
-    relaunch_weeks: p.relaunchWeeks || null,
-    is_relaunched: p.isRelaunched || false,
-    last_relaunched_at: p.lastRelaunchedAt || null,
   };
 };
 
@@ -863,4 +853,181 @@ export async function setGlobalFeaturedProduct(
       { key: 'featured_expires_at', value: expiresAt.toString() },
     ]);
   } catch {}
+}
+
+// ── Global Sponsor Settings (Persisted via site_settings) ──
+
+export interface ActiveSponsorConfig {
+  productId: string;
+  tier: 'trial' | 'paid' | '1mo' | '3mo' | '1yr' | 'none';
+  startedAt: number;
+  expiresAt: number;
+  contactEmail?: string;
+  clicks?: number;
+  ended?: boolean;
+}
+
+export const ACTIVE_SPONSORS_KEY = 'active_sponsors_v1';
+export const LOCAL_SPONSORS_KEY = 'topsaas_active_sponsors_v1';
+
+/** Fetch active sponsors from Supabase site_settings, falling back to localStorage */
+export async function getActiveSponsors(): Promise<ActiveSponsorConfig[]> {
+  try {
+    const { data, error } = await supabase
+      .from('site_settings')
+      .select('value')
+      .eq('key', ACTIVE_SPONSORS_KEY)
+      .maybeSingle();
+
+    if (!error && data && data.value) {
+      const parsed = JSON.parse(data.value) as ActiveSponsorConfig[];
+      if (Array.isArray(parsed)) {
+        try {
+          localStorage.setItem(LOCAL_SPONSORS_KEY, JSON.stringify(parsed));
+        } catch {}
+        return parsed;
+      }
+    }
+  } catch (err) {
+    console.warn('getActiveSponsors note:', err);
+  }
+
+  // Fallback to local storage
+  try {
+    const raw = localStorage.getItem(LOCAL_SPONSORS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch {}
+
+  return [];
+}
+
+/** Save active sponsors list to Supabase site_settings and localStorage */
+export async function saveActiveSponsors(sponsors: ActiveSponsorConfig[]): Promise<void> {
+  // Sync to local storage first for instant responsiveness
+  try {
+    localStorage.setItem(LOCAL_SPONSORS_KEY, JSON.stringify(sponsors));
+  } catch {}
+
+  // Sync to Supabase site_settings
+  try {
+    await supabase.from('site_settings').upsert({
+      key: ACTIVE_SPONSORS_KEY,
+      value: JSON.stringify(sponsors),
+      description: 'Active and tracked sponsors',
+      updated_at: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.warn('saveActiveSponsors note:', err);
+  }
+}
+
+/** Update or add a sponsor configuration into site_settings */
+export async function recordSponsorUpdate(config: ActiveSponsorConfig): Promise<ActiveSponsorConfig[]> {
+  const current = await getActiveSponsors();
+  const index = current.findIndex(
+    (s) => s.productId === config.productId ||
+           s.productId === `prod-${config.productId}` ||
+           `prod-${s.productId}` === config.productId
+  );
+
+  let next: ActiveSponsorConfig[];
+  if (index >= 0) {
+    next = [...current];
+    next[index] = {
+      ...next[index],
+      ...config,
+      ended: false,
+    };
+  } else {
+    next = [config, ...current];
+  }
+
+  await saveActiveSponsors(next);
+  return next;
+}
+
+/** Remove or end a sponsor configuration in site_settings */
+export async function recordSponsorEnd(productId: string): Promise<ActiveSponsorConfig[]> {
+  const current = await getActiveSponsors();
+  const now = Date.now();
+  const next = current.map((s) => {
+    if (s.productId === productId || s.productId === `prod-${productId}` || `prod-${s.productId}` === productId) {
+      return { ...s, ended: true, expiresAt: now - 1000 };
+    }
+    return s;
+  });
+  await saveActiveSponsors(next);
+  return next;
+}
+
+/** Merge active sponsors configs into loaded products */
+export function mergeSponsorsIntoProducts(products: Product[], sponsors: ActiveSponsorConfig[]): Product[] {
+  if (!sponsors || sponsors.length === 0) return products;
+  const now = Date.now();
+
+  const sponsorMap = new Map<string, ActiveSponsorConfig>();
+  for (const s of sponsors) {
+    sponsorMap.set(s.productId, s);
+    if (!s.productId.startsWith('prod-')) {
+      sponsorMap.set(`prod-${s.productId}`, s);
+    } else {
+      sponsorMap.set(s.productId.replace(/^prod-/, ''), s);
+    }
+  }
+
+  return products.map((p) => {
+    const s = sponsorMap.get(p.id);
+    if (!s) return p;
+
+    const isStillActive = !s.ended && s.expiresAt > now;
+    return {
+      ...p,
+      isSponsored: isStillActive,
+      sponsorTier: s.tier,
+      sponsorStartedAt: s.startedAt,
+      sponsorExpiresAt: s.expiresAt,
+      sponsorContactEmail: s.contactEmail || p.sponsorContactEmail,
+      sponsorClicks: s.clicks !== undefined ? s.clicks : (p.sponsorClicks || 0),
+      autoRelaunch: isStillActive ? true : p.autoRelaunch,
+    };
+  });
+}
+
+/** Helper to set or remove sponsorship on a product with automatic cloud sync */
+export async function setProductSponsorship(
+  product: Product,
+  isSponsored: boolean,
+  tier: 'trial' | 'paid' | '1mo' | '3mo' | '1yr' | 'none' = '1mo',
+  durationDays: number = 30,
+  email?: string
+): Promise<Product> {
+  const now = Date.now();
+  const expiresAt = now + durationDays * 86400 * 1000;
+
+  if (isSponsored) {
+    await recordSponsorUpdate({
+      productId: product.id,
+      tier,
+      startedAt: now,
+      expiresAt,
+      contactEmail: email || product.sponsorContactEmail,
+      clicks: product.sponsorClicks || 0,
+      ended: false,
+    });
+  } else {
+    await recordSponsorEnd(product.id);
+  }
+
+  return {
+    ...product,
+    isSponsored,
+    sponsorTier: isSponsored ? tier : product.sponsorTier,
+    sponsorStartedAt: isSponsored ? now : product.sponsorStartedAt,
+    sponsorExpiresAt: isSponsored ? expiresAt : (now - 1000),
+    sponsorContactEmail: email || product.sponsorContactEmail,
+    autoRelaunch: isSponsored ? true : product.autoRelaunch,
+  };
 }

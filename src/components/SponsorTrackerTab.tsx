@@ -17,6 +17,7 @@ import {
   Send,
   RefreshCw,
   Award,
+  ChevronDown,
 } from 'lucide-react';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
@@ -36,17 +37,20 @@ interface OutreachModalState {
   copied: boolean;
 }
 
+type GrantTierOption = '1mo' | '3mo' | '1yr' | 'trial' | 'custom';
+
 export const SponsorTrackerTab: React.FC<SponsorTrackerTabProps> = ({
   products,
   soundEnabled,
   onUpdateProduct,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [tierFilter, setTierFilter] = useState<'all' | 'active_trial' | 'expiring' | 'expired' | 'paid'>('all');
+  const [tierFilter, setTierFilter] = useState<'all' | 'active_trial' | 'paid' | 'expiring' | 'expired'>('all');
   const [grantSearch, setGrantSearch] = useState('');
   const [selectedGrantProduct, setSelectedGrantProduct] = useState<Product | null>(null);
+  const [grantTier, setGrantTier] = useState<GrantTierOption>('1mo');
   const [grantEmail, setGrantEmail] = useState('');
-  const [grantDays, setGrantDays] = useState(7);
+  const [grantDays, setGrantDays] = useState(30);
   const [isGranting, setIsGranting] = useState(false);
 
   const [outreachModal, setOutreachModal] = useState<OutreachModalState>({
@@ -58,9 +62,15 @@ export const SponsorTrackerTab: React.FC<SponsorTrackerTabProps> = ({
 
   const now = Date.now();
 
-  // All products that have ever had sponsor status
+  const isSponsorTier = (tier?: string) =>
+    tier === 'trial' || tier === 'paid' || tier === '1mo' || tier === '3mo' || tier === '1yr';
+
+  const isPaidSponsorTier = (tier?: string) =>
+    tier === 'paid' || tier === '1mo' || tier === '3mo' || tier === '1yr';
+
+  // All products that have ever had sponsor status or are currently sponsored
   const allSponsors = products.filter(
-    (p) => p.isSponsored || p.sponsorTier === 'trial' || p.sponsorTier === 'paid'
+    (p) => p.isSponsored || isSponsorTier(p.sponsorTier)
   );
 
   // Categorize
@@ -68,15 +78,17 @@ export const SponsorTrackerTab: React.FC<SponsorTrackerTabProps> = ({
     (p) => p.sponsorTier === 'trial' && p.sponsorExpiresAt && p.sponsorExpiresAt > now
   );
 
-  const expiringSoon = activeTrials.filter(
-    (p) => p.sponsorExpiresAt && (p.sponsorExpiresAt - now) <= 2 * 86400 * 1000
+  const paidSponsors = allSponsors.filter(
+    (p) => isPaidSponsorTier(p.sponsorTier) && (!p.sponsorExpiresAt || p.sponsorExpiresAt > now)
+  );
+
+  const expiringSoon = allSponsors.filter(
+    (p) => p.sponsorExpiresAt && p.sponsorExpiresAt > now && (p.sponsorExpiresAt - now) <= 2 * 86400 * 1000
   );
 
   const expiredTrials = allSponsors.filter(
-    (p) => p.sponsorTier === 'trial' && (!p.sponsorExpiresAt || p.sponsorExpiresAt <= now)
+    (p) => !p.isSponsored && (!p.sponsorExpiresAt || p.sponsorExpiresAt <= now)
   );
-
-  const paidSponsors = allSponsors.filter((p) => p.sponsorTier === 'paid');
 
   const totalClicksDelivered = allSponsors.reduce(
     (sum, p) => sum + (p.sponsorClicks || p.clicks || 0),
@@ -93,34 +105,54 @@ export const SponsorTrackerTab: React.FC<SponsorTrackerTabProps> = ({
 
     if (!matchesQuery) return false;
 
-    if (tierFilter === 'active_trial') return p.sponsorTier === 'trial' && p.sponsorExpiresAt && p.sponsorExpiresAt > now;
-    if (tierFilter === 'expiring') return p.sponsorTier === 'trial' && p.sponsorExpiresAt && (p.sponsorExpiresAt - now) <= 2 * 86400 * 1000 && p.sponsorExpiresAt > now;
-    if (tierFilter === 'expired') return p.sponsorTier === 'trial' && (!p.sponsorExpiresAt || p.sponsorExpiresAt <= now);
-    if (tierFilter === 'paid') return p.sponsorTier === 'paid';
+    if (tierFilter === 'active_trial') {
+      return p.sponsorTier === 'trial' && p.sponsorExpiresAt && p.sponsorExpiresAt > now;
+    }
+    if (tierFilter === 'paid') {
+      return isPaidSponsorTier(p.sponsorTier) && (!p.sponsorExpiresAt || p.sponsorExpiresAt > now);
+    }
+    if (tierFilter === 'expiring') {
+      return p.sponsorExpiresAt && p.sponsorExpiresAt > now && (p.sponsorExpiresAt - now) <= 2 * 86400 * 1000;
+    }
+    if (tierFilter === 'expired') {
+      return !p.isSponsored || (p.sponsorExpiresAt && p.sponsorExpiresAt <= now);
+    }
     return true;
   });
 
   // Action handlers
-  const handleExtendTrial = (product: Product, days: number = 7) => {
+  const handleExtendDays = (product: Product, days: number = 7) => {
     playSound('success', soundEnabled);
     const currentExpiry = product.sponsorExpiresAt && product.sponsorExpiresAt > now ? product.sponsorExpiresAt : now;
+    const isPaid = isPaidSponsorTier(product.sponsorTier);
     const updated: Product = {
       ...product,
       isSponsored: true,
-      sponsorTier: 'trial',
+      sponsorTier: product.sponsorTier || (days > 7 ? '1mo' : 'trial'),
       sponsorExpiresAt: currentExpiry + days * 86400 * 1000,
+      autoRelaunch: isPaid ? true : product.autoRelaunch,
     };
     onUpdateProduct(updated);
     confetti({ particleCount: 40, spread: 60, origin: { y: 0.6 } });
   };
 
-  const handleConvertToPaid = (product: Product) => {
+  const handleConvertToTier = (product: Product, tier: '1mo' | '3mo' | '1yr' | 'trial') => {
     playSound('success', soundEnabled);
+    let days = 30;
+    if (tier === 'trial') days = 7;
+    else if (tier === '1mo') days = 30;
+    else if (tier === '3mo') days = 90;
+    else if (tier === '1yr') days = 365;
+
+    const isPaid = tier !== 'trial';
     const updated: Product = {
       ...product,
       isSponsored: true,
-      sponsorTier: 'paid',
-      sponsorExpiresAt: now + 30 * 86400 * 1000,
+      sponsorTier: tier,
+      sponsorStartedAt: product.sponsorStartedAt || now,
+      sponsorExpiresAt: now + days * 86400 * 1000,
+      autoRelaunch: isPaid ? true : product.autoRelaunch,
+      lastRelaunchedAt: isPaid ? now : product.lastRelaunchedAt,
     };
     onUpdateProduct(updated);
     confetti({ particleCount: 50, spread: 70, origin: { y: 0.6 } });
@@ -141,13 +173,34 @@ export const SponsorTrackerTab: React.FC<SponsorTrackerTabProps> = ({
     setIsGranting(true);
     playSound('success', soundEnabled);
 
+    let days = grantDays;
+    let effectiveTier: 'trial' | 'paid' | '1mo' | '3mo' | '1yr' = '1mo';
+    if (grantTier === '1mo') {
+      days = 30;
+      effectiveTier = '1mo';
+    } else if (grantTier === '3mo') {
+      days = 90;
+      effectiveTier = '3mo';
+    } else if (grantTier === '1yr') {
+      days = 365;
+      effectiveTier = '1yr';
+    } else if (grantTier === 'trial') {
+      days = 7;
+      effectiveTier = 'trial';
+    } else if (grantTier === 'custom') {
+      effectiveTier = days > 7 ? '1mo' : 'trial';
+    }
+
+    const isPaid = effectiveTier !== 'trial';
     const updated: Product = {
       ...selectedGrantProduct,
       isSponsored: true,
-      sponsorTier: 'trial',
+      sponsorTier: effectiveTier,
       sponsorStartedAt: now,
-      sponsorExpiresAt: now + grantDays * 86400 * 1000,
+      sponsorExpiresAt: now + days * 86400 * 1000,
       sponsorContactEmail: grantEmail.trim() || selectedGrantProduct.sponsorContactEmail,
+      autoRelaunch: isPaid ? true : selectedGrantProduct.autoRelaunch,
+      lastRelaunchedAt: isPaid ? now : selectedGrantProduct.lastRelaunchedAt,
     };
 
     onUpdateProduct(updated);
@@ -179,12 +232,12 @@ export const SponsorTrackerTab: React.FC<SponsorTrackerTabProps> = ({
 
     if (template === 'day1') {
       return {
-        subject: `Your product is now featured on TopSAAS (Free 7-Day Sponsor Slot)`,
+        subject: `Your product is now featured on TopSAAS (Sponsor Spotlight)`,
         body: `Hi ${founderName},
 
 Just wanted to let you know that ${productName} has been spotlighted on our top sponsor rail on TopSAAS (https://topsaas.space).
 
-Your free 7-day placement is active starting today! You can monitor direct incoming visitors in your analytics via referral source topsaas.space or tag: utm_source=topsaas.
+Your sponsor placement is active starting today! You can monitor direct incoming visitors in your analytics via referral source topsaas.space or tag: utm_source=topsaas.
 
 We're excited to help put your tool in front of our community of thousands of active builders, founders, and early adopters.
 
@@ -201,11 +254,14 @@ https://topsaas.space`,
         subject: `Traffic update on ${productName} on TopSAAS`,
         body: `Hi ${founderName},
 
-Quick check-in! Over the past 5 days, your sponsor placement on TopSAAS has generated direct interest and ${clicks > 0 ? `${clicks} direct clicks` : 'steady visibility'} to your website.
+Quick check-in! Over the past few days, your sponsor placement on TopSAAS has generated direct interest and ${clicks > 0 ? `${clicks} direct clicks` : 'steady visibility'} to your website.
 
-Your complimentary 7-day spot wraps up in ${daysLeft > 0 ? `${daysLeft} days` : '48 hours'}. Because you were one of our early spotlighted tools, we would love to offer you our Founder Renewal Rate to keep your top placement locked in:
+Your current placement wraps up in ${daysLeft > 0 ? `${daysLeft} days` : '48 hours'}. Because you were one of our spotlighted tools, we would love to offer you our founder rate to keep your top placement locked in:
 
-👉 30-Day Pro Sponsor Spot: $79/mo (normally $99)
+👉 1-Month Sponsor Spot: $29/mo
+👉 3-Month Sponsor Spot: $69 (Save 20%)
+👉 1-Year Partner Spot: $199 (Save 42%)
+
 Lock it in here: https://topsaas.space/pricing
 
 Would you like to keep your placement active for another month?
@@ -220,11 +276,11 @@ https://topsaas.space`,
       subject: `${productName} sponsor spotlight ending today`,
       body: `Hi ${founderName},
 
-Your 7-day free sponsor spotlight for ${productName} ends today, and the slot is queued to open for our next batch of submissions tonight at midnight UTC.
+Your sponsor spotlight for ${productName} ends today, and the slot is queued to rotate tonight at midnight UTC.
 
 If you'd like to extend your featured spot and keep the steady builder traffic coming in, you can lock it in here before the slot rotates:
 
-👉 Extend Sponsor Spot: https://topsaas.space/pricing
+👉 Extend Sponsor Spot ($29/mo): https://topsaas.space/pricing
 
 Either way, your standard directory listing remains live on TopSAAS forever. Thank you for building something awesome!
 
@@ -234,10 +290,79 @@ https://topsaas.space`,
     };
   };
 
+  const getTierBadge = (p: Product) => {
+    const isPaid = isPaidSponsorTier(p.sponsorTier);
+    const isExpired = !p.isSponsored || (p.sponsorExpiresAt ? p.sponsorExpiresAt <= now : false);
+
+    if (p.sponsorTier === '1mo') {
+      return (
+        <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 border border-blue-200 px-2 py-0.5 text-[10px] font-bold text-blue-700">
+          <Award className="h-3 w-3" />
+          <span>1-Month ($29)</span>
+        </span>
+      );
+    }
+    if (p.sponsorTier === '3mo') {
+      return (
+        <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 border border-blue-200 px-2 py-0.5 text-[10px] font-bold text-blue-700">
+          <Award className="h-3 w-3" />
+          <span>3-Month ($69)</span>
+        </span>
+      );
+    }
+    if (p.sponsorTier === '1yr') {
+      return (
+        <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 border border-blue-200 px-2 py-0.5 text-[10px] font-bold text-blue-700">
+          <Award className="h-3 w-3" />
+          <span>1-Year ($199)</span>
+        </span>
+      );
+    }
+    if (p.sponsorTier === 'trial') {
+      return (
+        <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+          <Sparkles className="h-3 w-3" />
+          <span>7-Day Trial</span>
+        </span>
+      );
+    }
+    if (isPaid) {
+      return (
+        <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 border border-blue-200 px-2 py-0.5 text-[10px] font-bold text-blue-700">
+          <Award className="h-3 w-3" />
+          <span>Paid Sponsor</span>
+        </span>
+      );
+    }
+    if (isExpired) {
+      return (
+        <span className="inline-flex items-center gap-1 rounded-md bg-neutral-100 border border-neutral-200 px-2 py-0.5 text-[10px] font-bold text-neutral-600">
+          <span>Inactive / Past</span>
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 border border-blue-200 px-2 py-0.5 text-[10px] font-bold text-blue-700">
+        <span>Sponsored</span>
+      </span>
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* ── Top Metric Cards ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-2xs">
+          <div className="flex items-center justify-between text-xs font-bold text-neutral-500 mb-1">
+            <span>Paid Sponsors</span>
+            <Award className="h-4 w-4 text-blue-600" />
+          </div>
+          <div className="text-2xl sm:text-3xl font-black text-blue-600 font-mono-num">
+            {paidSponsors.length}
+          </div>
+          <p className="text-[11px] text-neutral-500 mt-1">$29/mo, $69/3mo, $199/yr</p>
+        </div>
+
         <div className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-2xs">
           <div className="flex items-center justify-between text-xs font-bold text-neutral-500 mb-1">
             <span>Active Free Trials</span>
@@ -257,18 +382,7 @@ https://topsaas.space`,
           <div className="text-2xl sm:text-3xl font-black text-amber-600 font-mono-num">
             {expiringSoon.length}
           </div>
-          <p className="text-[11px] text-neutral-500 mt-1">Ready for Day 5/7 pitch</p>
-        </div>
-
-        <div className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-2xs">
-          <div className="flex items-center justify-between text-xs font-bold text-neutral-500 mb-1">
-            <span>Expired (Unpaid)</span>
-            <AlertCircle className="h-4 w-4 text-red-500" />
-          </div>
-          <div className="text-2xl sm:text-3xl font-black text-red-600 font-mono-num">
-            {expiredTrials.length}
-          </div>
-          <p className="text-[11px] text-neutral-500 mt-1">Trial completed</p>
+          <p className="text-[11px] text-neutral-500 mt-1">Ready for pitch/renewal</p>
         </div>
 
         <div className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-2xs">
@@ -279,7 +393,7 @@ https://topsaas.space`,
           <div className="text-2xl sm:text-3xl font-black text-neutral-950 font-mono-num">
             {totalClicksDelivered}
           </div>
-          <p className="text-[11px] text-neutral-500 mt-1">Outbound visitor clicks</p>
+          <p className="text-[11px] text-neutral-500 mt-1">Outbound sponsor clicks</p>
         </div>
       </div>
 
@@ -288,15 +402,46 @@ https://topsaas.space`,
         <div className="flex items-center gap-2 mb-2">
           <Sparkles className="h-4 w-4 text-amber-500" />
           <h3 className="text-xs font-bold text-neutral-950 uppercase tracking-wider">
-            Grant Free Sponsor Placement to Any Product
+            Grant or Manage Sponsor Placement for Any Product
           </h3>
         </div>
-        <p className="text-xs text-neutral-600 mb-3">
-          Select any published directory product to put on the top sponsor rails for free.
+        <p className="text-xs text-neutral-600 mb-3.5">
+          Select any published directory product to place on top sponsor rails. Automatically persists in Supabase cloud settings so reload will never wipe it.
         </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-          <div className="relative">
+        {/* Tier selector pills */}
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <span className="text-[11px] font-bold text-neutral-500 uppercase tracking-wider">Tier:</span>
+          {(
+            [
+              { id: '1mo', label: '1 Month ($29 / 30d)', days: 30 },
+              { id: '3mo', label: '3 Months ($69 / 90d)', days: 90 },
+              { id: '1yr', label: '1 Year ($199 / 365d)', days: 365 },
+              { id: 'trial', label: '7-Day Free Trial (7d)', days: 7 },
+              { id: 'custom', label: 'Custom Days', days: grantDays },
+            ] as const
+          ).map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => {
+                setGrantTier(t.id);
+                if (t.id !== 'custom') setGrantDays(t.days);
+              }}
+              className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all cursor-pointer ${
+                grantTier === t.id
+                  ? 'bg-blue-600 text-white shadow-2xs'
+                  : 'bg-white border border-neutral-200 text-neutral-600 hover:text-neutral-950 hover:bg-neutral-100'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+          {/* Product search / select */}
+          <div className="sm:col-span-5 relative">
             <input
               type="text"
               value={grantSearch}
@@ -311,7 +456,7 @@ https://topsaas.space`,
               <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg max-h-48 overflow-y-auto z-20 p-1">
                 {products
                   .filter((p) => p.name.toLowerCase().includes(grantSearch.toLowerCase()))
-                  .slice(0, 5)
+                  .slice(0, 6)
                   .map((p) => (
                     <div
                       key={p.id}
@@ -325,31 +470,67 @@ https://topsaas.space`,
                       className="p-2 text-xs hover:bg-neutral-100 rounded-lg cursor-pointer flex items-center justify-between"
                     >
                       <span className="font-bold text-neutral-900">{p.name}</span>
-                      <span className="text-[10px] text-neutral-500">{p.category}</span>
+                      <span className="text-[10px] text-neutral-500">
+                        {p.category} {p.isSponsored ? '• (Already Sponsored)' : ''}
+                      </span>
                     </div>
                   ))}
               </div>
             )}
           </div>
 
-          <input
-            type="email"
-            value={grantEmail}
-            onChange={(e) => setGrantEmail(e.target.value)}
-            placeholder="Founder email (for outreach tracking)"
-            className="w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2 text-xs text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:border-neutral-900"
-          />
+          {/* Email */}
+          <div className="sm:col-span-4">
+            <input
+              type="email"
+              value={grantEmail}
+              onChange={(e) => setGrantEmail(e.target.value)}
+              placeholder="Founder email (for outreach & receipts)"
+              className="w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2 text-xs text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:border-neutral-900"
+            />
+          </div>
 
-          <button
-            type="button"
-            onClick={handleGrantSponsor}
-            disabled={!selectedGrantProduct || isGranting}
-            className="btn-primary py-2 px-4 text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            <span>Grant 7-Day Free Spot</span>
-          </button>
+          {/* Custom days input (if custom chosen) */}
+          {grantTier === 'custom' && (
+            <div className="sm:col-span-2">
+              <input
+                type="number"
+                min={1}
+                max={730}
+                value={grantDays}
+                onChange={(e) => setGrantDays(parseInt(e.target.value, 10) || 7)}
+                placeholder="Days"
+                className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs text-neutral-900 focus:outline-none focus:border-neutral-900"
+              />
+            </div>
+          )}
+
+          {/* Submit button */}
+          <div className={grantTier === 'custom' ? 'sm:col-span-1' : 'sm:col-span-3'}>
+            <button
+              type="button"
+              onClick={handleGrantSponsor}
+              disabled={!selectedGrantProduct || isGranting}
+              className="w-full btn-primary py-2 px-3 text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed justify-center"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span>{isGranting ? 'Saving…' : 'Grant Placement'}</span>
+            </button>
+          </div>
         </div>
+
+        {selectedGrantProduct && (
+          <div className="mt-2.5 flex items-center gap-2 text-xs text-neutral-600 bg-white/80 border border-neutral-200 rounded-xl px-3 py-1.5">
+            <span className="font-bold text-neutral-900">Target Selected:</span>
+            <span>{selectedGrantProduct.name}</span>
+            <span className="text-neutral-400">({selectedGrantProduct.url})</span>
+            {selectedGrantProduct.isSponsored && (
+              <span className="ml-auto text-[10px] text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded-md">
+                Active Sponsor
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* ── Filter & Search Toolbar ── */}
@@ -358,16 +539,19 @@ https://topsaas.space`,
           {(
             [
               { key: 'all', label: `All (${allSponsors.length})` },
+              { key: 'paid', label: `Paid (${paidSponsors.length})` },
               { key: 'active_trial', label: `Active Trials (${activeTrials.length})` },
               { key: 'expiring', label: `Expiring Soon (${expiringSoon.length})` },
               { key: 'expired', label: `Expired (${expiredTrials.length})` },
-              { key: 'paid', label: `Paid (${paidSponsors.length})` },
             ] as const
           ).map((tab) => (
             <button
               key={tab.key}
               type="button"
-              onClick={() => { playSound('click', soundEnabled); setTierFilter(tab.key); }}
+              onClick={() => {
+                playSound('click', soundEnabled);
+                setTierFilter(tab.key);
+              }}
               className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                 tierFilter === tab.key
                   ? 'bg-neutral-950 text-white shadow-2xs'
@@ -397,7 +581,9 @@ https://topsaas.space`,
           <div className="py-12 text-center text-neutral-500 space-y-2">
             <Megaphone className="h-8 w-8 mx-auto text-neutral-300" />
             <p className="text-xs font-bold text-neutral-900">No sponsors found in this view</p>
-            <p className="text-[11px]">Founders who claim a free 7-day spot will show up here for tracking and outreach.</p>
+            <p className="text-[11px] max-w-sm mx-auto">
+              Granted or paid sponsor apps will show up here. Use the tool above to grant a sponsor spot to any directory product.
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -405,22 +591,23 @@ https://topsaas.space`,
               <thead>
                 <tr className="border-b border-neutral-200 bg-neutral-50 text-[11px] font-bold text-neutral-500">
                   <th className="py-3 px-4">Product</th>
+                  <th className="py-3 px-4">Tier</th>
                   <th className="py-3 px-4">Founder / Email</th>
-                  <th className="py-3 px-4">Status & Days Left</th>
+                  <th className="py-3 px-4">Status & Expiry</th>
                   <th className="py-3 px-4">Clicks</th>
                   <th className="py-3 px-4 text-right">Actions & Outreach</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100">
                 {filteredSponsors.map((p) => {
-                  const isPaid = p.sponsorTier === 'paid';
-                  const isExpired = p.sponsorExpiresAt ? p.sponsorExpiresAt <= now : false;
+                  const isExpired = !p.isSponsored || (p.sponsorExpiresAt ? p.sponsorExpiresAt <= now : false);
                   const daysLeft = p.sponsorExpiresAt
                     ? Math.max(0, Math.ceil((p.sponsorExpiresAt - now) / (86400 * 1000)))
                     : 0;
 
                   return (
                     <tr key={p.id} className="hover:bg-neutral-50/80 transition-colors">
+                      {/* Product */}
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-3">
                           <ProductLogo
@@ -444,6 +631,12 @@ https://topsaas.space`,
                         </div>
                       </td>
 
+                      {/* Tier Badge */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        {getTierBadge(p)}
+                      </td>
+
+                      {/* Email */}
                       <td className="py-3.5 px-4 font-mono text-[11px]">
                         {p.sponsorContactEmail ? (
                           <span className="text-neutral-900 font-semibold">{p.sponsorContactEmail}</span>
@@ -452,16 +645,12 @@ https://topsaas.space`,
                         )}
                       </td>
 
-                      <td className="py-3.5 px-4">
-                        {isPaid ? (
-                          <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-700">
-                            <Award className="h-3 w-3" />
-                            <span>Paid Sponsor</span>
-                          </span>
-                        ) : isExpired ? (
+                      {/* Expiry & Days Left */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        {isExpired ? (
                           <span className="inline-flex items-center gap-1 rounded-md bg-red-50 border border-red-200 px-2 py-0.5 text-[10px] font-bold text-red-700">
                             <AlertCircle className="h-3 w-3" />
-                            <span>Expired (Unpaid)</span>
+                            <span>Expired</span>
                           </span>
                         ) : daysLeft <= 2 ? (
                           <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-700">
@@ -471,53 +660,76 @@ https://topsaas.space`,
                         ) : (
                           <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
                             <CheckCircle2 className="h-3 w-3" />
-                            <span>Active Trial • {daysLeft}d left</span>
+                            <span>Active • {daysLeft}d left</span>
                           </span>
                         )}
                       </td>
 
+                      {/* Clicks */}
                       <td className="py-3.5 px-4 font-mono font-bold text-neutral-950">
                         {p.sponsorClicks || p.clicks || 0}
                       </td>
 
+                      {/* Actions */}
                       <td className="py-3.5 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
+                        <div className="flex items-center justify-end gap-1.5 flex-wrap">
                           <button
                             type="button"
                             onClick={() => openOutreach(p, isExpired ? 'day7' : daysLeft <= 2 ? 'day5' : 'day1')}
-                            className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 bg-white px-2.5 py-1 text-[11px] font-bold text-blue-600 hover:border-blue-300 hover:bg-blue-50 transition-all cursor-pointer shadow-2xs"
+                            className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 bg-white px-2 py-1 text-[11px] font-bold text-blue-600 hover:border-blue-300 hover:bg-blue-50 transition-all cursor-pointer shadow-2xs"
                             title="Open outreach playbook and copy customized pitch"
                           >
                             <Mail className="h-3 w-3" />
-                            <span>Reach Out</span>
+                            <span>Pitch</span>
                           </button>
 
                           <button
                             type="button"
-                            onClick={() => handleExtendTrial(p, 7)}
+                            onClick={() => handleExtendDays(p, 7)}
                             className="rounded-lg border border-neutral-200 bg-white px-2 py-1 text-[11px] font-bold text-neutral-700 hover:bg-neutral-100 transition-all cursor-pointer"
-                            title="Extend free trial by 7 days"
+                            title="Extend sponsor placement by +7 days"
                           >
                             +7d
                           </button>
 
                           <button
                             type="button"
-                            onClick={() => handleConvertToPaid(p)}
-                            className="rounded-lg border border-neutral-200 bg-white px-2 py-1 text-[11px] font-bold text-emerald-700 hover:bg-emerald-50 transition-all cursor-pointer"
-                            title="Mark as paid 30-day sponsor"
+                            onClick={() => handleExtendDays(p, 30)}
+                            className="rounded-lg border border-neutral-200 bg-white px-2 py-1 text-[11px] font-bold text-neutral-700 hover:bg-neutral-100 transition-all cursor-pointer"
+                            title="Extend sponsor placement by +30 days"
                           >
-                            Paid
+                            +30d
+                          </button>
+
+                          {/* Quick Convert Buttons */}
+                          <button
+                            type="button"
+                            onClick={() => handleConvertToTier(p, '1mo')}
+                            className="rounded-lg border border-blue-200 bg-blue-50 px-2 py-1 text-[11px] font-bold text-blue-700 hover:bg-blue-100 transition-all cursor-pointer"
+                            title="Convert to 1-Month Paid ($29)"
+                          >
+                            $29/1mo
                           </button>
 
                           <button
                             type="button"
-                            onClick={() => handleEndSponsor(p)}
-                            className="rounded-lg border border-neutral-200 bg-white px-2 py-1 text-[11px] font-bold text-red-600 hover:bg-red-50 transition-all cursor-pointer"
-                            title="Remove from sponsor placement"
+                            onClick={() => handleConvertToTier(p, '3mo')}
+                            className="rounded-lg border border-blue-200 bg-blue-50 px-2 py-1 text-[11px] font-bold text-blue-700 hover:bg-blue-100 transition-all cursor-pointer"
+                            title="Convert to 3-Month Paid ($69)"
                           >
-                            End
+                            $69/3mo
                           </button>
+
+                          {p.isSponsored && (
+                            <button
+                              type="button"
+                              onClick={() => handleEndSponsor(p)}
+                              className="rounded-lg border border-neutral-200 bg-white px-2 py-1 text-[11px] font-bold text-red-600 hover:bg-red-50 transition-all cursor-pointer"
+                              title="End and remove sponsor placement immediately"
+                            >
+                              End
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -548,90 +760,100 @@ https://topsaas.space`,
                 <Mail className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-neutral-950">Founder Outreach Playbook</h3>
+                <h3 className="text-base font-black text-neutral-950 tracking-tight">
+                  Outreach Pitch & Renewal
+                </h3>
                 <p className="text-xs text-neutral-500">
-                  Target: <span className="font-bold text-neutral-900">{outreachModal.product.name}</span>
+                  {outreachModal.product.name} • {outreachModal.product.sponsorContactEmail || 'No founder email'}
                 </p>
               </div>
             </div>
 
-            {/* Template Selector Tabs */}
-            <div className="flex items-center gap-1.5 border-b border-neutral-200 pb-2 mb-3">
-              {[
-                { id: 'day1' as const, label: 'Day 1: Welcome & Setup' },
-                { id: 'day5' as const, label: 'Day 5: Traffic & 20% Offer' },
-                { id: 'day7' as const, label: 'Day 7: Expiry Urgency' },
-              ].map((t) => (
+            {/* Template selector tabs */}
+            <div className="flex items-center gap-1.5 mb-3.5 border-b border-neutral-100 pb-2">
+              {(
+                [
+                  { id: 'day1', label: 'Day 1: Welcome Spot' },
+                  { id: 'day5', label: 'Day 5: Traffic + Pitch ($29/mo)' },
+                  { id: 'day7', label: 'Day 7: Final Expiry Reminder' },
+                ] as const
+              ).map((tab) => (
                 <button
-                  key={t.id}
+                  key={tab.id}
                   type="button"
-                  onClick={() => setOutreachModal({ ...outreachModal, activeTemplate: t.id, copied: false })}
-                  className={`rounded-lg px-2.5 py-1 text-[11px] font-bold transition-all cursor-pointer ${
-                    outreachModal.activeTemplate === t.id
-                      ? 'bg-neutral-950 text-white shadow-2xs'
-                      : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                  onClick={() => {
+                    setOutreachModal({
+                      ...outreachModal,
+                      activeTemplate: tab.id,
+                      copied: false,
+                    });
+                  }}
+                  className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all cursor-pointer ${
+                    outreachModal.activeTemplate === tab.id
+                      ? 'bg-neutral-950 text-white'
+                      : 'text-neutral-600 hover:bg-neutral-100'
                   }`}
                 >
-                  {t.label}
+                  {tab.label}
                 </button>
               ))}
             </div>
 
-            {/* Email Preview */}
+            {/* Email subject & body preview */}
             {(() => {
               const email = getEmailContent(outreachModal.product, outreachModal.activeTemplate);
-              const recipient = outreachModal.product.sponsorContactEmail || '';
+              const fullText = `Subject: ${email.subject}\n\n${email.body}`;
 
-              const handleCopy = async () => {
-                await navigator.clipboard.writeText(`Subject: ${email.subject}\n\n${email.body}`);
+              const handleCopy = () => {
+                navigator.clipboard.writeText(fullText);
                 setOutreachModal({ ...outreachModal, copied: true });
                 playSound('success', soundEnabled);
-                setTimeout(() => setOutreachModal((prev) => ({ ...prev, copied: false })), 2000);
+                setTimeout(() => {
+                  setOutreachModal((prev) => ({ ...prev, copied: false }));
+                }, 2000);
               };
-
-              const mailtoUrl = `mailto:${encodeURIComponent(recipient)}?subject=${encodeURIComponent(email.subject)}&body=${encodeURIComponent(email.body)}`;
 
               return (
                 <div className="space-y-3">
-                  <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3 text-xs space-y-2">
-                    <div className="flex items-center justify-between text-neutral-500 pb-1.5 border-b border-neutral-200">
-                      <span><strong>To:</strong> {recipient || 'founder@product.com'}</span>
-                      <span className="text-[10px] uppercase font-bold text-blue-600">
-                        {outreachModal.activeTemplate.toUpperCase()}
-                      </span>
-                    </div>
-                    <div>
-                      <strong className="text-neutral-900 block mb-0.5">Subject:</strong>
-                      <span className="font-semibold text-neutral-950">{email.subject}</span>
-                    </div>
-                    <div>
-                      <strong className="text-neutral-900 block mb-0.5">Body:</strong>
-                      <pre className="whitespace-pre-wrap font-sans text-neutral-700 text-[11.5px] leading-relaxed max-h-48 overflow-y-auto pr-1">
-                        {email.body}
-                      </pre>
+                  <div>
+                    <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-wider block mb-1">
+                      Subject
+                    </label>
+                    <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-2.5 text-xs font-mono text-neutral-900 select-all">
+                      {email.subject}
                     </div>
                   </div>
 
-                  {/* Action buttons */}
-                  <div className="flex items-center gap-2 pt-1">
+                  <div>
+                    <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-wider block mb-1">
+                      Body
+                    </label>
+                    <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3 text-xs font-mono text-neutral-900 whitespace-pre-wrap max-h-56 overflow-y-auto select-all leading-relaxed">
+                      {email.body}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2">
+                    <span className="text-[11px] text-neutral-500">
+                      Click copy to paste into Gmail, Superhuman, or your mail client.
+                    </span>
                     <button
                       type="button"
                       onClick={handleCopy}
-                      className="flex-1 btn-secondary py-2 text-xs font-bold"
+                      className="btn-primary py-2 px-4 text-xs font-bold inline-flex items-center gap-1.5"
                     >
-                      {outreachModal.copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
-                      <span>{outreachModal.copied ? 'Copied to Clipboard' : 'Copy Email Pitch'}</span>
+                      {outreachModal.copied ? (
+                        <>
+                          <Check className="h-3.5 w-3.5 text-emerald-400" />
+                          <span>Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-3.5 w-3.5" />
+                          <span>Copy Email</span>
+                        </>
+                      )}
                     </button>
-
-                    <a
-                      href={mailtoUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1 btn-primary py-2 text-xs font-bold inline-flex items-center justify-center gap-1.5"
-                    >
-                      <Send className="h-3.5 w-3.5" />
-                      <span>Open in Mail Client</span>
-                    </a>
                   </div>
                 </div>
               );

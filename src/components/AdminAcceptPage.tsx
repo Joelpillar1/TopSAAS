@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { 
-  ArrowLeft, ArrowUpDown, Check, X, Clock, ExternalLink, ShieldCheck, Search, Trash2, Eye, RotateCcw, Globe, Twitter, User, Calendar, CheckCircle2, XCircle, AlertCircle, Edit3, Plus, Trophy, Crown, ChevronUp, ChevronDown, Star, LayoutList, Mail, Flame, Tag, Play, Video, Copy, Image as ImageIcon, MessageSquareQuote, Target, Layers, Info, Sparkles, BadgeCheck, Megaphone
+  ArrowLeft, ArrowUpDown, Check, X, Clock, ExternalLink, ShieldCheck, Search, Trash2, Eye, RotateCcw, Globe, Twitter, User, Calendar, CheckCircle2, XCircle, AlertCircle, Edit3, Plus, Trophy, Crown, ChevronUp, ChevronDown, Star, LayoutList, Mail, Flame, Tag, Play, Video, Copy, Image as ImageIcon, MessageSquareQuote, Target, Layers, Info, Sparkles, BadgeCheck, Megaphone, Award
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { WebsiteSubmission, Category, Product } from '../types';
@@ -97,7 +97,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
   // Active view tab: submissions queue vs products management vs featured vs sponsors
   const [activeView, setActiveView] = useState<'submissions' | 'products' | 'featured' | 'sponsors'>('submissions');
   const activeSponsorsCount = products.filter(
-    (p) => (p.isSponsored || p.sponsorTier === 'trial' || p.sponsorTier === 'paid') && (p.sponsorExpiresAt ? p.sponsorExpiresAt > Date.now() : true)
+    (p) => (p.isSponsored || p.sponsorTier === 'trial' || p.sponsorTier === 'paid' || p.sponsorTier === '1mo' || p.sponsorTier === '3mo' || p.sponsorTier === '1yr') && (p.sponsorExpiresAt ? p.sponsorExpiresAt > Date.now() : true)
   ).length;
 
   // If new pending submissions come in, make sure we show the queue
@@ -1039,6 +1039,47 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
 
                           {/* Actions */}
                           <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+                            {onUpdateProduct && (
+                              product.isSponsored ? (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    playSound('click', soundEnabled);
+                                    onUpdateProduct({
+                                      ...product,
+                                      isSponsored: false,
+                                      sponsorExpiresAt: Date.now() - 1000,
+                                    });
+                                  }}
+                                  className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700 hover:bg-blue-100 transition-all cursor-pointer shadow-2xs"
+                                  title={`Sponsored (${product.sponsorTier || 'Active'}) — click to revoke sponsor status`}
+                                >
+                                  <Award className="h-3 w-3" />
+                                  <span>Sponsored</span>
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    playSound('success', soundEnabled);
+                                    onUpdateProduct({
+                                      ...product,
+                                      isSponsored: true,
+                                      sponsorTier: '1mo',
+                                      sponsorStartedAt: Date.now(),
+                                      sponsorExpiresAt: Date.now() + 30 * 86400 * 1000,
+                                      autoRelaunch: true,
+                                    });
+                                  }}
+                                  className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 bg-white px-2 py-1 text-xs font-bold text-neutral-600 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 transition-all cursor-pointer"
+                                  title={`Grant 1-Month Sponsor placement to "${product.name}"`}
+                                >
+                                  <Sparkles className="h-3 w-3 text-amber-500" />
+                                  <span>Sponsor</span>
+                                </button>
+                              )
+                            )}
+
                             {onToggleVerified && (
                               <button
                                 type="button"
