@@ -100,7 +100,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               className="truncate rounded-md bg-neutral-100 border border-neutral-200 group-hover:border-neutral-300 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-600 min-w-0 max-w-[110px] sm:max-w-[140px] transition-colors"
               title={product.category}
             >
-              {product.category}
+              {product.category.split(',')[0].trim()}
             </span>
           )}
           <span className="inline-flex shrink-0 items-center gap-1 text-[10px] font-semibold text-neutral-500">

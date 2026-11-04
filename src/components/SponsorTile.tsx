@@ -48,6 +48,22 @@ export const SponsorTile: React.FC<SponsorTileProps> = ({
     const rawCreator = product.creatorName || (handle ? handle.replace(/^@/, '') : null);
     const byline = rawCreator ? `by ${rawCreator}` : null;
 
+    // Categories: on mobile show only one category; on desktop show all
+    const categories = product.category
+      ? product.category.split(',').map((c) => c.trim()).filter(Boolean)
+      : [];
+    const primaryCategory = categories[0] || product.category;
+
+    const handleVisit = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      playSound('click', soundEnabled);
+      if (product.url) {
+        window.open(product.url, '_blank', 'noopener,noreferrer');
+      } else {
+        handleClick();
+      }
+    };
+
     return (
       <div
         role="button"
@@ -102,16 +118,30 @@ export const SponsorTile: React.FC<SponsorTileProps> = ({
                 · {byline}
               </span>
             )}
-            {product.category && (
-              <span className="inline-flex shrink-0 items-center rounded-full border border-neutral-200/80 bg-neutral-100/70 px-2 py-0.5 text-[10px] font-semibold text-neutral-600">
-                {product.category}
+            {/* Mobile view: only show one of the categories */}
+            {primaryCategory && (
+              <span className="inline-flex sm:hidden shrink-0 items-center rounded-full border border-neutral-200/80 bg-neutral-100/70 px-2 py-0.5 text-[10px] font-semibold text-neutral-600 truncate max-w-[120px]">
+                {primaryCategory}
+              </span>
+            )}
+            {/* Desktop view: show all categories */}
+            {categories.length > 0 && (
+              <span className="hidden sm:inline-flex items-center gap-1.5 flex-wrap">
+                {categories.map((cat, idx) => (
+                  <span
+                    key={idx}
+                    className="inline-flex shrink-0 items-center rounded-full border border-neutral-200/80 bg-neutral-100/70 px-2 py-0.5 text-[10px] font-semibold text-neutral-600"
+                  >
+                    {cat}
+                  </span>
+                ))}
               </span>
             )}
           </div>
         </div>
 
-        {/* Actions: upvote · open */}
-        <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">
+        {/* Actions: upvote · visit (vertically stacked on mobile like attached, only upvote & visit alone, maintaining size) */}
+        <div className="flex flex-col sm:flex-row shrink-0 items-center gap-1.5 sm:gap-2.5 self-center">
           {onUpvote ? (
             <button
               type="button"
@@ -120,7 +150,7 @@ export const SponsorTile: React.FC<SponsorTileProps> = ({
                 onUpvote(product);
               }}
               title={upvoted ? 'Remove your upvote' : 'Upvote this product'}
-              className={`flex flex-col items-center justify-center rounded-2xl border px-3 py-1.5 min-w-[44px] transition-all cursor-pointer active:scale-95 ${
+              className={`flex flex-col items-center justify-center rounded-xl sm:rounded-2xl border py-1 sm:py-1.5 w-11 transition-all cursor-pointer active:scale-95 ${
                 upvoted
                   ? 'border-mint-500 bg-mint-500 text-white shadow-2xs'
                   : 'border-neutral-200 bg-white text-neutral-800 hover:border-neutral-400 shadow-2xs'
@@ -132,19 +162,21 @@ export const SponsorTile: React.FC<SponsorTileProps> = ({
           ) : (
             <div
               title="Upvotes"
-              className="flex flex-col items-center justify-center rounded-2xl border border-neutral-200 bg-white px-3 py-1.5 min-w-[44px] text-neutral-800 shadow-2xs shrink-0 select-none"
+              className="flex flex-col items-center justify-center rounded-xl sm:rounded-2xl border border-neutral-200 bg-white py-1 sm:py-1.5 w-11 text-neutral-800 shadow-2xs shrink-0 select-none"
             >
               <ChevronUp className="h-4 w-4 text-neutral-900 fill-neutral-900" />
               <span className="text-xs font-black font-mono-num leading-tight">{product.upvotes ?? 0}</span>
             </div>
           )}
 
-          <span
-            title="Open product page"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-neutral-950 text-white transition-all group-hover:bg-neutral-800 shrink-0"
+          <button
+            type="button"
+            onClick={handleVisit}
+            title={`Visit ${product.name}`}
+            className="inline-flex w-11 h-8 sm:w-9 sm:h-9 items-center justify-center rounded-xl bg-neutral-950 text-white transition-all hover:bg-neutral-800 shrink-0 cursor-pointer shadow-2xs"
           >
             <ExternalLink className="h-4 w-4" />
-          </span>
+          </button>
         </div>
       </div>
     );

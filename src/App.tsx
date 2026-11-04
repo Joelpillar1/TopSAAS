@@ -35,7 +35,6 @@ import { ProductPage } from './components/ProductPage';
 import { RepoDetailPage } from './components/RepoDetailPage';
 import { CURATED_REPOS, CuratedRepo } from './data/curatedRepos';
 import { BadgeRoute } from './components/BadgeRoute';
-import { SkeletonRows } from './components/SkeletonCard';
 import { ProductRow, timeAgo } from './components/ProductRow';
 import { SponsorTile } from './components/SponsorTile';
 import { MOCK_SPONSORS } from './data/mockSponsors';
@@ -322,7 +321,7 @@ export default function App() {
   const [authLoaded, setAuthLoaded] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [userUpvotes, setUserUpvotes] = useState<Set<string>>(new Set());
-  const [productsLoaded, setProductsLoaded] = useState(false);
+  const [productsLoaded, setProductsLoaded] = useState(() => products.length > 0);
 
   // Featured product (admin can set any product as featured, or user paid for it)
   const [featuredProductId, setFeaturedProductId] = useState<string | null>(() => {
@@ -2149,7 +2148,6 @@ export default function App() {
             {/* ── Hero: brand statement + search ── */}
             <HeroSponsorRails
               sponsors={products.filter((p) => p.isSponsored)}
-              isLoading={!productsLoaded}
               soundEnabled={soundEnabled}
               onTrackClick={handleTrackClick}
               onOpenProduct={handleOpenProduct}
@@ -2314,9 +2312,7 @@ export default function App() {
                   </div>
 
                   {/* Leaderboard Rendering */}
-                  {!productsLoaded ? (
-                    <SkeletonRows />
-                  ) : filteredProducts.length === 0 ? (
+                  {filteredProducts.length === 0 ? (
                     <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center">
                       {selectedWeek && weekScopedProducts.length === 0 ? (
                         <>

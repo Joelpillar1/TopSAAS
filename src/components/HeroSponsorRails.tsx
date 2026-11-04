@@ -226,43 +226,41 @@ export const HeroSponsorRails: React.FC<HeroSponsorRailsProps> = ({
       <div className="flex flex-col lg:flex-row items-center lg:items-start justify-center gap-4 xl:gap-8 pt-1">
         {/* Left Side Rail (Desktop - 6 sticky ad spots that stay in place) */}
         <div className="hidden lg:flex flex-col gap-2 w-[215px] xl:w-[245px] shrink-0 sticky top-16 self-start">
-          {isLoading
-            ? Array.from({ length: 6 }).map((_, i) => <SkeletonAdCard key={`left-skeleton-${i}`} />)
-            : LEFT_SLOTS.map((slot, index) => {
-                const sponsoredItem = leftSponsors[index];
-                const card = sponsoredItem ? (
-                  <ActiveSponsorCard
-                    key={`active-left-${sponsoredItem.id}`}
-                    product={sponsoredItem}
-                    soundEnabled={soundEnabled}
-                    onTrackClick={onTrackClick}
-                    onOpenProduct={onOpenProduct}
-                  />
-                ) : (
-                  <OpenAdCard
-                    key={slot.id}
-                    title={slot.title}
-                    subtitle={slot.subtitle}
-                    duration={slot.duration}
-                    soundEnabled={soundEnabled}
-                    onOpenModal={onOpenFeaturedSpotModal}
-                  />
-                );
+          {LEFT_SLOTS.map((slot, index) => {
+            const sponsoredItem = leftSponsors[index];
+            const card = sponsoredItem ? (
+              <ActiveSponsorCard
+                key={`active-left-${sponsoredItem.id}`}
+                product={sponsoredItem}
+                soundEnabled={soundEnabled}
+                onTrackClick={onTrackClick}
+                onOpenProduct={onOpenProduct}
+              />
+            ) : (
+              <OpenAdCard
+                key={slot.id}
+                title={slot.title}
+                subtitle={slot.subtitle}
+                duration={slot.duration}
+                soundEnabled={soundEnabled}
+                onOpenModal={onOpenFeaturedSpotModal}
+              />
+            );
 
-                if (index !== 0) return card;
-                return (
-                  <BorderBeam
-                    key={slot.id}
-                    size="md"
-                    colorVariant="colorful"
-                    strength={0.85}
-                    borderRadius={8}
-                    className="rounded-2xl"
-                  >
-                    {card}
-                  </BorderBeam>
-                );
-              })}
+            if (index !== 0) return card;
+            return (
+              <BorderBeam
+                key={slot.id}
+                size="md"
+                colorVariant="colorful"
+                strength={0.85}
+                borderRadius={8}
+                className="rounded-2xl"
+              >
+                {card}
+              </BorderBeam>
+            );
+          })}
         </div>
 
         {/* Center Hero + Directory List */}
@@ -272,43 +270,41 @@ export const HeroSponsorRails: React.FC<HeroSponsorRailsProps> = ({
 
         {/* Right Side Rail (Desktop - 6 sticky ad spots that stay in place) */}
         <div className="hidden lg:flex flex-col gap-2 w-[215px] xl:w-[245px] shrink-0 sticky top-16 self-start">
-          {isLoading
-            ? Array.from({ length: 6 }).map((_, i) => <SkeletonAdCard key={`right-skeleton-${i}`} />)
-            : RIGHT_SLOTS.map((slot, index) => {
-                const sponsoredItem = rightSponsors[index];
-                const card = sponsoredItem ? (
-                  <ActiveSponsorCard
-                    key={`active-right-${sponsoredItem.id}`}
-                    product={sponsoredItem}
-                    soundEnabled={soundEnabled}
-                    onTrackClick={onTrackClick}
-                    onOpenProduct={onOpenProduct}
-                  />
-                ) : (
-                  <OpenAdCard
-                    key={slot.id}
-                    title={slot.title}
-                    subtitle={slot.subtitle}
-                    duration={slot.duration}
-                    soundEnabled={soundEnabled}
-                    onOpenModal={onOpenFeaturedSpotModal}
-                  />
-                );
+          {RIGHT_SLOTS.map((slot, index) => {
+            const sponsoredItem = rightSponsors[index];
+            const card = sponsoredItem ? (
+              <ActiveSponsorCard
+                key={`active-right-${sponsoredItem.id}`}
+                product={sponsoredItem}
+                soundEnabled={soundEnabled}
+                onTrackClick={onTrackClick}
+                onOpenProduct={onOpenProduct}
+              />
+            ) : (
+              <OpenAdCard
+                key={slot.id}
+                title={slot.title}
+                subtitle={slot.subtitle}
+                duration={slot.duration}
+                soundEnabled={soundEnabled}
+                onOpenModal={onOpenFeaturedSpotModal}
+              />
+            );
 
-                if (index !== 0) return card;
-                return (
-                  <BorderBeam
-                    key={slot.id}
-                    size="md"
-                    colorVariant="colorful"
-                    strength={0.85}
-                    borderRadius={8}
-                    className="rounded-2xl"
-                  >
-                    {card}
-                  </BorderBeam>
-                );
-              })}
+            if (index !== 0) return card;
+            return (
+              <BorderBeam
+                key={slot.id}
+                size="md"
+                colorVariant="colorful"
+                strength={0.85}
+                borderRadius={8}
+                className="rounded-2xl"
+              >
+                {card}
+              </BorderBeam>
+            );
+          })}
         </div>
       </div>
     </div>

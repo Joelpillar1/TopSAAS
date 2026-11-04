@@ -46,65 +46,6 @@ const formatTotalStars = (n: number): string => {
   return formatStars(n);
 };
 
-const Shimmer: React.FC<{ className?: string }> = ({ className = '' }) => (
-  <div
-    className={`animate-pulse bg-gradient-to-r from-neutral-800 via-neutral-700 to-neutral-800 bg-[length:200%_100%] rounded ${className}`}
-  />
-);
-
-const RepoSkeletonCard: React.FC = () => (
-  <div className="flex flex-col bg-white p-5 h-full">
-    <div className="flex items-start justify-between">
-      <Shimmer className="h-11 w-11 rounded-lg shrink-0" />
-      <Shimmer className="h-3.5 w-3.5 rounded" />
-    </div>
-    <div className="mt-4 space-y-1.5">
-      <Shimmer className="h-4 w-28 rounded" />
-      <Shimmer className="h-3 w-16 rounded" />
-    </div>
-    <div className="space-y-1.5 my-1 flex-1">
-      <Shimmer className="h-3 w-full rounded" />
-      <Shimmer className="h-3 w-4/5 rounded" />
-    </div>
-    <div className="flex items-center justify-between gap-2 mt-4 pt-3 border-t border-neutral-200">
-      <div className="flex items-center gap-2.5">
-        <Shimmer className="h-3.5 w-12 rounded" />
-        <Shimmer className="h-3.5 w-10 rounded" />
-      </div>
-      <Shimmer className="h-4 w-14 rounded-md" />
-    </div>
-  </div>
-);
-
-const RepoSkeletonRow: React.FC = () => (
-  <tr className="border-b border-neutral-200 animate-pulse">
-    <td className="px-3 py-3">
-      <div className="flex items-center gap-2.5">
-        <Shimmer className="h-7 w-7 rounded-lg shrink-0" />
-        <div className="space-y-1">
-          <Shimmer className="h-3.5 w-24 rounded" />
-          <Shimmer className="h-2.5 w-14 rounded" />
-        </div>
-      </div>
-    </td>
-    <td className="px-3 py-3 hidden md:table-cell">
-      <Shimmer className="h-3 w-48 rounded" />
-    </td>
-    <td className="px-3 py-3 text-right">
-      <Shimmer className="h-3.5 w-12 rounded ml-auto" />
-    </td>
-    <td className="px-3 py-3 text-right hidden sm:table-cell">
-      <Shimmer className="h-3.5 w-8 rounded ml-auto" />
-    </td>
-    <td className="px-3 py-3 hidden lg:table-cell">
-      <Shimmer className="h-4 w-16 rounded" />
-    </td>
-    <td className="px-3 py-3 text-right">
-      <Shimmer className="h-6 w-14 rounded-lg ml-auto" />
-    </td>
-  </tr>
-);
-
 export const SaaSIdeas: React.FC<SaaSIdeasProps> = ({
   soundEnabled,
   topProducts,
@@ -131,7 +72,6 @@ export const SaaSIdeas: React.FC<SaaSIdeasProps> = ({
       return 'cards';
     }
   });
-  const [isLoading, setIsLoading] = useState(true);
   // Seed the search from ?q= deep links (the SearchAction target in the
   // homepage JSON-LD), so engine site-search results land pre-filtered.
   const [searchQuery, setSearchQuery] = useState(() => {
@@ -143,14 +83,6 @@ export const SaaSIdeas: React.FC<SaaSIdeasProps> = ({
   });
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const gridColumns = useGridColumns();
-
-  // On initial mount / reload, show skeleton shimmer briefly
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 400);
-    return () => clearTimeout(timer);
-  }, []);
 
   // Ctrl/Cmd + K focuses the ideas search
   useEffect(() => {
@@ -195,12 +127,8 @@ export const SaaSIdeas: React.FC<SaaSIdeasProps> = ({
 
   const handleCategoryChange = (cat: RepoCategory) => {
     playSound('click', soundEnabled);
-    setIsLoading(true);
     setSelectedCategory(cat);
     setCurrentPage(1);
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 180);
   };
 
   const handleLayoutChange = (layout: 'cards' | 'table') => {
@@ -486,42 +414,7 @@ export const SaaSIdeas: React.FC<SaaSIdeasProps> = ({
           </span>
         </div>
 
-        {/* Loading State: Skeleton Loaders */}
-        {isLoading ? (
-          viewLayout === 'cards' ? (
-            <div className="grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-200 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {Array.from({ length: gridColumns * 2 }).map((_, i) => (
-                <RepoSkeletonCard key={i} />
-              ))}
-              {Array.from({ length: (gridColumns - ((gridColumns * 2) % gridColumns)) % gridColumns }).map((_, i) => (
-                <GridFillerCell key={`skeleton-filler-${i}`} />
-              ))}
-            </div>
-          ) : (
-            <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-xs transition-all">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead>
-                    <tr className="border-b border-neutral-200 bg-neutral-100 text-[11px] font-bold text-neutral-500">
-                      <th className="py-3 px-3.5">Repository</th>
-                      <th className="py-3 px-3.5 hidden md:table-cell">Description</th>
-                      <th className="py-3 px-3.5 text-right">Stars</th>
-                      <th className="py-3 px-3.5 text-right hidden sm:table-cell">Forks</th>
-                      <th className="py-3 px-3.5 hidden lg:table-cell">Language</th>
-                      <th className="py-3 px-3.5 text-right hidden md:table-cell">Health</th>
-                      <th className="py-3 pr-4 pl-2 text-right">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {Array.from({ length: 8 }).map((_, i) => (
-                      <RepoSkeletonRow key={i} />
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )
-        ) : filteredRepos.length === 0 ? (
+        {filteredRepos.length === 0 ? (
           /* Empty search state */
           <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center">
             <Code2 className="mx-auto h-8 w-8 text-neutral-700 mb-3" />
