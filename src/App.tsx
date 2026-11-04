@@ -36,6 +36,7 @@ import { RepoDetailPage } from './components/RepoDetailPage';
 import { CURATED_REPOS, CuratedRepo } from './data/curatedRepos';
 import { BadgeRoute } from './components/BadgeRoute';
 import { ProductRow, timeAgo } from './components/ProductRow';
+import { SkeletonRows } from './components/SkeletonCard';
 import { SponsorTile } from './components/SponsorTile';
 import { MOCK_SPONSORS } from './data/mockSponsors';
 import { HeroSponsorRails } from './components/HeroSponsorRails';
@@ -299,7 +300,7 @@ export default function App() {
   // Load persisted live products (sorted by rank)
   const [products, setProducts] = useState<Product[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
+      const saved = localStorage.getItem(STORAGE_KEYS.PRODUCTS) || localStorage.getItem('topsaas_products_cache_v2');
       if (saved) {
         const parsed: Product[] = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -1684,7 +1685,22 @@ export default function App() {
       return seeded;
     });
   }, [productsLoaded, products.length]);
-  const directoryCategories = (() => {
+  // Count matching products for a category, handling comma-separated categories (e.g. "Developer Tools, SaaS & Indie")
+  const getCategoryProductCount = React.useCallback(
+    (cat: Category, list: Product[]): number => {
+      if (cat === 'All') return list.length;
+      const target = cat.trim().toLowerCase();
+      return list.filter((p) => {
+        if (!p.category) return false;
+        if (p.category.trim().toLowerCase() === target) return true;
+        const parts = p.category.split(',').map((c) => c.trim().toLowerCase());
+        return parts.includes(target);
+      }).length;
+    },
+    []
+  );
+
+  const directoryCategories = React.useMemo(() => {
     const seen = new Set<string>();
     const cats: string[] = [];
     for (const p of products) {
@@ -1698,8 +1714,30 @@ export default function App() {
         }
       }
     }
-    return cats;
-  })();
+    if (cats.length > 0) {
+      try {
+        localStorage.setItem('topsaas_directory_categories_v1', JSON.stringify(cats));
+      } catch { }
+      return cats;
+    }
+    // Fallback on initial cold load before network request finishes
+    try {
+      const cached = localStorage.getItem('topsaas_directory_categories_v1');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch { }
+    return [
+      'Developer Tools',
+      'SaaS & Indie',
+      'Productivity',
+      'Marketing & SEO',
+      'AI Tools',
+      'HR & Hiring',
+      'Design & UI',
+    ];
+  }, [products]);
 
   // Weekly launch rounds: scope products to the selected week, upvote-ranked
   const weeks = getRecentWeeks(6);
@@ -2406,7 +2444,7 @@ export default function App() {
                     {/* Category chips */}
                     <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none min-w-0 flex-1" role="navigation" aria-label="Browse by category">
                       {(['All', ...(selectedCategory !== 'All' && !directoryCategories.includes(selectedCategory) ? [selectedCategory] : []), ...directoryCategories] as Category[]).map((cat) => {
-                        const count = cat === 'All' ? products.length : products.filter((p) => p.category === cat).length;
+                        const count = getCategoryProductCount(cat, weekScopedProducts);
                         const active = selectedCategory === cat;
                         return (
                           <button
@@ -2496,7 +2534,11 @@ export default function App() {
                   </div>
 
                   {/* Leaderboard Rendering */}
-                  {filteredProducts.length === 0 ? (
+                  {!productsLoaded ? (
+                    <div className="w-full space-y-3 pt-1">
+                      <SkeletonRows count={6} />
+                    </div>
+                  ) : filteredProducts.length === 0 ? (
                     <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center">
                       {selectedWeek && weekScopedProducts.length === 0 ? (
                         <>
