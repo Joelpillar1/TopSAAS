@@ -1,5 +1,18 @@
 import React, { useState } from 'react';
-import { X, Crown, Check, ArrowRight, Search, ArrowLeft, CreditCard, Plus, Loader2, Globe, Sparkles, CheckCircle2, Megaphone } from 'lucide-react';
+import {
+  X,
+  Check,
+  ArrowRight,
+  Search,
+  ArrowLeft,
+  CreditCard,
+  Plus,
+  Loader2,
+  Sparkles,
+  CheckCircle2,
+  Megaphone,
+  Award,
+} from 'lucide-react';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import confetti from 'canvas-confetti';
 import { Product } from '../types';
@@ -14,7 +27,11 @@ interface FeaturedSpotModalProps {
   user: SupabaseUser | null;
   soundEnabled: boolean;
   onOpenSubmitModal: () => void;
-  onActivateSponsor?: (product: Product, tier: 'trial' | 'paid' | '1mo' | '3mo' | '1yr', email?: string) => Promise<void> | void;
+  onActivateSponsor?: (
+    product: Product,
+    tier: 'trial' | 'paid' | '1mo' | '3mo' | '1yr',
+    email?: string
+  ) => Promise<void> | void;
 }
 
 export type SponsorPlanId = '1mo' | '3mo' | '1yr' | 'trial';
@@ -22,7 +39,11 @@ export type SponsorPlanId = '1mo' | '3mo' | '1yr' | 'trial';
 export interface SponsorPlanItem {
   id: SponsorPlanId;
   name: string;
+  cardTitle: string;
   price: number;
+  priceLabel: string;
+  period: string;
+  discountBadge?: string;
   badge: string;
   duration: string;
   rateNote?: string;
@@ -37,7 +58,11 @@ export const SPONSOR_PLANS: SponsorPlanItem[] = [
   {
     id: '1mo',
     name: '1-Month Sponsor',
+    cardTitle: '1 Month',
     price: 29,
+    priceLabel: '$29',
+    period: '/month',
+    discountBadge: 'was $99',
     badge: 'Flexible',
     duration: '30 Days',
     rateNote: '$29 / mo',
@@ -49,49 +74,59 @@ export const SPONSOR_PLANS: SponsorPlanItem[] = [
       'Auto Weekly Relaunch into every Sunday round (4 rounds)',
       'Live analytics & outbound click tracker',
     ],
-    cta: 'Continue with 1-Month Plan ($29)',
+    cta: 'Get Monthly',
   },
   {
     id: '3mo',
     name: '3-Month Sponsor',
+    cardTitle: '3 Months',
     price: 69,
+    priceLabel: '$69',
+    period: '/3 months',
+    discountBadge: 'Save 20% • $23/month',
     badge: 'Most Popular · Save 20%',
     duration: '90 Days',
     rateNote: 'Only $23 / mo ($69 total)',
     popular: true,
     description: 'Continuous 3-month high-visibility growth campaign for serious founders',
     features: [
-      'Everything in 1-Month Plan',
       '90 days continuous homepage & category priority placement',
       'Auto Weekly Relaunch every Sunday (12 rounds)',
       '1x Dedicated Newsletter Launch Mention to subscribers',
-      'Save 20% compared to monthly renewal',
+      '⭐️ Promoted badge on directory listing',
     ],
-    cta: 'Continue with 3-Month Plan ($69)',
+    cta: 'Get 3-Month',
   },
   {
     id: '1yr',
     name: '1-Year Partner Sponsor',
+    cardTitle: '12 Months',
     price: 199,
+    priceLabel: '$199',
+    period: '/year',
+    discountBadge: 'Save 43% • $16.50/month',
     badge: 'Best Value · Save 43%',
     duration: '365 Days',
     rateNote: 'Only $16.50 / mo ($199 total)',
     bestValue: true,
     description: 'Full-year premier sponsorship & continuous top authority placement',
     features: [
-      'Everything in 3-Month Plan',
       '365 days permanent premier visibility across TopSAAS',
       'Auto Weekly Relaunch all year round (52 rounds)',
       'Quarterly Newsletter Blasts (4x/year)',
       'Permanent Dofollow backlink & Top Partner directory badge',
       'Dedicated Product of the Day priority spotlight day',
     ],
-    cta: 'Continue with 1-Year Plan ($199)',
+    cta: 'Get Annual',
   },
   {
     id: 'trial',
     name: '7-Day Free Sponsor Test Drive',
+    cardTitle: '7 Days',
     price: 0,
+    priceLabel: 'FREE',
+    period: '7 days',
+    discountBadge: '100% Free',
     badge: 'Free Launch Spotlight',
     duration: '7 Days',
     rateNote: '100% Free',
@@ -117,7 +152,7 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
 }) => {
   const [step, setStep] = useState<'product' | 'plan' | 'confirm'>('product');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [selectedPlanId, setSelectedPlanId] = useState<SponsorPlanId>('1mo');
+  const [selectedPlanId, setSelectedPlanId] = useState<SponsorPlanId>('3mo');
   const [contactEmail, setContactEmail] = useState(user?.email || '');
   const [productSearch, setProductSearch] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -142,424 +177,593 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
     );
   });
 
-  const selectedPlan = SPONSOR_PLANS.find((p) => p.id === selectedPlanId) || SPONSOR_PLANS[0];
+  const selectedPlan =
+    SPONSOR_PLANS.find((p) => p.id === selectedPlanId) || SPONSOR_PLANS[1];
 
   const handleSelectProduct = (product: Product) => {
     playSound('click', soundEnabled);
     setSelectedProduct(product);
-    setContactEmail(user?.email || product.sponsorContactEmail || '');
+    if (!contactEmail && product.sponsorContactEmail) {
+      setContactEmail(product.sponsorContactEmail);
+    }
     setStep('plan');
   };
 
   const handleProceedToConfirm = () => {
     playSound('click', soundEnabled);
+    setPaymentError(null);
     setStep('confirm');
   };
 
+  const handleBack = () => {
+    playSound('click', soundEnabled);
+    if (step === 'confirm') setStep('plan');
+    else if (step === 'plan') setStep('product');
+  };
+
+  const handleClose = () => {
+    playSound('click', soundEnabled);
+    setStep('product');
+    setSelectedProduct(null);
+    setSelectedPlanId('3mo');
+    setPaymentError(null);
+    setSuccessMessage(null);
+    onClose();
+  };
+
+  const handleAddProduct = () => {
+    handleClose();
+    onOpenSubmitModal();
+  };
+
+  // Activate 7-day free trial placement
   const handleActivateTrial = async () => {
     if (!selectedProduct) return;
     setIsProcessing(true);
     setPaymentError(null);
-    playSound('click', soundEnabled);
 
     try {
       if (onActivateSponsor) {
         await onActivateSponsor(selectedProduct, 'trial', contactEmail.trim());
       }
-      setSuccessMessage(`Congratulations! ${selectedProduct.name} is now spotlighted as a sponsor for 7 days.`);
+      setSuccessMessage(
+        `Congratulations! ${selectedProduct.name} is now spotlighted as a sponsor for 7 days.`
+      );
       playSound('success', soundEnabled);
       confetti({ particleCount: 70, spread: 80, origin: { y: 0.6 } });
     } catch (err) {
-      setPaymentError(err instanceof Error ? err.message : 'Failed to activate placement. Please try again.');
+      console.error('Failed to activate trial:', err);
+      setPaymentError(
+        'Could not activate free placement right now. Please try again.'
+      );
     } finally {
       setIsProcessing(false);
     }
   };
 
+  // Proceed with paid checkout
   const handleProceedPayment = async () => {
     if (!selectedProduct) return;
     setIsProcessing(true);
     setPaymentError(null);
-    playSound('click', soundEnabled);
 
     try {
-      localStorage.setItem('topsaas_featured_pending', selectedProduct.id);
-      localStorage.setItem('topsaas_featured_pending_plan', selectedPlan.id);
+      const email = contactEmail.trim() || user?.email || undefined;
+      const planType =
+        selectedPlan.id === '1mo'
+          ? '1mo'
+          : selectedPlan.id === '3mo'
+          ? '3mo'
+          : '1yr';
 
       try {
         await redirectToCheckout({
-          planType: (selectedPlan.id === 'trial' ? '7days' : selectedPlan.id === '1mo' ? '30days' : selectedPlan.id) as any,
+          planType,
           productName: selectedProduct.name,
-          customerEmail: contactEmail.trim() || user?.email,
-          customerName: user?.user_metadata?.full_name || user?.user_metadata?.name,
+          customerEmail: email,
         });
       } catch (checkoutErr) {
         console.warn('Checkout note, activating placement directly:', checkoutErr);
         if (onActivateSponsor) {
-          await onActivateSponsor(selectedProduct, selectedPlan.id as any, contactEmail.trim());
+          await onActivateSponsor(
+            selectedProduct,
+            selectedPlan.id,
+            contactEmail.trim()
+          );
         }
-        setSuccessMessage(`Congratulations! ${selectedProduct.name} is now spotlighted as a ${selectedPlan.name} (${selectedPlan.duration}).`);
+        setSuccessMessage(
+          `Congratulations! ${selectedProduct.name} is now spotlighted as a ${selectedPlan.name} (${selectedPlan.duration}).`
+        );
         playSound('success', soundEnabled);
         confetti({ particleCount: 80, spread: 80, origin: { y: 0.6 } });
         setIsProcessing(false);
       }
-    } catch (err) {
-      console.error('Payment error:', err);
-      setPaymentError(err instanceof Error ? err.message : 'Payment failed. Please try again.');
+    } catch (err: unknown) {
+      console.error('Payment checkout error:', err);
+      setPaymentError(
+        (err as Error)?.message ||
+          'Could not start checkout. Please try again or contact support.'
+      );
       setIsProcessing(false);
     }
   };
 
-  const handleClose = () => {
-    setStep('product');
-    setSelectedProduct(null);
-    setSelectedPlanId('1mo');
-    setProductSearch('');
-    setPaymentError(null);
-    setSuccessMessage(null);
-    try {
-      localStorage.removeItem('topsaas_featured_pending');
-      localStorage.removeItem('topsaas_featured_pending_plan');
-    } catch {}
-    onClose();
-  };
-
-  const handleBack = () => {
-    playSound('click', soundEnabled);
-    if (step === 'plan') {
-      setStep('product');
-      setSelectedProduct(null);
-    } else if (step === 'confirm') {
-      setStep('plan');
-    }
-  };
-
-  const handleAddProduct = () => {
-    playSound('click', soundEnabled);
-    onOpenSubmitModal();
-  };
-
   if (!isOpen) return null;
 
+  const paidPlans = SPONSOR_PLANS.filter((p) => p.id !== 'trial');
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3.5 sm:p-4 bg-black/75 backdrop-blur-md overflow-y-auto font-sans">
-      <div className="relative w-full max-w-lg rounded-2xl border border-neutral-200 bg-white shadow-2xl p-5 sm:p-6 my-4 text-neutral-900 animate-in fade-in zoom-in-95 duration-150 font-sans">
-        {/* Close Button */}
-        <button
-          type="button"
-          onClick={handleClose}
-          className="absolute right-3.5 top-3.5 sm:right-4 sm:top-4 rounded-xl p-2 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-950 transition-colors cursor-pointer"
-        >
-          <X className="h-5 w-5" />
-        </button>
-
-        {/* Back Button */}
-        {step !== 'product' && !successMessage && (
-          <button
-            type="button"
-            onClick={handleBack}
-            className="absolute left-3.5 top-3.5 sm:left-4 sm:top-4 flex items-center gap-1 text-xs font-bold text-neutral-500 hover:text-neutral-950 transition-colors cursor-pointer"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span>Back</span>
-          </button>
-        )}
-
-        {/* Success View */}
-        {successMessage ? (
-          <div className="py-6 text-center space-y-4">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600 border border-emerald-300">
-              <CheckCircle2 className="h-8 w-8" />
-            </div>
-            <h3 className="text-xl font-black text-neutral-950">Spotlight Active!</h3>
-            <p className="text-xs text-neutral-600 max-w-sm mx-auto leading-relaxed">
-              {successMessage}
-            </p>
-            <div className="pt-2">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md overflow-y-auto font-sans">
+      <div className="relative w-full max-w-2xl max-h-[92vh] flex flex-col rounded-2xl border border-neutral-200 bg-white shadow-2xl my-auto text-neutral-900 animate-in fade-in zoom-in-95 duration-150 font-sans overflow-hidden">
+        {/* Top bar with Back & Close */}
+        <div className="flex items-center justify-between px-5 sm:px-6 pt-4 pb-2 shrink-0 border-b border-neutral-100">
+          <div>
+            {step !== 'product' && !successMessage && (
               <button
                 type="button"
-                onClick={handleClose}
-                className="btn-primary px-6 py-2.5 text-xs font-bold"
+                onClick={handleBack}
+                className="flex items-center gap-1.5 text-xs font-bold text-neutral-500 hover:text-neutral-950 transition-colors cursor-pointer"
               >
-                Done
+                <ArrowLeft className="h-4 w-4" />
+                <span>Back</span>
               </button>
-            </div>
-          </div>
-        ) : (
-          <>
-            {/* Step 1: Select Product */}
-            {step === 'product' && (
-              <>
-                <div className="text-center mb-5">
-                  <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 border border-blue-200 text-blue-600 mb-2">
-                    <Megaphone className="h-5 w-5" />
-                  </div>
-                  <h2 className="text-lg font-bold text-neutral-950 tracking-tight">Sponsor Placement</h2>
-                  <p className="text-xs text-neutral-500 mt-1 max-w-sm mx-auto">
-                    Select a product to spotlight on our top and sidebar sponsor rails.
-                  </p>
-                </div>
-
-                {/* Search */}
-                <div className="relative mb-3">
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
-                  <input
-                    type="text"
-                    value={productSearch}
-                    onChange={(e) => setProductSearch(e.target.value)}
-                    placeholder="Search by name, tagline, category…"
-                    className="w-full rounded-xl border border-neutral-200 bg-neutral-50 pl-10 pr-4 py-2.5 text-xs text-neutral-900 placeholder:text-neutral-400 focus:bg-white focus:border-neutral-900 focus:outline-none transition-all"
-                  />
-                </div>
-
-                {/* Product List */}
-                <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1 mb-4">
-                  {filteredProducts.length === 0 ? (
-                    <div className="text-center py-8 text-neutral-500 space-y-2">
-                      <p className="text-xs">No matching products found.</p>
-                      <button
-                        type="button"
-                        onClick={handleAddProduct}
-                        className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:underline cursor-pointer"
-                      >
-                        <Plus className="h-3.5 w-3.5" />
-                        <span>Submit your website first</span>
-                      </button>
-                    </div>
-                  ) : (
-                    filteredProducts.map((p) => (
-                      <div
-                        key={p.id}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => handleSelectProduct(p)}
-                        className="flex items-center justify-between p-3 rounded-xl border border-neutral-200 bg-white hover:border-neutral-900/30 hover:bg-neutral-50 transition-all cursor-pointer group text-left"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <ProductLogo
-                            src={p.logoUrl}
-                            alt={p.name}
-                            containerClassName="h-9 w-9 rounded-lg border border-neutral-200 bg-white shrink-0 overflow-hidden relative flex items-center justify-center"
-                            iconClassName="h-4 w-4 text-neutral-700 shrink-0"
-                          />
-                          <div className="min-w-0">
-                            <h4 className="text-xs font-bold text-neutral-950 group-hover:text-blue-600 transition-colors truncate">
-                              {p.name}
-                            </h4>
-                            <p className="text-[11px] text-neutral-500 truncate max-w-xs">{p.tagline}</p>
-                          </div>
-                        </div>
-                        <ArrowRight className="h-4 w-4 text-neutral-400 group-hover:text-neutral-950 transition-colors shrink-0 ml-2" />
-                      </div>
-                    ))
-                  )}
-                </div>
-
-                <div className="border-t border-neutral-200 pt-3 text-center">
-                  <button
-                    type="button"
-                    onClick={handleAddProduct}
-                    className="inline-flex items-center gap-1.5 text-xs font-bold text-neutral-600 hover:text-neutral-950 transition-colors cursor-pointer"
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    <span>Have a new product to list? Submit for free</span>
-                  </button>
-                </div>
-              </>
             )}
+          </div>
+          <button
+            type="button"
+            onClick={handleClose}
+            className="rounded-xl p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-950 transition-colors cursor-pointer ml-auto"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
 
-            {/* Step 2: Choose Plan (Free 7 Days vs $99/mo) */}
-            {step === 'plan' && selectedProduct && (
-              <>
-                <div className="text-center mb-5">
-                  <h2 className="text-lg font-bold text-neutral-950 tracking-tight">Choose Your Placement</h2>
-                  <p className="text-xs text-neutral-500 mt-1">
-                    Spotlight for <span className="font-bold text-neutral-900">{selectedProduct.name}</span>
-                  </p>
-                </div>
-
-                {/* Plan Options */}
-                <div className="space-y-3 mb-4">
-                  {SPONSOR_PLANS.map((plan) => {
-                    const isSelected = selectedPlanId === plan.id;
-                    return (
-                      <div
-                        key={plan.id}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => { playSound('click', soundEnabled); setSelectedPlanId(plan.id); }}
-                        className={`p-4 rounded-xl border text-left cursor-pointer transition-all ${
-                          isSelected
-                            ? 'border-neutral-950 bg-neutral-50 shadow-xs ring-1 ring-neutral-950'
-                            : 'border-neutral-200 bg-white hover:border-neutral-300'
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-2 mb-1.5">
-                          <div>
-                            <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                              plan.id === 'trial'
-                                ? 'bg-emerald-100 text-emerald-800'
-                                : plan.id === '1mo'
-                                ? 'bg-blue-100 text-blue-800'
-                                : plan.id === '3mo'
-                                ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                                : 'bg-purple-100 text-purple-900 border border-purple-300'
-                            }`}>
-                              {plan.badge}
-                            </span>
-                            <h3 className="text-sm font-black text-neutral-950 mt-1.5">{plan.name}</h3>
-                          </div>
-                          <div className="text-right">
-                            <span className="text-2xl font-black text-neutral-950 font-mono-num">
-                              {plan.price === 0 ? 'FREE' : `$${plan.price}`}
-                            </span>
-                            {plan.rateNote && (
-                              <p className="text-[10.5px] text-neutral-500 font-bold">{plan.rateNote}</p>
-                            )}
-                          </div>
-                        </div>
-
-                        <p className="text-xs text-neutral-600 mb-3">{plan.description}</p>
-
-                        <ul className="space-y-1.5 border-t border-neutral-200/80 pt-2.5">
-                          {plan.features.map((feature) => (
-                            <li key={feature} className="flex items-start gap-1.5 text-[11px] text-neutral-700">
-                              <Check className="h-3.5 w-3.5 mt-0.5 text-emerald-600 shrink-0" />
-                              <span>{feature}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    );
-                  })}
-                </div>
-
+        {/* Modal Scrollable Content */}
+        <div className="overflow-y-auto px-5 sm:px-7 py-5 space-y-5 flex-1">
+          {/* Success View */}
+          {successMessage ? (
+            <div className="py-8 text-center space-y-4">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600 border border-emerald-300">
+                <CheckCircle2 className="h-8 w-8" />
+              </div>
+              <h3 className="text-xl font-black text-neutral-950">Spotlight Active!</h3>
+              <p className="text-xs text-neutral-600 max-w-sm mx-auto leading-relaxed">
+                {successMessage}
+              </p>
+              <div className="pt-2">
                 <button
                   type="button"
-                  onClick={handleProceedToConfirm}
-                  className="w-full btn-primary py-2.5 px-4 text-xs font-bold"
+                  onClick={handleClose}
+                  className="btn-primary px-6 py-2.5 text-xs font-bold"
                 >
-                  <span>Continue with {selectedPlan.name}</span>
-                  <ArrowRight className="h-3.5 w-3.5" />
+                  Done
                 </button>
-              </>
-            )}
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Step 1: Select Product */}
+              {step === 'product' && (
+                <div className="space-y-4">
+                  <div className="text-center">
+                    <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 border border-blue-200 text-blue-600 mb-2">
+                      <Megaphone className="h-5 w-5" />
+                    </div>
+                    <h2 className="text-xl font-black text-neutral-950 tracking-tight">
+                      Select Product to Sponsor
+                    </h2>
+                    <p className="text-xs text-neutral-500 mt-1 max-w-sm mx-auto">
+                      Choose which product to feature on our top and sidebar sponsor rails.
+                    </p>
+                  </div>
 
-            {/* Step 3: Confirmation */}
-            {step === 'confirm' && selectedProduct && (
-              <>
-                <div className="text-center mb-5">
-                  <h2 className="text-lg font-bold text-neutral-950 tracking-tight">Confirm Details</h2>
-                  <p className="text-xs text-neutral-500 mt-1">
-                    {selectedPlanId === 'trial' ? 'Activate your complimentary 7-day sponsor placement' : 'Review order summary and proceed to checkout'}
+                  {/* Search */}
+                  <div className="relative">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+                    <input
+                      type="text"
+                      value={productSearch}
+                      onChange={(e) => setProductSearch(e.target.value)}
+                      placeholder="Search directory products by name or category…"
+                      className="w-full rounded-xl border border-neutral-200 bg-neutral-50 pl-10 pr-4 py-2.5 text-xs text-neutral-900 placeholder:text-neutral-400 focus:bg-white focus:border-neutral-900 focus:outline-none transition-all"
+                    />
+                  </div>
+
+                  {/* Product List */}
+                  <div className="max-h-72 overflow-y-auto space-y-1.5 pr-1">
+                    {filteredProducts.length === 0 ? (
+                      <div className="text-center py-8 text-neutral-500 space-y-2">
+                        <p className="text-xs">No matching products found.</p>
+                        <button
+                          type="button"
+                          onClick={handleAddProduct}
+                          className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:underline cursor-pointer"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                          <span>Submit your product first</span>
+                        </button>
+                      </div>
+                    ) : (
+                      filteredProducts.map((p) => (
+                        <div
+                          key={p.id}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => handleSelectProduct(p)}
+                          className="flex items-center justify-between p-3 rounded-xl border border-neutral-200 bg-white hover:border-blue-500/50 hover:bg-neutral-50 transition-all cursor-pointer group text-left"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <ProductLogo
+                              src={p.logoUrl}
+                              alt={p.name}
+                              containerClassName="h-9 w-9 rounded-lg border border-neutral-200 bg-white shrink-0 overflow-hidden relative flex items-center justify-center"
+                              iconClassName="h-4 w-4 text-neutral-700 shrink-0"
+                            />
+                            <div className="min-w-0">
+                              <h4 className="text-xs font-bold text-neutral-950 group-hover:text-blue-600 transition-colors truncate">
+                                {p.name}
+                              </h4>
+                              <p className="text-[11px] text-neutral-500 truncate max-w-sm">
+                                {p.tagline}
+                              </p>
+                            </div>
+                          </div>
+                          <ArrowRight className="h-4 w-4 text-neutral-400 group-hover:text-blue-600 transition-colors shrink-0 ml-2" />
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  <div className="border-t border-neutral-100 pt-3 text-center">
+                    <button
+                      type="button"
+                      onClick={handleAddProduct}
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-neutral-600 hover:text-neutral-950 transition-colors cursor-pointer"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      <span>Have a new product to list? Submit for free</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 2: Choose Plan (Exact layout of Image 2) */}
+              {step === 'plan' && selectedProduct && (
+                <div className="space-y-4">
+                  {/* Header */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <h2 className="text-xl sm:text-2xl font-black text-neutral-950 tracking-tight">
+                        Sponsorship Plans
+                      </h2>
+                      <span className="text-[11px] text-blue-700 font-bold bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">
+                        {selectedProduct.name}
+                      </span>
+                    </div>
+                    <p className="text-xs text-neutral-500 leading-relaxed">
+                      Choose the plan that fits your budget. These are one-time payments, not a recurring subscription.
+                    </p>
+                  </div>
+
+                  {/* 3 Price Cards in a Row (Side by side) */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {paidPlans.map((plan) => {
+                      const isSelected = selectedPlanId === plan.id;
+                      return (
+                        <div
+                          key={plan.id}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => {
+                            playSound('click', soundEnabled);
+                            setSelectedPlanId(plan.id);
+                          }}
+                          className={`rounded-2xl p-4 text-center flex flex-col justify-between transition-all cursor-pointer relative ${
+                            isSelected
+                              ? 'border-2 border-blue-600 bg-blue-50/20 shadow-xs ring-2 ring-blue-600/10'
+                              : 'border border-neutral-200 bg-white hover:border-neutral-300'
+                          }`}
+                        >
+                          <div className="space-y-2 mb-3">
+                            <h3 className="text-xs sm:text-sm font-bold text-neutral-900">
+                              {plan.cardTitle}
+                            </h3>
+                            <div className="flex items-baseline justify-center gap-0.5">
+                              <span className="text-2xl sm:text-3xl font-black text-neutral-950 font-mono-num">
+                                {plan.priceLabel}
+                              </span>
+                              <span className="text-xs font-semibold text-neutral-500">
+                                {plan.period}
+                              </span>
+                            </div>
+                            {plan.discountBadge && (
+                              <p className="text-[11px] font-bold text-blue-600">
+                                {plan.discountBadge}
+                              </p>
+                            )}
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              playSound('click', soundEnabled);
+                              setSelectedPlanId(plan.id);
+                            }}
+                            className={`w-full rounded-xl py-2 px-3 text-xs font-bold transition-all cursor-pointer ${
+                              isSelected
+                                ? 'bg-blue-600 text-white shadow-xs hover:bg-blue-500'
+                                : 'border border-neutral-200 bg-white text-neutral-800 hover:bg-neutral-50 hover:border-neutral-300'
+                            }`}
+                          >
+                            {plan.cta}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* 7-Day Free Test Drive banner option */}
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => {
+                      playSound('click', soundEnabled);
+                      setSelectedPlanId('trial');
+                    }}
+                    className={`p-3 rounded-xl border flex items-center justify-between text-left transition-all cursor-pointer ${
+                      selectedPlanId === 'trial'
+                        ? 'border-2 border-emerald-600 bg-emerald-50/30 ring-2 ring-emerald-500/10'
+                        : 'border-neutral-200 bg-neutral-50/60 hover:bg-neutral-100/70 hover:border-neutral-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100 text-emerald-800 font-black text-[10px] shrink-0">
+                        FREE
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-neutral-950 flex items-center gap-1.5">
+                          <span>7-Day Free Sponsor Test Drive</span>
+                          <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded">
+                            No Card Required
+                          </span>
+                        </p>
+                        <p className="text-[11px] text-neutral-500 truncate">
+                          Test sponsor rails free for 7 days before upgrading to a paid tier
+                        </p>
+                      </div>
+                    </div>
+                    <span
+                      className={`text-xs font-bold px-3 py-1 rounded-lg shrink-0 ${
+                        selectedPlanId === 'trial'
+                          ? 'bg-emerald-600 text-white'
+                          : 'border border-neutral-200 bg-white text-neutral-700'
+                      }`}
+                    >
+                      {selectedPlanId === 'trial' ? 'Selected' : 'Claim Free'}
+                    </span>
+                  </div>
+
+                  {/* Dynamic Package Details Container (At the bottom of cards, just like Image 2) */}
+                  <div className="rounded-2xl border border-neutral-200 bg-neutral-50/70 p-4 sm:p-5 space-y-3.5">
+                    <div className="flex items-center justify-between flex-wrap gap-1">
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-900">
+                        {selectedPlan.name} Includes:
+                      </h3>
+                      <span className="text-[11px] font-bold text-blue-700 bg-white px-2 py-0.5 rounded-full border border-neutral-200">
+                        {selectedPlan.duration} Active Visibility
+                      </span>
+                    </div>
+
+                    {/* Features grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      <div className="flex items-center gap-2 text-neutral-700">
+                        <CheckCircle2 className="h-4 w-4 text-blue-600 shrink-0" />
+                        <span>Homepage sidebar placement</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-neutral-700">
+                        <CheckCircle2 className="h-4 w-4 text-blue-600 shrink-0" />
+                        <span>Visible on top hero sponsor rails</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-neutral-700">
+                        <CheckCircle2 className="h-4 w-4 text-blue-600 shrink-0" />
+                        <span>Direct traffic to your website</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-neutral-700">
+                        <CheckCircle2 className="h-4 w-4 text-blue-600 shrink-0" />
+                        <span>Outbound visitor click tracker</span>
+                      </div>
+                      {selectedPlan.features.map((feat) => (
+                        <div key={feat} className="flex items-center gap-2 text-neutral-900 font-medium">
+                          <CheckCircle2 className="h-4 w-4 text-blue-600 shrink-0" />
+                          <span>{feat}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="pt-2 border-t border-neutral-200/80 flex items-center justify-between text-[11px] text-neutral-500">
+                      <span>Only 6 spots available at a time</span>
+                      <a href="mailto:support@topsaas.space" className="text-blue-600 hover:underline">
+                        Questions?
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* Platform Performance box (from Image 2) */}
+                  <div className="rounded-2xl border border-neutral-200 bg-white p-4 space-y-2">
+                    <div>
+                      <h4 className="text-xs font-bold text-neutral-900">Platform Performance</h4>
+                      <p className="text-[11px] text-neutral-500">
+                        Real metrics from our analytics (results may vary)
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 pt-1">
+                      <div>
+                        <p className="text-[11px] font-medium text-neutral-500">Recent Platform Activity</p>
+                        <span className="text-xl sm:text-2xl font-black text-blue-600 font-mono-num">
+                          ~4,000
+                        </span>
+                        <p className="text-[11px] text-neutral-500">Monthly visitors</p>
+                      </div>
+                      <div>
+                        <p className="text-[11px] font-medium text-neutral-500">Active Community</p>
+                        <span className="text-xl sm:text-2xl font-black text-blue-600 font-mono-num">
+                          3,000+
+                        </span>
+                        <p className="text-[11px] text-neutral-500">Registered users</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Main Continue Button */}
+                  <button
+                    type="button"
+                    onClick={handleProceedToConfirm}
+                    className="w-full btn-primary py-3 px-4 text-xs font-bold flex items-center justify-center gap-2 shadow-sm"
+                  >
+                    <span>
+                      {selectedPlan.price === 0
+                        ? 'Continue with 7-Day Free Test Drive'
+                        : `Continue with ${selectedPlan.name} ($${selectedPlan.price})`}
+                    </span>
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
+
+              {/* Step 3: Confirmation */}
+              {step === 'confirm' && selectedProduct && (
+                <div className="space-y-4">
+                  <div className="text-center">
+                    <h2 className="text-xl font-black text-neutral-950 tracking-tight">
+                      Confirm Placement
+                    </h2>
+                    <p className="text-xs text-neutral-500 mt-1">
+                      {selectedPlanId === 'trial'
+                        ? 'Activate your complimentary 7-day sponsor placement'
+                        : 'Review order summary and proceed to checkout'}
+                    </p>
+                  </div>
+
+                  {/* Summary Card */}
+                  <div className="rounded-2xl border border-neutral-200 bg-white p-4 space-y-3">
+                    <div className="flex items-center gap-3">
+                      <ProductLogo
+                        src={selectedProduct.logoUrl}
+                        alt={selectedProduct.name}
+                        containerClassName="h-10 w-10 rounded-lg border border-neutral-200 bg-white shrink-0 overflow-hidden relative flex items-center justify-center"
+                        iconClassName="h-5 w-5 text-neutral-700 shrink-0"
+                      />
+                      <div className="min-w-0">
+                        <h3 className="text-xs font-bold text-neutral-950 truncate">
+                          {selectedProduct.name}
+                        </h3>
+                        <p className="text-[11px] text-neutral-500 truncate max-w-sm">
+                          {selectedProduct.tagline}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="border-t border-neutral-100 pt-2.5 space-y-1.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-neutral-500">Selected Plan</span>
+                        <span className="font-bold text-neutral-950">{selectedPlan.name}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-neutral-500">Duration</span>
+                        <span className="font-semibold text-neutral-950">{selectedPlan.duration}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-neutral-500">Placement</span>
+                        <span className="font-semibold text-blue-600">
+                          Hero Rails + Directory Spotlight
+                        </span>
+                      </div>
+                      <div className="border-t border-neutral-100 pt-2 flex items-center justify-between">
+                        <span className="text-xs font-bold text-neutral-950">Total Due Today</span>
+                        <span className="text-xl font-black text-neutral-950 font-mono-num">
+                          {selectedPlan.price === 0 ? 'FREE ($0)' : `$${selectedPlan.price}`}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Contact Email input */}
+                  <div className="text-left space-y-1">
+                    <label className="block text-xs font-bold text-neutral-900">
+                      Founder / Contact Email{' '}
+                      <span className="text-neutral-400 font-normal">
+                        (for traffic analytics & renewal notifications)
+                      </span>
+                    </label>
+                    <input
+                      type="email"
+                      value={contactEmail}
+                      onChange={(e) => setContactEmail(e.target.value)}
+                      placeholder="founder@yourproduct.com"
+                      className="w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 text-xs text-neutral-900 placeholder:text-neutral-400 focus:border-blue-600 focus:outline-none"
+                      required
+                    />
+                  </div>
+
+                  {/* Error */}
+                  {paymentError && (
+                    <div className="rounded-xl bg-red-50 border border-red-200 p-2.5 text-xs text-red-700">
+                      {paymentError}
+                    </div>
+                  )}
+
+                  {/* Action button */}
+                  {selectedPlanId === 'trial' ? (
+                    <button
+                      type="button"
+                      onClick={handleActivateTrial}
+                      disabled={isProcessing}
+                      className="w-full btn-primary py-3 px-4 text-xs font-bold disabled:opacity-60 disabled:cursor-not-allowed justify-center"
+                    >
+                      {isProcessing ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          <span>Activating placement…</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+                          <span>Activate 7-Day Free Sponsor Spot</span>
+                        </>
+                      )}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleProceedPayment}
+                      disabled={isProcessing}
+                      className="w-full btn-primary py-3 px-4 text-xs font-bold disabled:opacity-60 disabled:cursor-not-allowed justify-center"
+                    >
+                      {isProcessing ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          <span>Redirecting to checkout…</span>
+                        </>
+                      ) : (
+                        <>
+                          <CreditCard className="h-3.5 w-3.5" />
+                          <span>Proceed to Payment — ${selectedPlan.price}</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+
+                  <p className="text-center text-[10px] text-neutral-500">
+                    {selectedPlanId === 'trial'
+                      ? 'Instant activation • Cancel or extend anytime'
+                      : 'Secure checkout powered by DodoPayments'}
                   </p>
                 </div>
-
-                {/* Summary Card */}
-                <div className="rounded-xl border border-neutral-200 bg-white p-4 mb-4">
-                  <div className="flex items-center gap-3 mb-3">
-                    <ProductLogo
-                      src={selectedProduct.logoUrl}
-                      alt={selectedProduct.name}
-                      containerClassName="h-10 w-10 rounded-lg border border-neutral-200 bg-white shrink-0 overflow-hidden relative flex items-center justify-center"
-                      iconClassName="h-5 w-5 text-neutral-700 shrink-0"
-                    />
-                    <div className="min-w-0">
-                      <h3 className="text-xs font-bold text-neutral-950 truncate">{selectedProduct.name}</h3>
-                      <p className="text-[11px] text-neutral-500 truncate max-w-xs">{selectedProduct.tagline}</p>
-                    </div>
-                  </div>
-
-                  <div className="border-t border-neutral-200 pt-2.5 space-y-1.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-neutral-500">Plan Duration</span>
-                      <span className="font-semibold text-neutral-950">{selectedPlan.duration}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-neutral-500">Placement</span>
-                      <span className="font-semibold text-neutral-950">
-                        {selectedPlanId === 'trial' ? 'Hero Sponsor Rails (Top)' : 'Pinned #1 Banner + Rails'}
-                      </span>
-                    </div>
-                    <div className="border-t border-neutral-200 pt-2 mt-2 flex items-center justify-between">
-                      <span className="text-xs font-bold text-neutral-950">Total Due Today</span>
-                      <span className="text-lg font-black text-neutral-950 font-mono-num">
-                        {selectedPlan.price === 0 ? 'FREE ($0)' : `$${selectedPlan.price}`}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Contact Email input */}
-                <div className="mb-4 text-left">
-                  <label className="block text-xs font-bold text-neutral-900 mb-1">
-                    Founder / Contact Email <span className="text-neutral-400 font-normal">(for traffic reports & renewal offers)</span>
-                  </label>
-                  <input
-                    type="email"
-                    value={contactEmail}
-                    onChange={(e) => setContactEmail(e.target.value)}
-                    placeholder="founder@yourproduct.com"
-                    className="w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2 text-xs text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-900 focus:outline-none"
-                    required
-                  />
-                </div>
-
-                {/* Error */}
-                {paymentError && (
-                  <div className="mb-3 rounded-xl bg-red-50 border border-red-200 p-2.5 text-xs text-red-700">
-                    {paymentError}
-                  </div>
-                )}
-
-                {/* Action button */}
-                {selectedPlanId === 'trial' ? (
-                  <button
-                    type="button"
-                    onClick={handleActivateTrial}
-                    disabled={isProcessing}
-                    className="w-full btn-primary py-2.5 px-4 text-xs font-bold disabled:opacity-60 disabled:cursor-not-allowed"
-                  >
-                    {isProcessing ? (
-                      <>
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        <span>Activating placement…</span>
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="h-3.5 w-3.5 text-amber-400" />
-                        <span>Activate 7-Day Free Sponsor Spot</span>
-                      </>
-                    )}
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleProceedPayment}
-                    disabled={isProcessing}
-                    className="w-full btn-primary py-2.5 px-4 text-xs font-bold disabled:opacity-60 disabled:cursor-not-allowed"
-                  >
-                    {isProcessing ? (
-                      <>
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        <span>Redirecting to checkout…</span>
-                      </>
-                    ) : (
-                      <>
-                        <CreditCard className="h-3.5 w-3.5" />
-                        <span>Proceed to Payment — ${selectedPlan.price}</span>
-                      </>
-                    )}
-                  </button>
-                )}
-
-                <p className="text-center text-[10px] text-neutral-500 mt-2">
-                  {selectedPlanId === 'trial' ? 'Instant activation • Cancel or extend anytime' : 'Secure checkout powered by DodoPayments'}
-                </p>
-              </>
-            )}
-          </>
-        )}
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
