@@ -175,7 +175,7 @@ const OpenAdCard: React.FC<OpenAdCardProps> = ({
           Advertise
         </h4>
         <p className="text-[11px] font-medium text-neutral-400 group-hover:text-neutral-600 leading-tight">
-          Open spot
+          Open Spot <span className="text-emerald-600 font-semibold">(7 days Free)</span>
         </p>
       </div>
     </div>
