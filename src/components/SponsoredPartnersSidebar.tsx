@@ -33,7 +33,7 @@ export const SponsoredPartnersSidebar: React.FC<SponsoredPartnersSidebarProps> =
       {/* Card Header */}
       <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
         <div className="flex items-center gap-2">
-          <Star className="h-4 w-4 fill-amber-500 text-amber-500" />
+          <Star className="h-4 w-4 fill-neutral-400 text-neutral-500" />
           <h2 className="text-sm font-bold text-neutral-950">
             Featured Partners
           </h2>
@@ -86,10 +86,10 @@ export const SponsoredPartnersSidebar: React.FC<SponsoredPartnersSidebarProps> =
 
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between gap-1.5">
-                <h3 className="truncate text-xs font-bold text-neutral-950 group-hover:text-mint-600 transition-colors">
+                <h3 className="truncate text-xs font-bold text-neutral-950 group-hover:underline transition-colors">
                   {sponsor.name}
                 </h3>
-                <span className="shrink-0 text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200/80 px-1 py-0.2 rounded">
+                <span className="shrink-0 text-[9px] font-bold text-neutral-600 bg-gradient-to-b from-neutral-100 to-neutral-200/80 border border-neutral-300/80 px-1.5 py-0.5 rounded shadow-2xs">
                   Ad
                 </span>
               </div>

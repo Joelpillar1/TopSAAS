@@ -38,7 +38,6 @@ import { BadgeRoute } from './components/BadgeRoute';
 import { ProductRow, timeAgo } from './components/ProductRow';
 import { SkeletonRows } from './components/SkeletonCard';
 import { SponsorTile } from './components/SponsorTile';
-import { MOCK_SPONSORS } from './data/mockSponsors';
 import { HeroSponsorRails } from './components/HeroSponsorRails';
 import { WeeklyLaunchView } from './components/WeeklyLaunchView';
 import { ProductLogo } from './components/ProductLogo';
@@ -2086,10 +2085,7 @@ export default function App() {
         <ProductPage
           product={product}
           topProduct={topProduct || product}
-          allProducts={[
-            ...sortedByRankProducts.map((p, idx) => ({ ...markOwnership(p), rank: idx + 1 })),
-            ...MOCK_SPONSORS,
-          ]}
+          allProducts={sortedByRankProducts.map((p, idx) => ({ ...markOwnership(p), rank: idx + 1 }))}
           onOpenFeaturedSpotModal={() => setIsFeaturedSpotModalOpen(true)}
           comments={comments.filter((c) => c.productId === product.id)}
           soundEnabled={soundEnabled}

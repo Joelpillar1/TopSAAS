@@ -910,7 +910,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
           <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs space-y-4">
             <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
               <div className="flex items-center gap-2">
-                <Star className="h-4 w-4 fill-amber-500 text-amber-500" />
+                <Star className="h-4 w-4 fill-neutral-400 text-neutral-500" />
                 <h2 className="text-sm font-bold text-neutral-950">
                   Featured partner spotlights
                 </h2>
@@ -937,7 +937,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }
                     }}
-                    className="rounded-xl border border-amber-200/80 bg-amber-50/20 p-4 hover:border-amber-300 hover:bg-amber-50/50 transition-all cursor-pointer space-y-2 group shadow-2xs"
+                    className="rounded-xl border border-neutral-200/90 bg-gradient-to-b from-neutral-50/80 via-white to-neutral-50/40 p-4 hover:border-neutral-300 hover:from-neutral-100/70 hover:to-neutral-50/50 transition-all cursor-pointer space-y-2 group shadow-2xs"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -956,7 +956,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                           <span className="text-[10px] text-neutral-500">{sponsor.category}</span>
                         </div>
                       </div>
-                      <span className="shrink-0 text-[8.5px] font-bold text-amber-700 bg-amber-100/70 border border-amber-300/80 px-1 py-0.2 rounded">
+                      <span className="shrink-0 text-[8.5px] font-bold text-neutral-600 bg-gradient-to-b from-neutral-100 to-neutral-200/70 border border-neutral-300/80 px-1 py-0.2 rounded shadow-2xs">
                         Ad
                       </span>
                     </div>
