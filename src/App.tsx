@@ -20,6 +20,7 @@ import { SaaSIdeas } from './components/SaaSIdeas';
 import { TrendingPage } from './components/TrendingPage';
 import { GuidesListPage } from './components/GuidesListPage';
 import { GuideDetailPage } from './components/GuideDetailPage';
+import { MrrCalculatorPage } from './components/MrrCalculatorPage';
 import { LegalPage } from './components/LegalPage';
 import { PricingPage } from './components/PricingPage';
 import { LegalTab } from './components/LegalModal';
@@ -241,6 +242,9 @@ export default function App() {
       }
       if (path === '/pricing' || hash === '#pricing' || hash === '#/pricing') {
         return '/pricing';
+      }
+      if (path === '/mrr-calculator' || hash === '#mrr-calculator' || hash === '#/mrr-calculator') {
+        return '/mrr-calculator';
       }
       if (path === '/privacy' || hash === '#privacy' || hash === '#/privacy') {
         return '/privacy';
@@ -482,7 +486,13 @@ export default function App() {
 
   // Active tab: derived from currentRoute so /ideas and /pricing survive reload.
   const activeTab: DirectoryTab =
-    currentRoute === '/ideas' ? 'saas-ideas' : currentRoute === '/pricing' ? 'pricing' : 'directory';
+    currentRoute === '/ideas'
+      ? 'saas-ideas'
+      : currentRoute === '/mrr-calculator'
+        ? 'mrr-calculator'
+        : currentRoute === '/pricing'
+          ? 'pricing'
+          : 'directory';
 
   // View layout — single-column row list (the bento grid was retired)
   // Search and Category filtering state
@@ -593,6 +603,8 @@ export default function App() {
         setCurrentRoute('/submit');
       } else if (path === '/ideas' || hash === '#ideas' || hash === '#/ideas') {
         setCurrentRoute('/ideas');
+      } else if (path === '/mrr-calculator' || hash === '#mrr-calculator' || hash === '#/mrr-calculator') {
+        setCurrentRoute('/mrr-calculator');
       } else if (path === '/privacy' || hash === '#privacy' || hash === '#/privacy') {
         setCurrentRoute('/privacy');
       } else if (path === '/terms' || hash === '#terms' || hash === '#/terms') {
@@ -1857,14 +1869,25 @@ export default function App() {
   // Global top navigation — rendered above every route
   const handleTabChange = (tab: DirectoryTab) => {
     playSound('click', soundEnabled);
-    const nextRoute = tab === 'saas-ideas' ? '/ideas' : tab === 'pricing' ? '/pricing' : '/';
+    const nextRoute =
+      tab === 'saas-ideas'
+        ? '/ideas'
+        : tab === 'mrr-calculator'
+          ? '/mrr-calculator'
+          : tab === 'pricing'
+            ? '/pricing'
+            : '/';
+    const pageTitle =
+      tab === 'pricing'
+        ? 'Pricing'
+        : tab === 'saas-ideas'
+          ? 'SaaS Ideas'
+          : tab === 'mrr-calculator'
+            ? 'SaaS MRR Calculator'
+            : 'Directory';
     setCurrentRoute(nextRoute);
     try {
-      window.history.pushState(
-        {},
-        tab === 'pricing' ? 'Pricing' : tab === 'saas-ideas' ? 'SaaS Ideas' : 'Directory',
-        nextRoute
-      );
+      window.history.pushState({}, pageTitle, nextRoute);
     } catch { }
     if (tab === 'directory') {
       setSelectedCategory('All');
@@ -2447,6 +2470,11 @@ export default function App() {
     return routeChrome(
       <GuideDetailPage slug={guideSlug} soundEnabled={soundEnabled} onOpenRepo={handleOpenRepo} />
     );
+  }
+
+  // 1.10 SAAS MRR CALCULATOR ROUTE (/mrr-calculator)
+  if (currentRoute === '/mrr-calculator') {
+    return routeChrome(<MrrCalculatorPage soundEnabled={soundEnabled} />);
   }
 
   // 2. MAIN DIRECTORY HOMEPAGE ROUTE

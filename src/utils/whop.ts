@@ -1,6 +1,24 @@
 import { supabase } from './supabase';
 
-export type PlanType = '1mo' | '3mo' | '1yr' | '7days' | '30days';
+export const WHOP_LINKS = {
+  weeklyRelaunch: 'https://whop.com/topsaas/weekly-relaunch/',
+  oneTime: 'https://whop.com/topsaas/one-time-fe/',
+  perProductPass: 'https://whop.com/topsaas/per-product-pass/',
+  sponsor1mo: 'https://whop.com/checkout/plan_VHCOSyqWd9l9Q',
+  sponsor3mo: 'https://whop.com/checkout/plan_SMad32AkVoMeu',
+  sponsor1yr: 'https://whop.com/checkout/plan_2uumEoGYQUKtb',
+} as const;
+
+export type PlanType =
+  | '1mo'
+  | '3mo'
+  | '1yr'
+  | '7days'
+  | '30days'
+  | 'weekly_relaunch'
+  | 'onetime'
+  | 'per_product_pass'
+  | 'lifetime';
 
 export interface CheckoutOptions {
   planType: PlanType;
@@ -15,11 +33,15 @@ export interface CheckoutResponse {
 }
 
 /**
- * Normalizes plan key ('1mo', '3mo', '1yr')
+ * Normalizes plan key to database key suffix
  */
-function normalizePlanKey(planType: PlanType): '1mo' | '3mo' | '1yr' {
-  if (planType === '3mo') return '3mo';
-  if (planType === '1yr') return '1yr';
+export function normalizePlanKey(planType: PlanType): string {
+  const p = String(planType).toLowerCase();
+  if (p === 'weekly_relaunch' || p === 'weekly-relaunch' || p === 'relaunch') return 'weekly_relaunch';
+  if (p === 'onetime' || p === 'one-time' || p === 'one-time-fe' || p === 'lifetime') return 'onetime';
+  if (p === 'per_product_pass' || p === 'per-product-pass' || p === 'pro_monthly' || p === 'pro') return 'per_product_pass';
+  if (p === '3mo') return '3mo';
+  if (p === '1yr') return '1yr';
   return '1mo';
 }
 
@@ -61,7 +83,12 @@ export async function getWhopCheckoutUrlFromSupabase(
     console.debug('Direct whop_payments_config query note:', err);
   }
 
-  // 3. Fallback to Vite env variables if provided
+  // 3. Known production Whop links
+  if (planKey === 'weekly_relaunch') return WHOP_LINKS.weeklyRelaunch;
+  if (planKey === 'onetime') return WHOP_LINKS.oneTime;
+  if (planKey === 'per_product_pass') return WHOP_LINKS.perProductPass;
+
+  // 4. Fallback to Vite env variables if provided
   const envUrl =
     planKey === '3mo'
       ? import.meta.env.VITE_WHOP_LINK_3MO
@@ -73,7 +100,7 @@ export async function getWhopCheckoutUrlFromSupabase(
     return envUrl.trim();
   }
 
-  return null;
+  return WHOP_LINKS.sponsor1mo;
 }
 
 /**
@@ -112,7 +139,7 @@ export async function createCheckoutSession(
 
   // 2. Fetch checkout URL dynamically from Supabase database
   const dbUrl = await getWhopCheckoutUrlFromSupabase(planType);
-  const baseLink = dbUrl || 'https://whop.com/topsaas/1-month-sponsor/';
+  const baseLink = dbUrl || WHOP_LINKS.weeklyRelaunch;
 
   const redirectUrl = encodeURIComponent(returnUrl);
   const separator = baseLink.includes('?') ? '&' : '?';

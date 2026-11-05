@@ -721,6 +721,17 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
       return;
     }
 
+    // When users toggle the $5, it does nothing till they click submit
+    // Once they click on submit, show the modal so they can pay from there
+    if (autoRelaunch && !autoRelaunchPaid) {
+      setIsAutoRelaunchModalOpen(true);
+      return;
+    }
+
+    await executeSubmission();
+  };
+
+  const executeSubmission = async (overrideAutoRelaunch?: boolean, overridePaid?: boolean): Promise<string | undefined> => {
     setIsSubmitting(true);
     setBanner(null);
     try {
@@ -748,6 +759,9 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
       if (form.chromeWebStore.trim()) socials.push({ platform: 'chrome_web_store', url: cleanUrl(form.chromeWebStore) });
       const finalCategory = form.categories.length > 0 ? (form.categories.join(', ') as Category) : form.category;
 
+      const isRelaunch = overrideAutoRelaunch !== undefined ? overrideAutoRelaunch : autoRelaunch;
+      const isPaid = overridePaid !== undefined ? overridePaid : autoRelaunchPaid;
+
       const newId = await onSubmit({
         name: form.name.trim(),
         tagline: form.tagline.trim(),
@@ -772,8 +786,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
         offerCode: form.offerCode.trim() || undefined,
         offerUrl: form.offerUrl.trim() ? autoFormatUrl(form.offerUrl) : undefined,
         offerDetails: form.offerDetails.trim() || undefined,
-        autoRelaunch: autoRelaunch || undefined,
-        autoRelaunchPaid: (autoRelaunch && autoRelaunchPaid) || undefined,
+        autoRelaunch: isRelaunch || undefined,
+        autoRelaunchPaid: (isRelaunch && isPaid) || undefined,
         scheduledLaunchWeek: form.scheduledLaunchWeek,
         scheduledLaunchDate: form.scheduledLaunchDate,
       });
@@ -781,7 +795,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
       if (!newId) {
         setBanner('Something went wrong while submitting. Please try again.');
         setIsSubmitting(false);
-        return;
+        return undefined;
       }
 
       playSound('success', soundEnabled);
@@ -790,9 +804,11 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
       } catch {}
       clearDraft();
       setLaunched({ id: newId, name: form.name.trim() });
+      return newId;
     } catch {
       setBanner('Something went wrong while submitting. Please try again.');
       setIsSubmitting(false);
+      return undefined;
     }
   };
 
@@ -2165,12 +2181,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
               <div
                 onClick={() => {
                   playSound('click', soundEnabled);
-                  if (!autoRelaunch) {
-                    setIsAutoRelaunchModalOpen(true);
-                  } else {
-                    setAutoRelaunch(false);
-                    setAutoRelaunchPaid(false);
-                  }
+                  setAutoRelaunch((prev) => !prev);
                 }}
                 className={`rounded-2xl border p-4 sm:p-5 transition-all cursor-pointer select-none ${
                   autoRelaunch
@@ -2186,15 +2197,9 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-sm font-black text-neutral-950">Auto Weekly Relaunch</span>
-                        {autoRelaunch && autoRelaunchPaid ? (
-                          <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
-                            ✓ Paid $5 / month (Active)
-                          </span>
-                        ) : (
-                          <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700">
-                            +$5 / month
-                          </span>
-                        )}
+                        <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700">
+                          +$5 / month
+                        </span>
                       </div>
                       <p className="text-xs text-neutral-600 mt-1 leading-relaxed">
                         Relaunch into active weekly voting rounds every Sunday automatically. Re-engage the community, reset weekly votes, and get fresh homepage exposure every week.
@@ -2202,7 +2207,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                       {autoRelaunch && (
                         <p className="text-[11px] font-semibold text-blue-700 mt-1 flex items-center gap-1">
                           <Check className="h-3 w-3 stroke-[3]" />
-                          <span>Monitored in real-time by TopSAAS review team on /accept</span>
+                          <span>Selected: Payment of $5 will be prompted when you click Submit</span>
                         </p>
                       )}
                     </div>
@@ -2397,56 +2402,68 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-3 pt-2">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => {
+                  onClick={async () => {
+                    setAutoRelaunch(false);
+                    setAutoRelaunchPaid(false);
                     setIsAutoRelaunchModalOpen(false);
                     playSound('click', soundEnabled);
+                    await executeSubmission(false, false);
                   }}
-                  className="rounded-xl border border-neutral-200 px-4 py-2.5 text-xs font-bold text-neutral-600 hover:bg-neutral-100 transition-colors cursor-pointer"
+                  className="w-full sm:w-auto text-xs font-bold text-neutral-500 hover:text-neutral-900 transition-colors py-2 text-center cursor-pointer"
                 >
-                  Cancel
+                  Submit Free (Skip Relaunch)
                 </button>
-                <button
-                  type="button"
-                  disabled={isPayingRelaunch}
-                  onClick={async () => {
-                    setIsPayingRelaunch(true);
-                    playSound('click', soundEnabled);
-                    try {
-                      // Attempt edge function or direct checkout
-                      try {
-                        const { getWhopCheckoutUrlFromSupabase } = await import('../utils/whop');
-                        await getWhopCheckoutUrlFromSupabase('1mo');
-                      } catch {}
 
-                      await new Promise((r) => setTimeout(r, 600));
-                      setAutoRelaunch(true);
-                      setAutoRelaunchPaid(true);
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                  <button
+                    type="button"
+                    onClick={() => {
                       setIsAutoRelaunchModalOpen(false);
-                      playSound('success', soundEnabled);
+                      playSound('click', soundEnabled);
+                    }}
+                    className="rounded-xl border border-neutral-200 px-4 py-2.5 text-xs font-bold text-neutral-600 hover:bg-neutral-100 transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isPayingRelaunch}
+                    onClick={async () => {
+                      setIsPayingRelaunch(true);
+                      playSound('click', soundEnabled);
                       try {
-                        confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
-                      } catch {}
-                    } finally {
-                      setIsPayingRelaunch(false);
-                    }
-                  }}
-                  className="btn-primary flex items-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-500 px-5 py-2.5 text-xs font-black text-white shadow-md shadow-blue-600/25 cursor-pointer"
-                >
-                  {isPayingRelaunch ? (
-                    <>
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      <span>Processing Payment…</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>🚀</span>
-                      <span>Pay $5 & Enable Weekly Relaunch</span>
-                    </>
-                  )}
-                </button>
+                        const newId = await executeSubmission(true, true);
+                        const returnUrl = encodeURIComponent(
+                          `${window.location.origin}/payment-success?plan=weekly_relaunch&product=${encodeURIComponent(form.name.trim())}${
+                            newId ? `&target_product_id=${encodeURIComponent(newId)}` : ''
+                          }`
+                        );
+                        const emailParam = relaunchEmail.trim() ? `&email=${encodeURIComponent(relaunchEmail.trim())}` : '';
+                        const whopUrl = `https://whop.com/topsaas/weekly-relaunch/?redirect_url=${returnUrl}${emailParam}`;
+                        window.location.href = whopUrl;
+                      } catch (err) {
+                        console.error('Whop checkout error:', err);
+                        setIsPayingRelaunch(false);
+                      }
+                    }}
+                    className="btn-primary flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-500 px-5 py-2.5 text-xs font-black text-white shadow-md shadow-blue-600/25 cursor-pointer flex-1 sm:flex-none"
+                  >
+                    {isPayingRelaunch ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        <span>Redirecting to Whop…</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>🚀</span>
+                        <span>Pay $5 on Whop & Launch</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           </div>

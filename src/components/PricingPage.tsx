@@ -279,13 +279,15 @@ export const PricingPage: React.FC<PricingPageProps> = ({
               </li>
             </ul>
 
-            <button
-              type="button"
-              onClick={() => { playSound('click', soundEnabled); onOpenSubmit('lifetime'); }}
-              className="w-full rounded-xl border border-neutral-300 bg-neutral-100 py-2.5 text-xs font-bold text-neutral-900 hover:border-neutral-400 hover:bg-neutral-200 transition-all cursor-pointer"
+            <a
+              href="https://whop.com/topsaas/one-time-fe/"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => playSound('click', soundEnabled)}
+              className="w-full text-center rounded-xl border border-neutral-300 bg-neutral-100 py-2.5 text-xs font-bold text-neutral-900 hover:border-neutral-400 hover:bg-neutral-200 transition-all cursor-pointer block"
             >
-              Get Lifetime — $99
-            </button>
+              Get One-Time Feature Pass
+            </a>
           </div>
 
           {/* Pro Growth — highlighted with BorderBeam wrapper (SponsorTile pattern) */}
@@ -339,13 +341,15 @@ export const PricingPage: React.FC<PricingPageProps> = ({
                 </li>
               </ul>
 
-              <button
-                type="button"
-                onClick={() => { playSound('click', soundEnabled); onOpenSubmit('monthly_pro'); }}
-                className="w-full rounded-xl bg-mint-500 py-2.5 text-xs font-black text-white hover:bg-mint-400 transition-all cursor-pointer shadow-md shadow-mint-500/20"
+              <a
+                href="https://whop.com/topsaas/per-product-pass/"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => playSound('click', soundEnabled)}
+                className="w-full text-center rounded-xl bg-mint-500 py-2.5 text-xs font-black text-white hover:bg-mint-400 transition-all cursor-pointer shadow-md shadow-mint-500/20 block"
               >
-                Start Pro — $49/mo
-              </button>
+                Get $49/mo Per-Product Pass
+              </a>
             </div>
           </BorderBeam>
         </div>

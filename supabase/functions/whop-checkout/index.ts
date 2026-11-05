@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 
 interface CheckoutRequestBody {
-  plan_type: '1mo' | '3mo' | '1yr' | '7days' | '30days';
+  plan_type: '1mo' | '3mo' | '1yr' | '7days' | '30days' | 'weekly_relaunch' | 'onetime' | 'per_product_pass';
   product_name: string;
   target_product_id?: string;
   customer_email?: string;
@@ -50,15 +50,34 @@ serve(async (req: Request) => {
     const apiKey = config['api_key'] || Deno.env.get('WHOP_API_KEY') || '';
     
     // Check for explicit custom checkout URLs or plan IDs
-    const planKey = plan_type === '3mo' ? '3mo' : plan_type === '1yr' ? '1yr' : '1mo';
+    let planKey = '1mo';
+    const rawPlan = String(plan_type).toLowerCase();
+    if (rawPlan === 'weekly_relaunch' || rawPlan === 'weekly-relaunch' || rawPlan === 'relaunch') {
+      planKey = 'weekly_relaunch';
+    } else if (rawPlan === 'onetime' || rawPlan === 'one-time' || rawPlan === 'one-time-fe' || rawPlan === 'lifetime') {
+      planKey = 'onetime';
+    } else if (rawPlan === 'per_product_pass' || rawPlan === 'per-product-pass' || rawPlan === 'pro_monthly' || rawPlan === 'pro') {
+      planKey = 'per_product_pass';
+    } else if (rawPlan === '3mo') {
+      planKey = '3mo';
+    } else if (rawPlan === '1yr') {
+      planKey = '1yr';
+    }
+
+    const defaultCheckoutUrls: Record<string, string> = {
+      weekly_relaunch: 'https://whop.com/topsaas/weekly-relaunch/',
+      onetime: 'https://whop.com/topsaas/one-time-fe/',
+      per_product_pass: 'https://whop.com/topsaas/per-product-pass/',
+      '1mo': 'https://whop.com/checkout/plan_VHCOSyqWd9l9Q',
+      '3mo': 'https://whop.com/checkout/plan_SMad32AkVoMeu',
+      '1yr': 'https://whop.com/checkout/plan_2uumEoGYQUKtb',
+    };
+
     const customCheckoutUrl =
       config[`checkout_url_${planKey}`] ||
       Deno.env.get(`WHOP_CHECKOUT_${planKey.toUpperCase()}`) ||
-      (planKey === '3mo'
-        ? 'https://whop.com/checkout/plan_SMad32AkVoMeu'
-        : planKey === '1yr'
-        ? 'https://whop.com/checkout/plan_2uumEoGYQUKtb'
-        : 'https://whop.com/checkout/plan_VHCOSyqWd9l9Q');
+      defaultCheckoutUrls[planKey] ||
+      defaultCheckoutUrls['1mo'];
 
     const planId =
       config[`plan_${planKey}_id`] ||
