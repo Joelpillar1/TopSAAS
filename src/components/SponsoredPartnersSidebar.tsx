@@ -89,9 +89,6 @@ export const SponsoredPartnersSidebar: React.FC<SponsoredPartnersSidebarProps> =
                 <h3 className="truncate text-xs font-bold text-neutral-950 group-hover:underline transition-colors">
                   {sponsor.name}
                 </h3>
-                <span className="shrink-0 text-[9px] font-bold text-neutral-600 bg-gradient-to-b from-neutral-100 to-neutral-200/80 border border-neutral-300/80 px-1.5 py-0.5 rounded shadow-2xs">
-                  Ad
-                </span>
               </div>
               <p className="mt-0.5 text-[11px] text-neutral-600 line-clamp-2 leading-relaxed">
                 {sponsor.tagline}
