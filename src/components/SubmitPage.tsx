@@ -459,7 +459,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
       return isStepComplete(0) && isStepComplete(2);
     }
     if (i === 4) {
-      return isStepComplete(3);
+      return isStepComplete(3) && isBadgeVerified;
     }
     return false;
   };
@@ -706,6 +706,13 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
       setErrors(validateStep(first));
       setBanner('Some required fields are still empty — they are marked below.');
       setStep(first);
+      requestAnimationFrame(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+      return;
+    }
+
+    if (!isBadgeVerified) {
+      setBanner('Please verify the TopSAAS badge on your website in Step 5 before submitting.');
+      setStep(4);
       requestAnimationFrame(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
       return;
     }
@@ -2263,11 +2270,23 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
               <button
                 type="button"
                 onClick={handleLaunch}
-                disabled={isSubmitting}
-                className={`btn-primary px-5 py-2.5 text-xs font-black transition-all ${
-                  autoRelaunch ? 'bg-blue-600 hover:bg-blue-500 shadow-blue-500/25' : ''
+                disabled={isSubmitting || !isBadgeVerified}
+                className={`px-5 py-2.5 text-xs font-black transition-all rounded-xl select-none ${
+                  !isBadgeVerified
+                    ? 'bg-neutral-200 text-neutral-400 border border-neutral-300 cursor-not-allowed shadow-none'
+                    : isSubmitting
+                    ? 'btn-primary opacity-80 cursor-wait'
+                    : autoRelaunch
+                    ? 'btn-primary bg-blue-600 hover:bg-blue-500 shadow-blue-500/25 cursor-pointer'
+                    : 'btn-primary cursor-pointer'
                 }`}
-                title={autoRelaunch ? 'Submit website with Weekly Relaunch ($5/mo)' : 'Submit website for review'}
+                title={
+                  !isBadgeVerified
+                    ? 'Please verify the TopSAAS badge in Step 5 before submitting'
+                    : autoRelaunch
+                    ? 'Submit website with Weekly Relaunch ($5/mo)'
+                    : 'Submit website for review'
+                }
               >
                 {isSubmitting ? (
                   <span className="inline-flex items-center gap-1.5">
@@ -2281,7 +2300,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1.5">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-white/90" />
+                    <CheckCircle2 className={`h-3.5 w-3.5 ${!isBadgeVerified ? 'text-neutral-400' : 'text-white/90'}`} />
                     Submit website
                   </span>
                 )}
