@@ -8,6 +8,7 @@ import { navigateTo } from '../utils/nav';
 import { formatStars } from '../utils/github';
 import { Product } from '../types';
 import { HeroClaimBanner } from './HeroClaimBanner';
+import { BorderBeam } from './BorderBeam';
 import { playSound } from '../utils/sound';
 import { GridFillerCell, useGridColumns } from './GridFiller';
 import { cn } from '@/lib/utils';
@@ -291,31 +292,33 @@ export const SaaSIdeas: React.FC<SaaSIdeasProps> = ({
 
         /* Default state: no featured assigned yet, show default reserve spot placeholder with BorderBeam */
         return (
-          <button
-            type="button"
-            onClick={() => {
-              playSound('click', soundEnabled);
-              onOpenFeaturedSpotModal?.();
-            }}
-            className="group flex w-full items-center justify-between gap-3 rounded-2xl border border-dashed border-neutral-300 bg-white px-4 py-3.5 sm:px-5 text-left transition-all hover:border-neutral-400 hover:bg-neutral-50 cursor-pointer"
-          >
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-neutral-100 text-neutral-600 border border-neutral-200 group-hover:bg-neutral-950 group-hover:text-white transition-colors">
-                <Star className="h-4 w-4" />
+          <BorderBeam size="md" colorVariant="colorful" strength={0.85} className="w-full rounded-2xl">
+            <button
+              type="button"
+              onClick={() => {
+                playSound('click', soundEnabled);
+                onOpenFeaturedSpotModal?.();
+              }}
+              className="group flex w-full items-center justify-between gap-3 rounded-2xl border border-neutral-200/90 bg-white px-4 py-3.5 sm:px-5 text-left transition-all hover:border-neutral-300 hover:bg-neutral-50/80 cursor-pointer shadow-2xs"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50/60 text-blue-600 border border-neutral-200 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                  <Star className="h-4 w-4 fill-amber-400 text-amber-500" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-neutral-900 transition-colors">
+                    The featured spot is open <span className="text-emerald-600 font-semibold text-[11px]">(7 days Free)</span>
+                  </p>
+                  <p className="text-[11px] text-neutral-500 font-medium truncate">
+                    Put your product at the top of TopSAAS · Seen by every builder who visits
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0">
-                <p className="text-xs font-bold text-neutral-900 transition-colors">
-                  The featured spot is open
-                </p>
-                <p className="text-[11px] text-neutral-500 font-medium truncate">
-                  Put your product at the top of TopSAAS for 30 days.
-                </p>
-              </div>
-            </div>
-            <span className="shrink-0 rounded-lg border border-neutral-200 bg-neutral-100 px-3 py-1.5 text-[11px] font-bold text-neutral-700 group-hover:border-neutral-950 group-hover:bg-neutral-950 group-hover:text-white transition-colors">
-              Reserve spot
-            </span>
-          </button>
+              <span className="shrink-0 rounded-lg border border-neutral-200 bg-neutral-100 px-3 py-1.5 text-[11px] font-bold text-neutral-700 group-hover:border-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                Reserve spot
+              </span>
+            </button>
+          </BorderBeam>
         );
       })()}
 
