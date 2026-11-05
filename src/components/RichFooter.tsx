@@ -319,6 +319,20 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                 </button>
               </li>
               <li>
+                <a
+                  href="/pricing"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    playSound('click', soundEnabled);
+                    if (onOpenPricing) onOpenPricing();
+                    else navigateTo('/pricing');
+                  }}
+                  className="text-xs text-neutral-600 hover:text-neutral-950 transition-colors cursor-pointer flex items-center gap-1.5"
+                >
+                  Pricing
+                </a>
+              </li>
+              <li>
                 <button
                   type="button"
                   onClick={() => { playSound('click', soundEnabled); navigateTo('/trending'); }}
@@ -405,6 +419,19 @@ export const RichFooter: React.FC<RichFooterProps> = ({
           <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-3 gap-y-1 text-[11px] text-neutral-500">
             <span>© {currentYear} TopSAAS.</span>
             <span>All rights reserved.</span>
+            <a
+              href="/pricing"
+              onClick={(e) => {
+                e.preventDefault();
+                playSound('click', soundEnabled);
+                if (onOpenPricing) onOpenPricing();
+                else navigateTo('/pricing');
+              }}
+              className="hover:text-neutral-900 hover:underline transition-colors cursor-pointer"
+            >
+              Pricing
+            </a>
+            <span className="text-neutral-400">•</span>
             <button
               type="button"
               onClick={() => { playSound('click', soundEnabled); onOpenPrivacy?.(); }}

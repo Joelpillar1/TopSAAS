@@ -111,6 +111,8 @@ export interface Product {
   solution?: string;
   uniqueSellingPoint?: string;
   autoRelaunch?: boolean;
+  scheduledLaunchWeek?: number;
+  scheduledLaunchDate?: number;
   relaunchWeeks?: number[];
   isRelaunched?: boolean;
   lastRelaunchedAt?: number;
@@ -190,6 +192,8 @@ export interface SubmitProductDetails {
   offerUrl?: string;
   offerDetails?: string;
   autoRelaunch?: boolean;
+  scheduledLaunchWeek?: number;
+  scheduledLaunchDate?: number;
 }
 
 export interface WebsiteSubmission {
@@ -226,6 +230,8 @@ export interface WebsiteSubmission {
   solution?: string;
   uniqueSellingPoint?: string;
   autoRelaunch?: boolean;
+  scheduledLaunchWeek?: number;
+  scheduledLaunchDate?: number;
   relaunchWeeks?: number[];
   isRelaunched?: boolean;
   lastRelaunchedAt?: number;

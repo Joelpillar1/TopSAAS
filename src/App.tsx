@@ -492,6 +492,7 @@ export default function App() {
   const [shareProduct, setShareProduct] = useState<Product | null>(null);
   const [isHowItWorksOpen, setIsHowItWorksOpen] = useState(false);
   const [isFeaturedSpotModalOpen, setIsFeaturedSpotModalOpen] = useState(false);
+  const [featuredInitialTier, setFeaturedInitialTier] = useState<'1mo' | '3mo' | '1yr' | 'trial'>('3mo');
   const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
   const [legalTab, setLegalTab] = useState<LegalTab>('privacy');
 
@@ -1121,6 +1122,8 @@ export default function App() {
       solution: details.solution?.trim() || undefined,
       uniqueSellingPoint: details.uniqueSellingPoint?.trim() || undefined,
       autoRelaunch: details.autoRelaunch || undefined,
+      scheduledLaunchWeek: details.scheduledLaunchWeek || undefined,
+      scheduledLaunchDate: details.scheduledLaunchDate || undefined,
       lastRelaunchedAt: details.autoRelaunch ? now : undefined,
     };
 
@@ -1911,13 +1914,12 @@ export default function App() {
             }
             handleOpenSubmit();
           }}
-          onOpenSponsor={(_tier) => {
+          onOpenSponsor={(tier) => {
             playSound('click', soundEnabled);
-            if (!user) {
-              setIsSignInModalOpen(true);
-            } else {
-              setIsFeaturedSpotModalOpen(true);
+            if (tier) {
+              setFeaturedInitialTier(tier);
             }
+            setIsFeaturedSpotModalOpen(true);
           }}
           onGoHome={handleBackToLeaderboard}
           soundEnabled={soundEnabled}
@@ -1932,6 +1934,34 @@ export default function App() {
           onOpenTerms={() => handleNavigateLegal('terms')}
           onOpenPricing={handleOpenPricing}
           className="border-t border-neutral-200 bg-neutral-100"
+        />
+
+        <SignInModal
+          isOpen={isSignInModalOpen}
+          onClose={() => setIsSignInModalOpen(false)}
+          onSignIn={handleSignIn}
+        />
+        <FeaturedSpotModal
+          isOpen={isFeaturedSpotModalOpen}
+          onClose={() => setIsFeaturedSpotModalOpen(false)}
+          products={products}
+          user={user}
+          initialTier={featuredInitialTier}
+          soundEnabled={soundEnabled}
+          onActivateSponsor={handleActivateSponsorTrial}
+          onOpenSubmitModal={() => {
+            setIsFeaturedSpotModalOpen(false);
+            handleOpenSubmit();
+          }}
+        />
+        <HowItWorksModal
+          isOpen={isHowItWorksOpen}
+          onClose={() => setIsHowItWorksOpen(false)}
+          onStartBidding={() => {
+            setIsHowItWorksOpen(false);
+            handleOpenSubmit();
+          }}
+          soundEnabled={soundEnabled}
         />
       </div>
     );
@@ -2101,6 +2131,7 @@ export default function App() {
             try { window.history.pushState('', document.title, '/terms'); } catch { }
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
+          onOpenPricing={handleOpenPricing}
         />
         <ShareModal
           product={shareProduct}
@@ -2239,6 +2270,8 @@ export default function App() {
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
           soundEnabled={soundEnabled}
+          products={products}
+          submissions={submissions}
         />
         <RichFooter
           totalProducts={products.length}
@@ -2256,6 +2289,7 @@ export default function App() {
             try { window.history.pushState('', document.title, '/terms'); } catch { }
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
+          onOpenPricing={handleOpenPricing}
         />
         <SignInModal
           isOpen={isSignInModalOpen}
@@ -2877,6 +2911,7 @@ export default function App() {
         onClose={() => setIsFeaturedSpotModalOpen(false)}
         products={products}
         user={user}
+        initialTier={featuredInitialTier}
         soundEnabled={soundEnabled}
         onActivateSponsor={handleActivateSponsorTrial}
         onOpenSubmitModal={() => {

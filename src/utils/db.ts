@@ -37,6 +37,8 @@ export const mapDbSubmission = (row: Record<string, unknown>): WebsiteSubmission
   problemItSolves: (row.problem_it_solves as string) || undefined,
   solution: (row.solution as string) || undefined,
   uniqueSellingPoint: (row.unique_selling_point as string) || undefined,
+  scheduledLaunchWeek: (row.scheduled_launch_week as number) || undefined,
+  scheduledLaunchDate: (row.scheduled_launch_date as number) || undefined,
 });
 
 /** Map a WebsiteSubmission to Supabase insert/update format */
@@ -75,6 +77,8 @@ export const toDbSubmission = (sub: WebsiteSubmission) => {
     problem_it_solves: sub.problemItSolves || null,
     solution: sub.solution || null,
     unique_selling_point: sub.uniqueSellingPoint || null,
+    scheduled_launch_week: sub.scheduledLaunchWeek || null,
+    scheduled_launch_date: sub.scheduledLaunchDate || null,
   };
 };
 
@@ -133,6 +137,8 @@ export const mapDbProduct = (row: Record<string, unknown>): Product => ({
   relaunchWeeks: (row.relaunch_weeks as number[]) || (row.relaunchWeeks as number[]) || undefined,
   isRelaunched: Boolean(row.is_relaunched ?? row.isRelaunched) || undefined,
   lastRelaunchedAt: (row.last_relaunched_at as number) || (row.lastRelaunchedAt as number) || undefined,
+  scheduledLaunchWeek: (row.scheduled_launch_week as number) || (row.scheduledLaunchWeek as number) || undefined,
+  scheduledLaunchDate: (row.scheduled_launch_date as number) || (row.scheduledLaunchDate as number) || undefined,
 });
 
 /** Map a Product to Supabase insert/update format */
@@ -165,6 +171,8 @@ export const toDbProduct = (p: Product) => {
     is_user_owned: false,
     submitted_by: isUuid ? p.submittedBy : null,
     verified: p.verified || false,
+    scheduled_launch_week: p.scheduledLaunchWeek || null,
+    scheduled_launch_date: p.scheduledLaunchDate || null,
     description: p.description || null,
     problem_it_solves: p.problemItSolves || null,
     solution: p.solution || null,
@@ -242,11 +250,13 @@ export function submissionToProduct(sub: WebsiteSubmission, rank: number = 1): P
     dinoScore: 0,
     upvotes: 0,
     clicks: 0,
-    createdAt: sub.submittedAt || Date.now(),
+    createdAt: sub.scheduledLaunchDate || sub.submittedAt || Date.now(),
     updatedAt: Date.now(),
     verified: true,
     isUserOwned: false,
     submittedBy: sub.submittedBy,
+    scheduledLaunchWeek: sub.scheduledLaunchWeek,
+    scheduledLaunchDate: sub.scheduledLaunchDate,
     description: sub.description || `${sub.name} is a high-quality product in the ${sub.category} ecosystem. ${sub.tagline}.`,
     problemItSolves: sub.problemItSolves || undefined,
     solution: sub.solution || undefined,

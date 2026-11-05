@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Check, X, Zap, ArrowLeft, ShieldCheck, ChevronDown, ChevronUp, Award, Star } from 'lucide-react';
 import { VerifiedBadge } from './VerifiedBadge';
 import { BorderBeam } from './BorderBeam';
+import { SponsorShowcaseSection } from './SponsorShowcaseSection';
 import { playSound } from '../utils/sound';
 
 interface PricingPageProps {
@@ -67,7 +68,6 @@ export const PricingPage: React.FC<PricingPageProps> = ({
 }) => {
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   const [freeWeeklyRelaunch, setFreeWeeklyRelaunch] = useState(false);
-  const [sponsorTier, setSponsorTier] = useState<'1mo' | '3mo' | '1yr'>('3mo');
   const [isIncludesOpen, setIsIncludesOpen] = useState(false);
 
   const toggleFaq = (index: number) => {
@@ -435,145 +435,11 @@ export const PricingPage: React.FC<PricingPageProps> = ({
           )}
         </div>
 
-        {/* ── Homepage & Directory Sponsorship (App Blue, not deep) ── */}
-        <div className="rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50/90 via-white to-blue-50/60 p-6 sm:p-8 space-y-6 shadow-sm relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-          
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-blue-200/80 pb-6 relative z-10">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-100 border border-blue-300 px-3 py-1 text-xs font-black text-blue-700">
-                  <Star className="h-3 w-3 fill-blue-600 text-blue-600" />
-                  <span>PREMIUM SPONSORSHIP</span>
-                </span>
-                <span className="text-[11px] font-bold text-neutral-500">Above-the-Fold Placement</span>
-              </div>
-              <h2 className="text-xl sm:text-2xl font-black text-neutral-950 mt-2 tracking-tight">
-                Spotlight Your Product on TopSAAS
-              </h2>
-              <p className="text-xs sm:text-sm text-neutral-600 max-w-xl mt-1 leading-relaxed">
-                Take over our sticky hero rails 24/7, get pinned at the top of your category, and drive targeted, high-intent SaaS founder traffic.
-              </p>
-            </div>
-
-            {/* Duration Selector */}
-            <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-blue-200 shadow-2xs self-start sm:self-auto shrink-0">
-              <button
-                type="button"
-                onClick={() => { playSound('click', soundEnabled); setSponsorTier('1mo'); }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  sponsorTier === '1mo' ? 'bg-blue-600 text-white shadow-xs' : 'text-neutral-600 hover:text-neutral-950'
-                }`}
-              >
-                1 Month
-              </button>
-              <button
-                type="button"
-                onClick={() => { playSound('click', soundEnabled); setSponsorTier('3mo'); }}
-                className={`relative px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  sponsorTier === '3mo' ? 'bg-blue-600 text-white shadow-xs' : 'text-neutral-600 hover:text-neutral-950'
-                }`}
-              >
-                3 Months
-                <span className={`ml-1 text-[9px] font-black px-1.5 py-0.5 rounded ${
-                  sponsorTier === '3mo' ? 'bg-white/25 text-white' : 'text-blue-700 bg-blue-100'
-                }`}>
-                  Save 20%
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => { playSound('click', soundEnabled); setSponsorTier('1yr'); }}
-                className={`relative px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  sponsorTier === '1yr' ? 'bg-blue-600 text-white shadow-xs' : 'text-neutral-600 hover:text-neutral-950'
-                }`}
-              >
-                1 Year
-                <span className={`ml-1 text-[9px] font-black px-1.5 py-0.5 rounded ${
-                  sponsorTier === '1yr' ? 'bg-white/25 text-white' : 'text-purple-700 bg-purple-100'
-                }`}>
-                  Save 43%
-                </span>
-              </button>
-            </div>
-          </div>
-
-          {/* Pricing & Features Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
-            {/* Price block */}
-            <div className="md:col-span-1 rounded-xl bg-white border border-blue-200 p-5 flex flex-col justify-between shadow-xs">
-              <div>
-                <p className="text-xs font-bold text-neutral-500">
-                  {sponsorTier === '1mo' ? '1-Month Flexible' : sponsorTier === '3mo' ? '3-Month Growth Campaign' : '1-Year Annual Partner'}
-                </p>
-                <div className="flex items-baseline gap-2 mt-1">
-                  <span className="text-4xl font-black text-neutral-950 font-mono-num">
-                    {sponsorTier === '1mo' ? '$29' : sponsorTier === '3mo' ? '$69' : '$199'}
-                  </span>
-                  <span className="text-xs font-semibold text-neutral-500">
-                    {sponsorTier === '1mo' ? '/ month' : sponsorTier === '3mo' ? 'total ($23/mo)' : 'total ($16.50/mo)'}
-                  </span>
-                </div>
-                <p className="text-xs text-neutral-600 mt-2 leading-relaxed">
-                  {sponsorTier === '1mo'
-                    ? 'Flexible 30-day trial for founders testing traffic and conversion.'
-                    : sponsorTier === '3mo'
-                    ? 'Our most popular plan. Save $18 and build compounding domain presence.'
-                    : 'Maximum ROI. Save $149 with permanent top partner placement all year.'}
-                </p>
-              </div>
-
-              <div className="pt-5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    playSound('click', soundEnabled);
-                    if (onOpenSponsor) onOpenSponsor(sponsorTier);
-                  }}
-                  className="w-full btn-primary bg-blue-600 hover:bg-blue-500 text-white font-black py-3 text-xs rounded-xl transition-all shadow-md shadow-blue-500/20 cursor-pointer"
-                >
-                  Sponsor with {sponsorTier === '1mo' ? '1 Month ($29)' : sponsorTier === '3mo' ? '3 Months ($69)' : '1 Year ($199)'}
-                </button>
-              </div>
-            </div>
-
-            {/* Included Perks block */}
-            <div className="md:col-span-2 rounded-xl bg-white/80 border border-blue-200/80 p-5 shadow-2xs">
-              <h3 className="text-xs font-bold text-neutral-900 uppercase tracking-wider mb-3">
-                Everything Included In Your Sponsorship
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-neutral-700">
-                <div className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
-                  <span><strong>Hero Side Rails:</strong> Sticky spot next to top directory listings</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
-                  <span><strong>Category Pinned Top 3:</strong> Priority visibility when visitors filter by your category</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
-                  <span><strong>⭐️ Verified Sponsor Badge:</strong> Distinguish your app with an official spotlight tag</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
-                  <span><strong>24/7 Sticky Hero Placement:</strong> Prominent homepage side rails visibility that stays active 24/7</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
-                  <span><strong>Click & Traffic Analytics:</strong> Live dashboard tracking impressions and clicks</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
-                  <span>
-                    <strong>{sponsorTier === '1yr' ? '4× Newsletter Blasts' : sponsorTier === '3mo' ? '1× Newsletter Launch Blast' : 'Dofollow SEO Authority'}</strong>
-                    {sponsorTier === '1yr' ? ' (1 blast per quarter)' : sponsorTier === '3mo' ? ' to our SaaS community' : ' and permanent backlink boost'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* ── Homepage & Directory Sponsorship (Showcase Layout) ── */}
+        <SponsorShowcaseSection
+          onOpenSponsor={onOpenSponsor}
+          soundEnabled={soundEnabled}
+        />
 
         {/* ── What the verified badge means ── */}
         <div className="rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 space-y-4">

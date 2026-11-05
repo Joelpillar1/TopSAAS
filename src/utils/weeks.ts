@@ -91,3 +91,81 @@ export function isInWeek(ts: number, week: WeekInfo | { start: number; end: numb
   }
   return ts >= week.start && ts < week.end;
 }
+
+/** Internal scale capacity per week. (Do not expose this ceiling number directly to visitors) */
+export const MAX_WEEKLY_LAUNCH_CAP = 30;
+
+/** Formats a WeekInfo into a clean human date range, e.g. "Nov 2 – Nov 8" */
+export function formatWeekDateRange(week: WeekInfo): string {
+  const startDate = new Date(week.start);
+  const endDate = new Date(week.end - 1); // Sunday 23:59
+  const startMonth = startDate.toLocaleDateString('en-US', { month: 'short' });
+  const startDay = startDate.getDate();
+  const endMonth = endDate.toLocaleDateString('en-US', { month: 'short' });
+  const endDay = endDate.getDate();
+
+  if (startMonth === endMonth) {
+    return `${startMonth} ${startDay} – ${endDay}`;
+  }
+  return `${startMonth} ${startDay} – ${endMonth} ${endDay}`;
+}
+
+export interface LaunchSlotInfo extends WeekInfo {
+  dateRangeStr: string;
+  statusLabel: string;
+  badgeStyle: string;
+  isFull: boolean;
+  isRecommended?: boolean;
+}
+
+/**
+ * Returns available upcoming launch slots starting from the current week.
+ * Assesses availability based on existing product/submission counts without revealing the hard ceiling.
+ */
+export function getUpcomingLaunchSlots(
+  existingWeekCounts: Record<number, number> = {},
+  slotCount = 5
+): LaunchSlotInfo[] {
+  const currentWeek = getWeekNumber();
+  const slots: LaunchSlotInfo[] = [];
+
+  for (let i = 0; i < slotCount; i++) {
+    const weekNum = currentWeek + i;
+    const week = getWeekByNumber(weekNum);
+    const count = existingWeekCounts[weekNum] || 0;
+    const isFull = count >= MAX_WEEKLY_LAUNCH_CAP;
+
+    let statusLabel = 'Available';
+    let badgeStyle = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+
+    if (i === 0 && week.isCurrent) {
+      statusLabel = count >= MAX_WEEKLY_LAUNCH_CAP ? 'Round Active (Full)' : 'Live This Week';
+      badgeStyle = count >= MAX_WEEKLY_LAUNCH_CAP
+        ? 'bg-neutral-100 text-neutral-600 border-neutral-200'
+        : 'bg-blue-50 text-blue-700 border-blue-200';
+    } else if (isFull) {
+      statusLabel = 'Round Full';
+      badgeStyle = 'bg-neutral-100 text-neutral-500 border-neutral-200';
+    } else if (count >= 25) {
+      statusLabel = 'Filling Fast';
+      badgeStyle = 'bg-amber-50 text-amber-700 border-amber-200';
+    } else if (count >= 15) {
+      statusLabel = 'Popular';
+      badgeStyle = 'bg-indigo-50 text-indigo-700 border-indigo-200';
+    } else if (i === 1) {
+      statusLabel = 'Recommended';
+      badgeStyle = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    }
+
+    slots.push({
+      ...week,
+      dateRangeStr: formatWeekDateRange(week),
+      statusLabel,
+      badgeStyle,
+      isFull,
+      isRecommended: i === 1 || (i === 0 && count < 20),
+    });
+  }
+
+  return slots;
+}

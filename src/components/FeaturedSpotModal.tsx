@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   Check,
@@ -12,13 +12,18 @@ import {
   CheckCircle2,
   Megaphone,
   Award,
+  Globe,
+  Image as ImageIcon,
+  FileText,
 } from 'lucide-react';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import confetti from 'canvas-confetti';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
-import { redirectToCheckout } from '../utils/dodo';
+import { redirectToCheckout } from '../utils/whop';
 import { ProductLogo } from './ProductLogo';
+import { getWebsiteFavicon } from '../utils/logo';
+import { insertProductDirect } from '../utils/db';
 
 interface FeaturedSpotModalProps {
   isOpen: boolean;
@@ -27,6 +32,7 @@ interface FeaturedSpotModalProps {
   user: SupabaseUser | null;
   soundEnabled: boolean;
   onOpenSubmitModal: () => void;
+  initialTier?: SponsorPlanId;
   onActivateSponsor?: (
     product: Product,
     tier: 'trial' | 'paid' | '1mo' | '3mo' | '1yr',
@@ -147,16 +153,38 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
   user,
   soundEnabled,
   onOpenSubmitModal,
+  initialTier,
   onActivateSponsor,
 }) => {
   const [step, setStep] = useState<'product' | 'plan' | 'confirm'>('product');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [selectedPlanId, setSelectedPlanId] = useState<SponsorPlanId>('3mo');
+  const [selectedPlanId, setSelectedPlanId] = useState<SponsorPlanId>(initialTier || '3mo');
   const [contactEmail, setContactEmail] = useState(user?.email || '');
   const [productSearch, setProductSearch] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // New App Form State (anyone can sponsor without prior listing)
+  const [productMode, setProductMode] = useState<'new' | 'existing'>('new');
+  const [newProductName, setNewProductName] = useState('');
+  const [newWebsiteUrl, setNewWebsiteUrl] = useState('');
+  const [newLogoUrl, setNewLogoUrl] = useState('');
+  const [newTagline, setNewTagline] = useState('');
+  const [formError, setFormError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (initialTier) {
+      setSelectedPlanId(initialTier);
+    }
+  }, [initialTier, isOpen]);
+
+  // If user has existing owned products, default to existing mode so they see their apps
+  useEffect(() => {
+    if (user && products.some((p) => p.submittedBy === user.id)) {
+      setProductMode('existing');
+    }
+  }, [user, products]);
 
   const userId = user?.id;
 
@@ -178,6 +206,66 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
 
   const selectedPlan =
     SPONSOR_PLANS.find((p) => p.id === selectedPlanId) || SPONSOR_PLANS[1];
+
+  const handleCreateAndSelectProduct = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setFormError(null);
+
+    const name = newProductName.trim();
+    let url = newWebsiteUrl.trim();
+    const tagline = newTagline.trim();
+
+    if (!name) {
+      setFormError('Please enter your product name.');
+      return;
+    }
+    if (!url) {
+      setFormError('Please enter your website URL.');
+      return;
+    }
+    if (!/^https?:\/\//i.test(url)) {
+      url = 'https://' + url;
+    }
+    if (!tagline) {
+      setFormError('Please enter one line about your product.');
+      return;
+    }
+
+    const resolvedLogo = newLogoUrl.trim() || getWebsiteFavicon(url);
+
+    const newProd: Product = {
+      id: `prod_sp_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      name,
+      tagline,
+      url,
+      logoUrl: resolvedLogo,
+      category: 'SaaS',
+      rank: 999,
+      upvotes: 1,
+      totalBid: 0,
+      clicks: 0,
+      verified: true,
+      isSponsored: true,
+      sponsorTier: selectedPlanId === 'trial' ? 'trial' : 'paid',
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      submittedBy: user?.id,
+      sponsorContactEmail: contactEmail.trim() || user?.email,
+    };
+
+    playSound('click', soundEnabled);
+    setSelectedProduct(newProd);
+
+    // Save to pending storage and Supabase
+    try {
+      localStorage.setItem('topsaas_featured_pending_new_product', JSON.stringify(newProd));
+      await insertProductDirect(newProd);
+    } catch (saveErr) {
+      console.warn('Could not insert new sponsor product immediately:', saveErr);
+    }
+
+    setStep('plan');
+  };
 
   const handleSelectProduct = (product: Product) => {
     playSound('click', soundEnabled);
@@ -207,6 +295,12 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
     setSelectedPlanId('3mo');
     setPaymentError(null);
     setSuccessMessage(null);
+    setFormError(null);
+    setProductMode('new');
+    setNewProductName('');
+    setNewWebsiteUrl('');
+    setNewLogoUrl('');
+    setNewTagline('');
     onClose();
   };
 
@@ -259,6 +353,7 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
         await redirectToCheckout({
           planType,
           productName: selectedProduct.name,
+          targetProductId: selectedProduct.id,
           customerEmail: email,
         });
       } catch (checkoutErr) {
@@ -341,7 +436,7 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
             </div>
           ) : (
             <>
-              {/* Step 1: Select Product */}
+              {/* Step 1: Select or Add Product */}
               {step === 'product' && (
                 <div className="space-y-4">
                   <div className="text-center">
@@ -349,107 +444,244 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
                       <Megaphone className="h-5 w-5" />
                     </div>
                     <h2 className="text-xl font-black text-neutral-950 tracking-tight">
-                      Select Product to Sponsor
+                      Sponsor Your App on TopSAAS
                     </h2>
                     <p className="text-xs text-neutral-500 mt-1 max-w-sm mx-auto">
-                      Choose which product to feature on our top and sidebar sponsor rails.
+                      Spotlight your product 24/7 on top & side rails across the entire directory.
                     </p>
                   </div>
 
-                  {/* Search */}
-                  <div className="relative">
-                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
-                    <input
-                      type="text"
-                      value={productSearch}
-                      onChange={(e) => setProductSearch(e.target.value)}
-                      placeholder="Search directory products by name or category…"
-                      className="w-full rounded-xl border border-neutral-200 bg-neutral-50 pl-10 pr-4 py-2.5 text-xs text-neutral-900 placeholder:text-neutral-400 focus:bg-white focus:border-neutral-900 focus:outline-none transition-all"
-                    />
-                  </div>
-
-                  {/* Product List */}
-                  <div className="max-h-72 overflow-y-auto space-y-1.5 pr-1">
-                    {filteredProducts.length === 0 ? (
-                      <div className="text-center py-8 text-neutral-500 space-y-2">
-                        <p className="text-xs">No matching products found.</p>
-                        <button
-                          type="button"
-                          onClick={handleAddProduct}
-                          className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:underline cursor-pointer"
-                        >
-                          <Plus className="h-3.5 w-3.5" />
-                          <span>Submit your product first</span>
-                        </button>
-                      </div>
-                    ) : (
-                      filteredProducts.map((p) => {
-                        const isAlreadySponsored = Boolean(
-                          p.isSponsored && (p.sponsorExpiresAt ? p.sponsorExpiresAt > Date.now() : true)
-                        );
-                        return (
-                          <div
-                            key={p.id}
-                            role="button"
-                            tabIndex={isAlreadySponsored ? -1 : 0}
-                            onClick={() => {
-                              if (isAlreadySponsored) return;
-                              handleSelectProduct(p);
-                            }}
-                            className={`flex items-center justify-between p-3 rounded-xl border transition-all text-left ${
-                              isAlreadySponsored
-                                ? 'border-neutral-200 bg-neutral-50/70 opacity-60 cursor-not-allowed'
-                                : 'border-neutral-200 bg-white hover:border-blue-500/50 hover:bg-neutral-50 cursor-pointer group'
-                            }`}
-                          >
-                            <div className="flex items-center gap-3 min-w-0">
-                              <ProductLogo
-                                src={p.logoUrl}
-                                alt={p.name}
-                                containerClassName="h-9 w-9 rounded-lg border border-neutral-200 bg-white shrink-0 overflow-hidden relative flex items-center justify-center"
-                                iconClassName="h-4 w-4 text-neutral-700 shrink-0"
-                              />
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <h4 className="text-xs font-bold text-neutral-950 group-hover:text-blue-600 transition-colors truncate">
-                                    {p.name}
-                                  </h4>
-                                  {isAlreadySponsored && (
-                                    <span className="inline-flex shrink-0 items-center rounded-md bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 text-[9px] font-bold text-emerald-700">
-                                      Active on Sponsor Rails
-                                    </span>
-                                  )}
-                                </div>
-                                <p className="text-[11px] text-neutral-500 truncate max-w-sm">
-                                  {isAlreadySponsored
-                                    ? 'This product is already live on the homepage sponsor rails'
-                                    : p.tagline}
-                                </p>
-                              </div>
-                            </div>
-                            {!isAlreadySponsored ? (
-                              <ArrowRight className="h-4 w-4 text-neutral-400 group-hover:text-blue-600 transition-colors shrink-0 ml-2" />
-                            ) : (
-                              <span className="text-[10px] font-bold text-neutral-400 shrink-0 ml-2">
-                                Active
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-
-                  <div className="border-t border-neutral-100 pt-3 text-center">
+                  {/* Mode Switcher Tabs */}
+                  <div className="flex rounded-xl bg-neutral-100 p-1 border border-neutral-200/80">
                     <button
                       type="button"
-                      onClick={handleAddProduct}
-                      className="inline-flex items-center gap-1.5 text-xs font-bold text-neutral-600 hover:text-neutral-950 transition-colors cursor-pointer"
+                      onClick={() => {
+                        playSound('click', soundEnabled);
+                        setProductMode('new');
+                        setFormError(null);
+                      }}
+                      className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        productMode === 'new'
+                          ? 'bg-white text-neutral-950 shadow-xs border border-neutral-200/60'
+                          : 'text-neutral-500 hover:text-neutral-950'
+                      }`}
                     >
-                      <Plus className="h-3.5 w-3.5" />
-                      <span>Have a new product to list? Submit for free</span>
+                      + Add New App to Sponsor
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playSound('click', soundEnabled);
+                        setProductMode('existing');
+                        setFormError(null);
+                      }}
+                      className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        productMode === 'existing'
+                          ? 'bg-white text-neutral-950 shadow-xs border border-neutral-200/60'
+                          : 'text-neutral-500 hover:text-neutral-950'
+                      }`}
+                    >
+                      Choose from Directory
                     </button>
                   </div>
+
+                  {/* Mode A: New App Form */}
+                  {productMode === 'new' ? (
+                    <form onSubmit={handleCreateAndSelectProduct} className="space-y-3.5 pt-1">
+                      {formError && (
+                        <div className="rounded-xl bg-rose-50 border border-rose-200 p-3 text-xs font-medium text-rose-700 animate-in fade-in duration-150">
+                          {formError}
+                        </div>
+                      )}
+
+                      {/* Product Name */}
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-neutral-800 flex items-center justify-between">
+                          <span>Product Name <span className="text-rose-500">*</span></span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={newProductName}
+                          onChange={(e) => setNewProductName(e.target.value)}
+                          placeholder="e.g. Acme AI"
+                          className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-3.5 py-2.5 text-xs text-neutral-900 placeholder:text-neutral-400 focus:bg-white focus:border-neutral-900 focus:outline-none transition-all"
+                        />
+                      </div>
+
+                      {/* Website URL */}
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-neutral-800 flex items-center justify-between">
+                          <span>Website URL <span className="text-rose-500">*</span></span>
+                        </label>
+                        <div className="relative">
+                          <Globe className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400" />
+                          <input
+                            type="text"
+                            required
+                            value={newWebsiteUrl}
+                            onChange={(e) => setNewWebsiteUrl(e.target.value)}
+                            placeholder="https://yourproduct.com"
+                            className="w-full rounded-xl border border-neutral-200 bg-neutral-50 pl-9 pr-3.5 py-2.5 text-xs text-neutral-900 placeholder:text-neutral-400 focus:bg-white focus:border-neutral-900 focus:outline-none transition-all"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Logo URL + Live Preview */}
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-neutral-800 flex items-center justify-between">
+                          <span>Logo URL <span className="text-neutral-400 font-normal">(optional — auto-detects from website)</span></span>
+                        </label>
+                        <div className="flex items-center gap-2.5">
+                          {/* Live preview */}
+                          <div className="h-10 w-10 shrink-0 rounded-xl border border-neutral-200 bg-neutral-50 flex items-center justify-center overflow-hidden">
+                            {newLogoUrl || (newWebsiteUrl && newWebsiteUrl.includes('.')) ? (
+                              <img
+                                src={newLogoUrl || getWebsiteFavicon(newWebsiteUrl)}
+                                alt="Logo Preview"
+                                className="h-6 w-6 object-contain"
+                                onError={(e) => {
+                                  (e.currentTarget as HTMLElement).style.display = 'none';
+                                }}
+                              />
+                            ) : (
+                              <ImageIcon className="h-4 w-4 text-neutral-300" />
+                            )}
+                          </div>
+                          <div className="relative flex-1">
+                            <input
+                              type="url"
+                              value={newLogoUrl}
+                              onChange={(e) => setNewLogoUrl(e.target.value)}
+                              placeholder="https://yourproduct.com/logo.png"
+                              className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-3.5 py-2.5 text-xs text-neutral-900 placeholder:text-neutral-400 focus:bg-white focus:border-neutral-900 focus:outline-none transition-all"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* One line about it */}
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-neutral-800 flex items-center justify-between">
+                          <span>One line about it (Tagline) <span className="text-rose-500">*</span></span>
+                          <span className="text-[10px] text-neutral-400 font-normal">Max 90 chars</span>
+                        </label>
+                        <div className="relative">
+                          <FileText className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400" />
+                          <input
+                            type="text"
+                            required
+                            maxLength={90}
+                            value={newTagline}
+                            onChange={(e) => setNewTagline(e.target.value)}
+                            placeholder="e.g. AI-powered customer onboarding in minutes"
+                            className="w-full rounded-xl border border-neutral-200 bg-neutral-50 pl-9 pr-3.5 py-2.5 text-xs text-neutral-900 placeholder:text-neutral-400 focus:bg-white focus:border-neutral-900 focus:outline-none transition-all"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Submit & proceed */}
+                      <div className="pt-2">
+                        <button
+                          type="submit"
+                          className="w-full btn-primary py-2.5 px-4 text-xs font-bold rounded-xl shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          <span>Continue to Choose Plan</span>
+                          <ArrowRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    /* Mode B: Choose from Directory */
+                    <div className="space-y-3">
+                      {/* Search */}
+                      <div className="relative">
+                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+                        <input
+                          type="text"
+                          value={productSearch}
+                          onChange={(e) => setProductSearch(e.target.value)}
+                          placeholder="Search directory products by name or category…"
+                          className="w-full rounded-xl border border-neutral-200 bg-neutral-50 pl-10 pr-4 py-2.5 text-xs text-neutral-900 placeholder:text-neutral-400 focus:bg-white focus:border-neutral-900 focus:outline-none transition-all"
+                        />
+                      </div>
+
+                      {/* Product List */}
+                      <div className="max-h-72 overflow-y-auto space-y-1.5 pr-1">
+                        {filteredProducts.length === 0 ? (
+                          <div className="text-center py-8 text-neutral-500 space-y-2">
+                            <p className="text-xs">No matching products found.</p>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                playSound('click', soundEnabled);
+                                setProductMode('new');
+                              }}
+                              className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:underline cursor-pointer"
+                            >
+                              <Plus className="h-3.5 w-3.5" />
+                              <span>Add it as a new product above</span>
+                            </button>
+                          </div>
+                        ) : (
+                          filteredProducts.map((p) => {
+                            const isAlreadySponsored = Boolean(
+                              p.isSponsored && (p.sponsorExpiresAt ? p.sponsorExpiresAt > Date.now() : true)
+                            );
+                            return (
+                              <div
+                                key={p.id}
+                                role="button"
+                                tabIndex={isAlreadySponsored ? -1 : 0}
+                                onClick={() => {
+                                  if (isAlreadySponsored) return;
+                                  handleSelectProduct(p);
+                                }}
+                                className={`flex items-center justify-between p-3 rounded-xl border transition-all text-left ${
+                                  isAlreadySponsored
+                                    ? 'border-neutral-200 bg-neutral-50/70 opacity-60 cursor-not-allowed'
+                                    : 'border-neutral-200 bg-white hover:border-blue-500/50 hover:bg-neutral-50 cursor-pointer group'
+                                }`}
+                              >
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <ProductLogo
+                                    src={p.logoUrl}
+                                    alt={p.name}
+                                    containerClassName="h-9 w-9 rounded-lg border border-neutral-200 bg-white shrink-0 overflow-hidden relative flex items-center justify-center"
+                                    iconClassName="h-4 w-4 text-neutral-700 shrink-0"
+                                  />
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <h4 className="text-xs font-bold text-neutral-950 group-hover:text-blue-600 transition-colors truncate">
+                                        {p.name}
+                                      </h4>
+                                      {isAlreadySponsored && (
+                                        <span className="inline-flex shrink-0 items-center rounded-md bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 text-[9px] font-bold text-emerald-700">
+                                          Active on Sponsor Rails
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-[11px] text-neutral-500 truncate max-w-sm">
+                                      {isAlreadySponsored
+                                        ? 'This product is already live on the homepage sponsor rails'
+                                        : p.tagline}
+                                    </p>
+                                  </div>
+                                </div>
+                                {!isAlreadySponsored ? (
+                                  <ArrowRight className="h-4 w-4 text-neutral-400 group-hover:text-blue-600 transition-colors shrink-0 ml-2" />
+                                ) : (
+                                  <span className="text-[10px] font-bold text-neutral-400 shrink-0 ml-2">
+                                    Active
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -750,7 +982,7 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
                   <p className="text-center text-[10px] text-neutral-500">
                     {selectedPlanId === 'trial'
                       ? 'Instant activation • Cancel or extend anytime'
-                      : 'Secure checkout powered by DodoPayments'}
+                      : 'Secure checkout powered by Whop (Cards, Apple Pay, Google Pay, Crypto)'}
                   </p>
                 </div>
               )}

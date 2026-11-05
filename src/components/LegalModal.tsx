@@ -118,7 +118,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({
                     <strong className="text-neutral-950 font-semibold">Game & Scoring Data:</strong> Game duration, velocity, and score progression earned in the TopSAAS Runner, verified via anti-cheat mechanics to prevent scripting.
                   </li>
                   <li>
-                    <strong className="text-neutral-950 font-semibold">Payment Details:</strong> When claiming a Featured Spot, payments are processed directly by our secure payment provider (Dodo Payments / Stripe). We never collect or store full credit card numbers on our servers.
+                    <strong className="text-neutral-950 font-semibold">Payment Details:</strong> When claiming a Featured Spot, payments are processed directly by our secure merchant of record and payment provider (Whop). We never collect or store full credit card numbers on our servers.
                   </li>
                   <li>
                     <strong className="text-neutral-950 font-semibold">Local Storage & Preferences:</strong> We store local interface preferences such as sound FX toggles, selected view layout (cards vs. table), and submission drafts.

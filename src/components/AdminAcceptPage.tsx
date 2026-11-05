@@ -799,6 +799,12 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                 <span className="text-neutral-500">
                                   Submitted {formatTimestamp(sub.submittedAt)}
                                 </span>
+
+                                {sub.scheduledLaunchWeek && (
+                                  <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 border border-blue-200 px-1.5 py-0.2 text-[10px] font-bold text-blue-700">
+                                    <span>Target: Week {sub.scheduledLaunchWeek}</span>
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </div>

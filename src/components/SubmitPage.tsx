@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import confetti from 'canvas-confetti';
 import { AlertCircle, Check, ChevronDown, ChevronLeft, ChevronRight, Clock, Loader2, Search, Video, X, Tag, Percent, Gift, Sparkles, Trash2, GripVertical, Star, ShieldCheck, CheckCircle2, Lock, RefreshCw, Copy, Code2 } from 'lucide-react';
-import { Category, PricingModel, Product, ProductSocial, SubmitProductDetails } from '../types';
+import { Category, PricingModel, Product, ProductSocial, SubmitProductDetails, WebsiteSubmission } from '../types';
 import { SUBMISSION_CATEGORIES } from './BidModal';
 import { getWebsiteFavicon } from '../utils/logo';
 import { playSound } from '../utils/sound';
@@ -9,6 +9,7 @@ import { BadgeStyle, BadgeTheme, BadgeFormat, generateBadgeSvg, generateBadgeSni
 import { verifyBadgeViaEdge, fetchHtmlBestEffort, containsBadge } from '../utils/badgeVerify';
 import { prepareRichText } from '../utils/richText';
 import { RichTextEditor } from './RichTextEditor';
+import { LaunchWeekSelector } from './LaunchWeekSelector';
 
 const DRAFT_KEY = 'topsaas_launch_draft_v1';
 const STEP_KEY = 'topsaas_launch_step_v1';
@@ -54,6 +55,8 @@ interface FormState {
   offerCode: string;
   offerUrl: string;
   offerDetails: string;
+  scheduledLaunchWeek?: number;
+  scheduledLaunchDate?: number;
 }
 
 type FieldKey = 'name' | 'tagline' | 'url' | 'category' | 'demoVideoUrl' | 'badge';
@@ -229,6 +232,8 @@ interface SubmitPageProps {
   onSubmit: (details: SubmitProductDetails) => Promise<string | null | undefined>;
   onViewListing: (productId: string) => void;
   soundEnabled: boolean;
+  products?: Product[];
+  submissions?: WebsiteSubmission[];
 }
 
 const inputClass = (invalid: boolean) =>
@@ -259,6 +264,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
   onSubmit,
   onViewListing,
   soundEnabled,
+  products = [],
+  submissions = [],
 }) => {
   const [form, setForm] = useState<FormState>(() => {
     const draft = loadDraft();
@@ -755,6 +762,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
         offerUrl: form.offerUrl.trim() ? autoFormatUrl(form.offerUrl) : undefined,
         offerDetails: form.offerDetails.trim() || undefined,
         autoRelaunch: autoRelaunch || undefined,
+        scheduledLaunchWeek: form.scheduledLaunchWeek,
+        scheduledLaunchDate: form.scheduledLaunchDate,
       });
 
       if (!newId) {
@@ -2157,6 +2166,23 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                     <span>Verifying the badge gives your listing an official Verified Startup checkmark upon launch approval.</span>
                   </div>
                 )}
+              </div>
+
+              {/* 3. Target Launch Round / Date Picker */}
+              <div className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-5 shadow-2xs">
+                <LaunchWeekSelector
+                  selectedWeekNumber={form.scheduledLaunchWeek}
+                  onSelectWeek={(weekNum, weekStartDate) => {
+                    setForm((prev) => ({
+                      ...prev,
+                      scheduledLaunchWeek: weekNum,
+                      scheduledLaunchDate: weekStartDate,
+                    }));
+                  }}
+                  products={products}
+                  submissions={submissions}
+                  soundEnabled={soundEnabled}
+                />
               </div>
 
               {/* 4. Weekly Relaunch Add-on */}

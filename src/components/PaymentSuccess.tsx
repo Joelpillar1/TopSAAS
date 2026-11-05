@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { CheckCircle, ArrowLeft, Crown, ExternalLink } from 'lucide-react';
 import { playSound } from '../utils/sound';
-import { setGlobalFeaturedProduct } from '../utils/db';
+import { setGlobalFeaturedProduct, insertProductDirect } from '../utils/db';
 
 interface PaymentSuccessProps {
   onBackToDirectory: () => void;
@@ -23,19 +23,44 @@ export const PaymentSuccess: React.FC<PaymentSuccessProps> = ({
 
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
+    const planParam = searchParams.get('plan');
+    const productParam = searchParams.get('product');
+    const paymentIdParam =
+      searchParams.get('payment_id') ||
+      searchParams.get('checkout_id') ||
+      searchParams.get('id');
+    const statusParam = searchParams.get('status') || 'succeeded';
+    const targetProductId = searchParams.get('target_product_id');
+
     setParams({
-      plan: searchParams.get('plan'),
-      product: searchParams.get('product'),
-      paymentId: searchParams.get('payment_id'),
-      status: searchParams.get('status'),
+      plan: planParam,
+      product: productParam,
+      paymentId: paymentIdParam,
+      status: statusParam,
     });
     playSound('success', soundEnabled);
 
+    // Restore any newly created sponsor app from local storage
+    const pendingNewProdJson = localStorage.getItem('topsaas_featured_pending_new_product');
+    if (pendingNewProdJson) {
+      try {
+        const parsed = JSON.parse(pendingNewProdJson);
+        insertProductDirect(parsed);
+      } catch (err) {
+        console.warn('Error saving pending new product on payment success:', err);
+      }
+      localStorage.removeItem('topsaas_featured_pending_new_product');
+    }
+
     // After successful payment, activate the pending featured product globally in Supabase
-    const pendingProductId = localStorage.getItem('topsaas_featured_pending');
-    const pendingPlan = localStorage.getItem('topsaas_featured_pending_plan');
+    const pendingProductId = targetProductId || localStorage.getItem('topsaas_featured_pending');
+    const pendingPlan = planParam || localStorage.getItem('topsaas_featured_pending_plan');
     if (pendingProductId) {
-      const durationDays = pendingPlan === '30days' ? 30 : 7;
+      let durationDays = 30;
+      if (pendingPlan === '3mo') durationDays = 90;
+      else if (pendingPlan === '1yr') durationDays = 365;
+      else if (pendingPlan === '7days') durationDays = 7;
+
       setGlobalFeaturedProduct(pendingProductId, durationDays);
       localStorage.removeItem('topsaas_featured_pending');
       localStorage.removeItem('topsaas_featured_pending_plan');
@@ -43,8 +68,14 @@ export const PaymentSuccess: React.FC<PaymentSuccessProps> = ({
     }
   }, []);
 
-  const planName = '30 Days';
-  const price = '$99';
+  const planInfo = (() => {
+    const p = params.plan;
+    if (p === '1mo' || p === '30days') return { name: '1-Month Sponsor', price: '$29' };
+    if (p === '3mo') return { name: '3-Month Sponsor', price: '$69' };
+    if (p === '1yr') return { name: '1-Year Partner Sponsor', price: '$199' };
+    if (p === '7days') return { name: '7-Day Sponsor', price: '$59' };
+    return { name: 'Sponsorship Spotlight', price: 'Paid' };
+  })();
 
   return (
     <div className="min-h-screen bg-white text-neutral-900 flex items-center justify-center font-sans px-4">
@@ -56,49 +87,49 @@ export const PaymentSuccess: React.FC<PaymentSuccessProps> = ({
           </div>
 
           {/* Title */}
-          <h1 className="text-xl font-black text-white tracking-tight mb-2">
+          <h1 className="text-xl font-black text-neutral-950 tracking-tight mb-2">
             Payment Successful!
           </h1>
-          <p className="text-sm text-neutral-400 mb-6">
-            Your featured spot has been purchased. You&apos;re now at the top of the directory!
+          <p className="text-sm text-neutral-600 mb-6">
+            Your sponsorship has been activated. You&apos;re now prominently featured on TopSAAS!
           </p>
 
           {/* Order Details */}
-          <div className="rounded-xl border border-neutral-200 bg-neutral-100 p-4 mb-4 text-left">
+          <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 mb-4 text-left">
             <div className="flex items-center gap-2 mb-3">
-              <Crown className="h-4 w-4 text-mint-500" />
+              <Crown className="h-4 w-4 text-amber-500" />
               <span className="text-xs font-bold text-neutral-950">Order Details</span>
             </div>
             <div className="space-y-2">
               {params.product && (
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-neutral-400">Product</span>
-                  <span className="font-bold text-white">{decodeURIComponent(params.product)}</span>
+                  <span className="text-neutral-500">Product</span>
+                  <span className="font-bold text-neutral-950">{decodeURIComponent(params.product)}</span>
                 </div>
               )}
-              {planName && (
+              {planInfo.name && (
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-neutral-400">Plan</span>
-                  <span className="font-bold text-white">{planName}</span>
+                  <span className="text-neutral-500">Plan</span>
+                  <span className="font-bold text-neutral-950">{planInfo.name}</span>
                 </div>
               )}
-              {price && (
+              {planInfo.price && (
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-neutral-400">Amount Paid</span>
-                  <span className="font-bold text-white font-mono-num">{price}</span>
+                  <span className="text-neutral-500">Amount Paid</span>
+                  <span className="font-bold text-neutral-950 font-mono-num">{planInfo.price}</span>
                 </div>
               )}
               {params.paymentId && (
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-neutral-400">Payment ID</span>
-                  <span className="font-mono text-[10px] text-neutral-400">{params.paymentId}</span>
+                  <span className="text-neutral-500">Payment ID</span>
+                  <span className="font-mono text-[10px] text-neutral-600">{params.paymentId}</span>
                 </div>
               )}
               {params.status && (
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-neutral-400">Status</span>
-                  <span className="inline-flex items-center gap-1 text-white font-bold">
-                    <CheckCircle className="h-3 w-3 text-mint-500" />
+                  <span className="text-neutral-500">Status</span>
+                  <span className="inline-flex items-center gap-1 text-emerald-600 font-bold">
+                    <CheckCircle className="h-3 w-3 text-emerald-500" />
                     {params.status === 'succeeded' ? 'Succeeded' : params.status}
                   </span>
                 </div>
@@ -107,20 +138,20 @@ export const PaymentSuccess: React.FC<PaymentSuccessProps> = ({
           </div>
 
           {/* What's Next */}
-          <div className="rounded-xl border border-neutral-200 bg-neutral-100 p-4 mb-6 text-left">
+          <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 mb-6 text-left">
             <h3 className="text-xs font-bold text-neutral-950 mb-2">What happens next?</h3>
             <ul className="space-y-1.5">
-              <li className="flex items-start gap-2 text-xs text-neutral-400">
-                <span className="font-bold text-white">1.</span>
-                <span>Your product is now featured at the top of the directory</span>
+              <li className="flex items-start gap-2 text-xs text-neutral-600">
+                <span className="font-bold text-neutral-950">1.</span>
+                <span>Your product is now featured on the top rails and partner directory</span>
               </li>
-              <li className="flex items-start gap-2 text-xs text-neutral-400">
-                <span className="font-bold text-white">2.</span>
-                <span>The border beam animation is now active on your listing</span>
+              <li className="flex items-start gap-2 text-xs text-neutral-600">
+                <span className="font-bold text-neutral-950">2.</span>
+                <span>The verified sponsor badge is now active on your listing</span>
               </li>
-              <li className="flex items-start gap-2 text-xs text-neutral-400">
-                <span className="font-bold text-white">3.</span>
-                <span>You&apos;ll receive analytics access via email shortly</span>
+              <li className="flex items-start gap-2 text-xs text-neutral-600">
+                <span className="font-bold text-neutral-950">3.</span>
+                <span>Direct click tracking and priority placement are fully active</span>
               </li>
             </ul>
           </div>
@@ -133,7 +164,7 @@ export const PaymentSuccess: React.FC<PaymentSuccessProps> = ({
                 playSound('click', soundEnabled);
                 onBackToDirectory();
               }}
-              className="w-full flex items-center justify-center gap-2 rounded-xl bg-white py-3 px-4 text-sm font-black text-black shadow-2xs hover:bg-neutral-200 transition-all cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-neutral-950 py-3 px-4 text-sm font-bold text-white shadow-sm hover:bg-neutral-800 transition-all cursor-pointer"
             >
               <ArrowLeft className="h-4 w-4" />
               <span>Back to Home</span>

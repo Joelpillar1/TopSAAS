@@ -141,7 +141,7 @@ export const LegalPage: React.FC<LegalPageProps> = ({
                     <strong className="text-neutral-950 font-bold">C. Gameplay & Score Verification Data:</strong> When playing the TopSAAS Runner, session duration and score velocity are transmitted to our Supabase database to verify fair play and prevent automated scripts.
                   </div>
                   <div>
-                    <strong className="text-neutral-950 font-bold">D. Payment Processing:</strong> When purchasing a Featured Spot sponsorship, transactions are securely processed by third-party payment providers (Dodo Payments / Stripe). TopSAAS does not process or store raw payment card data.
+                    <strong className="text-neutral-950 font-bold">D. Payment Processing:</strong> When purchasing a Featured Spot sponsorship, transactions are securely processed by third-party merchant of record and payment providers (Whop). TopSAAS does not process or store raw payment card data.
                   </div>
                   <div>
                     <strong className="text-neutral-950 font-bold">E. Local Storage:</strong> We use your browser&apos;s local storage to remember your UI preferences, such as sound FX settings, theme toggles, and view layout (grid vs. table).
