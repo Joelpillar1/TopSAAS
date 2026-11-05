@@ -111,6 +111,9 @@ export interface Product {
   solution?: string;
   uniqueSellingPoint?: string;
   autoRelaunch?: boolean;
+  autoRelaunchPaid?: boolean;
+  autoRelaunchPaidAt?: number;
+  autoRelaunchOrderId?: string;
   scheduledLaunchWeek?: number;
   scheduledLaunchDate?: number;
   relaunchWeeks?: number[];
@@ -192,6 +195,8 @@ export interface SubmitProductDetails {
   offerUrl?: string;
   offerDetails?: string;
   autoRelaunch?: boolean;
+  autoRelaunchPaid?: boolean;
+  autoRelaunchPaidAt?: number;
   scheduledLaunchWeek?: number;
   scheduledLaunchDate?: number;
 }
@@ -218,6 +223,7 @@ export interface WebsiteSubmission {
   submittedAt: number;
   reviewedAt?: number;
   rejectionReason?: string;
+  verified?: boolean;
   targetAudience?: string;
   pricingModel?: string;
   submittedBy?: string; // user ID of the submitter
@@ -230,6 +236,9 @@ export interface WebsiteSubmission {
   solution?: string;
   uniqueSellingPoint?: string;
   autoRelaunch?: boolean;
+  autoRelaunchPaid?: boolean;
+  autoRelaunchPaidAt?: number;
+  autoRelaunchOrderId?: string;
   scheduledLaunchWeek?: number;
   scheduledLaunchDate?: number;
   relaunchWeeks?: number[];

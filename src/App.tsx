@@ -36,7 +36,6 @@ import { RepoDetailPage } from './components/RepoDetailPage';
 import { CURATED_REPOS, CuratedRepo } from './data/curatedRepos';
 import { BadgeRoute } from './components/BadgeRoute';
 import { ProductRow, timeAgo } from './components/ProductRow';
-import { SkeletonRows } from './components/SkeletonCard';
 import { SponsorTile } from './components/SponsorTile';
 import { HeroSponsorRails } from './components/HeroSponsorRails';
 import { WeeklyLaunchView } from './components/WeeklyLaunchView';
@@ -79,6 +78,11 @@ const mapDbSubmission = (row: Record<string, unknown>): WebsiteSubmission => ({
   solution: (row.solution as string) || undefined,
   uniqueSellingPoint: (row.unique_selling_point as string) || undefined,
   autoRelaunch: Boolean(row.auto_relaunch ?? row.autoRelaunch) || undefined,
+  autoRelaunchPaid: Boolean(row.auto_relaunch_paid ?? row.autoRelaunchPaid) || undefined,
+  autoRelaunchPaidAt: (row.auto_relaunch_paid_at as number) || undefined,
+  verified: Boolean(row.verified) || false,
+  scheduledLaunchWeek: (row.scheduled_launch_week as number) || (row.scheduledLaunchWeek as number) || undefined,
+  scheduledLaunchDate: (row.scheduled_launch_date as number) || (row.scheduledLaunchDate as number) || undefined,
   relaunchWeeks: (row.relaunch_weeks as number[]) || (row.relaunchWeeks as number[]) || undefined,
   isRelaunched: Boolean(row.is_relaunched ?? row.isRelaunched) || undefined,
   lastRelaunchedAt: (row.last_relaunched_at as number) || (row.lastRelaunchedAt as number) || undefined,
@@ -121,6 +125,11 @@ const toDbSubmission = (sub: WebsiteSubmission) => {
     solution: sub.solution || null,
     unique_selling_point: sub.uniqueSellingPoint || null,
     auto_relaunch: sub.autoRelaunch || false,
+    auto_relaunch_paid: sub.autoRelaunchPaid || false,
+    auto_relaunch_paid_at: sub.autoRelaunchPaidAt || null,
+    verified: sub.verified || false,
+    scheduled_launch_week: sub.scheduledLaunchWeek || null,
+    scheduled_launch_date: sub.scheduledLaunchDate || null,
     relaunch_weeks: sub.relaunchWeeks || null,
     is_relaunched: sub.isRelaunched || false,
     last_relaunched_at: sub.lastRelaunchedAt || null,
@@ -1121,6 +1130,9 @@ export default function App() {
       solution: details.solution?.trim() || undefined,
       uniqueSellingPoint: details.uniqueSellingPoint?.trim() || undefined,
       autoRelaunch: details.autoRelaunch || undefined,
+      autoRelaunchPaid: details.autoRelaunchPaid || (details.autoRelaunch ? true : undefined),
+      autoRelaunchPaidAt: details.autoRelaunch ? now : undefined,
+      verified: false,
       scheduledLaunchWeek: details.scheduledLaunchWeek || undefined,
       scheduledLaunchDate: details.scheduledLaunchDate || undefined,
       lastRelaunchedAt: details.autoRelaunch ? now : undefined,
@@ -2612,11 +2624,7 @@ export default function App() {
                   </div>
 
                   {/* Leaderboard Rendering */}
-                  {!productsLoaded ? (
-                    <div className="w-full space-y-3 pt-1">
-                      <SkeletonRows count={6} />
-                    </div>
-                  ) : filteredProducts.length === 0 ? (
+                  {filteredProducts.length === 0 ? (
                     <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center">
                       {selectedWeek && weekScopedProducts.length === 0 ? (
                         <>

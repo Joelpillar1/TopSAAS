@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { 
-  ArrowLeft, ArrowUpDown, Check, X, Clock, ExternalLink, ShieldCheck, Search, Trash2, Eye, RotateCcw, Globe, Twitter, User, Calendar, CheckCircle2, XCircle, AlertCircle, Edit3, Plus, Trophy, Crown, ChevronUp, ChevronDown, Star, LayoutList, Mail, Flame, Tag, Play, Video, Copy, Image as ImageIcon, MessageSquareQuote, Target, Layers, Info, Sparkles, BadgeCheck, Megaphone, Award, LogOut
+  ArrowLeft, ArrowUpDown, Check, X, Clock, ExternalLink, ShieldCheck, Search, Trash2, Eye, RotateCcw, Globe, Twitter, User, Calendar, CheckCircle2, XCircle, AlertCircle, Edit3, Plus, Trophy, Crown, ChevronUp, ChevronDown, Star, LayoutList, Mail, Flame, Tag, Play, Video, Copy, Image as ImageIcon, MessageSquareQuote, Target, Layers, Info, Sparkles, BadgeCheck, Megaphone, Award, LogOut, Rocket
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { WebsiteSubmission, Category, Product } from '../types';
@@ -126,13 +126,15 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
 
   // Submissions state
   const [statusFilter, setStatusFilter] = useState<'all' | 'under_review' | 'approved' | 'rejected'>('under_review');
+  const [showOnlyAutoRelaunch, setShowOnlyAutoRelaunch] = useState(false);
+  const autoRelaunchCount = submissions.filter((s) => s.autoRelaunch || s.autoRelaunchPaid).length;
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   
   // Products management state
   const [productSearchQuery, setProductSearchQuery] = useState('');
   const [productCategoryFilter, setProductCategoryFilter] = useState<string>('All');
-  const [productVerifiedFilter, setProductVerifiedFilter] = useState<'all' | 'verified' | 'unverified'>('all');
+  const [productVerifiedFilter, setProductVerifiedFilter] = useState<'all' | 'verified' | 'unverified' | 'relaunch'>('all');
   
   // Edit modal state
   const [editingSubmission, setEditingSubmission] = useState<WebsiteSubmission | null>(null);
@@ -165,6 +167,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
   // Filtered submissions (sorted newest submitted first)
   const filteredSubmissions = submissions
     .filter((sub) => {
+      if (showOnlyAutoRelaunch && !sub.autoRelaunch && !sub.autoRelaunchPaid) return false;
       const currentStatus = sub.status || 'under_review';
       if (statusFilter !== 'all' && currentStatus !== statusFilter) return false;
       if (selectedCategory !== 'All' && !sub.category?.toLowerCase().includes(selectedCategory.toLowerCase())) return false;
@@ -188,6 +191,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
     if (productCategoryFilter !== 'All' && p.category !== productCategoryFilter) return false;
     if (productVerifiedFilter === 'verified' && !p.verified) return false;
     if (productVerifiedFilter === 'unverified' && p.verified) return false;
+    if (productVerifiedFilter === 'relaunch' && !p.autoRelaunch && !p.autoRelaunchPaid) return false;
     if (productSearchQuery.trim()) {
       const q = productSearchQuery.toLowerCase();
       const matchName = p.name.toLowerCase().includes(q);
@@ -527,30 +531,50 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
         {activeView === 'submissions' && (
           <>
             {/* Submissions Metrics */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-2xs">
-                <div className="flex items-center justify-between text-xs font-bold text-amber-400 mb-1">
+                <div className="flex items-center justify-between text-xs font-bold text-amber-500 mb-1">
                   <span>Pending Approval</span>
                   <Clock className="h-4 w-4" />
                 </div>
-                <div className="text-2xl sm:text-3xl font-black text-white">{pendingCount}</div>
-                <p className="text-[11px] text-neutral-400 mt-1">Awaiting approval</p>
+                <div className="text-2xl sm:text-3xl font-black text-neutral-900">{pendingCount}</div>
+                <p className="text-[11px] text-neutral-500 mt-1">Awaiting approval</p>
               </div>
               <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-2xs">
-                <div className="flex items-center justify-between text-xs font-bold text-emerald-400 mb-1">
+                <div className="flex items-center justify-between text-xs font-bold text-emerald-600 mb-1">
                   <span>Approved Submissions</span>
                   <CheckCircle2 className="h-4 w-4" />
                 </div>
-                <div className="text-2xl sm:text-3xl font-black text-white">{approvedCount}</div>
-                <p className="text-[11px] text-neutral-400 mt-1">Active on live directory</p>
+                <div className="text-2xl sm:text-3xl font-black text-neutral-900">{approvedCount}</div>
+                <p className="text-[11px] text-neutral-500 mt-1">Active on live directory</p>
               </div>
               <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-2xs">
-                <div className="flex items-center justify-between text-xs font-bold text-red-400 mb-1">
+                <div className="flex items-center justify-between text-xs font-bold text-red-500 mb-1">
                   <span>Rejected Submissions</span>
                   <XCircle className="h-4 w-4" />
                 </div>
-                <div className="text-2xl sm:text-3xl font-black text-white">{rejectedCount}</div>
-                <p className="text-[11px] text-neutral-400 mt-1">Declined listings</p>
+                <div className="text-2xl sm:text-3xl font-black text-neutral-900">{rejectedCount}</div>
+                <p className="text-[11px] text-neutral-500 mt-1">Declined listings</p>
+              </div>
+              <div 
+                onClick={() => {
+                  setShowOnlyAutoRelaunch((prev) => !prev);
+                  playSound('click', soundEnabled);
+                }}
+                className={`rounded-xl border p-4 shadow-2xs cursor-pointer transition-all ${
+                  showOnlyAutoRelaunch
+                    ? 'border-blue-500 bg-blue-50/70 ring-2 ring-blue-500/20'
+                    : 'border-neutral-200 bg-white hover:border-blue-300'
+                }`}
+              >
+                <div className="flex items-center justify-between text-xs font-bold text-blue-600 mb-1">
+                  <span>Auto-Relaunch Paid</span>
+                  <Rocket className="h-4 w-4 text-blue-600" />
+                </div>
+                <div className="text-2xl sm:text-3xl font-black text-blue-950">{autoRelaunchCount}</div>
+                <p className="text-[11px] text-blue-700 font-semibold mt-1">
+                  {showOnlyAutoRelaunch ? '✓ Filter active (Click to clear)' : 'Click to monitor subscribers'}
+                </p>
               </div>
             </div>
 
@@ -579,7 +603,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                     type="button"
                     onClick={() => { setStatusFilter('under_review'); playSound('click', soundEnabled); }}
                     className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
-                      statusFilter === 'under_review'
+                      statusFilter === 'under_review' && !showOnlyAutoRelaunch
                         ? 'bg-amber-400 text-black font-black'
                         : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
                     }`}
@@ -591,7 +615,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                     type="button"
                     onClick={() => { setStatusFilter('approved'); playSound('click', soundEnabled); }}
                     className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
-                      statusFilter === 'approved'
+                      statusFilter === 'approved' && !showOnlyAutoRelaunch
                         ? 'bg-emerald-500 text-black font-black'
                         : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
                     }`}
@@ -603,7 +627,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                     type="button"
                     onClick={() => { setStatusFilter('rejected'); playSound('click', soundEnabled); }}
                     className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
-                      statusFilter === 'rejected'
+                      statusFilter === 'rejected' && !showOnlyAutoRelaunch
                         ? 'bg-red-500 text-white font-black'
                         : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
                     }`}
@@ -614,13 +638,32 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                   <button
                     type="button"
                     onClick={() => { setStatusFilter('all'); playSound('click', soundEnabled); }}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                      statusFilter === 'all'
+                    className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                      statusFilter === 'all' && !showOnlyAutoRelaunch
                         ? 'bg-white text-black font-black'
                         : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
                     }`}
                   >
-                    All ({submissions.length})
+                    <span>All</span>
+                    <span className="rounded-full bg-black/20 px-1.5 py-0.2 text-[9px]">{submissions.length}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowOnlyAutoRelaunch((prev) => !prev);
+                      playSound('click', soundEnabled);
+                    }}
+                    className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                      showOnlyAutoRelaunch
+                        ? 'bg-blue-600 text-white font-black shadow-xs ring-2 ring-blue-400/40'
+                        : 'bg-neutral-800 text-blue-300 hover:bg-neutral-700'
+                    }`}
+                  >
+                    <Rocket className="h-3 w-3 text-blue-400" />
+                    <span>Auto-Relaunch Paid</span>
+                    <span className={`rounded-full px-1.5 py-0.2 text-[9px] ${showOnlyAutoRelaunch ? 'bg-white/20 text-white' : 'bg-black/20 text-blue-200'}`}>
+                      {autoRelaunchCount}
+                    </span>
                   </button>
                 </div>
               </div>
@@ -758,6 +801,13 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                   {sub.category}
                                 </span>
 
+                                {(sub.autoRelaunch || sub.autoRelaunchPaid) && (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/15 border border-blue-500/30 px-2 py-0.5 text-[10px] font-bold text-blue-600">
+                                    <Rocket className="h-3 w-3 text-blue-600" />
+                                    <span>Auto-Relaunch Paid ($5/mo)</span>
+                                  </span>
+                                )}
+
                                 {sub.offerDiscount && (
                                   <span className="inline-flex items-center gap-1 rounded-full bg-mint-500/15 border border-mint-500/40 px-2 py-0.5 text-[10px] font-bold text-mint-600">
                                     <Tag className="h-3 w-3" />
@@ -803,6 +853,13 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                 {sub.scheduledLaunchWeek && (
                                   <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 border border-blue-200 px-1.5 py-0.2 text-[10px] font-bold text-blue-700">
                                     <span>Target: Week {sub.scheduledLaunchWeek}</span>
+                                  </span>
+                                )}
+
+                                {(sub.autoRelaunch || sub.autoRelaunchPaid) && (
+                                  <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 border border-blue-200 px-2 py-0.5 text-[10.5px] font-bold text-blue-800">
+                                    <Rocket className="h-3 w-3 text-blue-600" />
+                                    <span>Auto-Relaunch: Active ($5/mo)</span>
                                   </span>
                                 )}
                               </div>
@@ -1044,6 +1101,18 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                     }`}
                   >
                     Unverified ({products.filter((p) => !p.verified).length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setProductVerifiedFilter(productVerifiedFilter === 'relaunch' ? 'all' : 'relaunch')}
+                    className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                      productVerifiedFilter === 'relaunch'
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'text-neutral-500 hover:text-neutral-950'
+                    }`}
+                  >
+                    <Rocket className="h-3 w-3" />
+                    <span>Auto-Relaunch ({products.filter((p) => p.autoRelaunch || p.autoRelaunchPaid).length})</span>
                   </button>
                 </div>
               </div>
@@ -2255,6 +2324,34 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
 
               {/* Scrollable Body Details */}
               <div className="p-6 space-y-6 overflow-y-auto max-h-[calc(92vh-160px)]">
+                {/* Auto-Relaunch Subscriber Card */}
+                {(sub.autoRelaunch || sub.autoRelaunchPaid) && (
+                  <div className="rounded-xl border border-blue-200 bg-blue-50/70 p-4 space-y-2 text-neutral-900">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Rocket className="h-4 w-4 text-blue-600" />
+                        <span className="text-sm font-black text-blue-950">Auto Weekly Relaunch Subscribed</span>
+                      </div>
+                      <span className="rounded-full bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
+                        Paid ($5 / mo)
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-xs text-neutral-700">
+                      <div>
+                        <span className="text-neutral-500 font-medium">Subscriber: </span>
+                        <span className="font-bold text-neutral-900">{sub.backerName}</span>
+                      </div>
+                      <div>
+                        <span className="text-neutral-500 font-medium">Billing Email: </span>
+                        <span className="font-bold text-neutral-900">{sub.backerEmail || 'Not provided'}</span>
+                      </div>
+                      <div>
+                        <span className="text-neutral-500 font-medium">Relaunch Schedule: </span>
+                        <span className="font-bold text-blue-700">Every Sunday 00:00</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 {/* 1. All Links & Distribution Channels */}
                 <div className="rounded-xl border border-neutral-200 bg-neutral-100 p-4 sm:p-5 space-y-3">
                   <div className="flex items-center justify-between border-b border-neutral-200/60 pb-2.5">

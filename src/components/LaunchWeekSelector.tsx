@@ -1,10 +1,9 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Check, ChevronUp } from 'lucide-react';
+import React, { useEffect, useMemo } from 'react';
+import { CalendarDays, Check } from 'lucide-react';
 import { Product, WebsiteSubmission } from '../types';
 import {
   getUpcomingLaunchSlots,
   getWeekNumber,
-  LaunchSlotInfo,
 } from '../utils/weeks';
 import { playSound } from '../utils/sound';
 
@@ -23,9 +22,6 @@ export const LaunchWeekSelector: React.FC<LaunchWeekSelectorProps> = ({
   submissions = [],
   soundEnabled = false,
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
   // Aggregate existing apps per week to determine slot congestion
   const weekCounts = useMemo(() => {
     const counts: Record<number, number> = {};
@@ -49,6 +45,8 @@ export const LaunchWeekSelector: React.FC<LaunchWeekSelectorProps> = ({
     return getUpcomingLaunchSlots(weekCounts, 8);
   }, [weekCounts]);
 
+  const currentWeek = useMemo(() => getWeekNumber(), []);
+
   // Default to first recommended or non-full slot if not explicitly selected
   const activeWeekNum = useMemo(() => {
     if (selectedWeekNumber) return selectedWeekNumber;
@@ -67,109 +65,92 @@ export const LaunchWeekSelector: React.FC<LaunchWeekSelectorProps> = ({
     }
   }, [selectedWeekNumber, selectedSlot, onSelectWeek]);
 
-  // Close dropdown on click outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false);
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isOpen]);
-
-  const handleSelect = (slot: LaunchSlotInfo) => {
-    if (slot.isFull) return;
-    playSound('click', soundEnabled);
-    onSelectWeek(slot.weekNumber, slot.start);
-    setIsOpen(false);
-  };
-
   return (
-    <div ref={containerRef} className="space-y-1.5 font-sans relative">
-      <div className="flex items-center justify-between">
-        <label className="text-sm font-semibold text-neutral-800">
-          Starting
-        </label>
-        <span className="text-[11px] text-neutral-500 font-medium">
-          Rounds kick off every Monday at 00:00
+    <div className="font-sans">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <label className="text-sm font-semibold text-neutral-900">Launch week</label>
+          <p className="mt-0.5 text-[11px] font-medium text-neutral-500">
+            Pick the week your product goes live. New rounds start every Monday.
+          </p>
+        </div>
+        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-neutral-200 bg-neutral-50 px-2.5 py-1 text-[10px] font-bold text-neutral-600">
+          <CalendarDays className="h-3 w-3" />
+          Mondays · 00:00
         </span>
       </div>
 
-      {/* Trigger Button */}
-      <button
-        type="button"
-        onClick={() => {
-          playSound('click', soundEnabled);
-          setIsOpen((prev) => !prev);
-        }}
-        className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl border text-sm font-medium transition-all bg-white text-left ${
-          isOpen
-            ? 'border-rose-500 ring-2 ring-rose-500/10'
-            : 'border-neutral-300 hover:border-neutral-400'
-        }`}
+      <div
+        className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4"
+        aria-label="Available launch weeks"
       >
-        <span className="text-neutral-900 font-medium">
-          {selectedSlot?.dateRangeStr || 'Select launch round'}
-        </span>
-        <ChevronUp
-          className={`h-4 w-4 text-neutral-600 transition-transform duration-200 ${
-            isOpen ? 'rotate-0' : 'rotate-180'
-          }`}
-        />
-      </button>
+        {slots.map((slot) => {
+          const isSelected = activeWeekNum === slot.weekNumber;
+          const offset = slot.weekNumber - currentWeek;
+          const relativeLabel =
+            offset === 0
+              ? 'This week'
+              : offset === 1
+                ? 'Next week'
+                : `In ${offset} weeks`;
 
-      {/* Floating Dropdown List */}
-      {isOpen && (
-        <div className="absolute left-0 right-0 top-full mt-1.5 z-50 rounded-2xl border border-neutral-200 bg-white p-1.5 shadow-xl shadow-neutral-900/10 max-h-80 overflow-y-auto space-y-0.5">
-          {slots.map((slot) => {
-            const isSelected = activeWeekNum === slot.weekNumber;
-            const isFull = slot.isFull;
+          return (
+            <button
+              key={slot.key}
+              type="button"
+              aria-pressed={isSelected}
+              disabled={slot.isFull}
+              onClick={() => {
+                if (slot.isFull) return;
+                playSound('click', soundEnabled);
+                onSelectWeek(slot.weekNumber, slot.start);
+              }}
+              className={`flex flex-col rounded-xl border px-3 py-2.5 text-left transition-all ${
+                slot.isFull
+                  ? 'cursor-not-allowed border-neutral-200 bg-neutral-50 text-neutral-400'
+                  : isSelected
+                    ? 'cursor-pointer border-neutral-950 bg-neutral-950 text-white shadow-sm'
+                    : 'cursor-pointer border-neutral-200 bg-white text-neutral-900 hover:border-neutral-400 hover:bg-neutral-50'
+              }`}
+            >
+              <span className="flex items-center justify-between gap-1">
+                <span
+                  className={`truncate text-[10px] font-bold uppercase tracking-wide ${
+                    isSelected ? 'text-white/70' : 'text-neutral-500'
+                  }`}
+                >
+                  {relativeLabel}
+                </span>
+                {isSelected && <Check className="h-3.5 w-3.5 shrink-0 text-white stroke-[3]" />}
+              </span>
 
-            return (
-              <button
-                key={slot.key}
-                type="button"
-                disabled={isFull}
-                onClick={() => handleSelect(slot)}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-colors text-left ${
-                  isFull
-                    ? 'opacity-40 cursor-not-allowed text-neutral-400'
-                    : isSelected
-                    ? 'bg-neutral-100/90 text-neutral-950 font-semibold'
-                    : 'text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900 cursor-pointer'
+              <span
+                className={`mt-1 block text-[13px] font-bold leading-tight ${
+                  isSelected ? 'text-white' : ''
                 }`}
               >
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="truncate">{slot.dateRangeStr}</span>
-                  {slot.isRecommended && !slot.isFull && (
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
-                      Recommended
-                    </span>
-                  )}
-                  {slot.isFull && (
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-neutral-100 text-neutral-500 border border-neutral-200 shrink-0">
-                      Full
-                    </span>
-                  )}
-                </div>
+                {slot.dateRangeStr}
+              </span>
 
-                {isSelected && (
-                  <Check className="h-4 w-4 text-rose-500 stroke-[2.5] shrink-0 ml-2" />
-                )}
-              </button>
-            );
-          })}
-        </div>
-      )}
+              <span
+                className={`mt-2 inline-flex w-fit items-center rounded-full border px-1.5 py-0.5 text-[9px] font-bold ${
+                  slot.isFull
+                    ? 'border-neutral-200 bg-neutral-100 text-neutral-500'
+                    : isSelected
+                      ? 'border-white/20 bg-white/10 text-white'
+                      : slot.badgeStyle
+                }`}
+              >
+                {slot.statusLabel}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      <p className="mt-2 text-[11px] font-medium text-neutral-500">
+        Your listing goes live at 00:00 on the Monday and runs for the full week.
+      </p>
     </div>
   );
 };

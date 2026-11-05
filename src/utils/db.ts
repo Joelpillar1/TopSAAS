@@ -37,6 +37,10 @@ export const mapDbSubmission = (row: Record<string, unknown>): WebsiteSubmission
   problemItSolves: (row.problem_it_solves as string) || undefined,
   solution: (row.solution as string) || undefined,
   uniqueSellingPoint: (row.unique_selling_point as string) || undefined,
+  autoRelaunch: Boolean(row.auto_relaunch ?? row.autoRelaunch) || undefined,
+  autoRelaunchPaid: Boolean(row.auto_relaunch_paid ?? row.autoRelaunchPaid) || undefined,
+  autoRelaunchPaidAt: (row.auto_relaunch_paid_at as number) || undefined,
+  verified: Boolean(row.verified) || false,
   scheduledLaunchWeek: (row.scheduled_launch_week as number) || undefined,
   scheduledLaunchDate: (row.scheduled_launch_date as number) || undefined,
 });
@@ -77,6 +81,10 @@ export const toDbSubmission = (sub: WebsiteSubmission) => {
     problem_it_solves: sub.problemItSolves || null,
     solution: sub.solution || null,
     unique_selling_point: sub.uniqueSellingPoint || null,
+    auto_relaunch: sub.autoRelaunch || false,
+    auto_relaunch_paid: sub.autoRelaunchPaid || false,
+    auto_relaunch_paid_at: sub.autoRelaunchPaidAt || null,
+    verified: sub.verified || false,
     scheduled_launch_week: sub.scheduledLaunchWeek || null,
     scheduled_launch_date: sub.scheduledLaunchDate || null,
   };
@@ -252,7 +260,10 @@ export function submissionToProduct(sub: WebsiteSubmission, rank: number = 1): P
     clicks: 0,
     createdAt: sub.scheduledLaunchDate || sub.submittedAt || Date.now(),
     updatedAt: Date.now(),
-    verified: true,
+    verified: Boolean(sub.verified) || false,
+    autoRelaunch: sub.autoRelaunch || undefined,
+    autoRelaunchPaid: sub.autoRelaunchPaid || undefined,
+    autoRelaunchPaidAt: sub.autoRelaunchPaidAt || undefined,
     isUserOwned: false,
     submittedBy: sub.submittedBy,
     scheduledLaunchWeek: sub.scheduledLaunchWeek,
@@ -277,7 +288,6 @@ export function submissionToProduct(sub: WebsiteSubmission, rank: number = 1): P
       { label: 'Status', value: 'Live on Directory' }
     ],
     bidHistory: [],
-    autoRelaunch: sub.autoRelaunch,
     relaunchWeeks: sub.relaunchWeeks,
     isRelaunched: sub.isRelaunched,
     lastRelaunchedAt: sub.lastRelaunchedAt,
@@ -367,7 +377,7 @@ export async function insertProductDirect(p: Product): Promise<boolean> {
       clicks: p.clicks ?? 0,
       created_at: p.createdAt || Date.now(),
       updated_at: p.updatedAt || Date.now(),
-      verified: true,
+      verified: Boolean(p.verified) || false,
       is_user_owned: false,
     };
     if (p.logoUrl && !p.logoUrl.startsWith('data:image')) minimal.logo_url = p.logoUrl;

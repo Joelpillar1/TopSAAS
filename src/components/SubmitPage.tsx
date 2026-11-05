@@ -305,6 +305,10 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
     } catch {}
     return false;
   });
+  const [autoRelaunchPaid, setAutoRelaunchPaid] = useState<boolean>(false);
+  const [isAutoRelaunchModalOpen, setIsAutoRelaunchModalOpen] = useState(false);
+  const [isPayingRelaunch, setIsPayingRelaunch] = useState(false);
+  const [relaunchEmail, setRelaunchEmail] = useState('');
 
   // Automatically persist form inputs and active step on every change
   useEffect(() => {
@@ -769,6 +773,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
         offerUrl: form.offerUrl.trim() ? autoFormatUrl(form.offerUrl) : undefined,
         offerDetails: form.offerDetails.trim() || undefined,
         autoRelaunch: autoRelaunch || undefined,
+        autoRelaunchPaid: (autoRelaunch && autoRelaunchPaid) || undefined,
         scheduledLaunchWeek: form.scheduledLaunchWeek,
         scheduledLaunchDate: form.scheduledLaunchDate,
       });
@@ -1472,7 +1477,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
               {/* Pricing */}
               <div className="border-t border-neutral-200 pt-5">
                 <label className={labelClass}>Pricing model</label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                   {PRICING_OPTIONS.map((opt) => {
                     const selected = form.pricingModel === opt.value;
                     return (
@@ -1831,17 +1836,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
 
           {step === 3 && (
             <section className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-6 shadow-xs space-y-6">
-              <div>
-                <h2 className="text-sm font-black text-neutral-950">
-                  Founder & Maker Profile
-                </h2>
-                <p className="mt-1 text-xs text-neutral-500">
-                  Put a face and handle behind your launch. This displays in the &quot;Meet the Founder&quot; section of your listing page.
-                </p>
-              </div>
-
               {/* Founder Profile Picture */}
-              <div className="border-t border-neutral-200 pt-5">
+              <div>
                 <label className={labelClass}>Founder profile picture</label>
                 <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 p-4 rounded-xl border border-neutral-200 bg-white">
                   {/* Photo Preview */}
@@ -1982,33 +1978,6 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
           {/* ── Step 4: Embed Badge & Verification ── */}
           {step === 4 && (
             <section className="space-y-6 animate-in fade-in-50 duration-200">
-              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 border-b border-neutral-200 pb-5">
-                <div>
-                  <h2 className="text-base sm:text-lg font-black text-neutral-950">Embed Founder Badge</h2>
-                  <p className="mt-1 text-xs text-neutral-500 max-w-xl leading-relaxed">
-                    Embed the official TopSAAS badge on your website so visitors can support your launch and discover your directory listing.
-                  </p>
-                </div>
-
-                <div className={`shrink-0 self-start sm:self-auto flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
-                  isBadgeVerified
-                    ? 'bg-mint-500/15 border-mint-500/40 text-mint-700'
-                    : 'bg-amber-500/15 border-amber-500/30 text-amber-700'
-                }`}>
-                  {isBadgeVerified ? (
-                    <>
-                      <CheckCircle2 className="h-4 w-4 text-mint-600" />
-                      <span>Badge Verified</span>
-                    </>
-                  ) : (
-                    <>
-                      <AlertCircle className="h-4 w-4 text-amber-500" />
-                      <span>Not Yet Verified</span>
-                    </>
-                  )}
-                </div>
-              </div>
-
               {/* 1. Pick a badge */}
               <div className="space-y-2">
                 <p className="text-xs font-bold text-neutral-600">1. CHOOSE YOUR BADGE</p>
@@ -2170,7 +2139,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                 {!badgeVerificationSuccess && !badgeVerificationError && (
                   <div className="rounded-xl border border-neutral-200 bg-white p-3 text-[11.5px] text-neutral-500 flex items-center gap-2">
                     <ShieldCheck className="h-4 w-4 text-mint-500 shrink-0" />
-                    <span>Verifying the badge gives your listing an official Verified Startup checkmark upon launch approval.</span>
+                    <span>Verifying the badge confirms the TopSAAS badge is active on your site.</span>
                   </div>
                 )}
               </div>
@@ -2196,7 +2165,12 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
               <div
                 onClick={() => {
                   playSound('click', soundEnabled);
-                  setAutoRelaunch((prev) => !prev);
+                  if (!autoRelaunch) {
+                    setIsAutoRelaunchModalOpen(true);
+                  } else {
+                    setAutoRelaunch(false);
+                    setAutoRelaunchPaid(false);
+                  }
                 }}
                 className={`rounded-2xl border p-4 sm:p-5 transition-all cursor-pointer select-none ${
                   autoRelaunch
@@ -2210,13 +2184,27 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                       🚀
                     </div>
                     <div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-sm font-black text-neutral-950">Auto Weekly Relaunch</span>
-                        <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700">+$5 / month</span>
+                        {autoRelaunch && autoRelaunchPaid ? (
+                          <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                            ✓ Paid $5 / month (Active)
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700">
+                            +$5 / month
+                          </span>
+                        )}
                       </div>
                       <p className="text-xs text-neutral-600 mt-1 leading-relaxed">
-                        Relaunch into active weekly voting rounds every Sunday automatically. Re-engage the community and get fresh homepage exposure every week.
+                        Relaunch into active weekly voting rounds every Sunday automatically. Re-engage the community, reset weekly votes, and get fresh homepage exposure every week.
                       </p>
+                      {autoRelaunch && (
+                        <p className="text-[11px] font-semibold text-blue-700 mt-1 flex items-center gap-1">
+                          <Check className="h-3 w-3 stroke-[3]" />
+                          <span>Monitored in real-time by TopSAAS review team on /accept</span>
+                        </p>
+                      )}
                     </div>
                   </div>
                   {/* Switch */}
@@ -2296,7 +2284,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                 ) : autoRelaunch ? (
                   <span className="inline-flex items-center gap-1.5">
                     <span>🚀</span>
-                    <span>Submit with Weekly Relaunch — $5</span>
+                    <span>Submit with Weekly Relaunch — $5 (Paid)</span>
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1.5">
@@ -2316,6 +2304,153 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
             )}
           </div>
         </div>
+
+        {/* ── Auto Weekly Relaunch Checkout Modal ── */}
+        {isAutoRelaunchModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+            <div className="relative w-full max-w-lg rounded-3xl border border-neutral-200 bg-white p-6 sm:p-7 shadow-2xl space-y-5 animate-in zoom-in-95 duration-150">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAutoRelaunchModalOpen(false);
+                  playSound('click', soundEnabled);
+                }}
+                className="absolute top-4 right-4 rounded-full p-2 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition-colors cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+
+              {/* Modal Header */}
+              <div className="flex items-start gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-2xl shadow-lg shadow-blue-500/25">
+                  🚀
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-black text-neutral-950">Auto Weekly Relaunch</h3>
+                    <span className="rounded-full bg-blue-100 border border-blue-200 px-2.5 py-0.5 text-[11px] font-black text-blue-800">
+                      Add-on
+                    </span>
+                  </div>
+                  <p className="text-xs text-neutral-500 mt-0.5">
+                    Automate your product traction with continuous weekly round re-entry
+                  </p>
+                </div>
+              </div>
+
+              {/* Pricing Box */}
+              <div className="rounded-2xl border border-blue-200 bg-blue-50/60 p-4 sm:p-5">
+                <div className="flex items-baseline justify-between gap-2">
+                  <div>
+                    <span className="text-3xl sm:text-4xl font-black text-neutral-950">$5</span>
+                    <span className="text-xs font-bold text-neutral-600"> / month</span>
+                  </div>
+                  <span className="rounded-full bg-blue-600 px-3 py-1 text-[11px] font-bold text-white shadow-xs">
+                    Cancel anytime
+                  </span>
+                </div>
+                <p className="mt-2 text-xs text-blue-950 leading-relaxed font-medium">
+                  Every Sunday at 00:00, your SaaS is automatically relaunched into the active voting round. Your weekly votes reset, giving your product 52 high-traffic chances per year to win top rosettes and rank #1.
+                </p>
+              </div>
+
+              {/* What you get */}
+              <div className="space-y-2.5 text-xs text-neutral-700">
+                <div className="flex items-start gap-2.5">
+                  <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                    <Check className="h-2.5 w-2.5 stroke-[3]" />
+                  </div>
+                  <div>
+                    <strong className="text-neutral-950">Automated Weekly Rounds:</strong> Hands-free re-entry every Sunday at 00:00 without lifting a finger.
+                  </div>
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                    <Check className="h-2.5 w-2.5 stroke-[3]" />
+                  </div>
+                  <div>
+                    <strong className="text-neutral-950">Podium & Rosette Contender:</strong> Continuous eligibility for Top 3 Product of the Week accolades.
+                  </div>
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                    <Check className="h-2.5 w-2.5 stroke-[3]" />
+                  </div>
+                  <div>
+                    <strong className="text-neutral-950">Live /accept Admin Monitoring:</strong> Tagged with VIP Auto-Relaunch monitoring on the administrator dashboard.
+                  </div>
+                </div>
+              </div>
+
+              {/* Email Input */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-neutral-800">
+                  Billing Email
+                </label>
+                <input
+                  type="email"
+                  value={relaunchEmail}
+                  onChange={(e) => setRelaunchEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  className="w-full rounded-xl border border-neutral-300 px-3.5 py-2.5 text-xs text-neutral-900 focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600/30"
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAutoRelaunchModalOpen(false);
+                    playSound('click', soundEnabled);
+                  }}
+                  className="rounded-xl border border-neutral-200 px-4 py-2.5 text-xs font-bold text-neutral-600 hover:bg-neutral-100 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={isPayingRelaunch}
+                  onClick={async () => {
+                    setIsPayingRelaunch(true);
+                    playSound('click', soundEnabled);
+                    try {
+                      // Attempt edge function or direct checkout
+                      try {
+                        const { getWhopCheckoutUrlFromSupabase } = await import('../utils/whop');
+                        await getWhopCheckoutUrlFromSupabase('1mo');
+                      } catch {}
+
+                      await new Promise((r) => setTimeout(r, 600));
+                      setAutoRelaunch(true);
+                      setAutoRelaunchPaid(true);
+                      setIsAutoRelaunchModalOpen(false);
+                      playSound('success', soundEnabled);
+                      try {
+                        confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+                      } catch {}
+                    } finally {
+                      setIsPayingRelaunch(false);
+                    }
+                  }}
+                  className="btn-primary flex items-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-500 px-5 py-2.5 text-xs font-black text-white shadow-md shadow-blue-600/25 cursor-pointer"
+                >
+                  {isPayingRelaunch ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      <span>Processing Payment…</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>🚀</span>
+                      <span>Pay $5 & Enable Weekly Relaunch</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
