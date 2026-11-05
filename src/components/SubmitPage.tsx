@@ -2010,9 +2010,9 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
               </div>
 
               {/* 1. Pick a badge */}
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <p className="text-xs font-bold text-neutral-600">1. CHOOSE YOUR BADGE</p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-4 gap-2 sm:gap-2.5">
                   {([
                     { id: 'type1-blue',  src: '/Share%20Badge/TopSAAS%20Type%201%20-%20blue.png',  label: 'Type 1 · Blue',  bg: 'bg-[#1a2580]' },
                     { id: 'type1-light', src: '/Share%20Badge/TopSAAS%20Type%201%20-%20light.png', label: 'Type 1 · Light', bg: 'bg-white' },
@@ -2023,25 +2023,25 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                       key={id}
                       type="button"
                       onClick={() => { playSound('click', soundEnabled); setBadgeVariant(id); }}
-                      className={`relative flex flex-col items-center gap-2 rounded-2xl border-2 p-4 transition-all cursor-pointer ${
+                      className={`relative flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 p-2 sm:p-2.5 transition-all cursor-pointer ${
                         badgeVariant === id
-                          ? 'border-mint-500 shadow-md shadow-mint-500/20'
+                          ? 'border-mint-500 shadow-sm shadow-mint-500/20'
                           : 'border-neutral-200 hover:border-neutral-400'
                       } ${bg}`}
                     >
                       {badgeVariant === id && (
-                        <span className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-mint-500">
-                          <Check className="h-3 w-3 text-white" />
+                        <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-mint-500">
+                          <Check className="h-2.5 w-2.5 text-white stroke-[3]" />
                         </span>
                       )}
                       <img
                         src={src}
                         alt={label}
-                        className="h-9 w-auto object-contain"
+                        className="h-6 sm:h-7.5 w-auto max-w-[85%] object-contain"
                         draggable={false}
                       />
-                      <span className={`text-[10px] font-bold ${
-                        id.endsWith('light') ? 'text-neutral-700' : 'text-white/80'
+                      <span className={`text-[9px] sm:text-[10px] font-bold text-center leading-tight truncate max-w-full ${
+                        id.endsWith('light') ? 'text-neutral-700' : 'text-white/85'
                       }`}>{label}</span>
                     </button>
                   ))}

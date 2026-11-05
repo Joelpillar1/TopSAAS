@@ -95,14 +95,18 @@ export function isInWeek(ts: number, week: WeekInfo | { start: number; end: numb
 /** Internal scale capacity per week. (Do not expose this ceiling number directly to visitors) */
 export const MAX_WEEKLY_LAUNCH_CAP = 30;
 
-/** Formats a WeekInfo into a clean human date range, e.g. "Nov 2 – Nov 8" */
-export function formatWeekDateRange(week: WeekInfo): string {
+/** Formats a WeekInfo into a clean human date range, e.g. "Nov 9 to Nov 15" */
+export function formatWeekDateRange(week: WeekInfo, format: 'to' | '–' = 'to'): string {
   const startDate = new Date(week.start);
   const endDate = new Date(week.end - 1); // Sunday 23:59
   const startMonth = startDate.toLocaleDateString('en-US', { month: 'short' });
   const startDay = startDate.getDate();
   const endMonth = endDate.toLocaleDateString('en-US', { month: 'short' });
   const endDay = endDate.getDate();
+
+  if (format === 'to') {
+    return `${startMonth} ${startDay} to ${endMonth} ${endDay}`;
+  }
 
   if (startMonth === endMonth) {
     return `${startMonth} ${startDay} – ${endDay}`;
@@ -124,7 +128,7 @@ export interface LaunchSlotInfo extends WeekInfo {
  */
 export function getUpcomingLaunchSlots(
   existingWeekCounts: Record<number, number> = {},
-  slotCount = 5
+  slotCount = 8
 ): LaunchSlotInfo[] {
   const currentWeek = getWeekNumber();
   const slots: LaunchSlotInfo[] = [];
