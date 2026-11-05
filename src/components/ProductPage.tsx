@@ -754,33 +754,6 @@ export const ProductPage: React.FC<ProductPageProps> = ({
               onTrackClick={onTrackClick}
               onOpenFeaturedSpotModal={onOpenFeaturedSpotModal}
             />
-
-            {/* Direct Visit CTA Card */}
-            <div className="rounded-2xl border border-neutral-200 bg-white p-5 space-y-3">
-              <div className="flex items-center justify-between border-b border-neutral-200 pb-2">
-                <div className="text-xs font-bold text-neutral-700">
-                  <span>Visit {product.name}</span>
-                </div>
-              </div>
-
-              <p className="text-xs text-neutral-500">
-                Explore the official website and get started with {product.name}.
-              </p>
-
-              <a
-                href={product.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => {
-                  playSound('click', soundEnabled);
-                  onTrackClick(product.id, product.url);
-                }}
-                className="w-full btn-primary py-3 text-xs font-bold min-h-[44px]"
-              >
-                <span>Open {product.name}</span>
-                <ExternalLink className="h-3.5 w-3.5" />
-              </a>
-            </div>
           </div>
         </div>
 
