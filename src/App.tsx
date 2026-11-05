@@ -2140,6 +2140,19 @@ export default function App() {
           onClose={() => setIsSignInModalOpen(false)}
           onSignIn={handleSignIn}
         />
+        <FeaturedSpotModal
+          isOpen={isFeaturedSpotModalOpen}
+          onClose={() => setIsFeaturedSpotModalOpen(false)}
+          products={products}
+          user={user}
+          initialTier={featuredInitialTier}
+          soundEnabled={soundEnabled}
+          onActivateSponsor={handleActivateSponsorTrial}
+          onOpenSubmitModal={() => {
+            setIsFeaturedSpotModalOpen(false);
+            handleOpenSubmit();
+          }}
+        />
       </div>
     );
   }
@@ -2291,6 +2304,19 @@ export default function App() {
           isOpen={isSignInModalOpen}
           onClose={() => setIsSignInModalOpen(false)}
           onSignIn={handleSignIn}
+        />
+        <FeaturedSpotModal
+          isOpen={isFeaturedSpotModalOpen}
+          onClose={() => setIsFeaturedSpotModalOpen(false)}
+          products={products}
+          user={user}
+          initialTier={featuredInitialTier}
+          soundEnabled={soundEnabled}
+          onActivateSponsor={handleActivateSponsorTrial}
+          onOpenSubmitModal={() => {
+            setIsFeaturedSpotModalOpen(false);
+            handleOpenSubmit();
+          }}
         />
       </div>
     );
