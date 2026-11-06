@@ -10,6 +10,8 @@ import {
   X, 
   MessageSquareQuote, 
   MessageCircle, 
+  MessageSquare,
+  Send,
   Target,
   LogIn,
   User as UserIcon,
@@ -64,6 +66,14 @@ function getVideoEmbedUrl(url?: string): { type: 'iframe' | 'video' | 'link'; em
   return { type: 'link', embedUrl: trimmed };
 }
 
+const AVATAR_GRADIENTS = [
+  'bg-gradient-to-tr from-blue-600 to-indigo-600',
+  'bg-gradient-to-tr from-violet-600 to-purple-600',
+  'bg-gradient-to-tr from-indigo-500 to-blue-600',
+  'bg-gradient-to-tr from-sky-500 to-blue-700',
+  'bg-gradient-to-tr from-blue-700 to-slate-800',
+];
+
 const CommentAvatar: React.FC<{
   avatarUrl?: string;
   name?: string;
@@ -72,11 +82,13 @@ const CommentAvatar: React.FC<{
 }> = ({
   avatarUrl,
   name = 'User',
-  className = 'h-8 w-8 shrink-0 rounded-full object-cover border border-neutral-200 bg-neutral-800',
-  fallbackClassName = 'flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-mint-500 text-[11px] font-black text-white'
+  className = 'h-8 w-8 shrink-0 rounded-full object-cover border border-neutral-200/80 bg-neutral-100 shadow-2xs',
+  fallbackClassName,
 }) => {
   const [hasError, setHasError] = useState(false);
   const initial = (name || 'U').trim().slice(0, 1).toUpperCase() || 'U';
+  const charCode = initial.charCodeAt(0) || 0;
+  const gradientClass = AVATAR_GRADIENTS[charCode % AVATAR_GRADIENTS.length];
 
   if (avatarUrl && !hasError) {
     return (
@@ -90,7 +102,12 @@ const CommentAvatar: React.FC<{
   }
 
   return (
-    <div className={fallbackClassName}>
+    <div
+      className={
+        fallbackClassName ||
+        `flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${gradientClass} text-[11px] font-black text-white shadow-2xs select-none`
+      }
+    >
       {initial}
     </div>
   );
@@ -153,20 +170,6 @@ export const ProductPage: React.FC<ProductPageProps> = ({
   const relatedProducts = allProducts
     .filter((p) => p.id !== product.id && (p.category === product.category || Math.abs(p.rank - product.rank) <= 2))
     .slice(0, 3);
-
-  // Top SaaS categories calculated from live product set
-  const topCategories = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const p of allProducts) {
-      if (p.category) {
-        counts[p.category] = (counts[p.category] || 0) + 1;
-      }
-    }
-    return Object.entries(counts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([name, count]) => ({ name, count }));
-  }, [allProducts]);
 
   // Media gallery (demo video + screenshots unified horizontally)
   const galleryRef = useRef<HTMLDivElement>(null);
@@ -783,79 +786,89 @@ export const ProductPage: React.FC<ProductPageProps> = ({
               </div>
             )}
 
-            {/* Discussion & Comments */}
-            <div id="product-discussion-section" className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs space-y-4">
-              <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
-                <h2 className="text-sm font-bold text-neutral-950">
-                  Discussion
-                </h2>
-                <span className="font-mono-num text-xs font-bold text-neutral-500">
-                  {comments.length} {comments.length === 1 ? 'comment' : 'comments'}
-                </span>
+            {/* Discussion & Comments (Modern, Clean Product Hunt / Linear Style) */}
+            <div id="product-discussion-section" className="rounded-2xl border border-neutral-200/90 bg-white p-5 sm:p-7 shadow-xs space-y-6">
+              {/* Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-neutral-100 pb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 border border-blue-100 shadow-2xs">
+                    <MessageSquare className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-base font-black text-neutral-950 tracking-tight">
+                        Discussion
+                      </h2>
+                      <span className="inline-flex items-center justify-center rounded-full bg-blue-50 border border-blue-100 text-blue-700 px-2.5 py-0.5 text-xs font-bold font-mono-num">
+                        {comments.length}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-xs text-neutral-400 font-medium">
+                  Share feedback, ask questions or leave a review
+                </p>
               </div>
 
               {/* Compose box or Sign-in prompt */}
               {isSignedIn ? (
-                <div className="space-y-3 rounded-xl border border-neutral-200/60 bg-white p-3.5 sm:p-4">
-                  <div className="flex items-center gap-2.5">
+                <div className="rounded-2xl border border-neutral-200/80 bg-neutral-50/50 p-4 transition-all focus-within:bg-white focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/10 focus-within:shadow-sm">
+                  <div className="flex items-start gap-3">
                     <CommentAvatar
                       avatarUrl={userAvatar}
                       name={userName || userEmail?.split('@')[0] || 'User'}
-                      className="h-8 w-8 shrink-0 rounded-full object-cover border border-neutral-200 bg-neutral-800"
-                      fallbackClassName="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-mint-500 text-[11px] font-black text-white"
+                      className="h-9 w-9 shrink-0 rounded-full object-cover border border-neutral-200 shadow-2xs"
                     />
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-neutral-950 truncate">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs font-bold text-neutral-900 truncate">
                           {userName || userEmail?.split('@')[0] || 'Signed-in User'}
                         </span>
-                        <span className="inline-flex items-center gap-1 rounded-full bg-mint-500/10 border border-mint-500/20 px-2 py-0.5 text-[9px] font-bold text-mint-600">
+                        <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 border border-blue-200/80 px-1.5 py-0.5 text-[10px] font-bold text-blue-700">
                           Verified
                         </span>
                       </div>
-                      {userEmail && (
-                        <p className="text-[10px] text-neutral-400 truncate">
-                          {userEmail}
-                        </p>
-                      )}
+
+                      <textarea
+                        value={commentText}
+                        onChange={(e) => setCommentText(e.target.value)}
+                        placeholder={`What do you think of ${product.name}? Ask a question or share your experience...`}
+                        rows={3}
+                        maxLength={2000}
+                        className="w-full bg-transparent border-0 p-0 text-xs sm:text-sm font-normal text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-0 resize-none min-h-[64px] leading-relaxed"
+                      />
+
+                      <div className="flex items-center justify-between pt-3 border-t border-neutral-200/60 mt-1">
+                        <span className="text-[11px] font-mono-num text-neutral-400">
+                          {commentText.length}/2000
+                        </span>
+                        <button
+                          type="button"
+                          disabled={!commentText.trim()}
+                          onClick={() => {
+                            const authorName = userName || userEmail?.split('@')[0] || 'User';
+                            playSound('click', soundEnabled);
+                            onAddComment(product.id, commentText, authorName, userEmail, userAvatar);
+                            setCommentText('');
+                          }}
+                          className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed shadow-xs active:scale-95 transition-all cursor-pointer"
+                        >
+                          <span>Post comment</span>
+                          <Send className="h-3 w-3" />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-
-                  <textarea
-                    value={commentText}
-                    onChange={(e) => setCommentText(e.target.value)}
-                    placeholder={`Ask a question or leave a comment about ${product.name}...`}
-                    rows={3}
-                    maxLength={2000}
-                    className="w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 text-xs font-medium text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-mint-500/30 focus:border-mint-500 transition-shadow resize-none"
-                  />
-
-                  <div className="flex items-center justify-between gap-2 pt-0.5">
-                    <span className="text-[10px] font-medium text-neutral-400">{commentText.length}/2000</span>
-                    <button
-                      type="button"
-                      disabled={!commentText.trim()}
-                      onClick={() => {
-                        const authorName = userName || userEmail?.split('@')[0] || 'User';
-                        playSound('click', soundEnabled);
-                        onAddComment(product.id, commentText, authorName, userEmail, userAvatar);
-                        setCommentText('');
-                      }}
-                      className="rounded-xl bg-mint-500 px-4 py-2 text-xs font-bold text-white hover:bg-mint-600 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-all cursor-pointer"
-                    >
-                      Post comment
-                    </button>
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-xl border border-neutral-200/60 bg-white p-4 text-center sm:text-left">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-neutral-100 text-neutral-600 border border-neutral-200">
-                      <UserIcon className="h-5 w-5" />
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl border border-neutral-200/80 bg-gradient-to-r from-blue-50/40 via-white to-neutral-50 p-4 sm:p-5 shadow-2xs">
+                  <div className="flex items-center gap-3.5">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white border border-neutral-200 text-blue-600 shadow-2xs">
+                      <MessageCircle className="h-5 w-5" />
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-neutral-950">Join the discussion</p>
-                      <p className="text-[11px] text-neutral-400">Sign in to leave a comment with your name and profile picture.</p>
+                      <p className="text-sm font-bold text-neutral-950">Join the discussion</p>
+                      <p className="text-xs text-neutral-500 mt-0.5">Sign in to leave a comment with your name and avatar.</p>
                     </div>
                   </div>
                   <button
@@ -864,7 +877,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                       playSound('click', soundEnabled);
                       onOpenSignIn?.();
                     }}
-                    className="w-full sm:w-auto shrink-0 btn-primary px-4 py-2.5 text-xs font-bold"
+                    className="w-full sm:w-auto shrink-0 btn-primary px-4 py-2.5 text-xs font-bold flex items-center justify-center gap-2"
                   >
                     <LogIn className="h-3.5 w-3.5" />
                     <span>Sign in to comment</span>
@@ -874,32 +887,54 @@ export const ProductPage: React.FC<ProductPageProps> = ({
 
               {/* Comment list */}
               {comments.length === 0 ? (
-                <p className="py-2 text-xs font-medium text-neutral-400">
-                  No comments yet — start the conversation.
-                </p>
+                <div className="flex flex-col items-center justify-center py-8 text-center rounded-2xl border border-dashed border-neutral-200 bg-neutral-50/40 p-6">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white border border-neutral-200 text-neutral-400 mb-2.5 shadow-2xs">
+                    <MessageSquareQuote className="h-6 w-6 text-neutral-400" />
+                  </div>
+                  <p className="text-sm font-bold text-neutral-900">No comments yet</p>
+                  <p className="text-xs text-neutral-500 mt-0.5 max-w-sm leading-relaxed">
+                    Be the first to share your experience, ask a question, or support the maker!
+                  </p>
+                </div>
               ) : (
-                <div className="space-y-3">
+                <div className="divide-y divide-neutral-100">
                   {[...comments]
-                    .sort((a, b) => a.createdAt - b.createdAt)
-                    .map((c) => (
-                      <div key={c.id} className="flex items-start gap-3 rounded-xl border border-neutral-200 bg-white p-3.5">
-                        <CommentAvatar
-                          avatarUrl={c.userAvatar}
-                          name={c.userName}
-                          className="h-8 w-8 shrink-0 rounded-full object-cover border border-neutral-200 bg-neutral-800"
-                          fallbackClassName="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-mint-500 text-[11px] font-black text-white"
-                        />
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-neutral-950">{c.userName}</span>
-                            <span className="text-[10px] font-medium text-neutral-500">{timeAgo(c.createdAt)}</span>
+                    .sort((a, b) => b.createdAt - a.createdAt)
+                    .map((c) => {
+                      const isMaker = Boolean(
+                        (product.creatorName && c.userName && c.userName.toLowerCase() === product.creatorName.toLowerCase()) ||
+                        (product.creatorUsername && c.userName && c.userName.toLowerCase() === product.creatorUsername.toLowerCase())
+                      );
+
+                      return (
+                        <div key={c.id} className="py-4 first:pt-1 last:pb-1 flex items-start gap-3.5 group">
+                          <CommentAvatar
+                            avatarUrl={c.userAvatar}
+                            name={c.userName}
+                            className="h-9 w-9 shrink-0 rounded-full object-cover border border-neutral-200 shadow-2xs"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="text-xs font-bold text-neutral-950">
+                                {c.userName}
+                              </span>
+                              {isMaker && (
+                                <span className="inline-flex items-center gap-0.5 rounded-md bg-blue-50 border border-blue-200/80 px-1.5 py-0.5 text-[10px] font-bold text-blue-700">
+                                  Maker
+                                </span>
+                              )}
+                              <span className="text-neutral-300">·</span>
+                              <span className="text-[11px] font-medium text-neutral-400">
+                                {timeAgo(c.createdAt)}
+                              </span>
+                            </div>
+                            <p className="mt-1.5 text-xs sm:text-sm leading-relaxed text-neutral-700 break-words whitespace-pre-wrap font-normal">
+                              {c.content}
+                            </p>
                           </div>
-                          <p className="mt-1 text-xs leading-relaxed text-neutral-400 break-words whitespace-pre-wrap">
-                            {c.content}
-                          </p>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                 </div>
               )}
             </div>
@@ -971,59 +1006,9 @@ export const ProductPage: React.FC<ProductPageProps> = ({
               onOpenFeaturedSpotModal={onOpenFeaturedSpotModal}
             />
 
-            {/* 2. Founder / Maker Spotlight Card */}
-            {(product.creatorName || product.creatorAvatar || product.creatorXHandle) && (
-              <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-xs space-y-3.5">
-                <div className="flex items-center justify-between border-b border-neutral-200 pb-2.5">
-                  <div>
-                    <h2 className="text-xs font-bold text-neutral-950">
-                      Meet the founder
-                    </h2>
-                  </div>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-mint-500/10 border border-mint-500/30 px-2 py-0.5 text-[9px] font-bold text-mint-600">
-                    <CheckCircle2 className="h-2.5 w-2.5 fill-mint-500 text-white" />
-                    Verified Maker
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-3.5">
-                  <CommentAvatar
-                    avatarUrl={product.creatorAvatar}
-                    name={product.creatorName || 'Founder'}
-                    className="h-12 w-12 shrink-0 rounded-full object-cover border-2 border-neutral-200 bg-neutral-800 shadow-md"
-                    fallbackClassName="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-mint-500 text-sm font-black text-white"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <h3 className="text-sm font-black text-neutral-950 truncate">
-                        {product.creatorName || 'Product Maker'}
-                      </h3>
-                    </div>
-                    <p className="text-[11px] font-medium text-neutral-400 mt-0.5">
-                      {product.creatorRole || 'Founder & Creator'}
-                    </p>
-                  </div>
-                </div>
-
-                {product.creatorXHandle && (
-                  <div className="pt-2 border-t border-neutral-200">
-                    <a
-                      href={`https://x.com/${product.creatorXHandle.replace('@', '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-gray-100 py-2 px-3 text-xs font-bold text-gray-700 hover:border-gray-300 hover:bg-gray-200 hover:text-gray-900 transition-all cursor-pointer"
-                    >
-                      <span>Follow {product.creatorXHandle.startsWith('@') ? product.creatorXHandle : `@${product.creatorXHandle}`} on X</span>
-                      <ExternalLink className="h-3 w-3 opacity-60" />
-                    </a>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* 3. Quick Specs & Highlights */}
+            {/* 2. Quick Specs & Highlights (Website Specifications placed above meet founder) */}
             <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-xs space-y-3.5">
-              <h2 className="text-xs font-bold text-neutral-950 border-b border-neutral-200 pb-2">
+              <h2 className="text-xs font-bold text-neutral-950 border-b border-neutral-100 pb-2.5 uppercase tracking-wider">
                 Website specifications
               </h2>
 
@@ -1041,27 +1026,27 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                 )}
 
                 {product.targetAudience && (
-                  <div className="pt-1 border-t border-neutral-200">
+                  <div className="pt-1 border-t border-neutral-200/60">
                     <span className="text-neutral-500 font-medium block mb-0.5">Target Audience</span>
                     <span className="font-semibold text-neutral-800 text-[11px] block">{product.targetAudience}</span>
                   </div>
                 )}
 
                 {product.keyHighlights && product.keyHighlights.map((kh, idx) => (
-                  <div key={idx} className="flex items-center justify-between pt-1 border-t border-neutral-200">
+                  <div key={idx} className="flex items-center justify-between pt-1 border-t border-neutral-200/60">
                     <span className="text-neutral-500 font-medium">{kh.label}</span>
                     <span className="font-bold text-neutral-900">{kh.value}</span>
                   </div>
                 ))}
 
-                <div className="flex items-center justify-between pt-1 border-t border-neutral-200">
+                <div className="flex items-center justify-between pt-1 border-t border-neutral-200/60">
                   <span className="text-neutral-500 font-medium">Official Link</span>
                   <a
                     href={product.url}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => onTrackClick(product.id, product.url)}
-                    className="font-bold text-mint-600 underline flex items-center gap-1 hover:text-mint-700 transition-colors"
+                    className="font-bold text-blue-600 underline flex items-center gap-1 hover:text-blue-700 transition-colors"
                   >
                     <span>Visit</span>
                     <ExternalLink className="h-2.5 w-2.5" />
@@ -1069,7 +1054,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                 </div>
 
                 {product.socials && product.socials.length > 0 && (
-                  <div className="pt-2.5 border-t border-neutral-200 space-y-2">
+                  <div className="pt-2.5 border-t border-neutral-200/60 space-y-2">
                     <span className="text-neutral-500 font-medium block text-[11px]">Social & Distribution</span>
                     <div className="flex flex-wrap gap-1.5">
                       {product.socials.map((s, idx) => {
@@ -1107,45 +1092,56 @@ export const ProductPage: React.FC<ProductPageProps> = ({
               </div>
             </div>
 
-            {/* 4. Top Categories Card */}
-            {topCategories.length > 0 && (
+            {/* 3. Founder / Maker Spotlight Card */}
+            {(product.creatorName || product.creatorAvatar || product.creatorXHandle) && (
               <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-xs space-y-3.5">
                 <div className="flex items-center justify-between border-b border-neutral-100 pb-2.5">
-                  <div className="flex items-center gap-2">
-                    <Tag className="h-4 w-4 text-blue-600" />
-                    <h3 className="text-xs font-black text-neutral-950 uppercase tracking-wider">Top Categories</h3>
+                  <div>
+                    <h2 className="text-xs font-bold text-neutral-950 uppercase tracking-wider">
+                      Meet the founder
+                    </h2>
                   </div>
-                  <button
-                    type="button"
-                    onClick={onBack}
-                    className="text-[11px] font-bold text-neutral-500 hover:text-blue-600 transition-colors inline-flex items-center gap-0.5 cursor-pointer"
-                  >
-                    <span>View all</span>
-                    <ChevronRight className="h-3 w-3" />
-                  </button>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200/80 px-2 py-0.5 text-[9px] font-bold text-blue-700">
+                    <CheckCircle2 className="h-2.5 w-2.5 fill-blue-600 text-white" />
+                    Verified Maker
+                  </span>
                 </div>
-                <div className="divide-y divide-neutral-100">
-                  {topCategories.map((cat) => (
-                    <button
-                      key={cat.name}
-                      type="button"
-                      onClick={() => {
-                        playSound('click', soundEnabled);
-                        onBack();
-                      }}
-                      className="w-full flex items-center justify-between py-2 text-xs font-medium text-neutral-700 hover:text-blue-600 group transition-colors cursor-pointer text-left"
+
+                <div className="flex items-center gap-3.5">
+                  <CommentAvatar
+                    avatarUrl={product.creatorAvatar}
+                    name={product.creatorName || 'Founder'}
+                    className="h-12 w-12 shrink-0 rounded-full object-cover border border-neutral-200 bg-neutral-100 shadow-2xs"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <h3 className="text-sm font-black text-neutral-950 truncate">
+                        {product.creatorName || 'Product Maker'}
+                      </h3>
+                    </div>
+                    <p className="text-[11px] font-medium text-neutral-400 mt-0.5">
+                      {product.creatorRole || 'Founder & Creator'}
+                    </p>
+                  </div>
+                </div>
+
+                {product.creatorXHandle && (
+                  <div className="pt-2 border-t border-neutral-100">
+                    <a
+                      href={`https://x.com/${product.creatorXHandle.replace('@', '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-gray-100 py-2 px-3 text-xs font-bold text-gray-700 hover:border-gray-300 hover:bg-gray-200 hover:text-gray-900 transition-all cursor-pointer"
                     >
-                      <span className="truncate group-hover:font-semibold">{cat.name}</span>
-                      <span className="text-[11px] font-mono-num text-neutral-400 group-hover:text-blue-600 bg-neutral-100 px-2 py-0.5 rounded-md">
-                        {cat.count} {cat.count === 1 ? 'project' : 'projects'}
-                      </span>
-                    </button>
-                  ))}
-                </div>
+                      <span>Follow {product.creatorXHandle.startsWith('@') ? product.creatorXHandle : `@${product.creatorXHandle}`} on X</span>
+                      <ExternalLink className="h-3 w-3 opacity-60" />
+                    </a>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* 5. Quick Access Shortcuts */}
+            {/* 4. Quick Access Shortcuts */}
             <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-xs space-y-3">
               <h3 className="text-xs font-black text-neutral-950 uppercase tracking-wider border-b border-neutral-100 pb-2.5">
                 Quick Access
