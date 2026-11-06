@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Check, X, ArrowLeft, ShieldCheck, ChevronDown, ChevronUp, Award } from 'lucide-react';
 import { VerifiedBadge } from './VerifiedBadge';
 import { BorderBeam } from './BorderBeam';
 import { SponsorShowcaseSection } from './SponsorShowcaseSection';
 import { playSound } from '../utils/sound';
 import { WHOP_LINKS } from '../utils/whop';
+import { applyPageSeo } from '../utils/pageSeo';
 
 interface PricingPageProps {
   onOpenSubmit: (plan?: 'free' | 'free_relaunch' | 'verified_launch' | 'lifetime' | 'monthly_pro') => void;
@@ -68,6 +69,27 @@ export const PricingPage: React.FC<PricingPageProps> = ({
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   const [freeWeeklyRelaunch, setFreeWeeklyRelaunch] = useState(false);
   const [isIncludesOpen, setIsIncludesOpen] = useState(false);
+
+  useEffect(() => {
+    return applyPageSeo({
+      title: 'Pricing & Launch Plans | TopSAAS',
+      description: 'Explore launch plans on TopSAAS. From free standard submissions to the $19 Verified Launch with permanent dofollow backlink, verified badge, and AI search inclusion.',
+      canonical: 'https://www.topsaas.space/pricing',
+      jsonLd: {
+        '@context': 'https://schema.org',
+        '@type': 'Product',
+        name: 'TopSAAS Verified Launch',
+        description: 'Permanent verified directory listing, high-authority dofollow backlink, verified badge, top 3 category placement, and /llms.txt AI search inclusion.',
+        offers: {
+          '@type': 'Offer',
+          price: '19',
+          priceCurrency: 'USD',
+          availability: 'https://schema.org/InStock',
+        },
+      },
+      jsonLdId: 'pricing-jsonld',
+    });
+  }, []);
 
   const toggleFaq = (index: number) => {
     playSound('click', soundEnabled);

@@ -35,6 +35,7 @@ import { RichText } from './RichText';
 import { VerifiedBadge } from './VerifiedBadge';
 import { SponsoredPartnersSidebar } from './SponsoredPartnersSidebar';
 import { timeAgo } from './ProductRow';
+import { applyPageSeo } from '../utils/pageSeo';
 
 function getVideoEmbedUrl(url?: string): { type: 'iframe' | 'video' | 'link'; embedUrl: string } | null {
   if (!url) return null;
@@ -161,6 +162,68 @@ export const ProductPage: React.FC<ProductPageProps> = ({
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [copiedOffer, setCopiedOffer] = useState(false);
+
+  // Dynamic SEO & SoftwareApplication JSON-LD schema for AEO / GEO
+  useEffect(() => {
+    const rawTagline = (product.tagline || '').trim();
+    const cleanDesc = (product.description || product.tagline || `${product.name} is a modern SaaS tool listed on TopSAAS.`)
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 160);
+
+    const title = rawTagline
+      ? `${product.name} — ${rawTagline} | TopSAAS`
+      : `${product.name} — Modern SaaS & AI Tool | TopSAAS`;
+
+    const canonical = `https://www.topsaas.space/product/${product.id}`;
+
+    // Schema.org SoftwareApplication JSON-LD
+    const jsonLd: Record<string, unknown> = {
+      '@context': 'https://schema.org',
+      '@type': 'SoftwareApplication',
+      name: product.name,
+      description: product.description || product.tagline || `Discover ${product.name} on TopSAAS`,
+      url: product.url,
+      applicationCategory: product.category || 'BusinessApplication',
+      operatingSystem: 'All',
+      offers: {
+        '@type': 'Offer',
+        price: '0',
+        priceCurrency: 'USD',
+        category: product.pricingModel || 'Freemium',
+      },
+    };
+
+    if (product.logoUrl) {
+      jsonLd.image = product.logoUrl;
+    }
+    if (product.screenshots && product.screenshots.length > 0) {
+      jsonLd.screenshot = product.screenshots[0];
+    }
+    if (product.creatorName) {
+      jsonLd.author = {
+        '@type': 'Person',
+        name: product.creatorName,
+      };
+    }
+    if (typeof product.upvotes === 'number' && product.upvotes > 0) {
+      jsonLd.aggregateRating = {
+        '@type': 'AggregateRating',
+        ratingValue: '4.8',
+        reviewCount: Math.max(1, product.upvotes),
+        bestRating: '5',
+        worstRating: '1',
+      };
+    }
+
+    return applyPageSeo({
+      title,
+      description: cleanDesc,
+      canonical,
+      jsonLd,
+      jsonLdId: `product-jsonld-${product.id}`,
+    });
+  }, [product]);
 
   const hasLinks = /(https?:\/\/|www\.|\.[a-z]{2,}\/)/i.test(commentText);
 

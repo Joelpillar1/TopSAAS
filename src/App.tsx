@@ -665,6 +665,32 @@ export default function App() {
     }
   }, [currentRoute]);
 
+  // Dynamic Category & Homepage SEO on main directory
+  useEffect(() => {
+    if (currentRoute === '/' && activeTab === 'directory') {
+      if (selectedCategory && selectedCategory !== 'All') {
+        const title = `Top ${selectedCategory} & Software (2026) | TopSAAS`;
+        const desc = `Discover the best ${selectedCategory} software, AI tools, and indie products. Real-time community upvotes and verified launches on TopSAAS.`;
+        document.title = title;
+        const metaDesc = document.querySelector('meta[name="description"]');
+        if (metaDesc) metaDesc.setAttribute('content', desc);
+        const ogTitle = document.querySelector('meta[property="og:title"]');
+        if (ogTitle) ogTitle.setAttribute('content', title);
+        const ogDesc = document.querySelector('meta[property="og:description"]');
+        if (ogDesc) ogDesc.setAttribute('content', desc);
+      } else {
+        document.title = 'TopSAAS — The Curated Directory of Modern SaaS & AI Tools';
+        const defaultDesc = 'Discover, compare, and launch modern SaaS products and AI tools. Real-time community leaderboard, verified founder launches, weekly spotlights, and 3,800+ open-source starters.';
+        const metaDesc = document.querySelector('meta[name="description"]');
+        if (metaDesc) metaDesc.setAttribute('content', defaultDesc);
+        const ogTitle = document.querySelector('meta[property="og:title"]');
+        if (ogTitle) ogTitle.setAttribute('content', 'TopSAAS — The Curated Directory of Modern SaaS & AI Tools');
+        const ogDesc = document.querySelector('meta[property="og:description"]');
+        if (ogDesc) ogDesc.setAttribute('content', defaultDesc);
+      }
+    }
+  }, [currentRoute, activeTab, selectedCategory]);
+
   // Honor ?q= deep links (the SearchAction target advertised in the homepage
   // JSON-LD), so search-engine site-search results land with the query applied.
   useEffect(() => {
@@ -1406,7 +1432,6 @@ export default function App() {
               previousRank: p.previousRank ?? p.rank,
               upvotes: p.upvotes,
               clicks: p.clicks,
-              dinoScore: p.dinoScore,
               totalBid: p.totalBid,
               bidHistory: p.bidHistory,
               createdAt: p.createdAt,

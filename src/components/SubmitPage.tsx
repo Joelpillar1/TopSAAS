@@ -14,6 +14,7 @@ import { LaunchWeekSelector } from './LaunchWeekSelector';
 import { autofillWithOpenAI } from '../utils/autofill';
 import { redirectToCheckout, WHOP_LINKS } from '../utils/whop';
 import { VerifiedBadge } from './VerifiedBadge';
+import { applyPageSeo } from '../utils/pageSeo';
 
 const DRAFT_KEY = 'topsaas_launch_draft_v1';
 const STEP_KEY = 'topsaas_launch_step_v1';
@@ -271,6 +272,22 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
   products = [],
   submissions = [],
 }) => {
+  useEffect(() => {
+    return applyPageSeo({
+      title: 'Submit & Launch Your Product | TopSAAS',
+      description: 'Launch your SaaS product or AI tool on TopSAAS. Instant AI auto-fill, verified community leaderboard, high-authority dofollow backlinks, and weekly spotlights.',
+      canonical: 'https://www.topsaas.space/submit',
+      jsonLd: {
+        '@context': 'https://schema.org',
+        '@type': 'WebPage',
+        name: 'Submit Your SaaS — TopSAAS Launchpad',
+        description: 'Submit your software for verification, community upvoting, and featured promotion on TopSAAS.',
+        url: 'https://www.topsaas.space/submit',
+      },
+      jsonLdId: 'submit-jsonld',
+    });
+  }, []);
+
   const [form, setForm] = useState<FormState>(() => {
     const draft = loadDraft();
     const initial: FormState = {

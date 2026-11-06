@@ -25,7 +25,6 @@ TopSAAS is a real-time, curated software catalog, leaderboard, and distribution 
 - **Data Persistence**: Supabase PostgreSQL database with Row Level Security (RLS) policies protecting user profiles and admin operations.
 - **Realtime Synchronization**: Supabase Realtime WebSocket channels broadcasting upvote updates, comments, and leaderboard rank shifts.
 - **Payment & Bidding Processing**: Whop Merchant of Record integration supporting credit cards, Apple Pay, Google Pay, international currencies, and digital payment methods.
-- **Anti-Cheat Validation**: Cryptographic HMAC SHA-256 velocity verification on gamified dino runner scores to prevent bot manipulation.
 
 ---
 
@@ -73,7 +72,6 @@ export interface Product {
   creatorRole?: string;            // Creator title (e.g. 'Founder & CEO')
   category: Category;              // Primary classification category
   upvotes: number;                 // Total community upvotes
-  dinoScore: number;               // Verified score earned in the dino minigame
   totalBid: number;                // Total promotional bid points ($)
   clicks: number;                  // Total outbound click count
   createdAt: number;               // Epoch millisecond creation timestamp
