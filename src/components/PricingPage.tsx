@@ -4,11 +4,12 @@ import { VerifiedBadge } from './VerifiedBadge';
 import { BorderBeam } from './BorderBeam';
 import { SponsorShowcaseSection } from './SponsorShowcaseSection';
 import { playSound } from '../utils/sound';
+import { WHOP_LINKS } from '../utils/whop';
 
 interface PricingPageProps {
   onOpenSubmit: (plan?: 'free' | 'free_relaunch' | 'verified_launch' | 'lifetime' | 'monthly_pro') => void;
   onOpenSponsor?: (tier?: '1wk' | '1mo') => void;
-  onOpenFeaturedSpot?: () => void;
+  onOpenFeaturedSpot?: (tier?: '1wk' | '1mo') => void;
   onGoHome: () => void;
   soundEnabled: boolean;
 }
@@ -73,12 +74,12 @@ export const PricingPage: React.FC<PricingPageProps> = ({
     setOpenFaqIndex(openFaqIndex === index ? null : index);
   };
 
-  const handleOpenFeatured = () => {
+  const handleOpenFeatured = (tier: '1wk' | '1mo' = '1wk') => {
     playSound('click', soundEnabled);
     if (onOpenFeaturedSpot) {
-      onOpenFeaturedSpot();
+      onOpenFeaturedSpot(tier);
     } else if (onOpenSponsor) {
-      onOpenSponsor('1wk');
+      onOpenSponsor(tier);
     }
   };
 
@@ -294,16 +295,15 @@ export const PricingPage: React.FC<PricingPageProps> = ({
                 </li>
               </ul>
 
-              <button
-                type="button"
-                onClick={() => {
-                  playSound('click', soundEnabled);
-                  onOpenSubmit('verified_launch');
-                }}
+              <a
+                href={WHOP_LINKS.oneTime}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => playSound('click', soundEnabled)}
                 className="w-full text-center rounded-xl bg-mint-500 py-2.5 text-xs font-black text-white hover:bg-mint-400 transition-all cursor-pointer shadow-md shadow-mint-500/20 block"
               >
                 Get Verified Launch — $19
-              </button>
+              </a>
             </div>
           </BorderBeam>
 
@@ -454,7 +454,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({
 
               <button
                 type="button"
-                onClick={handleOpenFeatured}
+                onClick={() => handleOpenFeatured('1wk')}
                 className="w-full btn-primary py-2.5 px-4 text-xs font-bold rounded-xl shadow-xs mt-3 cursor-pointer"
               >
                 Claim 1-Week Featured — $15
@@ -517,7 +517,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({
 
               <button
                 type="button"
-                onClick={handleOpenFeatured}
+                onClick={() => handleOpenFeatured('1mo')}
                 className="w-full btn-primary bg-amber-500 hover:bg-amber-400 py-2.5 px-4 text-xs font-bold rounded-xl shadow-xs mt-3 cursor-pointer"
               >
                 Claim 1-Month Featured — $39

@@ -2184,9 +2184,12 @@ export default function App() {
             }
             setIsFeaturedSpotModalOpen(true);
           }}
-          onOpenFeaturedSpot={() => {
+          onOpenFeaturedSpot={(tier) => {
             playSound('click', soundEnabled);
             setFeaturedModalMode('featured');
+            if (tier) {
+              setFeaturedInitialTier(tier);
+            }
             setIsFeaturedSpotModalOpen(true);
           }}
           onGoHome={handleBackToLeaderboard}

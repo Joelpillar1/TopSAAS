@@ -21,7 +21,7 @@ import { User as SupabaseUser } from '@supabase/supabase-js';
 import confetti from 'canvas-confetti';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
-import { redirectToCheckout } from '../utils/whop';
+import { redirectToCheckout, PlanType } from '../utils/whop';
 import { ProductLogo } from './ProductLogo';
 import { getWebsiteFavicon } from '../utils/logo';
 import { insertProductDirect } from '../utils/db';
@@ -404,14 +404,10 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
 
     try {
       const email = contactEmail.trim() || user?.email || undefined;
-      const planType =
-        selectedPlan.id === '1wk'
-          ? '1wk'
-          : selectedPlan.id === '1mo'
-          ? '1mo'
-          : selectedPlan.id === '3mo'
-          ? '3mo'
-          : '1yr';
+      const planType: PlanType =
+        mode === 'featured'
+          ? (selectedPlan.id === '1wk' ? 'featured_1wk' : 'featured_1mo')
+          : (selectedPlan.id === '1wk' ? 'sponsor_1wk' : selectedPlan.id === '3mo' ? '3mo' : selectedPlan.id === '1yr' ? '1yr' : 'sponsor_1mo');
 
       if (mode === 'featured') {
         let durationDays = 7;

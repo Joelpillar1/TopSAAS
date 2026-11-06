@@ -1,13 +1,23 @@
 import { supabase } from './supabase';
 
 export const WHOP_LINKS = {
+  // Weekly Relaunch ($5/mo)
   weeklyRelaunch: 'https://whop.com/topsaas/weekly-relaunch/',
+
+  // $19 Per Product Pass / One-Time Verified Launch
   oneTime: 'https://whop.com/topsaas/one-time-fe/',
-  perProductPass: 'https://whop.com/topsaas/per-product-pass/',
-  sponsor1wk: 'https://whop.com/checkout/plan_weekly_sponsor',
+  perProductPass: 'https://whop.com/topsaas/one-time-fe/',
+  verifiedLaunch: 'https://whop.com/topsaas/one-time-fe/',
+
+  // Sponsor Spot (Sidebar Rails: $10/wk & $29/mo)
+  sponsor1wk: 'https://whop.com/topsaas/1-week-s',
   sponsor1mo: 'https://whop.com/checkout/plan_VHCOSyqWd9l9Q',
   sponsor3mo: 'https://whop.com/checkout/plan_SMad32AkVoMeu',
   sponsor1yr: 'https://whop.com/checkout/plan_2uumEoGYQUKtb',
+
+  // Featured Spot (Pinned top banner: $15/wk & $39/mo)
+  featured1wk: 'https://whop.com/topsaas/1-week-featured',
+  featured1mo: 'https://whop.com/topsaas/1-month-featured',
 } as const;
 
 export type PlanType =
@@ -17,9 +27,14 @@ export type PlanType =
   | '1yr'
   | '7days'
   | '30days'
+  | 'sponsor_1wk'
+  | 'sponsor_1mo'
+  | 'featured_1wk'
+  | 'featured_1mo'
   | 'weekly_relaunch'
   | 'onetime'
   | 'per_product_pass'
+  | 'verified_launch'
   | 'lifetime';
 
 export interface CheckoutOptions {
@@ -39,13 +54,45 @@ export interface CheckoutResponse {
  */
 export function normalizePlanKey(planType: PlanType): string {
   const p = String(planType).toLowerCase();
-  if (p === '1wk' || p === 'weekly' || p === '1week' || p === '7days') return '1wk';
+
+  // Featured Spot plans
+  if (p === 'featured_1wk' || p === 'featured1wk' || p === 'featured-1wk' || p === 'featured_weekly') {
+    return 'featured_1wk';
+  }
+  if (p === 'featured_1mo' || p === 'featured1mo' || p === 'featured-1mo' || p === 'featured_monthly') {
+    return 'featured_1mo';
+  }
+
+  // Sponsor Spot plans
+  if (p === 'sponsor_1wk' || p === 'sponsor1wk' || p === 'sponsor-1wk' || p === 'sponsor_weekly') {
+    return 'sponsor_1wk';
+  }
+  if (p === 'sponsor_1mo' || p === 'sponsor1mo' || p === 'sponsor-1mo' || p === 'sponsor_monthly') {
+    return 'sponsor_1mo';
+  }
+
+  // Generic 1wk / 1mo (defaults to sponsor)
+  if (p === '1wk' || p === 'weekly' || p === '1week' || p === '7days') return 'sponsor_1wk';
+
+  // Weekly relaunch
   if (p === 'weekly_relaunch' || p === 'weekly-relaunch' || p === 'relaunch') return 'weekly_relaunch';
-  if (p === 'onetime' || p === 'one-time' || p === 'one-time-fe' || p === 'lifetime' || p === 'verified_launch') return 'onetime';
-  if (p === 'per_product_pass' || p === 'per-product-pass' || p === 'pro_monthly' || p === 'pro') return 'per_product_pass';
+
+  // $19 Per Product Pass / Verified launch one-time
+  if (
+    p === 'onetime' ||
+    p === 'one-time' ||
+    p === 'one-time-fe' ||
+    p === 'lifetime' ||
+    p === 'verified_launch' ||
+    p === 'per_product_pass' ||
+    p === 'per-product-pass'
+  ) {
+    return 'onetime';
+  }
+
   if (p === '3mo') return '3mo';
   if (p === '1yr') return '1yr';
-  return '1mo';
+  return 'sponsor_1mo';
 }
 
 /**
@@ -87,6 +134,10 @@ export async function getWhopCheckoutUrlFromSupabase(
   }
 
   // 3. Known production Whop links
+  if (planKey === 'featured_1wk') return WHOP_LINKS.featured1wk;
+  if (planKey === 'featured_1mo') return WHOP_LINKS.featured1mo;
+  if (planKey === 'sponsor_1wk') return WHOP_LINKS.sponsor1wk;
+  if (planKey === 'sponsor_1mo') return WHOP_LINKS.sponsor1mo;
   if (planKey === 'weekly_relaunch') return WHOP_LINKS.weeklyRelaunch;
   if (planKey === 'onetime') return WHOP_LINKS.oneTime;
   if (planKey === 'per_product_pass') return WHOP_LINKS.perProductPass;

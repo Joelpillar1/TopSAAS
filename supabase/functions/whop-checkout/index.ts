@@ -52,9 +52,15 @@ serve(async (req: Request) => {
     // Check for explicit custom checkout URLs or plan IDs
     let planKey = '1mo';
     const rawPlan = String(plan_type).toLowerCase();
-    if (rawPlan === 'weekly_relaunch' || rawPlan === 'weekly-relaunch' || rawPlan === 'relaunch') {
+    if (rawPlan === 'featured_1wk' || rawPlan === 'featured1wk' || rawPlan === 'featured-1wk') {
+      planKey = 'featured_1wk';
+    } else if (rawPlan === 'featured_1mo' || rawPlan === 'featured1mo' || rawPlan === 'featured-1mo') {
+      planKey = 'featured_1mo';
+    } else if (rawPlan === 'sponsor_1wk' || rawPlan === 'sponsor1wk' || rawPlan === 'sponsor-1wk' || rawPlan === '1wk') {
+      planKey = 'sponsor_1wk';
+    } else if (rawPlan === 'weekly_relaunch' || rawPlan === 'weekly-relaunch' || rawPlan === 'relaunch') {
       planKey = 'weekly_relaunch';
-    } else if (rawPlan === 'onetime' || rawPlan === 'one-time' || rawPlan === 'one-time-fe' || rawPlan === 'lifetime') {
+    } else if (rawPlan === 'onetime' || rawPlan === 'one-time' || rawPlan === 'one-time-fe' || rawPlan === 'lifetime' || rawPlan === 'verified_launch') {
       planKey = 'onetime';
     } else if (rawPlan === 'per_product_pass' || rawPlan === 'per-product-pass' || rawPlan === 'pro_monthly' || rawPlan === 'pro') {
       planKey = 'per_product_pass';
@@ -67,7 +73,11 @@ serve(async (req: Request) => {
     const defaultCheckoutUrls: Record<string, string> = {
       weekly_relaunch: 'https://whop.com/topsaas/weekly-relaunch/',
       onetime: 'https://whop.com/topsaas/one-time-fe/',
-      per_product_pass: 'https://whop.com/topsaas/per-product-pass/',
+      per_product_pass: 'https://whop.com/topsaas/one-time-fe/',
+      sponsor_1wk: 'https://whop.com/topsaas/1-week-s',
+      '1wk': 'https://whop.com/topsaas/1-week-s',
+      featured_1wk: 'https://whop.com/topsaas/1-week-featured',
+      featured_1mo: 'https://whop.com/topsaas/1-month-featured',
       '1mo': 'https://whop.com/checkout/plan_VHCOSyqWd9l9Q',
       '3mo': 'https://whop.com/checkout/plan_SMad32AkVoMeu',
       '1yr': 'https://whop.com/checkout/plan_2uumEoGYQUKtb',
