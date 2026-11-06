@@ -498,7 +498,7 @@ export default function App() {
   const [isHowItWorksOpen, setIsHowItWorksOpen] = useState(false);
   const [isFeaturedSpotModalOpen, setIsFeaturedSpotModalOpen] = useState(false);
   const [featuredModalMode, setFeaturedModalMode] = useState<'featured' | 'sponsor'>('featured');
-  const [featuredInitialTier, setFeaturedInitialTier] = useState<'1mo' | '3mo' | '1yr' | 'trial'>('3mo');
+  const [featuredInitialTier, setFeaturedInitialTier] = useState<'1wk' | '1mo' | '3mo' | '1yr' | 'trial'>('1mo');
   const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
   const [legalTab, setLegalTab] = useState<LegalTab>('privacy');
 
@@ -2178,9 +2178,15 @@ export default function App() {
           }}
           onOpenSponsor={(tier) => {
             playSound('click', soundEnabled);
+            setFeaturedModalMode('sponsor');
             if (tier) {
               setFeaturedInitialTier(tier);
             }
+            setIsFeaturedSpotModalOpen(true);
+          }}
+          onOpenFeaturedSpot={() => {
+            playSound('click', soundEnabled);
+            setFeaturedModalMode('featured');
             setIsFeaturedSpotModalOpen(true);
           }}
           onGoHome={handleBackToLeaderboard}

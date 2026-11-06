@@ -38,7 +38,7 @@ interface FeaturedSpotModalProps {
   featuredProductIds?: string[];
   onActivateSponsor?: (
     product: Product,
-    tier: 'trial' | 'paid' | '1mo' | '3mo' | '1yr',
+    tier: 'trial' | 'paid' | '1wk' | '1mo' | '3mo' | '1yr',
     email?: string
   ) => Promise<void> | void;
   onActivateFeatured?: (
@@ -48,7 +48,7 @@ interface FeaturedSpotModalProps {
   ) => Promise<void> | void;
 }
 
-export type SponsorPlanId = '1mo' | '3mo' | '1yr' | 'trial';
+export type SponsorPlanId = '1wk' | '1mo' | '3mo' | '1yr' | 'trial';
 
 export interface SponsorPlanItem {
   id: SponsorPlanId;
@@ -68,69 +68,130 @@ export interface SponsorPlanItem {
   cta: string;
 }
 
-export const SPONSOR_PLANS: SponsorPlanItem[] = [
+export const FEATURED_PLANS: SponsorPlanItem[] = [
+  {
+    id: '1wk',
+    name: '1-Week Featured Spot',
+    cardTitle: '1 Week',
+    price: 15,
+    priceLabel: '$15',
+    period: '/week',
+    badge: 'Popular',
+    duration: '7 Days',
+    rateNote: '$15 / week',
+    description: 'Pinned top position directly in the product feed above normal cards for 7 days',
+    features: [
+      'Pinned top placement inside the main product cards feed',
+      'Highest Click-Through Rate (CTR) across TopSAAS',
+      'Exclusive Featured distinction on product card',
+      'Category priority placement',
+      'Real-time impression & click analytics',
+    ],
+    cta: 'Get 1 Week — $15',
+  },
   {
     id: '1mo',
-    name: '1-Month Sponsor',
+    name: '1-Month Featured Spot',
+    cardTitle: '1 Month',
+    price: 39,
+    priceLabel: '$39',
+    period: '/month',
+    discountBadge: 'Save 35% • $9.75/wk',
+    badge: 'Best Value',
+    duration: '30 Days',
+    rateNote: '$39 / month ($9.75/wk)',
+    popular: true,
+    description: 'Continuous 30-day top pinned spotlight in the main product cards feed',
+    features: [
+      '30 days continuous top placement above product cards',
+      'Dedicated Newsletter Launch Highlight to subscribers',
+      'Pinned top spot when visitors filter your category',
+      'Real-time traffic & conversion metrics',
+    ],
+    cta: 'Get 1 Month — $39',
+  },
+  {
+    id: 'trial',
+    name: '7-Day Free Featured Test Drive',
+    cardTitle: '7 Days',
+    price: 0,
+    priceLabel: 'FREE',
+    period: '7 days',
+    discountBadge: '100% Free',
+    badge: 'Free Test Drive',
+    duration: '7 Days',
+    rateNote: '100% Free',
+    description: 'Try the Featured Spot above product cards free for 7 days',
+    features: [
+      'Pinned placement above standard product cards',
+      '7 days exposure to thousands of active SaaS visitors',
+      'Direct outbound click & visitor tracking',
+      'No credit card required — 100% free',
+    ],
+    cta: 'Claim Free 7-Day Spot',
+  },
+];
+
+export const SPONSOR_PLANS: SponsorPlanItem[] = [
+  {
+    id: '1wk',
+    name: '1-Week Sidebar Sponsor',
+    cardTitle: '1 Week',
+    price: 10,
+    priceLabel: '$10',
+    period: '/week',
+    badge: 'Starter',
+    duration: '7 Days',
+    rateNote: '$10 / week',
+    description: '24/7 Sticky sidebar rails on Homepage and Product pages for 7 days',
+    features: [
+      '24/7 Sticky sidebar rails on Homepage and Product Details',
+      '⭐️ Verified Sponsor badge on partner cards',
+      'Outbound click & impression tracker',
+      'Instant activation upon submission',
+    ],
+    cta: 'Get 1 Week — $10',
+  },
+  {
+    id: '1mo',
+    name: '1-Month Sidebar Sponsor',
     cardTitle: '1 Month',
     price: 29,
     priceLabel: '$29',
     period: '/month',
-    discountBadge: 'was $99',
-    badge: 'Flexible',
+    discountBadge: 'Save 28% • $7.25/wk',
+    badge: 'Most Popular',
     duration: '30 Days',
-    rateNote: '$29 / mo',
-    description: 'Prominent spotlight on hero rails + category top placement for 30 days',
+    rateNote: '$29 / month ($7.25/wk)',
+    popular: true,
+    description: 'Persistent 30-day sticky sidebar rails + category top spotlight',
     features: [
-      'Top hero side rails & above-the-fold spotlight banner',
+      '30 days 24/7 sticky sidebar rails on all pages',
       'Pinned top placement in your product category',
-      '⭐️ Sponsored badge on partner rails',
-      '24/7 Sticky hero side rails above the fold',
-      'Live analytics & outbound click tracker',
+      '1x Newsletter Sponsor Mention to 14,000+ builders',
+      '⭐️ Verified Sponsor badge & live analytics',
     ],
-    cta: 'Get Monthly',
+    cta: 'Get Monthly — $29',
   },
   {
     id: '3mo',
-    name: '3-Month Sponsor',
+    name: '3-Month Partner Sponsor',
     cardTitle: '3 Months',
     price: 69,
     priceLabel: '$69',
     period: '/3 months',
-    discountBadge: 'Save 20% • $23/month',
-    badge: 'Most Popular · Save 20%',
+    discountBadge: 'Save 42% • $23/mo',
+    badge: 'Best Value',
     duration: '90 Days',
-    rateNote: 'Only $23 / mo ($69 total)',
-    popular: true,
-    description: 'Continuous 3-month high-visibility growth campaign for serious founders',
+    rateNote: '$23 / month ($69 total)',
+    description: 'Continuous 90-day high-visibility partnership on sticky sidebar rails',
     features: [
-      '90 days continuous homepage & category priority placement',
-      '24/7 Persistent homepage side rails placement',
-      '1x Dedicated Newsletter Launch Mention to subscribers',
-      '⭐️ Sponsored partner badge on sidebar',
-    ],
-    cta: 'Get 3-Month',
-  },
-  {
-    id: '1yr',
-    name: '1-Year Partner Sponsor',
-    cardTitle: '12 Months',
-    price: 199,
-    priceLabel: '$199',
-    period: '/year',
-    discountBadge: 'Save 43% • $16.50/month',
-    badge: 'Best Value · Save 43%',
-    duration: '365 Days',
-    rateNote: 'Only $16.50 / mo ($199 total)',
-    bestValue: true,
-    description: 'Full-year premier sponsorship & continuous top authority placement',
-    features: [
-      '365 days permanent premier visibility on hero side rails',
-      'Quarterly Newsletter Blasts (4x/year)',
+      '90 days continuous sidebar rails presence',
+      '2x Dedicated Newsletter Blasts to subscribers',
       'Permanent Dofollow backlink & Top Partner directory badge',
-      'Dedicated Product of the Day priority spotlight day',
+      'Real-time outbound click & visitor tracking',
     ],
-    cta: 'Get Annual',
+    cta: 'Get 3 Months — $69',
   },
   {
     id: 'trial',
@@ -143,9 +204,9 @@ export const SPONSOR_PLANS: SponsorPlanItem[] = [
     badge: 'Free Launch Spotlight',
     duration: '7 Days',
     rateNote: '100% Free',
-    description: 'Spotlight your product on top & sticky side rails free for 7 days',
+    description: 'Spotlight your product on sticky sidebar rails free for 7 days',
     features: [
-      'Prominent placement on hero side sponsor rails',
+      'Sticky sidebar rails placement on Homepage & Details',
       'Free 7-day exposure to thousands of active SaaS builders',
       'Direct outbound click & visitor tracking',
       'No credit card required — 100% free',
@@ -215,8 +276,9 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
     );
   });
 
+  const availablePlans = mode === 'featured' ? FEATURED_PLANS : SPONSOR_PLANS;
   const selectedPlan =
-    SPONSOR_PLANS.find((p) => p.id === selectedPlanId) || SPONSOR_PLANS[1];
+    availablePlans.find((p) => p.id === selectedPlanId) || availablePlans[0];
 
   const handleCreateAndSelectProduct = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -363,15 +425,19 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
     try {
       const email = contactEmail.trim() || user?.email || undefined;
       const planType =
-        selectedPlan.id === '1mo'
+        selectedPlan.id === '1wk'
+          ? '1wk'
+          : selectedPlan.id === '1mo'
           ? '1mo'
           : selectedPlan.id === '3mo'
           ? '3mo'
           : '1yr';
 
       if (mode === 'featured') {
-        let durationDays = 30;
-        if (selectedPlan.id === '3mo') durationDays = 90;
+        let durationDays = 7;
+        if (selectedPlan.id === '1wk') durationDays = 7;
+        else if (selectedPlan.id === '1mo') durationDays = 30;
+        else if (selectedPlan.id === '3mo') durationDays = 90;
         else if (selectedPlan.id === '1yr') durationDays = 365;
 
         try {
@@ -434,7 +500,7 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
 
   if (!isOpen) return null;
 
-  const paidPlans = SPONSOR_PLANS.filter((p) => p.id !== 'trial');
+  const paidPlans = availablePlans.filter((p) => p.id !== 'trial');
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md overflow-y-auto font-sans">

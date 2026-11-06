@@ -4,12 +4,14 @@ export const WHOP_LINKS = {
   weeklyRelaunch: 'https://whop.com/topsaas/weekly-relaunch/',
   oneTime: 'https://whop.com/topsaas/one-time-fe/',
   perProductPass: 'https://whop.com/topsaas/per-product-pass/',
+  sponsor1wk: 'https://whop.com/checkout/plan_weekly_sponsor',
   sponsor1mo: 'https://whop.com/checkout/plan_VHCOSyqWd9l9Q',
   sponsor3mo: 'https://whop.com/checkout/plan_SMad32AkVoMeu',
   sponsor1yr: 'https://whop.com/checkout/plan_2uumEoGYQUKtb',
 } as const;
 
 export type PlanType =
+  | '1wk'
   | '1mo'
   | '3mo'
   | '1yr'
@@ -37,8 +39,9 @@ export interface CheckoutResponse {
  */
 export function normalizePlanKey(planType: PlanType): string {
   const p = String(planType).toLowerCase();
+  if (p === '1wk' || p === 'weekly' || p === '1week' || p === '7days') return '1wk';
   if (p === 'weekly_relaunch' || p === 'weekly-relaunch' || p === 'relaunch') return 'weekly_relaunch';
-  if (p === 'onetime' || p === 'one-time' || p === 'one-time-fe' || p === 'lifetime') return 'onetime';
+  if (p === 'onetime' || p === 'one-time' || p === 'one-time-fe' || p === 'lifetime' || p === 'verified_launch') return 'onetime';
   if (p === 'per_product_pass' || p === 'per-product-pass' || p === 'pro_monthly' || p === 'pro') return 'per_product_pass';
   if (p === '3mo') return '3mo';
   if (p === '1yr') return '1yr';
