@@ -21,7 +21,6 @@ import {
   Tag,
   Copy,
   Check,
-  Star,
   Flame,
   Compass,
   Calendar,
@@ -157,8 +156,6 @@ export const ProductPage: React.FC<ProductPageProps> = ({
   onOpenFeaturedSpotModal,
 }) => {
   const [commentText, setCommentText] = useState('');
-  const [rating, setRating] = useState<number | null>(null);
-  const [hoverRating, setHoverRating] = useState<number | null>(null);
   const [commentUpvotes, setCommentUpvotes] = useState<Record<string, number>>({});
   const [likedComments, setLikedComments] = useState<Record<string, boolean>>({});
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
@@ -168,7 +165,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
   const hasLinks = /(https?:\/\/|www\.|\.[a-z]{2,}\/)/i.test(commentText);
 
   const handlePostComment = () => {
-    if (!commentText.trim() && !rating) return;
+    if (!commentText.trim()) return;
     if (hasLinks) return;
     if (!isSignedIn) {
       playSound('click', soundEnabled);
@@ -177,11 +174,8 @@ export const ProductPage: React.FC<ProductPageProps> = ({
     }
     const authorName = userName || userEmail?.split('@')[0] || 'User';
     playSound('click', soundEnabled);
-    const trimmed = commentText.trim();
-    const finalContent = rating ? `[${rating}★ Review] ${trimmed || 'Rated ' + rating + '/5 stars'}` : trimmed;
-    onAddComment(product.id, finalContent, authorName, userEmail, userAvatar);
+    onAddComment(product.id, commentText.trim(), authorName, userEmail, userAvatar);
     setCommentText('');
-    setRating(null);
   };
 
   const handleToggleCommentLike = (commentId: string) => {
@@ -847,11 +841,11 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                   </span>
                 </div>
                 <span className="text-xs text-neutral-400 font-medium">
-                  Ask a question or leave a review
+                  Ask a question or share feedback
                 </span>
               </div>
 
-              {/* Composer Box (Matching Product Hunt: Resting, Active Typing, and Rating States) */}
+              {/* Composer Box (Product Hunt: Resting and Active Typing States) */}
               <div className="rounded-2xl border border-neutral-200/90 bg-white p-4 sm:p-5 shadow-xs transition-all focus-within:border-neutral-300 focus-within:shadow-xs space-y-3">
                 <div className="flex items-start gap-3">
                   <CommentAvatar
@@ -867,7 +861,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                       onKeyDown={(e) => {
                         if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
                           e.preventDefault();
-                          if ((commentText.trim() || rating) && !hasLinks) {
+                          if (commentText.trim() && !hasLinks) {
                             handlePostComment();
                           }
                         }
@@ -878,11 +872,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                           onOpenSignIn?.();
                         }
                       }}
-                      placeholder={
-                        rating 
-                          ? `Write a review for ${product.name}...` 
-                          : `What do you think? Ask a question or leave a note — or add stars to write a review`
-                      }
+                      placeholder="What do you think? ..."
                       rows={commentText.length > 60 || commentText.includes('\n') ? 3 : 2}
                       maxLength={2000}
                       className="w-full bg-transparent border-0 p-0 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-0 resize-none min-h-[46px] leading-relaxed"
@@ -890,7 +880,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
 
                     {/* Divider line across */}
                     <div className="border-t border-neutral-100 pt-3 flex flex-wrap items-center justify-between gap-3">
-                      {/* Left Controls: @ Mention, Rate Stars & Helper Text */}
+                      {/* Left Controls: @ Mention & Helper Text */}
                       <div className="flex flex-wrap items-center gap-3">
                         {/* Circular @ button */}
                         <button
@@ -907,40 +897,9 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                           @
                         </button>
 
-                        {/* Interactive Rate Stars */}
-                        <div className="flex items-center gap-1.5 text-xs text-neutral-500 select-none">
-                          <span className="text-[11px] font-medium text-neutral-400">Rate</span>
-                          <div className="flex items-center gap-0.5">
-                            {[1, 2, 3, 4, 5].map((star) => {
-                              const filled = hoverRating !== null ? hoverRating >= star : (rating !== null && rating >= star);
-                              return (
-                                <button
-                                  key={star}
-                                  type="button"
-                                  onMouseEnter={() => setHoverRating(star)}
-                                  onMouseLeave={() => setHoverRating(null)}
-                                  onClick={() => {
-                                    playSound('click', soundEnabled);
-                                    setRating(rating === star ? null : star);
-                                  }}
-                                  className="p-0.5 text-neutral-300 hover:text-amber-400 transition-colors cursor-pointer"
-                                  aria-label={`Rate ${star} star`}
-                                >
-                                  <Star className={`h-4 w-4 ${filled ? 'fill-amber-400 text-amber-400' : 'text-neutral-300'}`} />
-                                </button>
-                              );
-                            })}
-                          </div>
-                          {rating && (
-                            <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded ml-0.5">
-                              {rating}★
-                            </span>
-                          )}
-                        </div>
-
                         {/* Helper text when typing */}
                         {commentText.length > 0 && (
-                          <div className="text-[10.5px] leading-tight text-neutral-400 hidden sm:flex items-center gap-1.5 pl-2 border-l border-neutral-100">
+                          <div className="text-[10.5px] leading-tight text-neutral-400 flex items-center gap-1.5 pl-2 border-l border-neutral-100">
                             <span className={hasLinks ? 'text-rose-500 font-bold' : 'text-neutral-400'}>
                               {hasLinks ? "Links aren't allowed" : "Links aren't allowed"}
                             </span>
@@ -971,22 +930,8 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                         ) : (
                           <button
                             type="button"
-                            disabled={!rating}
-                            onClick={() => {
-                              if (!isSignedIn) {
-                                playSound('click', soundEnabled);
-                                onOpenSignIn?.();
-                                return;
-                              }
-                              if (rating) {
-                                handlePostComment();
-                              }
-                            }}
-                            className={`rounded-full px-5 py-2 text-xs font-semibold transition-all ${
-                              rating
-                                ? 'bg-amber-400 text-neutral-950 font-bold hover:bg-amber-500 shadow-xs cursor-pointer'
-                                : 'border border-neutral-200 bg-neutral-100/90 text-neutral-400 cursor-not-allowed'
-                            }`}
+                            disabled
+                            className="rounded-full border border-neutral-200 bg-neutral-100/90 text-neutral-400 px-5 py-2 text-xs font-semibold cursor-not-allowed"
                           >
                             Comment
                           </button>
@@ -1013,7 +958,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                     </div>
                     <p className="text-sm font-bold text-neutral-900">No comments yet</p>
                     <p className="text-xs text-neutral-500 mt-0.5 max-w-sm leading-relaxed">
-                      Be the first to share your thoughts, ask a question, or leave a review for {product.name}!
+                      Be the first to share your thoughts, ask a question, or support {product.name}!
                     </p>
                   </div>
                 ) : (
@@ -1026,10 +971,8 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                           (product.creatorUsername && c.userName && c.userName.toLowerCase() === product.creatorUsername.toLowerCase())
                         );
 
-                        // Parse [X★ Review] prefix
-                        const ratingMatch = c.content.match(/^\[([1-5])★ Review\]\s*/i);
-                        const commentRating = ratingMatch ? parseInt(ratingMatch[1], 10) : null;
-                        const displayBody = ratingMatch ? c.content.replace(ratingMatch[0], '') : c.content;
+                        // Strip legacy [X★ Review] prefix if present
+                        const displayBody = c.content.replace(/^\[[1-5]★ Review\]\s*/i, '');
 
                         const isLiked = Boolean(likedComments[c.id]);
                         const upvotes = (commentUpvotes[c.id] || 0) + (isLiked ? 1 : 0);
@@ -1051,11 +994,6 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                                   {isMaker && (
                                     <span className="inline-flex items-center gap-0.5 rounded-full bg-blue-50 border border-blue-200/80 px-2 py-0.5 text-[9.5px] font-bold text-blue-700">
                                       Maker
-                                    </span>
-                                  )}
-                                  {commentRating && (
-                                    <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 border border-amber-200/60 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">
-                                      <span>★ {commentRating}/5</span>
                                     </span>
                                   )}
                                   <span className="text-neutral-300">·</span>
