@@ -116,64 +116,25 @@ export const PricingPage: React.FC<PricingPageProps> = ({
         </div>
 
         {/* 2 Launch Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto items-stretch">
           {/* Card 1: Starter (Free) */}
           <div className="flex flex-col">
-            <div className="rounded-2xl border border-neutral-200/90 bg-white p-6 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
+            <div className="rounded-2xl border border-neutral-200/90 bg-white p-6 shadow-xs hover:shadow-md transition-all flex flex-col justify-between min-h-[220px]">
               <div>
-                <div className="flex items-center justify-between">
+                <div className="h-7 flex items-center justify-between">
                   <h3 className="text-lg font-bold text-neutral-900 tracking-tight">Starter</h3>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600">
+                  <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-neutral-100 text-neutral-600">
                     Free Forever
                   </span>
                 </div>
-                <p className="text-xs text-neutral-500 leading-relaxed mt-1 mb-4 min-h-[34px]">
+                <p className="h-10 text-xs text-neutral-500 leading-relaxed mt-1 mb-2 line-clamp-2">
                   Your launch partner. Unlock community directory visibility with a simple free submission.
                 </p>
 
-                <div className="flex items-baseline gap-1 my-2">
-                  <span className="text-3xl sm:text-4xl font-extrabold text-neutral-950 tracking-tight font-mono-num">
+                <div className="h-10 flex items-baseline gap-1.5 my-1">
+                  <span className="text-3xl sm:text-4xl font-extrabold text-neutral-950 tracking-tight font-sans">
                     Free Plan
                   </span>
-                </div>
-
-                {/* $5 Weekly Relaunch Optional Toggle */}
-                <div
-                  onClick={() => {
-                    playSound('click', soundEnabled);
-                    setFreeWeeklyRelaunch((prev) => !prev);
-                  }}
-                  className={`p-2.5 rounded-xl border transition-all cursor-pointer select-none mt-3 ${
-                    freeWeeklyRelaunch
-                      ? 'border-blue-500 bg-blue-50/70 ring-1 ring-blue-500/30'
-                      : 'border-neutral-200/80 bg-neutral-50 hover:border-neutral-300'
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-sm shrink-0">🚀</span>
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold text-neutral-950 flex items-center gap-1">
-                          <span>Auto Weekly Relaunch</span>
-                          <span className="text-[9.5px] font-black px-1.5 py-px rounded bg-blue-100 text-blue-700">+$5</span>
-                        </p>
-                        <p className="text-[10px] text-neutral-500 truncate">
-                          Re-enters every Sunday round
-                        </p>
-                      </div>
-                    </div>
-                    <span
-                      className={`relative inline-flex h-4.5 w-8 shrink-0 items-center rounded-full p-0.5 transition-colors duration-200 ${
-                        freeWeeklyRelaunch ? 'bg-blue-600' : 'bg-neutral-300'
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${
-                          freeWeeklyRelaunch ? 'translate-x-3.5' : 'translate-x-0'
-                        }`}
-                      />
-                    </span>
-                  </div>
                 </div>
               </div>
 
@@ -190,7 +151,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({
                   } catch {}
                   onOpenSubmit(freeWeeklyRelaunch ? 'free_relaunch' : 'free');
                 }}
-                className="w-full mt-4 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-800 text-xs font-bold py-3 px-4 transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                className="w-full mt-4 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-800 text-xs font-bold py-3 px-4 transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 shadow-2xs"
               >
                 <span>{freeWeeklyRelaunch ? 'Submit with Weekly Relaunch — $5' : 'Launch for Free'}</span>
                 <span className="opacity-60">→</span>
@@ -198,11 +159,51 @@ export const PricingPage: React.FC<PricingPageProps> = ({
             </div>
 
             {/* Checklist */}
-            <div className="px-2 pt-5">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 mb-3.5">
+            <div className="px-2 pt-6 space-y-4">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">
                 GET STARTED WITH
               </p>
-              <ul className="space-y-3 text-xs sm:text-[13px] text-neutral-700 font-medium">
+
+              {/* $5 Weekly Relaunch Optional Toggle */}
+              <div
+                onClick={() => {
+                  playSound('click', soundEnabled);
+                  setFreeWeeklyRelaunch((prev) => !prev);
+                }}
+                className={`p-3 rounded-2xl border transition-all cursor-pointer select-none ${
+                  freeWeeklyRelaunch
+                    ? 'border-blue-500 bg-blue-50/70 ring-1 ring-blue-500/30'
+                    : 'border-neutral-200/90 bg-neutral-50/70 hover:border-neutral-300'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="text-base shrink-0">🚀</span>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-neutral-950 flex items-center gap-1.5">
+                        <span>Auto Weekly Relaunch</span>
+                        <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">+$5/mo</span>
+                      </p>
+                      <p className="text-[11px] text-neutral-500 truncate mt-0.5">
+                        Re-enters active leaderboard every Sunday
+                      </p>
+                    </div>
+                  </div>
+                  <span
+                    className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full p-0.5 transition-colors duration-200 ${
+                      freeWeeklyRelaunch ? 'bg-blue-600' : 'bg-neutral-300'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                        freeWeeklyRelaunch ? 'translate-x-4' : 'translate-x-0'
+                      }`}
+                    />
+                  </span>
+                </div>
+              </div>
+
+              <ul className="space-y-3.5 text-xs sm:text-[13px] text-neutral-700 font-medium pt-1">
                 <li className="flex items-center gap-2.5">
                   <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
                     <Check className="h-2.5 w-2.5 stroke-[3]" />
@@ -227,13 +228,13 @@ export const PricingPage: React.FC<PricingPageProps> = ({
                   </div>
                   <span>Standard community review queue</span>
                 </li>
-                <li className="flex items-center gap-2.5 text-neutral-500">
+                <li className="flex items-center gap-2.5 text-neutral-400">
                   <div className="h-4 w-4 rounded-full bg-neutral-200 text-neutral-500 flex items-center justify-center shrink-0">
                     <X className="h-2.5 w-2.5 stroke-[2.5]" />
                   </div>
                   <span>nofollow link only</span>
                 </li>
-                <li className="flex items-center gap-2.5 text-neutral-500">
+                <li className="flex items-center gap-2.5 text-neutral-400">
                   <div className="h-4 w-4 rounded-full bg-neutral-200 text-neutral-500 flex items-center justify-center shrink-0">
                     <X className="h-2.5 w-2.5 stroke-[2.5]" />
                   </div>
@@ -245,26 +246,26 @@ export const PricingPage: React.FC<PricingPageProps> = ({
 
           {/* Card 2: Verified Launch ($19 / Product · One-time) — Elevated Hero Card */}
           <div className="flex flex-col">
-            <div className="rounded-2xl border border-neutral-300/80 bg-white p-6 shadow-[0_12px_30px_-8px_rgba(0,0,0,0.12)] ring-1 ring-black/5 flex flex-col justify-between relative">
+            <div className="rounded-2xl border border-neutral-300/80 bg-white p-6 shadow-[0_12px_30px_-8px_rgba(0,0,0,0.12)] ring-1 ring-black/5 flex flex-col justify-between min-h-[220px]">
               <div>
-                <div className="flex items-center justify-between">
+                <div className="h-7 flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
                     <h3 className="text-lg font-bold text-neutral-900 tracking-tight">Verified Launch</h3>
                     <VerifiedBadge className="h-4 w-4" />
                   </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-mint-100 text-mint-700">
+                  <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-200/60">
                     Most Popular
                   </span>
                 </div>
-                <p className="text-xs text-neutral-500 leading-relaxed mt-1 mb-4 min-h-[34px]">
+                <p className="h-10 text-xs text-neutral-500 leading-relaxed mt-1 mb-2 line-clamp-2">
                   Fast-track 24h approval, permanent dofollow SEO backlink, AI search engine inclusion, and verified mint badge.
                 </p>
 
-                <div className="flex items-baseline gap-1 my-2">
-                  <span className="text-3xl sm:text-4xl font-extrabold text-neutral-950 tracking-tight font-mono-num">
+                <div className="h-10 flex items-baseline gap-1.5 my-1">
+                  <span className="text-3xl sm:text-4xl font-extrabold text-neutral-950 tracking-tight font-sans">
                     $19.00
                   </span>
-                  <span className="text-xs text-neutral-500 font-medium">/Product (One-time)</span>
+                  <span className="text-xs text-neutral-500 font-medium font-sans">/Product (One-time)</span>
                 </div>
               </div>
 
@@ -281,11 +282,11 @@ export const PricingPage: React.FC<PricingPageProps> = ({
             </div>
 
             {/* Checklist */}
-            <div className="px-2 pt-5">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 mb-3.5">
+            <div className="px-2 pt-6 space-y-4">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">
                 EVERYTHING IN STARTER, PLUS:
               </p>
-              <ul className="space-y-3 text-xs sm:text-[13px] text-neutral-700 font-medium">
+              <ul className="space-y-3.5 text-xs sm:text-[13px] text-neutral-700 font-medium pt-1">
                 <li className="flex items-center gap-2.5">
                   <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
                     <Check className="h-2.5 w-2.5 stroke-[3]" />
@@ -320,7 +321,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({
                   <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
                     <Check className="h-2.5 w-2.5 stroke-[3]" />
                   </div>
-                  <span>Lifetime listing — <strong>zero recurring fees</strong></span>
+                  <span>Lifetime listing — <strong>zero recurring subscription fees</strong></span>
                 </li>
               </ul>
             </div>
@@ -412,33 +413,33 @@ export const PricingPage: React.FC<PricingPageProps> = ({
         </div>
 
         {/* 2 Featured Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto items-stretch">
           {/* Card 1: 1-Week Featured ($15) */}
           <div className="flex flex-col">
-            <div className="rounded-2xl border border-neutral-200/90 bg-white p-6 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
+            <div className="rounded-2xl border border-neutral-200/90 bg-white p-6 shadow-xs hover:shadow-md transition-all flex flex-col justify-between min-h-[220px]">
               <div>
-                <div className="flex items-center justify-between">
+                <div className="h-7 flex items-center justify-between">
                   <h3 className="text-lg font-bold text-neutral-900 tracking-tight">1-Week Featured</h3>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600">
+                  <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-neutral-100 text-neutral-600">
                     7 Days
                   </span>
                 </div>
-                <p className="text-xs text-neutral-500 leading-relaxed mt-1 mb-4 min-h-[34px]">
+                <p className="h-10 text-xs text-neutral-500 leading-relaxed mt-1 mb-2 line-clamp-2">
                   A high-impact 7-day boost to capture launch momentum and surge community upvotes.
                 </p>
 
-                <div className="flex items-baseline gap-1 my-2">
-                  <span className="text-3xl sm:text-4xl font-extrabold text-neutral-950 tracking-tight font-mono-num">
+                <div className="h-10 flex items-baseline gap-1.5 my-1">
+                  <span className="text-3xl sm:text-4xl font-extrabold text-neutral-950 tracking-tight font-sans">
                     $15.00
                   </span>
-                  <span className="text-xs text-neutral-500 font-medium">/Week</span>
+                  <span className="text-xs text-neutral-500 font-medium font-sans">/Week</span>
                 </div>
               </div>
 
               <button
                 type="button"
                 onClick={() => handleOpenFeatured('1wk')}
-                className="w-full mt-4 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-800 text-xs font-bold py-3 px-4 transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                className="w-full mt-4 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-800 text-xs font-bold py-3 px-4 transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 shadow-2xs"
               >
                 <span>Claim 1-Week Featured</span>
                 <span className="opacity-60">→</span>
@@ -446,11 +447,11 @@ export const PricingPage: React.FC<PricingPageProps> = ({
             </div>
 
             {/* Checklist */}
-            <div className="px-2 pt-5">
+            <div className="px-2 pt-6">
               <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 mb-3.5">
                 INCLUDED IN 1-WEEK FEATURED
               </p>
-              <ul className="space-y-3 text-xs sm:text-[13px] text-neutral-700 font-medium">
+              <ul className="space-y-3.5 text-xs sm:text-[13px] text-neutral-700 font-medium pt-1">
                 <li className="flex items-center gap-2.5">
                   <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
                     <Check className="h-2.5 w-2.5 stroke-[3]" />
@@ -487,23 +488,23 @@ export const PricingPage: React.FC<PricingPageProps> = ({
 
           {/* Card 2: 1-Month Featured ($39) — Elevated Hero Card */}
           <div className="flex flex-col">
-            <div className="rounded-2xl border border-neutral-300/80 bg-white p-6 shadow-[0_12px_30px_-8px_rgba(0,0,0,0.12)] ring-1 ring-black/5 flex flex-col justify-between relative">
+            <div className="rounded-2xl border border-neutral-300/80 bg-white p-6 shadow-[0_12px_30px_-8px_rgba(0,0,0,0.12)] ring-1 ring-black/5 flex flex-col justify-between min-h-[220px]">
               <div>
-                <div className="flex items-center justify-between">
+                <div className="h-7 flex items-center justify-between">
                   <h3 className="text-lg font-bold text-neutral-900 tracking-tight">1-Month Featured</h3>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                  <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200/60">
                     Save 35%
                   </span>
                 </div>
-                <p className="text-xs text-neutral-500 leading-relaxed mt-1 mb-4 min-h-[34px]">
+                <p className="h-10 text-xs text-neutral-500 leading-relaxed mt-1 mb-2 line-clamp-2">
                   Continuous 30-day top pinned spotlight for sustained traffic and compound brand authority.
                 </p>
 
-                <div className="flex items-baseline gap-1 my-2">
-                  <span className="text-3xl sm:text-4xl font-extrabold text-neutral-950 tracking-tight font-mono-num">
+                <div className="h-10 flex items-baseline gap-1.5 my-1">
+                  <span className="text-3xl sm:text-4xl font-extrabold text-neutral-950 tracking-tight font-sans">
                     $39.00
                   </span>
-                  <span className="text-xs text-neutral-500 font-medium">/Month · $9.75/wk</span>
+                  <span className="text-xs text-neutral-500 font-medium font-sans">/Month · $9.75/wk</span>
                 </div>
               </div>
 
@@ -518,11 +519,11 @@ export const PricingPage: React.FC<PricingPageProps> = ({
             </div>
 
             {/* Checklist */}
-            <div className="px-2 pt-5">
+            <div className="px-2 pt-6">
               <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 mb-3.5">
                 EVERYTHING IN 1-WEEK, PLUS:
               </p>
-              <ul className="space-y-3 text-xs sm:text-[13px] text-neutral-700 font-medium">
+              <ul className="space-y-3.5 text-xs sm:text-[13px] text-neutral-700 font-medium pt-1">
                 <li className="flex items-center gap-2.5">
                   <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
                     <Check className="h-2.5 w-2.5 stroke-[3]" />

@@ -35,36 +35,36 @@ export const SponsorShowcaseSection: React.FC<SponsorShowcaseSectionProps> = ({
       </div>
 
       {/* ── 2 Cards Grid ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto items-stretch">
         {/* ══════════════════════════════════════════════════════════
             CARD 1: 1-Week Sponsor ($10)
            ══════════════════════════════════════════════════════════ */}
         <div className="flex flex-col">
           {/* Top Pod */}
-          <div className="rounded-2xl border border-neutral-200/90 bg-white p-6 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
+          <div className="rounded-2xl border border-neutral-200/90 bg-white p-6 shadow-xs hover:shadow-md transition-all flex flex-col justify-between min-h-[220px]">
             <div>
-              <div className="flex items-center justify-between">
+              <div className="h-7 flex items-center justify-between">
                 <h3 className="text-lg font-bold text-neutral-900 tracking-tight">1-Week Sponsor</h3>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600">
+                <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-neutral-100 text-neutral-600">
                   7 Days
                 </span>
               </div>
-              <p className="text-xs text-neutral-500 leading-relaxed mt-1 mb-4 min-h-[34px]">
+              <p className="h-10 text-xs text-neutral-500 leading-relaxed mt-1 mb-2 line-clamp-2">
                 Fast 7-day launch sprint on sticky side rails across high-traffic desktop views.
               </p>
 
-              <div className="flex items-baseline gap-1 my-2">
-                <span className="text-3xl sm:text-4xl font-extrabold text-neutral-950 tracking-tight font-mono-num">
+              <div className="h-10 flex items-baseline gap-1.5 my-1">
+                <span className="text-3xl sm:text-4xl font-extrabold text-neutral-950 tracking-tight font-sans">
                   $10.00
                 </span>
-                <span className="text-xs text-neutral-500 font-medium">/Week</span>
+                <span className="text-xs text-neutral-500 font-medium font-sans">/Week</span>
               </div>
             </div>
 
             <button
               type="button"
               onClick={() => handleSelectTier('1wk')}
-              className="w-full mt-4 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-800 text-xs font-bold py-3 px-4 transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+              className="w-full mt-4 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-800 text-xs font-bold py-3 px-4 transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 shadow-2xs"
             >
               <span>Get 1-Week Sponsor</span>
               <ArrowRight className="h-3 w-3 opacity-60" />
@@ -72,11 +72,11 @@ export const SponsorShowcaseSection: React.FC<SponsorShowcaseSectionProps> = ({
           </div>
 
           {/* Feature Checklist Below Pod */}
-          <div className="px-2 pt-5">
+          <div className="px-2 pt-6">
             <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 mb-3.5">
               INCLUDED IN 1-WEEK SPONSOR
             </p>
-            <ul className="space-y-3 text-xs sm:text-[13px] text-neutral-700 font-medium">
+            <ul className="space-y-3.5 text-xs sm:text-[13px] text-neutral-700 font-medium pt-1">
               <li className="flex items-center gap-2.5">
                 <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
                   <Check className="h-2.5 w-2.5 stroke-[3]" />
@@ -110,23 +110,23 @@ export const SponsorShowcaseSection: React.FC<SponsorShowcaseSectionProps> = ({
            ══════════════════════════════════════════════════════════ */}
         <div className="flex flex-col">
           {/* Top Pod (Elevated) */}
-          <div className="rounded-2xl border border-neutral-300/80 bg-white p-6 shadow-[0_12px_30px_-8px_rgba(0,0,0,0.12)] ring-1 ring-black/5 flex flex-col justify-between relative">
+          <div className="rounded-2xl border border-neutral-300/80 bg-white p-6 shadow-[0_12px_30px_-8px_rgba(0,0,0,0.12)] ring-1 ring-black/5 flex flex-col justify-between min-h-[220px] relative">
             <div>
-              <div className="flex items-center justify-between">
+              <div className="h-7 flex items-center justify-between">
                 <h3 className="text-lg font-bold text-neutral-900 tracking-tight">1-Month Sponsor</h3>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
+                <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200/60">
                   Save 28%
                 </span>
               </div>
-              <p className="text-xs text-neutral-500 leading-relaxed mt-1 mb-4 min-h-[34px]">
+              <p className="h-10 text-xs text-neutral-500 leading-relaxed mt-1 mb-2 line-clamp-2">
                 Full 30 days of high-frequency sticky brand impressions across all visitor sessions.
               </p>
 
-              <div className="flex items-baseline gap-1 my-2">
-                <span className="text-3xl sm:text-4xl font-extrabold text-neutral-950 tracking-tight font-mono-num">
+              <div className="h-10 flex items-baseline gap-1.5 my-1">
+                <span className="text-3xl sm:text-4xl font-extrabold text-neutral-950 tracking-tight font-sans">
                   $29.00
                 </span>
-                <span className="text-xs text-neutral-500 font-medium">/Month · $7.25/wk</span>
+                <span className="text-xs text-neutral-500 font-medium font-sans">/Month · $7.25/wk</span>
               </div>
             </div>
 
@@ -141,11 +141,11 @@ export const SponsorShowcaseSection: React.FC<SponsorShowcaseSectionProps> = ({
           </div>
 
           {/* Feature Checklist Below Pod */}
-          <div className="px-2 pt-5">
+          <div className="px-2 pt-6">
             <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 mb-3.5">
               EVERYTHING IN 1-WEEK, PLUS:
             </p>
-            <ul className="space-y-3 text-xs sm:text-[13px] text-neutral-700 font-medium">
+            <ul className="space-y-3.5 text-xs sm:text-[13px] text-neutral-700 font-medium pt-1">
               <li className="flex items-center gap-2.5">
                 <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
                   <Check className="h-2.5 w-2.5 stroke-[3]" />
