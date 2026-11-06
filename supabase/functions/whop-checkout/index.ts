@@ -48,7 +48,7 @@ serve(async (req: Request) => {
     }
 
     const apiKey = config['api_key'] || Deno.env.get('WHOP_API_KEY') || '';
-    
+
     // Check for explicit custom checkout URLs or plan IDs
     let planKey = '1mo';
     const rawPlan = String(plan_type).toLowerCase();
@@ -83,9 +83,11 @@ serve(async (req: Request) => {
       '1yr': 'https://whop.com/checkout/plan_2uumEoGYQUKtb',
     };
 
+    const isDirectCheckout = (url?: string) => Boolean(url && typeof url === 'string' && url.includes('whop.com/checkout/'));
+
     const customCheckoutUrl =
-      config[`checkout_url_${planKey}`] ||
-      Deno.env.get(`WHOP_CHECKOUT_${planKey.toUpperCase()}`) ||
+      (isDirectCheckout(config[`checkout_url_${planKey}`]) ? config[`checkout_url_${planKey}`] : null) ||
+      (isDirectCheckout(Deno.env.get(`WHOP_CHECKOUT_${planKey.toUpperCase()}`)) ? Deno.env.get(`WHOP_CHECKOUT_${planKey.toUpperCase()}`) : null) ||
       defaultCheckoutUrls[planKey] ||
       defaultCheckoutUrls['1mo'];
 
@@ -95,8 +97,8 @@ serve(async (req: Request) => {
       (planKey === '3mo'
         ? 'plan_SMad32AkVoMeu'
         : planKey === '1yr'
-        ? 'plan_2uumEoGYQUKtb'
-        : 'plan_VHCOSyqWd9l9Q');
+          ? 'plan_2uumEoGYQUKtb'
+          : 'plan_VHCOSyqWd9l9Q');
 
     const redirectTarget = return_url || `https://topsaas.space/payment-success?plan=${plan_type}&product=${encodeURIComponent(product_name || '')}`;
 

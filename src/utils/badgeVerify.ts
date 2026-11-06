@@ -4,12 +4,15 @@ import { supabase } from './supabase';
  * Markers that prove the TopSAAS badge snippet is present in a page's HTML or scripts.
  */
 const BADGE_MARKERS: RegExp[] = [
-  /\/badge\//i, // <img src="https://…/badge/<id>?style=…">
-  /badge\?style=/i,
-  /featured\s+on\s+topsaas/i, // anchor text / img alt
-  /topsaas\.(space|org|com)/i, // any link back to the directory
-  /Share(?:%20|\s+)Badge/i, // new PNG badge paths
-  /TopSAAS\s+Type/i, // new PNG badge names
+  /topsaas/i, // Any mention of topsaas (URL, alt, class, id, text, href)
+  /top-saas/i,
+  /top_saas/i,
+  /top\s+saas/i,
+  /\/badge/i, // /badge/, /badges/, /badge?style=
+  /badge\.(svg|png|webp|jpg|jpeg)/i,
+  /featured\s*(on|at|by)?\s*topsaas/i,
+  /Share(?:%20|\s+)Badge/i,
+  /TopSAAS\s*Type/i,
 ];
 
 export function containsBadge(html: string): boolean {
@@ -82,7 +85,7 @@ export async function verifyBadgeViaEdge(url: string): Promise<BadgeCheckResult>
   return {
     verified: false,
     fetched: false,
-    reason: 'Could not reach verification service',
+    reason: 'We could not reach your website to check for the badge. Please ensure your site is online and publicly accessible.',
   };
 }
 

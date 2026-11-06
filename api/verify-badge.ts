@@ -8,12 +8,15 @@
 // ---------------------------------------------------------------------------
 
 const BADGE_MARKERS: RegExp[] = [
-  /\/badge\//i,
-  /badge\?style=/i,
-  /featured\s+on\s+topsaas/i,
-  /topsaas\.(space|org|com)/i,
+  /topsaas/i,
+  /top-saas/i,
+  /top_saas/i,
+  /top\s+saas/i,
+  /\/badge/i,
+  /badge\.(svg|png|webp|jpg|jpeg)/i,
+  /featured\s*(on|at|by)?\s*topsaas/i,
   /Share(?:%20|\s+)Badge/i,
-  /TopSAAS\s+Type/i,
+  /TopSAAS\s*Type/i,
 ];
 
 function containsBadge(text: string): boolean {
@@ -174,10 +177,10 @@ export default async function handler(req: any, res: any) {
   const scriptRegex = /<script\b[^>]*\bsrc=["']([^"']+\.(?:js|mjs)(?:\?[^"']*)?)["'][^>]*>/gi;
   let match: RegExpExecArray | null;
 
-  while ((match = scriptRegex.exec(html)) !== null && scriptSrcs.length < 5) {
+  while ((match = scriptRegex.exec(html)) !== null && scriptSrcs.length < 12) {
     const src = match[1];
     // Skip third-party trackers / CDNs that won't hold the app badge
-    if (/googletagmanager|google-analytics|clarity|hotjar|intercom|segment|amplitude|stripe|sentry/i.test(src)) {
+    if (/googletagmanager|google-analytics|clarity|hotjar|intercom|segment|amplitude|stripe|sentry|facebook|twitter|adsbygoogle/i.test(src)) {
       continue;
     }
     scriptSrcs.push(src);

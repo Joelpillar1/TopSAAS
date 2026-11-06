@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { CheckCircle, ArrowLeft, Crown, ExternalLink } from 'lucide-react';
 import { playSound } from '../utils/sound';
 import { setGlobalFeaturedProduct, insertProductDirect } from '../utils/db';
+import { supabase } from '../utils/supabase';
 
 interface PaymentSuccessProps {
   onBackToDirectory: () => void;
@@ -40,6 +41,20 @@ export const PaymentSuccess: React.FC<PaymentSuccessProps> = ({
     });
     playSound('success', soundEnabled);
 
+    // Commit any verified launch from SubmitPage upon return from successful Whop checkout
+    try {
+      const pendingPaidSub = localStorage.getItem('topsaas_pending_paid_submission');
+      const finalProductId = targetProductId || (pendingPaidSub ? JSON.parse(pendingPaidSub).id : null);
+      if (finalProductId) {
+        supabase.from('submissions').update({ verified: true }).eq('id', finalProductId).then(() => {});
+        localStorage.removeItem('topsaas_pending_paid_submission');
+        localStorage.removeItem('topsaas_launch_draft_v1');
+        localStorage.removeItem('topsaas_launch_step_v1');
+      }
+    } catch (e) {
+      console.warn('Error confirming verified launch status:', e);
+    }
+
     // Restore any newly created sponsor app from local storage
     const pendingNewProdJson = localStorage.getItem('topsaas_featured_pending_new_product');
     if (pendingNewProdJson) {
@@ -70,11 +85,17 @@ export const PaymentSuccess: React.FC<PaymentSuccessProps> = ({
 
   const planInfo = (() => {
     const p = params.plan;
+    if (p === 'onetime' || p === 'verified_launch' || p === 'per_product_pass') {
+      return { name: 'Fast-Track Launch ($19)', price: '$19' };
+    }
+    if (p === 'weekly_relaunch') {
+      return { name: 'Auto Weekly Relaunch', price: '$5/mo' };
+    }
     if (p === '1mo' || p === '30days') return { name: '1-Month Sponsor', price: '$29' };
     if (p === '3mo') return { name: '3-Month Sponsor', price: '$69' };
     if (p === '1yr') return { name: '1-Year Partner Sponsor', price: '$199' };
     if (p === '7days') return { name: '7-Day Sponsor', price: '$59' };
-    return { name: 'Sponsorship Spotlight', price: 'Paid' };
+    return { name: 'Launch & Spotlight Pass', price: 'Paid' };
   })();
 
   return (
@@ -88,10 +109,14 @@ export const PaymentSuccess: React.FC<PaymentSuccessProps> = ({
 
           {/* Title */}
           <h1 className="text-xl font-black text-neutral-950 tracking-tight mb-2">
-            Payment Successful!
+            {params.plan === 'onetime' || params.plan === 'verified_launch' || params.plan === 'per_product_pass'
+              ? 'Launch Fast-Track Confirmed!'
+              : 'Payment Successful!'}
           </h1>
           <p className="text-sm text-neutral-600 mb-6">
-            Your sponsorship has been activated. You&apos;re now prominently featured on TopSAAS!
+            {params.plan === 'onetime' || params.plan === 'verified_launch' || params.plan === 'per_product_pass'
+              ? 'Your $19 Verified Launch has been activated. Your product is prioritized for 24-hour review with an official verified badge and permanent DoFollow SEO backlink!'
+              : 'Your sponsorship has been activated. You are now prominently featured on TopSAAS!'}
           </p>
 
           {/* Order Details */}

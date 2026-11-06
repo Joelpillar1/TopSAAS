@@ -95,6 +95,13 @@ export function normalizePlanKey(planType: PlanType): string {
   return 'sponsor_1mo';
 }
 
+export function isValidCheckoutUrl(url: unknown): url is string {
+  if (typeof url !== 'string' || !url.trim()) return false;
+  // A direct checkout URL must contain whop.com/checkout/
+  // Legacy store/hub URLs like whop.com/topsaas/... are rejected
+  return url.includes('whop.com/checkout/');
+}
+
 /**
  * Fetches the secure checkout URL dynamically from Supabase database (whop_payments_config).
  * This ensures checkout links are managed in your Supabase database and not exposed statically in code.
@@ -111,7 +118,7 @@ export async function getWhopCheckoutUrlFromSupabase(
       { p_plan_type: planKey }
     );
 
-    if (!rpcErr && rpcUrl && typeof rpcUrl === 'string' && rpcUrl.trim()) {
+    if (!rpcErr && isValidCheckoutUrl(rpcUrl)) {
       return rpcUrl.trim();
     }
   } catch (err) {
@@ -126,14 +133,14 @@ export async function getWhopCheckoutUrlFromSupabase(
       .eq('key', `checkout_url_${planKey}`)
       .maybeSingle();
 
-    if (!error && data?.value) {
-      return data.value;
+    if (!error && isValidCheckoutUrl(data?.value)) {
+      return data.value.trim();
     }
   } catch (err) {
     console.debug('Direct whop_payments_config query note:', err);
   }
 
-  // 3. Known production Whop links
+  // 3. Known production Whop direct checkout links
   if (planKey === 'featured_1wk') return WHOP_LINKS.featured1wk;
   if (planKey === 'featured_1mo') return WHOP_LINKS.featured1mo;
   if (planKey === 'sponsor_1wk') return WHOP_LINKS.sponsor1wk;
@@ -150,11 +157,11 @@ export async function getWhopCheckoutUrlFromSupabase(
         ? import.meta.env.VITE_WHOP_LINK_1YR
         : import.meta.env.VITE_WHOP_LINK_1MO;
 
-  if (envUrl && typeof envUrl === 'string' && envUrl.trim()) {
+  if (isValidCheckoutUrl(envUrl)) {
     return envUrl.trim();
   }
 
-  return WHOP_LINKS.sponsor1mo;
+  return planKey === 'onetime' ? WHOP_LINKS.oneTime : WHOP_LINKS.sponsor1mo;
 }
 
 /**
@@ -164,6 +171,7 @@ export async function createCheckoutSession(
   options: CheckoutOptions
 ): Promise<CheckoutResponse> {
   const { planType, productName, targetProductId, customerEmail } = options;
+  const planKey = normalizePlanKey(planType);
 
   const returnUrl = `${window.location.origin}/payment-success?plan=${planType}&product=${encodeURIComponent(
     productName
@@ -184,21 +192,27 @@ export async function createCheckoutSession(
       }
     );
 
-    if (!error && data?.checkout_url) {
+    if (!error && isValidCheckoutUrl(data?.checkout_url)) {
       return data;
     }
   } catch (err) {
-    console.debug('whop-checkout function note, reading from Supabase config:', err);
+    console.debug('whop-checkout function note, reading from direct config:', err);
   }
 
-  // 2. Fetch checkout URL dynamically from Supabase database
+  // 2. Fetch checkout URL dynamically from Supabase database or verified direct checkout links
   const dbUrl = await getWhopCheckoutUrlFromSupabase(planType);
-  const baseLink = dbUrl || WHOP_LINKS.weeklyRelaunch;
+  const fallbackUrl =
+    planKey === 'onetime'
+      ? WHOP_LINKS.oneTime
+      : planKey === 'weekly_relaunch'
+      ? WHOP_LINKS.weeklyRelaunch
+      : WHOP_LINKS.sponsor1mo;
+
+  const baseLink = isValidCheckoutUrl(dbUrl) ? dbUrl : fallbackUrl;
 
   const redirectUrl = encodeURIComponent(returnUrl);
   const separator = baseLink.includes('?') ? '&' : '?';
-  const directUrl = `${baseLink}${separator}redirect_url=${redirectUrl}${customerEmail ? `&email=${encodeURIComponent(customerEmail)}` : ''
-    }`;
+  const directUrl = `${baseLink}${separator}redirect_url=${redirectUrl}${customerEmail ? `&email=${encodeURIComponent(customerEmail)}` : ''}`;
 
   return { checkout_url: directUrl };
 }

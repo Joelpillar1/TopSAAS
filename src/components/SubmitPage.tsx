@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import confetti from 'canvas-confetti';
-import { AlertCircle, Check, ChevronDown, ChevronLeft, ChevronRight, Clock, Loader2, Search, Video, X, Tag, Percent, Gift, Sparkles, Trash2, GripVertical, Star, ShieldCheck, CheckCircle2, Lock, Copy } from 'lucide-react';
+import { AlertCircle, Check, ChevronDown, ChevronLeft, ChevronRight, Clock, Loader2, Search, Video, X, Tag, Percent, Gift, Sparkles, Trash2, GripVertical, Star, ShieldCheck, CheckCircle2, Lock, Copy, Zap } from 'lucide-react';
 import { Category, PricingModel, Product, ProductSocial, SubmitProductDetails, WebsiteSubmission } from '../types';
 import { SUBMISSION_CATEGORIES } from './BidModal';
 import { getWebsiteFavicon } from '../utils/logo';
@@ -11,6 +11,9 @@ import { prepareRichText } from '../utils/richText';
 import { uploadScreenshotToStorage } from '../utils/storage';
 import { RichTextEditor } from './RichTextEditor';
 import { LaunchWeekSelector } from './LaunchWeekSelector';
+import { autofillWithOpenAI } from '../utils/autofill';
+import { redirectToCheckout, WHOP_LINKS } from '../utils/whop';
+import { VerifiedBadge } from './VerifiedBadge';
 
 const DRAFT_KEY = 'topsaas_launch_draft_v1';
 const STEP_KEY = 'topsaas_launch_step_v1';
@@ -22,7 +25,7 @@ const PRICING_OPTIONS: { value: PricingModel; hint: string }[] = [
   { value: 'Open Source', hint: 'Source code available' },
 ];
 
-const STEPS = ['Website', 'Media', 'Details', 'Founder', 'Badge'] as const;
+const STEPS = ['Website', 'Media', 'Details', 'Founder', 'Launch'] as const;
 
 interface FormState {
   url: string;
@@ -341,7 +344,17 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
 
   const [launched, setLaunched] = useState<{ id: string; name: string } | null>(null);
 
-  // ── Badge Verification States ──
+  // ── Launch Tier & Verification States ──
+  const [submissionPlan, setSubmissionPlan] = useState<'free' | 'paid_19'>(() => {
+    try {
+      const fromStorage = localStorage.getItem('topsaas_submit_plan');
+      if (fromStorage === 'paid_19' || fromStorage === 'verified') return 'paid_19';
+    } catch {}
+    return 'free';
+  });
+  const [showOptionalBadge, setShowOptionalBadge] = useState(false);
+  const [showAllVerifiedFeatures, setShowAllVerifiedFeatures] = useState(false);
+  const [showAllStarterFeatures, setShowAllStarterFeatures] = useState(false);
   const [isBadgeVerified, setIsBadgeVerified] = useState(false);
   const [isVerifyingBadge, setIsVerifyingBadge] = useState(false);
   const [badgeVerificationError, setBadgeVerificationError] = useState<string | null>(null);
@@ -353,6 +366,10 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
   // PNG badge variant selected by the user in Step 5
   type BadgeVariant = 'type1-blue' | 'type1-light' | 'type2-blue' | 'type2-light';
   const [badgeVariant, setBadgeVariant] = useState<BadgeVariant>('type1-blue');
+
+  // ── OpenAI Auto-fill States ──
+  const [isAutofilling, setIsAutofilling] = useState(false);
+  const [autofillSuccess, setAutofillSuccess] = useState(false);
 
   const categoryRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -369,6 +386,82 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
     if (isCategoryOpen) document.addEventListener('mousedown', onClickOutside);
     return () => document.removeEventListener('mousedown', onClickOutside);
   }, [isCategoryOpen]);
+
+  const handleAutofill = async () => {
+    const rawUrl = form.url.trim();
+    if (!rawUrl) {
+      setErrors((prev) => ({ ...prev, url: 'Enter your website URL first to auto-fill.' }));
+      setBanner('Please enter your website URL before clicking Auto-fill.');
+      playSound('click', soundEnabled);
+      return;
+    }
+
+    const check = normalizeUrl(rawUrl);
+    if (!check.ok) {
+      setErrors((prev) => ({ ...prev, url: check.error || 'Enter a valid website URL.' }));
+      playSound('click', soundEnabled);
+      return;
+    }
+
+    const targetUrl = check.value;
+    setIsAutofilling(true);
+    setBanner(null);
+    setErrors((prev) => ({ ...prev, url: undefined }));
+
+    try {
+      const res = await autofillWithOpenAI(targetUrl);
+
+      if (!res.ok || !res.data) {
+        setIsAutofilling(false);
+        setBanner(res.error || 'Failed to auto-fill details from website.');
+        return;
+      }
+
+      const d = res.data;
+      setForm((prev) => {
+        const nextCats = (d.categories && d.categories.length > 0)
+          ? d.categories
+          : (d.category ? [d.category] : prev.categories);
+        
+        return {
+          ...prev,
+          url: targetUrl,
+          name: d.name || prev.name,
+          tagline: d.tagline || prev.tagline,
+          description: d.description || prev.description,
+          category: nextCats.length > 0 ? nextCats.join(', ') : (d.category || prev.category),
+          categories: nextCats,
+          pricingModel: d.pricingModel || prev.pricingModel,
+          targetAudience: d.targetAudience || prev.targetAudience,
+          problemItSolves: d.problemItSolves || prev.problemItSolves,
+          solution: d.solution || prev.solution,
+          uniqueSellingPoint: d.uniqueSellingPoint || prev.uniqueSellingPoint,
+          twitter: d.twitter ? autoFormatHandle(d.twitter) : prev.twitter,
+          github: d.github || prev.github,
+          linkedin: d.linkedin || prev.linkedin,
+          discord: d.discord || prev.discord,
+          youtube: d.youtube || prev.youtube,
+          productHunt: d.productHunt || prev.productHunt,
+        };
+      });
+
+      // Clear any validation errors for auto-filled fields
+      setErrors({});
+      setBanner(null);
+      setIsAutofilling(false);
+      setAutofillSuccess(true);
+      playSound('success', soundEnabled);
+
+      try {
+        confetti({ particleCount: 50, spread: 60, origin: { y: 0.4 } });
+      } catch {}
+
+      setTimeout(() => setAutofillSuccess(false), 3000);
+    } catch (err: any) {
+      setIsAutofilling(false);
+      setBanner(err?.message || 'Something went wrong while auto-filling.');
+    }
+  };
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -464,6 +557,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
       return isStepComplete(0) && isStepComplete(2);
     }
     if (i === 4) {
+      if (submissionPlan === 'paid_19') return isStepComplete(3);
       return isStepComplete(3) && isBadgeVerified;
     }
     return false;
@@ -686,12 +780,12 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
         markVerified(`TopSAAS badge detected on ${targetUrl}! Verification complete.`);
       } else if (fetched) {
         setBadgeVerificationError(
-          edge.reason || `We reached ${targetUrl}, but could not find the TopSAAS badge code. Make sure the badge snippet is embedded in your website, then re-publish and try again.`
+          `We reached ${targetUrl}, but could not find the TopSAAS badge snippet in your page. Make sure the snippet is embedded in your HTML or footer, then publish and try again.`
         );
         playSound('error', soundEnabled);
       } else {
         setBadgeVerificationError(
-          edge.reason || `Could not reach ${targetUrl} to inspect the HTML. If your site has bot protection or is behind authentication, make sure it is publicly reachable, then retry — or use the manual confirmation below.`
+          `We could not reach ${targetUrl} to verify the badge automatically. Please ensure your website is publicly accessible, or confirm badge placement below to proceed.`
         );
         playSound('error', soundEnabled);
       }
@@ -721,10 +815,37 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
       return;
     }
 
-    if (!isBadgeVerified) {
-      setBanner('Please verify the TopSAAS badge on your website in Step 5 before submitting.');
+    if (submissionPlan === 'free' && !isBadgeVerified) {
+      setBanner('Please embed and verify the TopSAAS badge on your website in Step 5 before submitting.');
       setStep(4);
       requestAnimationFrame(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+      return;
+    }
+
+    if (submissionPlan === 'paid_19') {
+      setIsSubmitting(true);
+      try {
+        // Submit payload without triggering success UI/confetti beforehand
+        const newId = await executeSubmission(undefined, undefined, true);
+        if (newId) {
+          localStorage.setItem('topsaas_pending_paid_submission', JSON.stringify({
+            id: newId,
+            name: form.name.trim(),
+            plan: 'onetime',
+          }));
+
+          await redirectToCheckout({
+            planType: 'onetime',
+            productName: form.name.trim(),
+            targetProductId: newId,
+            customerEmail: form.creatorXHandle || undefined,
+          });
+        }
+      } catch (err: any) {
+        console.error('Fast-Track checkout error:', err);
+        setBanner(err?.message || 'Failed to start checkout. Please try again.');
+        setIsSubmitting(false);
+      }
       return;
     }
 
@@ -738,7 +859,11 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
     await executeSubmission();
   };
 
-  const executeSubmission = async (overrideAutoRelaunch?: boolean, overridePaid?: boolean): Promise<string | undefined> => {
+  const executeSubmission = async (
+    overrideAutoRelaunch?: boolean,
+    overridePaid?: boolean,
+    skipSuccessUi?: boolean
+  ): Promise<string | undefined> => {
     setIsSubmitting(true);
     setBanner(null);
     try {
@@ -803,6 +928,11 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
         setBanner('Something went wrong while submitting. Please try again.');
         setIsSubmitting(false);
         return undefined;
+      }
+
+      // If skipping success UI (e.g. redirecting to paid checkout first), exit cleanly
+      if (skipSuccessUi) {
+        return newId;
       }
 
       playSound('success', soundEnabled);
@@ -978,16 +1108,52 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                 <label className={labelClass}>
                   Website URL <span className="text-red-400">*</span>
                 </label>
-                <input
-                  type="text"
-                  value={form.url}
-                  onChange={(e) => {
-                    set('url', e.target.value);
-                    if (draftSaved) setDraftSaved(false);
-                  }}
-                  placeholder="https://yourproduct.com"
-                  className={inputClass(!!showUrlError)}
-                />
+
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      value={form.url}
+                      onChange={(e) => {
+                        set('url', e.target.value);
+                        if (draftSaved) setDraftSaved(false);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAutofill();
+                        }
+                      }}
+                      placeholder="https://yourproduct.com"
+                      className={inputClass(!!showUrlError)}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleAutofill()}
+                    disabled={isAutofilling || !form.url.trim()}
+                    className={`btn-primary rounded-xl px-4 py-2.5 text-xs font-bold shrink-0 cursor-pointer ${
+                      autofillSuccess ? '!bg-emerald-600 !border-emerald-700' : ''
+                    }`}
+                  >
+                    {isAutofilling ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Analyzing site...</span>
+                      </>
+                    ) : autofillSuccess ? (
+                      <>
+                        <Check className="h-4 w-4" />
+                        <span>Filled with AI!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-3.5 w-3.5" />
+                        <span>Fill with AI</span>
+                      </>
+                    )}
+                  </button>
+                </div>
                 <FieldError message={showUrlError ? errors.url : undefined} />
               </div>
 
@@ -1465,36 +1631,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                   )}
                 </div>
 
-                {/* Quick Toggle Popular Categories */}
-                <div className="mt-2.5 flex flex-wrap gap-1.5">
-                  <span className="text-[10px] font-bold text-neutral-500 self-center mr-1">
-                    Popular:
-                  </span>
-                  {['AI Tools', 'Developer Tools', 'Productivity', 'SaaS & Indie', 'Marketing & SEO', 'Design & UI'].map(
-                    (cat) => {
-                      const active = form.categories.includes(cat as Category);
-                      return (
-                        <button
-                          key={cat}
-                          type="button"
-                          onClick={() => toggleCategory(cat as Category)}
-                          className={`rounded-lg px-2 py-1 text-[10px] font-bold transition-all cursor-pointer ${
-                            active
-                              ? 'bg-mint-500/20 text-mint-700 border border-mint-500/50 shadow-2xs'
-                              : 'bg-white text-neutral-700 border border-neutral-200 hover:text-neutral-950 hover:border-neutral-400 hover:bg-neutral-50'
-                          }`}
-                        >
-                          {active ? `✓ ${cat}` : `+ ${cat}`}
-                        </button>
-                      );
-                    }
-                  )}
-                </div>
-
                 <FieldError message={showCategoryError ? errors.category : undefined} />
-                <p className="mt-1.5 text-[11px] font-medium text-neutral-500">
-                  Select up to 3 relevant categories to maximize visibility across directory filters.
-                </p>
               </div>
 
               {/* Pricing */}
@@ -1998,89 +2135,522 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
             </section>
           )}
 
-          {/* ── Step 4: Embed Badge & Verification ── */}
+          {/* ── Step 4: Launch Options & Pricing Plan ── */}
           {step === 4 && (
             <section className="space-y-6 animate-in fade-in-50 duration-200">
-              {/* 1. Pick a badge */}
-              <div className="space-y-2">
-                <p className="text-xs font-bold text-neutral-600">1. CHOOSE YOUR BADGE</p>
-                <div className="grid grid-cols-4 gap-2 sm:gap-2.5">
-                  {([
-                    { id: 'type1-blue',  src: '/Share%20Badge/TopSAAS%20Type%201%20-%20blue.png',  label: 'Type 1 · Blue',  bg: 'bg-[#1a2580]' },
-                    { id: 'type1-light', src: '/Share%20Badge/TopSAAS%20Type%201%20-%20light.png', label: 'Type 1 · Light', bg: 'bg-white' },
-                    { id: 'type2-blue',  src: '/Share%20Badge/TopSAAS%20Type%202%20-%20blue.png',  label: 'Type 2 · Blue',  bg: 'bg-[#1a2580]' },
-                    { id: 'type2-light', src: '/Share%20Badge/TopSAAS%20Type%202%20-%20light.png', label: 'Type 2 · Light', bg: 'bg-white' },
-                  ] as { id: BadgeVariant; src: string; label: string; bg: string }[]).map(({ id, src, label, bg }) => (
-                    <button
-                      key={id}
-                      type="button"
-                      onClick={() => { playSound('click', soundEnabled); setBadgeVariant(id); }}
-                      className={`relative flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 p-2 sm:p-2.5 transition-all cursor-pointer ${
-                        badgeVariant === id
-                          ? 'border-mint-500 shadow-sm shadow-mint-500/20'
-                          : 'border-neutral-200 hover:border-neutral-400'
-                      } ${bg}`}
-                    >
-                      {badgeVariant === id && (
-                        <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-mint-500">
-                          <Check className="h-2.5 w-2.5 text-white stroke-[3]" />
-                        </span>
-                      )}
-                      <img
-                        src={src}
-                        alt={label}
-                        className="h-6 sm:h-7.5 w-auto max-w-[85%] object-contain"
-                        draggable={false}
-                      />
-                      <span className={`text-[9px] sm:text-[10px] font-bold text-center leading-tight truncate max-w-full ${
-                        id.endsWith('light') ? 'text-neutral-700' : 'text-white/85'
-                      }`}>{label}</span>
-                    </button>
-                  ))}
+              {/* 1. Choose Your Launch Plan */}
+              <div className="space-y-3">
+                <div>
+                  <h3 className="text-xs font-bold text-neutral-600 uppercase tracking-wider">1. CHOOSE YOUR LAUNCH PLAN</h3>
+                  <p className="text-xs text-neutral-500 mt-0.5">Select how you want to launch your product on TopSAAS.</p>
                 </div>
-              </div>
 
-              {/* 2. Copy Code Snippet */}
-              <div className="space-y-2 border-t border-neutral-200 pt-5">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-neutral-900">2. COPY SNIPPET TO YOUR WEBSITE</span>
-                  <div className="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-neutral-200 text-[11px]">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 items-stretch pt-3">
+                  {/* Option 1: Starter (Free Forever) */}
+                  <div
+                    onClick={() => {
+                      playSound('click', soundEnabled);
+                      setSubmissionPlan('free');
+                    }}
+                    className={`relative rounded-3xl border transition-all cursor-pointer flex flex-col justify-between p-5 sm:p-6 ${
+                      submissionPlan === 'free'
+                        ? 'border-neutral-900 bg-white shadow-xl shadow-neutral-900/5 ring-2 ring-neutral-950'
+                        : 'border-neutral-200/90 bg-white hover:border-neutral-300 hover:shadow-md'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-2">
+                        <h4 className="text-xl sm:text-2xl font-black text-neutral-950 tracking-tight">Starter</h4>
+                        <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
+                          submissionPlan === 'free'
+                            ? 'border border-emerald-300 bg-emerald-50 text-emerald-700'
+                            : 'border border-neutral-200 bg-neutral-100 text-neutral-600'
+                        }`}>
+                          {submissionPlan === 'free' ? 'Selected' : 'Free Forever'}
+                        </span>
+                      </div>
+
+                      <p className="text-xs text-neutral-500 leading-relaxed mt-1 mb-2">
+                        Your launch partner. Unlock directory visibility with a free submission.
+                      </p>
+
+                      <div className="flex items-baseline gap-2 my-1.5">
+                        <span className="text-3xl sm:text-4xl font-extrabold text-neutral-950 tracking-tight font-sans">Free Plan</span>
+                      </div>
+
+                      <div className="pt-2 mb-4 space-y-2.5">
+                        <p className="text-[10px] font-black uppercase tracking-wider text-neutral-400">
+                          GET STARTED WITH:
+                        </p>
+                        <ul className="space-y-2.5 text-xs sm:text-[13px] text-neutral-700 font-medium">
+                          <li className="flex items-start gap-2.5 leading-snug">
+                            <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200/90 text-emerald-600 mt-0.5">
+                              <Check className="h-3 w-3 stroke-[3]" />
+                            </div>
+                            <span><strong>TopSAAS badge required</strong> on your website</span>
+                          </li>
+                          <li className="flex items-start gap-2.5 leading-snug">
+                            <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200/90 text-emerald-600 mt-0.5">
+                              <Check className="h-3 w-3 stroke-[3]" />
+                            </div>
+                            <span>Public SaaS directory listing</span>
+                          </li>
+                          <li className="flex items-start gap-2.5 leading-snug">
+                            <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200/90 text-emerald-600 mt-0.5">
+                              <Check className="h-3 w-3 stroke-[3]" />
+                            </div>
+                            <span>Community upvote ranking & discovery</span>
+                          </li>
+                          <li className="flex items-start gap-2.5 leading-snug">
+                            <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200/90 text-emerald-600 mt-0.5">
+                              <Check className="h-3 w-3 stroke-[3]" />
+                            </div>
+                            <span>Dedicated product profile page</span>
+                          </li>
+
+                          {/* Expandable Starter Details */}
+                          {showAllStarterFeatures && (
+                            <>
+                              <li className="flex items-start gap-2.5 leading-snug animate-in fade-in-50 duration-150">
+                                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200/90 text-emerald-600 mt-0.5">
+                                  <Check className="h-3 w-3 stroke-[3]" />
+                                </div>
+                                <span>Standard community review queue</span>
+                              </li>
+                              <li className="flex items-start gap-2.5 text-neutral-400 leading-snug animate-in fade-in-50 duration-150">
+                                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-neutral-100 border border-neutral-200 text-neutral-400 mt-0.5">
+                                  <X className="h-3 w-3 stroke-[2.5]" />
+                                </div>
+                                <span>nofollow link only</span>
+                              </li>
+                              <li className="flex items-start gap-2.5 text-neutral-400 leading-snug animate-in fade-in-50 duration-150">
+                                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-neutral-100 border border-neutral-200 text-neutral-400 mt-0.5">
+                                  <X className="h-3 w-3 stroke-[2.5]" />
+                                </div>
+                                <span>No verified badge</span>
+                              </li>
+                            </>
+                          )}
+                        </ul>
+
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            playSound('click', soundEnabled);
+                            setShowAllStarterFeatures((prev) => !prev);
+                          }}
+                          className="inline-flex items-center gap-1 text-[11px] font-bold text-neutral-500 hover:text-neutral-900 transition-colors cursor-pointer py-1"
+                        >
+                          <span>{showAllStarterFeatures ? 'Show fewer details' : '+ 3 more details'}</span>
+                          <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${showAllStarterFeatures ? 'rotate-180' : ''}`} />
+                        </button>
+                      </div>
+                    </div>
+
                     <button
                       type="button"
-                      onClick={() => setBadgeFormat('html')}
-                      className={`px-2 py-0.5 rounded font-bold transition-all cursor-pointer ${badgeFormat === 'html' ? 'bg-neutral-950 text-white' : 'text-neutral-600 hover:text-neutral-950'}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        playSound('click', soundEnabled);
+                        setSubmissionPlan('free');
+                      }}
+                      className={`w-full rounded-2xl py-3 px-4 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                        submissionPlan === 'free'
+                          ? 'border border-neutral-900 bg-neutral-950 text-white shadow-xs'
+                          : 'border border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-800 shadow-2xs'
+                      }`}
                     >
-                      HTML
+                      <span>{submissionPlan === 'free' ? 'Selected ✓' : 'Select Starter →'}</span>
                     </button>
+                  </div>
+
+                  {/* Option 2: Verified Launch ($19 / Product · One-time) with Overlapping Tag */}
+                  <div
+                    onClick={() => {
+                      playSound('click', soundEnabled);
+                      setSubmissionPlan('paid_19');
+                    }}
+                    className={`relative rounded-3xl border transition-all cursor-pointer flex flex-col justify-between p-5 sm:p-6 bg-gradient-to-b from-blue-50/60 via-slate-50/40 to-white ${
+                      submissionPlan === 'paid_19'
+                        ? 'border-blue-600 shadow-xl shadow-blue-500/10 ring-2 ring-blue-600'
+                        : 'border-slate-200/90 hover:border-blue-300 hover:shadow-md'
+                    }`}
+                  >
+                    {/* Overlapping Most Popular Tag */}
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10 whitespace-nowrap">
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-600 bg-blue-600 px-3.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white shadow-sm shadow-blue-600/25">
+                        <Sparkles className="h-3 w-3 fill-white/20" />
+                        <span>Most Popular</span>
+                      </span>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between gap-2 pt-1">
+                        <div className="flex items-center gap-1.5">
+                          <h4 className="text-xl sm:text-2xl font-black text-neutral-950 tracking-tight">Verified Launch</h4>
+                          <VerifiedBadge className="h-5 w-5" />
+                        </div>
+                        {submissionPlan === 'paid_19' && (
+                          <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider border border-blue-200 bg-blue-50 text-blue-700">
+                            Selected
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="text-xs text-neutral-600 leading-relaxed mt-1 mb-2">
+                        Fast-track 24h approval, category top-3 spot, dofollow SEO backlink, and verified badge.
+                      </p>
+
+                      <div className="flex items-baseline gap-2 my-1.5">
+                        <span className="text-3xl sm:text-4xl font-extrabold text-neutral-950 tracking-tight font-sans">$19.00</span>
+                        <span className="text-xs font-semibold text-neutral-500 font-sans">/Product (One-time)</span>
+                      </div>
+
+                      <div className="pt-2 mb-4 space-y-2.5">
+                        <p className="text-[10px] font-black uppercase tracking-wider text-neutral-500">
+                          EVERYTHING IN STARTER, PLUS:
+                        </p>
+                        <ul className="space-y-2.5 text-xs sm:text-[13px] text-neutral-800 font-medium">
+                          <li className="flex items-start gap-2.5 leading-snug">
+                            <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200/90 text-emerald-600 mt-0.5">
+                              <Check className="h-3 w-3 stroke-[3]" />
+                            </div>
+                            <span><strong>No badge required on your website</strong> (skip verification)</span>
+                          </li>
+                          <li className="flex items-start gap-2.5 leading-snug">
+                            <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200/90 text-emerald-600 mt-0.5">
+                              <Check className="h-3 w-3 stroke-[3]" />
+                            </div>
+                            <span><strong>Live within 24 hours</strong> (skip 14-day queue)</span>
+                          </li>
+                          <li className="flex items-start gap-2.5 leading-snug">
+                            <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200/90 text-emerald-600 mt-0.5">
+                              <Check className="h-3 w-3 stroke-[3]" />
+                            </div>
+                            <span><strong>Permanent High-Authority DoFollow backlink</strong></span>
+                          </li>
+                          <li className="flex items-start gap-2.5 leading-snug">
+                            <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200/90 text-emerald-600 mt-0.5">
+                              <Check className="h-3 w-3 stroke-[3]" />
+                            </div>
+                            <span><strong>Official Verified Mint Badge</strong> on card & profile</span>
+                          </li>
+
+                          {/* Expandable Verified Launch Features */}
+                          {showAllVerifiedFeatures && (
+                            <>
+                              <li className="flex items-start gap-2.5 leading-snug animate-in fade-in-50 duration-150">
+                                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200/90 text-emerald-600 mt-0.5">
+                                  <Check className="h-3 w-3 stroke-[3]" />
+                                </div>
+                                <span><strong>Auto Weekly Relaunch:</strong> 1st Month Free (then $5/mo optional)</span>
+                              </li>
+                              <li className="flex items-start gap-2.5 leading-snug animate-in fade-in-50 duration-150">
+                                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200/90 text-emerald-600 mt-0.5">
+                                  <Check className="h-3 w-3 stroke-[3]" />
+                                </div>
+                                <span><strong>Pinned Top 3</strong> in your primary category (First Month)</span>
+                              </li>
+                              <li className="flex items-start gap-2.5 leading-snug animate-in fade-in-50 duration-150">
+                                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200/90 text-emerald-600 mt-0.5">
+                                  <Check className="h-3 w-3 stroke-[3]" />
+                                </div>
+                                <span><strong>1,500+ word story on /blog</strong> (with competitor breakdown)</span>
+                              </li>
+                              <li className="flex items-start gap-2.5 leading-snug animate-in fade-in-50 duration-150">
+                                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200/90 text-emerald-600 mt-0.5">
+                                  <Check className="h-3 w-3 stroke-[3]" />
+                                </div>
+                                <span>Indexed in <strong>/llms.txt</strong> for AI search (ChatGPT, Perplexity)</span>
+                              </li>
+                              <li className="flex items-start gap-2.5 leading-snug animate-in fade-in-50 duration-150">
+                                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200/90 text-emerald-600 mt-0.5">
+                                  <Check className="h-3 w-3 stroke-[3]" />
+                                </div>
+                                <span>Lifetime listing — <strong>zero recurring subscription fees</strong></span>
+                              </li>
+                            </>
+                          )}
+                        </ul>
+
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            playSound('click', soundEnabled);
+                            setShowAllVerifiedFeatures((prev) => !prev);
+                          }}
+                          className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-800 transition-colors cursor-pointer py-1"
+                        >
+                          <span>{showAllVerifiedFeatures ? 'Show fewer features' : '+ 5 more features included'}</span>
+                          <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${showAllVerifiedFeatures ? 'rotate-180' : ''}`} />
+                        </button>
+                      </div>
+                    </div>
+
                     <button
                       type="button"
-                      onClick={() => setBadgeFormat('markdown')}
-                      className={`px-2 py-0.5 rounded font-bold transition-all cursor-pointer ${badgeFormat === 'markdown' ? 'bg-neutral-950 text-white' : 'text-neutral-600 hover:text-neutral-950'}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        playSound('click', soundEnabled);
+                        setSubmissionPlan('paid_19');
+                      }}
+                      className="w-full rounded-2xl bg-neutral-950 hover:bg-neutral-800 text-white py-3 px-4 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-neutral-950/20"
                     >
-                      Markdown
+                      <span>{submissionPlan === 'paid_19' ? 'Selected ✓' : 'Get Verified Launch — $19 →'}</span>
                     </button>
                   </div>
                 </div>
-
-                <div className="relative rounded-xl border border-neutral-200 bg-[#17171a] p-3 font-mono text-[11px] text-neutral-300 leading-relaxed overflow-x-auto">
-                  <pre className="whitespace-pre-wrap break-all pr-16">{badgeEmbedSnippet}</pre>
-                  <button
-                    type="button"
-                    onClick={handleCopyBadgeSnippet}
-                    className={`absolute top-2.5 right-2.5 inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-bold transition-all cursor-pointer shadow-xs ${
-                      copiedBadge ? 'bg-mint-500 text-white' : 'bg-white text-neutral-800 hover:bg-neutral-100 border border-neutral-300'
-                    }`}
-                  >
-                    {copiedBadge ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                    <span>{copiedBadge ? 'Copied' : 'Copy'}</span>
-                  </button>
-                </div>
-                <p className="text-[11px] text-neutral-500">
-                  Tip: Place this badge in your website footer, hero section, or README. Visitors click it to upvote your listing on TopSAAS.
-                </p>
               </div>
 
-              {/* 3. Target Launch Round / Date Picker */}
+              {/* 2. Plan Specific Options */}
+              {submissionPlan === 'paid_19' ? (
+                /* ── Fast-Track ($19) Details ── */
+                <div className="space-y-4 border-t border-neutral-200 pt-5">
+                  <div className="rounded-2xl border border-blue-200/80 bg-gradient-to-r from-blue-50/70 via-slate-50/40 to-white p-4 sm:p-5 flex items-start gap-3.5 shadow-2xs">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white shrink-0 mt-0.5 shadow-sm">
+                      <CheckCircle2 className="h-5 w-5" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="font-bold text-neutral-950 text-xs sm:text-sm">No website badge required for Fast-Track ($19)</p>
+                      <p className="text-[11px] sm:text-xs text-neutral-600 leading-relaxed">
+                        You do not need to add any badge or backlink to your site. Your submission will bypass website verification, jump straight into the expedited 24-hour review queue, and receive permanent DoFollow SEO value upon approval.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setShowOptionalBadge((prev) => !prev)}
+                        className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-800 pt-1 cursor-pointer"
+                      >
+                        <span>{showOptionalBadge ? 'Hide optional badge snippet' : 'Want to display a badge anyway? (Optional)'}</span>
+                        <ChevronDown className={`h-3 w-3 transition-transform ${showOptionalBadge ? 'rotate-180' : ''}`} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Optional Badge Code for Fast-Track users if they want it */}
+                  {showOptionalBadge && (
+                    <div className="rounded-2xl border border-neutral-200 bg-neutral-50/70 p-4 space-y-4 animate-in fade-in-50 duration-150">
+                      <div className="space-y-2">
+                        <p className="text-[11px] font-bold text-neutral-700">CHOOSE YOUR OPTIONAL BADGE</p>
+                        <div className="grid grid-cols-4 gap-2 sm:gap-2.5">
+                          {([
+                            { id: 'type1-blue',  src: '/Share%20Badge/TopSAAS%20Type%201%20-%20blue.png',  label: 'Type 1 · Blue',  bg: 'bg-[#1a2580]' },
+                            { id: 'type1-light', src: '/Share%20Badge/TopSAAS%20Type%201%20-%20light.png', label: 'Type 1 · Light', bg: 'bg-white' },
+                            { id: 'type2-blue',  src: '/Share%20Badge/TopSAAS%20Type%202%20-%20blue.png',  label: 'Type 2 · Blue',  bg: 'bg-[#1a2580]' },
+                            { id: 'type2-light', src: '/Share%20Badge/TopSAAS%20Type%202%20-%20light.png', label: 'Type 2 · Light', bg: 'bg-white' },
+                          ] as { id: BadgeVariant; src: string; label: string; bg: string }[]).map(({ id, src, label, bg }) => (
+                            <button
+                              key={id}
+                              type="button"
+                              onClick={() => { playSound('click', soundEnabled); setBadgeVariant(id); }}
+                              className={`relative flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 p-2 sm:p-2.5 transition-all cursor-pointer ${
+                                badgeVariant === id
+                                  ? 'border-mint-500 shadow-sm shadow-mint-500/20'
+                                  : 'border-neutral-200 hover:border-neutral-400'
+                              } ${bg}`}
+                            >
+                              {badgeVariant === id && (
+                                <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-mint-500">
+                                  <Check className="h-2.5 w-2.5 text-white stroke-[3]" />
+                                </span>
+                              )}
+                              <img src={src} alt={label} className="h-6 sm:h-7.5 w-auto max-w-[85%] object-contain" draggable={false} />
+                              <span className={`text-[9px] sm:text-[10px] font-bold text-center leading-tight truncate max-w-full ${
+                                id.endsWith('light') ? 'text-neutral-700' : 'text-white/85'
+                              }`}>{label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="relative rounded-xl border border-neutral-200 bg-[#17171a] p-3 font-mono text-[11px] text-neutral-300 leading-relaxed overflow-x-auto">
+                        <pre className="whitespace-pre-wrap break-all pr-16">{badgeEmbedSnippet}</pre>
+                        <button
+                          type="button"
+                          onClick={handleCopyBadgeSnippet}
+                          className={`absolute top-2.5 right-2.5 inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-bold transition-all cursor-pointer shadow-xs ${
+                            copiedBadge ? 'bg-mint-500 text-white' : 'bg-white text-neutral-800 hover:bg-neutral-100 border border-neutral-300'
+                          }`}
+                        >
+                          {copiedBadge ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                          <span>{copiedBadge ? 'Copied' : 'Copy'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* ── Free Plan: Mandatory Badge & Verification ── */
+                <div className="space-y-5 border-t border-neutral-200 pt-5">
+                  {/* Badge Picker */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-bold text-neutral-600">2. CHOOSE YOUR BADGE</p>
+                      <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                        Required for Free Launch
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-4 gap-2 sm:gap-2.5">
+                      {([
+                        { id: 'type1-blue',  src: '/Share%20Badge/TopSAAS%20Type%201%20-%20blue.png',  label: 'Type 1 · Blue',  bg: 'bg-[#1a2580]' },
+                        { id: 'type1-light', src: '/Share%20Badge/TopSAAS%20Type%201%20-%20light.png', label: 'Type 1 · Light', bg: 'bg-white' },
+                        { id: 'type2-blue',  src: '/Share%20Badge/TopSAAS%20Type%202%20-%20blue.png',  label: 'Type 2 · Blue',  bg: 'bg-[#1a2580]' },
+                        { id: 'type2-light', src: '/Share%20Badge/TopSAAS%20Type%202%20-%20light.png', label: 'Type 2 · Light', bg: 'bg-white' },
+                      ] as { id: BadgeVariant; src: string; label: string; bg: string }[]).map(({ id, src, label, bg }) => (
+                        <button
+                          key={id}
+                          type="button"
+                          onClick={() => { playSound('click', soundEnabled); setBadgeVariant(id); }}
+                          className={`relative flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 p-2 sm:p-2.5 transition-all cursor-pointer ${
+                            badgeVariant === id
+                              ? 'border-mint-500 shadow-sm shadow-mint-500/20'
+                              : 'border-neutral-200 hover:border-neutral-400'
+                          } ${bg}`}
+                        >
+                          {badgeVariant === id && (
+                            <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-mint-500">
+                              <Check className="h-2.5 w-2.5 text-white stroke-[3]" />
+                            </span>
+                          )}
+                          <img
+                            src={src}
+                            alt={label}
+                            className="h-6 sm:h-7.5 w-auto max-w-[85%] object-contain"
+                            draggable={false}
+                          />
+                          <span className={`text-[9px] sm:text-[10px] font-bold text-center leading-tight truncate max-w-full ${
+                            id.endsWith('light') ? 'text-neutral-700' : 'text-white/85'
+                          }`}>{label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Copy Code Snippet */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-neutral-900">3. COPY SNIPPET TO YOUR WEBSITE</span>
+                      <div className="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-neutral-200 text-[11px]">
+                        <button
+                          type="button"
+                          onClick={() => setBadgeFormat('html')}
+                          className={`px-2 py-0.5 rounded font-bold transition-all cursor-pointer ${badgeFormat === 'html' ? 'bg-neutral-950 text-white' : 'text-neutral-600 hover:text-neutral-950'}`}
+                        >
+                          HTML
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setBadgeFormat('markdown')}
+                          className={`px-2 py-0.5 rounded font-bold transition-all cursor-pointer ${badgeFormat === 'markdown' ? 'bg-neutral-950 text-white' : 'text-neutral-600 hover:text-neutral-950'}`}
+                        >
+                          Markdown
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="relative rounded-xl border border-neutral-200 bg-[#17171a] p-3 font-mono text-[11px] text-neutral-300 leading-relaxed overflow-x-auto">
+                      <pre className="whitespace-pre-wrap break-all pr-16">{badgeEmbedSnippet}</pre>
+                      <button
+                        type="button"
+                        onClick={handleCopyBadgeSnippet}
+                        className={`absolute top-2.5 right-2.5 inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-bold transition-all cursor-pointer shadow-xs ${
+                          copiedBadge ? 'bg-mint-500 text-white' : 'bg-white text-neutral-800 hover:bg-neutral-100 border border-neutral-300'
+                        }`}
+                      >
+                        {copiedBadge ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                        <span>{copiedBadge ? 'Copied' : 'Copy'}</span>
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-neutral-500">
+                      Place this badge in your website footer, homepage, or docs. Free users must verify the badge before submitting.
+                    </p>
+                  </div>
+
+                  {/* Badge Verification Status Cards */}
+                  {isBadgeVerified ? (
+                    <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 text-xs text-emerald-900 flex items-center justify-between gap-3 shadow-2xs">
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-emerald-500 text-white shrink-0">
+                          <Check className="h-4 w-4 stroke-[3]" />
+                        </div>
+                        <div>
+                          <p className="font-bold text-emerald-950 text-xs">TopSAAS Badge Verified!</p>
+                          <p className="text-[11px] text-emerald-700">Badge confirmed on your website. The submit button is now unlocked below.</p>
+                        </div>
+                      </div>
+                      <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-full">
+                        Verified
+                      </span>
+                    </div>
+                  ) : badgeVerificationError ? (
+                    <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 text-xs text-neutral-800 flex items-start gap-3 shadow-2xs">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-amber-100 text-amber-700 shrink-0 mt-0.5">
+                        <AlertCircle className="h-4 w-4" />
+                      </div>
+                      <div className="space-y-1.5 flex-1">
+                        <p className="font-bold text-neutral-900 text-xs">Badge Not Detected Yet</p>
+                        <p className="text-[11px] text-neutral-600 leading-relaxed">{badgeVerificationError}</p>
+                        <div className="pt-2 flex items-center gap-2 flex-wrap">
+                          <button
+                            type="button"
+                            onClick={() => handleVerifyBadge()}
+                            disabled={isVerifyingBadge}
+                            className="rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white px-3 py-1.5 text-[11px] font-bold transition-colors cursor-pointer"
+                          >
+                            Try again
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsBadgeVerified(true);
+                              setBadgeVerificationSuccess('Badge placement confirmed. Your listing has been queued for review.');
+                              setBadgeVerificationError(null);
+                              playSound('success', soundEnabled);
+                              confetti({ particleCount: 35, spread: 50, origin: { y: 0.7 } });
+                            }}
+                            className="rounded-lg border border-neutral-300 bg-white hover:bg-neutral-100 text-neutral-700 px-3 py-1.5 text-[11px] font-semibold transition-colors cursor-pointer"
+                          >
+                            I've added the badge, proceed to submit
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl border border-neutral-200 bg-neutral-50/70 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
+                      <div>
+                        <p className="text-xs font-bold text-neutral-900 flex items-center gap-1.5">
+                          <ShieldCheck className="h-4 w-4 text-neutral-700" />
+                          <span>4. VERIFY BADGE PLACEMENT</span>
+                        </p>
+                        <p className="text-[11px] text-neutral-500 mt-0.5">
+                          Add the snippet to {form.url || 'your website'} and verify to unlock the submit button.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleVerifyBadge}
+                        disabled={isVerifyingBadge}
+                        className="btn-primary inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold cursor-pointer"
+                      >
+                        {isVerifyingBadge ? (
+                          <>
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            <span>Verifying…</span>
+                          </>
+                        ) : (
+                          <>
+                            <ShieldCheck className="h-3.5 w-3.5" />
+                            <span>Verify Badge Now</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Target Launch Round / Date Picker */}
               <div className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-5 shadow-2xs">
                 <LaunchWeekSelector
                   selectedWeekNumber={form.scheduledLaunchWeek}
@@ -2097,7 +2667,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                 />
               </div>
 
-              {/* 4. Weekly Relaunch Add-on */}
+              {/* Weekly Relaunch Add-on */}
               <div
                 onClick={() => {
                   playSound('click', soundEnabled);
@@ -2146,32 +2716,6 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                   </span>
                 </div>
               </div>
-
-              {/* Badge Verification Error / Help Notice */}
-              {badgeVerificationError && (
-                <div className="rounded-2xl border border-red-500/40 bg-red-500/10 p-4 text-xs text-red-700 flex items-start gap-2.5">
-                  <AlertCircle className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
-                  <div className="space-y-1.5 flex-1">
-                    <p className="font-bold">Badge Verification Incomplete</p>
-                    <p className="text-[11px] text-red-800/90 leading-relaxed">{badgeVerificationError}</p>
-                    <div className="pt-1">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsBadgeVerified(true);
-                          setBadgeVerificationSuccess('Manually verified for testing/staging environment.');
-                          setBadgeVerificationError(null);
-                          playSound('success', soundEnabled);
-                          confetti({ particleCount: 35, spread: 50, origin: { y: 0.7 } });
-                        }}
-                        className="text-[11px] font-bold text-neutral-700 hover:text-neutral-950 underline transition-colors cursor-pointer"
-                      >
-                        Running in localhost or private dev environment? Click here to confirm manual verification.
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
             </section>
           )}
         </div>
@@ -2206,7 +2750,26 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                 Continue
               </button>
             ) : isSignedIn ? (
-              !isBadgeVerified ? (
+              submissionPlan === 'paid_19' ? (
+                <button
+                  type="button"
+                  onClick={handleLaunch}
+                  disabled={isSubmitting}
+                  className="btn-primary inline-flex items-center gap-2 px-6 py-2.5 text-xs font-black cursor-pointer shadow-md shadow-blue-600/20 active:scale-95"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      <span>Submitting & Redirecting…</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>⚡</span>
+                      <span>Pay $19 on Whop & Launch</span>
+                    </>
+                  )}
+                </button>
+              ) : !isBadgeVerified ? (
                 <button
                   type="button"
                   onClick={handleVerifyBadge}
@@ -2221,7 +2784,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                   ) : (
                     <>
                       <ShieldCheck className="h-3.5 w-3.5" />
-                      <span>Verify badge</span>
+                      <span>Verify badge to submit</span>
                     </>
                   )}
                 </button>
@@ -2256,7 +2819,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                   ) : (
                     <span className="inline-flex items-center gap-1.5">
                       <CheckCircle2 className="h-3.5 w-3.5 text-white/90" />
-                      Submit website
+                      <span>Submit website free</span>
                     </span>
                   )}
                 </button>

@@ -1,8 +1,67 @@
+import 'dotenv/config';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import { defineConfig, Plugin } from 'vite';
 import { generateBadgeSvg, BadgeStyle, BadgeTheme } from './src/utils/badgeSvg';
+import autofillHandler from './api/autofill-submission';
+import verifyBadgeHandler from './api/verify-badge';
+
+function apiDevServerPlugin(): Plugin {
+  return {
+    name: 'api-dev-server-middleware',
+    configureServer(server) {
+      server.middlewares.use(async (req, res, next) => {
+        const isAutofill = req.url && req.url.startsWith('/api/autofill-submission');
+        const isVerifyBadge = req.url && req.url.startsWith('/api/verify-badge');
+
+        if (isAutofill || isVerifyBadge) {
+          let rawBody = '';
+          req.on('data', (chunk) => {
+            rawBody += chunk;
+          });
+          req.on('end', async () => {
+            try {
+              (req as any).body = rawBody ? JSON.parse(rawBody) : {};
+            } catch {
+              (req as any).body = {};
+            }
+
+            const wrappedRes = {
+              statusCode: 200,
+              setHeader(name: string, value: string) {
+                res.setHeader(name, value);
+              },
+              json(data: any) {
+                res.statusCode = this.statusCode;
+                res.setHeader('Content-Type', 'application/json');
+                res.end(JSON.stringify(data));
+              },
+              end(data?: any) {
+                res.statusCode = this.statusCode;
+                res.end(data);
+              },
+            };
+
+            try {
+              if (isAutofill) {
+                await autofillHandler(req, wrappedRes);
+              } else {
+                await verifyBadgeHandler(req, wrappedRes);
+              }
+            } catch (err: any) {
+              res.statusCode = 500;
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({ ok: false, error: err?.message || 'Server error' }));
+            }
+          });
+          return;
+        }
+        next();
+      });
+    },
+  };
+}
 
 function badgeServerPlugin(): Plugin {
   return {
@@ -49,7 +108,7 @@ function badgeServerPlugin(): Plugin {
 
 export default defineConfig(() => {
   return {
-    plugins: [react(), tailwindcss(), badgeServerPlugin()],
+    plugins: [react(), tailwindcss(), badgeServerPlugin(), apiDevServerPlugin()],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, 'src'),

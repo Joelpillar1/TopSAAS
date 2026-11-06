@@ -24,10 +24,15 @@ const corsHeaders = {
 
 /** Any one of these in the page HTML proves the badge snippet was embedded. */
 const BADGE_MARKERS = [
-  /\/badge\//i, // <img src="https://…/badge/<id>?style=…">
-  /badge\?style=/i,
-  /featured\s+on\s+topsaas/i, // anchor text / img alt
-  /topsaas\.(space|org|com)/i, // any link back to the directory
+  /topsaas/i, // Any mention of topsaas (URL, alt, class, id, text, href)
+  /top-saas/i,
+  /top_saas/i,
+  /top\s+saas/i,
+  /\/badge/i, // /badge/, /badges/, /badge?style=
+  /badge\.(svg|png|webp|jpg|jpeg)/i,
+  /featured\s*(on|at|by)?\s*topsaas/i,
+  /Share(?:%20|\s+)Badge/i,
+  /TopSAAS\s*Type/i,
 ];
 
 const FETCH_TIMEOUT_MS = 12_000;
