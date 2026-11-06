@@ -174,26 +174,6 @@ export const SPONSOR_PLANS: SponsorPlanItem[] = [
     cta: 'Get Monthly — $29',
   },
   {
-    id: '3mo',
-    name: '3-Month Partner Sponsor',
-    cardTitle: '3 Months',
-    price: 69,
-    priceLabel: '$69',
-    period: '/3 months',
-    discountBadge: 'Save 42% • $23/mo',
-    badge: 'Best Value',
-    duration: '90 Days',
-    rateNote: '$23 / month ($69 total)',
-    description: 'Continuous 90-day high-visibility partnership on sticky sidebar rails',
-    features: [
-      '90 days continuous sidebar rails presence',
-      '2x Dedicated Newsletter Blasts to subscribers',
-      'Permanent Dofollow backlink & Top Partner directory badge',
-      'Real-time outbound click & visitor tracking',
-    ],
-    cta: 'Get 3 Months — $69',
-  },
-  {
     id: 'trial',
     name: '7-Day Free Sponsor Test Drive',
     cardTitle: '7 Days',
@@ -829,8 +809,8 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
                     </p>
                   </div>
 
-                  {/* 3 Price Cards in a Row (Side by side) */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {/* Price Cards in a Row (2 side by side) */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg mx-auto w-full">
                     {paidPlans.map((plan) => {
                       const isSelected = selectedPlanId === plan.id;
                       return (

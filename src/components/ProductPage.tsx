@@ -828,221 +828,180 @@ export const ProductPage: React.FC<ProductPageProps> = ({
               </div>
             )}
 
-            {/* Discussion & Comments (Modern Product Hunt Style) */}
-            <div id="product-discussion-section" className="space-y-4">
+            {/* Discussion & Comments (Modern Card-Based Discussion matching reference) */}
+            <div id="product-discussion-section" className="rounded-2xl border border-neutral-200/90 bg-white p-5 sm:p-7 shadow-xs space-y-4">
               {/* Header */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-base font-bold text-neutral-950 tracking-tight">
-                    Discussion
-                  </h2>
-                  <span className="inline-flex items-center justify-center rounded-full bg-neutral-100 text-neutral-600 px-2.5 py-0.5 text-xs font-bold font-mono-num">
-                    {comments.length}
-                  </span>
-                </div>
-                <span className="text-xs text-neutral-400 font-medium">
-                  Ask a question or share feedback
+              <div className="flex items-center justify-between pb-3.5 border-b border-neutral-200">
+                <h2 className="text-base sm:text-lg font-bold text-neutral-950">
+                  Discussion
+                </h2>
+                <span className="text-xs sm:text-sm font-medium text-neutral-500">
+                  {comments.length} {comments.length === 1 ? 'comment' : 'comments'}
                 </span>
               </div>
 
-              {/* Composer Box (Product Hunt: Resting and Active Typing States) */}
-              <div className="rounded-2xl border border-neutral-200/90 bg-white p-4 sm:p-5 shadow-xs transition-all focus-within:border-neutral-300 focus-within:shadow-xs space-y-3">
-                <div className="flex items-start gap-3">
+              {/* Composer Box (Clean Modern Card matching screenshot) */}
+              <div className="rounded-xl border border-neutral-200/90 bg-white p-4 sm:p-5 space-y-3.5">
+                {/* User Info Header: Avatar + Name + Verified Badge + Email */}
+                <div className="flex items-center gap-3">
                   <CommentAvatar
                     avatarUrl={userAvatar}
-                    name={userName || userEmail?.split('@')[0] || 'User'}
-                    className="h-9 w-9 shrink-0 rounded-full object-cover border border-neutral-200 shadow-2xs mt-0.5"
+                    name={userName || userEmail?.split('@')[0] || (isSignedIn ? 'User' : 'Guest')}
+                    className="h-10 w-10 shrink-0 rounded-full object-cover border border-neutral-200 shadow-2xs"
+                    fallbackClassName="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#00897b] text-base font-bold text-white shadow-2xs select-none"
                   />
-                  <div className="min-w-0 flex-1 space-y-2.5">
-                    <textarea
-                      ref={commentInputRef}
-                      value={commentText}
-                      onChange={(e) => setCommentText(e.target.value)}
-                      onKeyDown={(e) => {
-                        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-                          e.preventDefault();
-                          if (commentText.trim() && !hasLinks) {
-                            handlePostComment();
-                          }
-                        }
-                      }}
-                      onClick={() => {
-                        if (!isSignedIn) {
-                          playSound('click', soundEnabled);
-                          onOpenSignIn?.();
-                        }
-                      }}
-                      placeholder="What do you think? ..."
-                      rows={commentText.length > 60 || commentText.includes('\n') ? 3 : 2}
-                      maxLength={2000}
-                      className="w-full bg-transparent border-0 p-0 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-0 resize-none min-h-[46px] leading-relaxed"
-                    />
-
-                    {/* Divider line across */}
-                    <div className="border-t border-neutral-100 pt-3 flex flex-wrap items-center justify-between gap-3">
-                      {/* Left Controls: @ Mention & Helper Text */}
-                      <div className="flex flex-wrap items-center gap-3">
-                        {/* Circular @ button */}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            playSound('click', soundEnabled);
-                            const target = product.creatorUsername || product.creatorName || product.name;
-                            setCommentText((prev) => (prev ? `${prev.trim()} @${target} ` : `@${target} `));
-                            commentInputRef.current?.focus();
-                          }}
-                          className="flex h-7 w-7 items-center justify-center rounded-full border border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50 text-neutral-600 font-semibold text-xs transition-colors cursor-pointer"
-                          title="Mention maker"
-                        >
-                          @
-                        </button>
-
-                        {/* Helper text when typing */}
-                        {commentText.length > 0 && (
-                          <div className="text-[10.5px] leading-tight text-neutral-400 flex items-center gap-1.5 pl-2 border-l border-neutral-100">
-                            <span className={hasLinks ? 'text-rose-500 font-bold' : 'text-neutral-400'}>
-                              {hasLinks ? "Links aren't allowed" : "Links aren't allowed"}
-                            </span>
-                            <span>·</span>
-                            <span className="font-mono-num">
-                              Ctrl + Enter to post · {commentText.length}/2000
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Right Controls: Post button [ ▶ Post ] or Pill Comment button */}
-                      <div className="flex items-center gap-2 ml-auto">
-                        {commentText.trim() ? (
-                          <button
-                            type="button"
-                            disabled={hasLinks}
-                            onClick={handlePostComment}
-                            className={`inline-flex items-center gap-1.5 rounded-full px-5 py-2 text-xs font-bold transition-all ${
-                              hasLinks
-                                ? 'border border-neutral-200 bg-neutral-100 text-neutral-400 cursor-not-allowed'
-                                : 'bg-neutral-950 text-white hover:bg-neutral-800 shadow-sm active:scale-95 cursor-pointer'
-                            }`}
-                          >
-                            <Play className="h-3 w-3 fill-current" />
-                            <span>Post</span>
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            disabled
-                            className="rounded-full border border-neutral-200 bg-neutral-100/90 text-neutral-400 px-5 py-2 text-xs font-semibold cursor-not-allowed"
-                          >
-                            Comment
-                          </button>
-                        )}
-                      </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-neutral-900 truncate">
+                        {isSignedIn ? (userName || userEmail?.split('@')[0] || 'User') : 'Guest User'}
+                      </span>
+                      {isSignedIn && (
+                        <span className="inline-flex items-center rounded-full bg-blue-50 border border-blue-200/80 px-2.5 py-0.5 text-xs font-semibold text-blue-600">
+                          Verified
+                        </span>
+                      )}
                     </div>
-
-                    {/* Warning if links found */}
-                    {hasLinks && (
-                      <p className="text-[11px] text-rose-500 font-medium pt-1">
-                        ⚠️ Links aren't allowed in comments.
-                      </p>
-                    )}
+                    <p className="text-xs text-neutral-400 truncate mt-0.5">
+                      {isSignedIn ? (userEmail || 'Verified account') : 'Sign in to join the conversation'}
+                    </p>
                   </div>
                 </div>
+
+                {/* Textarea container */}
+                <div className="rounded-xl border border-neutral-200 bg-white p-3.5 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+                  <textarea
+                    ref={commentInputRef}
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                        e.preventDefault();
+                        if (commentText.trim() && !hasLinks) {
+                          handlePostComment();
+                        }
+                      }
+                    }}
+                    onClick={() => {
+                      if (!isSignedIn) {
+                        playSound('click', soundEnabled);
+                        onOpenSignIn?.();
+                      }
+                    }}
+                    placeholder={`Ask a question or leave a comment about ${product.name}...`}
+                    rows={3}
+                    maxLength={2000}
+                    className="w-full bg-transparent border-0 p-0 text-sm text-neutral-800 placeholder:text-neutral-400 focus:outline-none focus:ring-0 resize-none min-h-[64px] leading-relaxed"
+                  />
+                </div>
+
+                {/* Bottom Row: Counter & Post Comment Button */}
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-xs font-medium text-neutral-400">
+                    {commentText.length}/2000
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={handlePostComment}
+                    disabled={!commentText.trim() || hasLinks}
+                    className={`rounded-xl px-6 py-2.5 text-xs sm:text-sm font-semibold transition-all shadow-2xs ${
+                      commentText.trim() && !hasLinks
+                        ? 'bg-[#8faefa] hover:bg-blue-500 text-white cursor-pointer active:scale-95'
+                        : 'bg-[#b8cbfb]/70 text-white cursor-not-allowed'
+                    }`}
+                  >
+                    Post comment
+                  </button>
+                </div>
+
+                {hasLinks && (
+                  <p className="text-[11px] text-rose-500 font-medium">
+                    ⚠️ Links aren't allowed in comments.
+                  </p>
+                )}
               </div>
 
-              {/* Comments Thread List (Modern, Clean Thread — No blogspot box-in-a-box) */}
-              <div className="rounded-2xl border border-neutral-200/90 bg-white p-5 sm:p-6 shadow-xs">
+              {/* Comments List: Each comment in its own clean card */}
+              <div className="space-y-3 pt-1">
                 {comments.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-8 text-center p-4">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-neutral-100 text-neutral-400 mb-2.5">
-                      <MessageSquare className="h-5 w-5 text-neutral-400" />
-                    </div>
-                    <p className="text-sm font-bold text-neutral-900">No comments yet</p>
-                    <p className="text-xs text-neutral-500 mt-0.5 max-w-sm leading-relaxed">
-                      Be the first to share your thoughts, ask a question, or support {product.name}!
+                  <div className="rounded-xl border border-neutral-200/70 bg-neutral-50/50 p-8 text-center">
+                    <p className="text-sm font-bold text-neutral-700">No comments yet</p>
+                    <p className="text-xs text-neutral-400 mt-1">
+                      Be the first to ask a question or leave feedback about {product.name}!
                     </p>
                   </div>
                 ) : (
-                  <div className="divide-y divide-neutral-100">
-                    {[...comments]
-                      .sort((a, b) => b.createdAt - a.createdAt)
-                      .map((c) => {
-                        const isMaker = Boolean(
-                          (product.creatorName && c.userName && c.userName.toLowerCase() === product.creatorName.toLowerCase()) ||
-                          (product.creatorUsername && c.userName && c.userName.toLowerCase() === product.creatorUsername.toLowerCase())
-                        );
+                  [...comments]
+                    .sort((a, b) => b.createdAt - a.createdAt)
+                    .map((c) => {
+                      const isMaker = Boolean(
+                        (product.creatorName && c.userName && c.userName.toLowerCase() === product.creatorName.toLowerCase()) ||
+                        (product.creatorUsername && c.userName && c.userName.toLowerCase() === product.creatorUsername.toLowerCase())
+                      );
+                      const displayBody = c.content.replace(/^\[[1-5]★ Review\]\s*/i, '');
+                      const isLiked = Boolean(likedComments[c.id]);
+                      const upvotes = (commentUpvotes[c.id] || 0) + (isLiked ? 1 : 0);
 
-                        // Strip legacy [X★ Review] prefix if present
-                        const displayBody = c.content.replace(/^\[[1-5]★ Review\]\s*/i, '');
-
-                        const isLiked = Boolean(likedComments[c.id]);
-                        const upvotes = (commentUpvotes[c.id] || 0) + (isLiked ? 1 : 0);
-
-                        return (
-                          <div key={c.id} className="py-4 first:pt-1 last:pb-1 group">
-                            <div className="flex items-start gap-3.5">
-                              <CommentAvatar
-                                avatarUrl={c.userAvatar}
-                                name={c.userName}
-                                className="h-9 w-9 shrink-0 rounded-full object-cover border border-neutral-200 shadow-2xs mt-0.5"
-                              />
-                              <div className="min-w-0 flex-1 space-y-1.5">
-                                {/* Commenter Info Row */}
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <span className="text-xs font-bold text-neutral-950">
-                                    {c.userName}
+                      return (
+                        <div
+                          key={c.id}
+                          className="rounded-xl border border-neutral-200/90 bg-white p-4 sm:p-5 transition-all hover:border-neutral-300"
+                        >
+                          <div className="flex items-start gap-3">
+                            <CommentAvatar
+                              avatarUrl={c.userAvatar}
+                              name={c.userName}
+                              className="h-10 w-10 shrink-0 rounded-full object-cover border border-neutral-200 shadow-2xs"
+                              fallbackClassName="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#00897b] text-base font-bold text-white shadow-2xs select-none"
+                            />
+                            <div className="min-w-0 flex-1 space-y-1.5">
+                              {/* Header: Name + Timestamp + Maker badge */}
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-sm font-bold text-neutral-900">
+                                  {c.userName}
+                                </span>
+                                {isMaker && (
+                                  <span className="inline-flex items-center rounded-full bg-blue-50 border border-blue-200/80 px-2 py-0.5 text-[10px] font-bold text-blue-700">
+                                    Maker
                                   </span>
-                                  {isMaker && (
-                                    <span className="inline-flex items-center gap-0.5 rounded-full bg-blue-50 border border-blue-200/80 px-2 py-0.5 text-[9.5px] font-bold text-blue-700">
-                                      Maker
-                                    </span>
-                                  )}
-                                  <span className="text-neutral-300">·</span>
-                                  <span className="text-[11px] font-medium text-neutral-400">
-                                    {timeAgo(c.createdAt)}
-                                  </span>
-                                </div>
+                                )}
+                                <span className="text-xs text-neutral-400 font-normal">
+                                  {timeAgo(c.createdAt)}
+                                </span>
+                              </div>
 
-                                {/* Body with @mention highlight */}
-                                <div className="text-sm leading-relaxed text-neutral-800 break-words whitespace-pre-wrap font-normal">
-                                  {displayBody.split(/(@[a-zA-Z0-9_-]+)/g).map((part, i) =>
-                                    part.startsWith('@') ? (
-                                      <span key={i} className="text-blue-600 font-semibold hover:underline">
-                                        {part}
-                                      </span>
-                                    ) : (
-                                      part
-                                    )
-                                  )}
-                                </div>
+                              {/* Comment Content */}
+                              <p className="text-sm text-neutral-700 leading-relaxed break-words whitespace-pre-wrap font-normal">
+                                {displayBody}
+                              </p>
 
-                                {/* Action Buttons: Helpful & Reply */}
-                                <div className="flex items-center gap-4 pt-1 text-xs">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleToggleCommentLike(c.id)}
-                                    className={`inline-flex items-center gap-1.5 text-xs font-semibold transition-colors cursor-pointer ${
-                                      isLiked ? 'text-rose-600 font-bold' : 'text-neutral-400 hover:text-neutral-700'
-                                    }`}
-                                  >
-                                    <Heart className={`h-3.5 w-3.5 ${isLiked ? 'fill-rose-600 text-rose-600' : 'text-neutral-400'}`} />
-                                    <span>{upvotes > 0 ? upvotes : 'Helpful'}</span>
-                                  </button>
+                              {/* Actions: Helpful & Reply */}
+                              <div className="flex items-center gap-4 pt-1 text-xs">
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleCommentLike(c.id)}
+                                  className={`inline-flex items-center gap-1.5 text-xs font-semibold transition-colors cursor-pointer ${
+                                    isLiked ? 'text-rose-600 font-bold' : 'text-neutral-400 hover:text-neutral-700'
+                                  }`}
+                                >
+                                  <Heart className={`h-3.5 w-3.5 ${isLiked ? 'fill-rose-600 text-rose-600' : 'text-neutral-400'}`} />
+                                  <span>{upvotes > 0 ? upvotes : 'Helpful'}</span>
+                                </button>
 
-                                  <button
-                                    type="button"
-                                    onClick={() => handleReplyTo(c.userName)}
-                                    className="inline-flex items-center gap-1 text-xs font-semibold text-neutral-400 hover:text-neutral-700 transition-colors cursor-pointer"
-                                  >
-                                    <CornerDownRight className="h-3.5 w-3.5" />
-                                    <span>Reply</span>
-                                  </button>
-                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleReplyTo(c.userName)}
+                                  className="inline-flex items-center gap-1 text-xs font-semibold text-neutral-400 hover:text-neutral-700 transition-colors cursor-pointer"
+                                >
+                                  <CornerDownRight className="h-3.5 w-3.5" />
+                                  <span>Reply</span>
+                                </button>
                               </div>
                             </div>
                           </div>
-                        );
-                      })}
-                  </div>
+                        </div>
+                      );
+                    })
                 )}
               </div>
             </div>

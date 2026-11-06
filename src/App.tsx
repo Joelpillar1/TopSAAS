@@ -349,7 +349,7 @@ export default function App() {
       if (single && single !== 'default' && single !== 'empty') {
         return [single];
       }
-    } catch {}
+    } catch { }
     return [];
   });
 
@@ -361,7 +361,7 @@ export default function App() {
         const parsed = JSON.parse(raw);
         if (parsed && typeof parsed === 'object') return parsed;
       }
-    } catch {}
+    } catch { }
     return {};
   });
 
@@ -2201,7 +2201,7 @@ export default function App() {
           onOpenPrivacy={() => handleNavigateLegal('privacy')}
           onOpenTerms={() => handleNavigateLegal('terms')}
           onOpenPricing={handleOpenPricing}
-          className="border-t border-neutral-200"
+          className="border-t border-neutral-200 bg-neutral-100"
         />
 
         <SignInModal
@@ -2621,48 +2621,48 @@ export default function App() {
     return (
       <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between font-sans">
         <AdminAcceptPage
-            submissions={submissions}
-            products={products}
-            onAcceptSubmission={handleAcceptSubmission}
-            onRejectSubmission={handleRejectSubmission}
-            onDeleteSubmission={handleDeleteSubmission}
-            onUpdateSubmission={handleUpdateSubmission}
-            onRestoreSubmission={handleRestoreSubmission}
-            onDelistProduct={handleDelistProduct}
-            onAssignRank={handleAssignRank}
-            onAutoRankByUpvotes={handleAutoRankByUpvotes}
-            onBackToDirectory={handleBackToLeaderboard}
-            onOpenSubmitModal={handleOpenSubmit}
-            onSeedSampleSubmissions={handleSeedSampleSubmissions}
-            soundEnabled={soundEnabled}
-            onToggleSound={() => setSoundEnabled(!soundEnabled)}
-            featuredProductId={featuredProductId}
-            onSetFeatured={handleSetFeatured}
-            featuredProductIds={featuredProductIds}
-            onSetFeaturedProducts={handleSetFeaturedProducts}
-            onSaveProductsOrder={handleSaveProductsOrder}
-            onToggleVerified={handleToggleVerifiedProduct}
-            onUpdateProduct={handleUpdateProduct}
-            sponsorRailsEnabled={sponsorRailsEnabled}
-            onToggleSponsorRails={handleToggleSponsorRails}
-            featuredPosition={featuredPosition}
-            onSetFeaturedPosition={handleSetFeaturedPosition}
-            featuredPositions={featuredPositions}
-            onSetProductFeaturedPosition={handleSetProductFeaturedPosition}
-            onSignOutAdmin={() => {
-              clearAdminSession();
-              setAdminSessionUnlocked(false);
-            }}
-          />
+          submissions={submissions}
+          products={products}
+          onAcceptSubmission={handleAcceptSubmission}
+          onRejectSubmission={handleRejectSubmission}
+          onDeleteSubmission={handleDeleteSubmission}
+          onUpdateSubmission={handleUpdateSubmission}
+          onRestoreSubmission={handleRestoreSubmission}
+          onDelistProduct={handleDelistProduct}
+          onAssignRank={handleAssignRank}
+          onAutoRankByUpvotes={handleAutoRankByUpvotes}
+          onBackToDirectory={handleBackToLeaderboard}
+          onOpenSubmitModal={handleOpenSubmit}
+          onSeedSampleSubmissions={handleSeedSampleSubmissions}
+          soundEnabled={soundEnabled}
+          onToggleSound={() => setSoundEnabled(!soundEnabled)}
+          featuredProductId={featuredProductId}
+          onSetFeatured={handleSetFeatured}
+          featuredProductIds={featuredProductIds}
+          onSetFeaturedProducts={handleSetFeaturedProducts}
+          onSaveProductsOrder={handleSaveProductsOrder}
+          onToggleVerified={handleToggleVerifiedProduct}
+          onUpdateProduct={handleUpdateProduct}
+          sponsorRailsEnabled={sponsorRailsEnabled}
+          onToggleSponsorRails={handleToggleSponsorRails}
+          featuredPosition={featuredPosition}
+          onSetFeaturedPosition={handleSetFeaturedPosition}
+          featuredPositions={featuredPositions}
+          onSetProductFeaturedPosition={handleSetProductFeaturedPosition}
+          onSignOutAdmin={() => {
+            clearAdminSession();
+            setAdminSessionUnlocked(false);
+          }}
+        />
 
-          <SignInModal
-            isOpen={isSignInModalOpen}
-            onClose={() => setIsSignInModalOpen(false)}
-            onSignIn={handleSignIn}
-          />
-        </div>
-      );
-    }
+        <SignInModal
+          isOpen={isSignInModalOpen}
+          onClose={() => setIsSignInModalOpen(false)}
+          onSignIn={handleSignIn}
+        />
+      </div>
+    );
+  }
 
   // Legal Page Route (Privacy Policy & Terms of Service)
   if (currentRoute === '/privacy' || currentRoute === '/terms') {
@@ -2760,11 +2760,11 @@ export default function App() {
               sponsors={
                 sponsorRailsEnabled
                   ? products.filter(
-                      (p) =>
-                        p.isSponsored &&
-                        !featuredProductIds.includes(p.id) &&
-                        p.id !== featuredProductId
-                    )
+                    (p) =>
+                      p.isSponsored &&
+                      !featuredProductIds.includes(p.id) &&
+                      p.id !== featuredProductId
+                  )
                   : []
               }
               soundEnabled={soundEnabled}
