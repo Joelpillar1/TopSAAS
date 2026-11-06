@@ -71,13 +71,13 @@ serve(async (req: Request) => {
     }
 
     const defaultCheckoutUrls: Record<string, string> = {
-      weekly_relaunch: 'https://whop.com/topsaas/weekly-relaunch/',
-      onetime: 'https://whop.com/topsaas/one-time-fe/',
-      per_product_pass: 'https://whop.com/topsaas/one-time-fe/',
-      sponsor_1wk: 'https://whop.com/topsaas/1-week-s',
-      '1wk': 'https://whop.com/topsaas/1-week-s',
-      featured_1wk: 'https://whop.com/topsaas/1-week-featured',
-      featured_1mo: 'https://whop.com/topsaas/1-month-featured',
+      weekly_relaunch: 'https://whop.com/checkout/plan_81SmEHd2w16EG',
+      onetime: 'https://whop.com/checkout/plan_B4wY8ei9eab1S',
+      per_product_pass: 'https://whop.com/checkout/plan_B4wY8ei9eab1S',
+      sponsor_1wk: 'https://whop.com/checkout/plan_Ux5pdAxT3WN7D',
+      '1wk': 'https://whop.com/checkout/plan_Ux5pdAxT3WN7D',
+      featured_1wk: 'https://whop.com/checkout/plan_YGXtgHZnspc77',
+      featured_1mo: 'https://whop.com/checkout/plan_GBN00B27YgYdx',
       '1mo': 'https://whop.com/checkout/plan_VHCOSyqWd9l9Q',
       '3mo': 'https://whop.com/checkout/plan_SMad32AkVoMeu',
       '1yr': 'https://whop.com/checkout/plan_2uumEoGYQUKtb',

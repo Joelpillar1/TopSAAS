@@ -2,22 +2,22 @@ import { supabase } from './supabase';
 
 export const WHOP_LINKS = {
   // Weekly Relaunch ($5/mo)
-  weeklyRelaunch: 'https://whop.com/topsaas/weekly-relaunch/',
+  weeklyRelaunch: 'https://whop.com/checkout/plan_81SmEHd2w16EG',
 
   // $19 Per Product Pass / One-Time Verified Launch
-  oneTime: 'https://whop.com/topsaas/one-time-fe/',
-  perProductPass: 'https://whop.com/topsaas/one-time-fe/',
-  verifiedLaunch: 'https://whop.com/topsaas/one-time-fe/',
+  oneTime: 'https://whop.com/checkout/plan_B4wY8ei9eab1S',
+  perProductPass: 'https://whop.com/checkout/plan_B4wY8ei9eab1S',
+  verifiedLaunch: 'https://whop.com/checkout/plan_B4wY8ei9eab1S',
 
   // Sponsor Spot (Sidebar Rails: $10/wk & $29/mo)
-  sponsor1wk: 'https://whop.com/topsaas/1-week-s',
+  sponsor1wk: 'https://whop.com/checkout/plan_Ux5pdAxT3WN7D',
   sponsor1mo: 'https://whop.com/checkout/plan_VHCOSyqWd9l9Q',
   sponsor3mo: 'https://whop.com/checkout/plan_SMad32AkVoMeu',
   sponsor1yr: 'https://whop.com/checkout/plan_2uumEoGYQUKtb',
 
   // Featured Spot (Pinned top banner: $15/wk & $39/mo)
-  featured1wk: 'https://whop.com/topsaas/1-week-featured',
-  featured1mo: 'https://whop.com/topsaas/1-month-featured',
+  featured1wk: 'https://whop.com/checkout/plan_YGXtgHZnspc77',
+  featured1mo: 'https://whop.com/checkout/plan_GBN00B27YgYdx',
 } as const;
 
 export type PlanType =

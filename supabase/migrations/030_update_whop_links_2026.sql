@@ -1,16 +1,19 @@
--- Migration 030: Update Whop Checkout Links for Sponsor, Featured Spot, and Verified Launch
--- 1 week Sponsor $10: https://whop.com/topsaas/1-week-s
--- 1-Week Featured Spot $15: https://whop.com/topsaas/1-week-featured
--- 1-Month Featured Spot $39: https://whop.com/topsaas/1-month-featured
--- $19 Per Product Pass: https://whop.com/topsaas/one-time-fe/
+-- Migration 030: Update Whop Direct Checkout Links for Sponsor, Featured Spot, and Verified Launch
+-- 1 week Sponsor $10: https://whop.com/checkout/plan_Ux5pdAxT3WN7D
+-- 1-Month Sponsor $29: https://whop.com/checkout/plan_VHCOSyqWd9l9Q
+-- 1-Week Featured Spot $15: https://whop.com/checkout/plan_YGXtgHZnspc77
+-- 1-Month Featured Spot $39: https://whop.com/checkout/plan_GBN00B27YgYdx
+-- $19 Per Product Pass / Verified Launch: https://whop.com/checkout/plan_B4wY8ei9eab1S
+-- Weekly Relaunch $5: https://whop.com/checkout/plan_81SmEHd2w16EG
 
 insert into public.whop_payments_config (key, value, description) values
-  ('checkout_url_sponsor_1wk', 'https://whop.com/topsaas/1-week-s', 'Whop 1-Week Sponsor ($10/wk)'),
-  ('checkout_url_1wk', 'https://whop.com/topsaas/1-week-s', 'Whop 1-Week Sponsor ($10/wk)'),
-  ('checkout_url_featured_1wk', 'https://whop.com/topsaas/1-week-featured', 'Whop 1-Week Featured Spot ($15/wk)'),
-  ('checkout_url_featured_1mo', 'https://whop.com/topsaas/1-month-featured', 'Whop 1-Month Featured Spot ($39/mo)'),
-  ('checkout_url_onetime', 'https://whop.com/topsaas/one-time-fe/', 'Whop $19 Per Product Pass / Verified Launch'),
-  ('checkout_url_per_product_pass', 'https://whop.com/topsaas/one-time-fe/', 'Whop $19 Per Product Pass')
+  ('checkout_url_sponsor_1wk', 'https://whop.com/checkout/plan_Ux5pdAxT3WN7D', 'Whop 1-Week Sponsor ($10/wk) Direct Checkout'),
+  ('checkout_url_1wk', 'https://whop.com/checkout/plan_Ux5pdAxT3WN7D', 'Whop 1-Week Sponsor ($10/wk) Direct Checkout'),
+  ('checkout_url_featured_1wk', 'https://whop.com/checkout/plan_YGXtgHZnspc77', 'Whop 1-Week Featured Spot ($15/wk) Direct Checkout'),
+  ('checkout_url_featured_1mo', 'https://whop.com/checkout/plan_GBN00B27YgYdx', 'Whop 1-Month Featured Spot ($39/mo) Direct Checkout'),
+  ('checkout_url_onetime', 'https://whop.com/checkout/plan_B4wY8ei9eab1S', 'Whop $19 Per Product Pass / Verified Launch Direct Checkout'),
+  ('checkout_url_per_product_pass', 'https://whop.com/checkout/plan_B4wY8ei9eab1S', 'Whop $19 Per Product Pass Direct Checkout'),
+  ('checkout_url_weekly_relaunch', 'https://whop.com/checkout/plan_81SmEHd2w16EG', 'Whop Weekly Relaunch ($5/mo) Direct Checkout')
 on conflict (key) do update set
   value = excluded.value,
   description = excluded.description,
@@ -55,4 +58,3 @@ end;
 $$;
 
 grant execute on function public.get_whop_checkout_url(text) to anon, authenticated, service_role;
-
