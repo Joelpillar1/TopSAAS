@@ -64,7 +64,7 @@ export const SponsorShowcaseSection: React.FC<SponsorShowcaseSectionProps> = ({
             <button
               type="button"
               onClick={() => handleSelectTier('1wk')}
-              className="w-full mt-4 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-800 text-xs font-bold py-3 px-4 transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 shadow-2xs"
+              className="btn-secondary w-full mt-4 py-3 px-4 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5"
             >
               <span>Get 1-Week Sponsor</span>
               <ArrowRight className="h-3 w-3 opacity-60" />
@@ -133,7 +133,7 @@ export const SponsorShowcaseSection: React.FC<SponsorShowcaseSectionProps> = ({
             <button
               type="button"
               onClick={() => handleSelectTier('1mo')}
-              className="w-full mt-4 rounded-xl bg-[#0f1115] hover:bg-black text-white text-xs font-bold py-3 px-4 shadow-[0_4px_14px_rgba(0,0,0,0.25)] transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+              className="btn-primary w-full mt-4 py-3 px-4 text-xs font-bold rounded-xl text-center flex items-center justify-center gap-1.5"
             >
               <span>Get 1-Month Sponsor</span>
               <ArrowRight className="h-3 w-3" />

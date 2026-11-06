@@ -151,7 +151,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({
                   } catch {}
                   onOpenSubmit(freeWeeklyRelaunch ? 'free_relaunch' : 'free');
                 }}
-                className="w-full mt-4 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-800 text-xs font-bold py-3 px-4 transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 shadow-2xs"
+                className="btn-secondary w-full mt-4 py-3 px-4 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5"
               >
                 <span>{freeWeeklyRelaunch ? 'Submit with Weekly Relaunch — $5' : 'Launch for Free'}</span>
                 <span className="opacity-60">→</span>
@@ -274,7 +274,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => playSound('click', soundEnabled)}
-                className="w-full mt-4 rounded-xl bg-[#0f1115] hover:bg-black text-white text-xs font-bold py-3 px-4 shadow-[0_4px_14px_rgba(0,0,0,0.25)] transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                className="btn-primary w-full mt-4 py-3 px-4 text-xs font-bold rounded-xl text-center flex items-center justify-center gap-1.5"
               >
                 <span>Get Verified Launch</span>
                 <span>→</span>
@@ -439,7 +439,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({
               <button
                 type="button"
                 onClick={() => handleOpenFeatured('1wk')}
-                className="w-full mt-4 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-800 text-xs font-bold py-3 px-4 transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 shadow-2xs"
+                className="btn-secondary w-full mt-4 py-3 px-4 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5"
               >
                 <span>Claim 1-Week Featured</span>
                 <span className="opacity-60">→</span>
@@ -511,7 +511,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({
               <button
                 type="button"
                 onClick={() => handleOpenFeatured('1mo')}
-                className="w-full mt-4 rounded-xl bg-[#0f1115] hover:bg-black text-white text-xs font-bold py-3 px-4 shadow-[0_4px_14px_rgba(0,0,0,0.25)] transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                className="btn-primary w-full mt-4 py-3 px-4 text-xs font-bold rounded-xl text-center flex items-center justify-center gap-1.5"
               >
                 <span>Claim 1-Month Featured</span>
                 <span>→</span>
