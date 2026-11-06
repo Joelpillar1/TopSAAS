@@ -104,7 +104,7 @@ export const FEATURED_PLANS: SponsorPlanItem[] = [
     description: 'Continuous 30-day top pinned spotlight in the main product cards feed',
     features: [
       '30 days continuous top placement above product cards',
-      'Dedicated Newsletter Launch Highlight to subscribers',
+      'Exclusive Featured distinction on product card',
       'Pinned top spot when visitors filter your category',
       'Prime visibility above organic cards',
     ],

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, Star, ArrowRight } from 'lucide-react';
+import { Check, ArrowRight } from 'lucide-react';
 import { playSound } from '../utils/sound';
 
 interface SponsorShowcaseSectionProps {
@@ -22,8 +22,7 @@ export const SponsorShowcaseSection: React.FC<SponsorShowcaseSectionProps> = ({
     <div className="w-full rounded-3xl border border-neutral-200/80 bg-white p-6 sm:p-10 shadow-sm font-sans">
       {/* ── Section Header ── */}
       <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-10">
-        <div className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200 bg-neutral-50/80 px-3.5 py-1 text-xs font-semibold text-neutral-800 shadow-2xs">
-          <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
+        <div className="inline-flex items-center rounded-full border border-neutral-200 bg-neutral-50/80 px-3.5 py-1 text-xs font-semibold text-neutral-800 shadow-2xs">
           <span>Sidebar Rails</span>
         </div>
         <h2 className="text-2xl sm:text-3xl font-extrabold text-neutral-950 tracking-tight mt-3">

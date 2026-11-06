@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Check, X, ArrowLeft, ShieldCheck, ChevronDown, ChevronUp, Award, Sparkles } from 'lucide-react';
+import { Check, X, ArrowLeft, ShieldCheck, ChevronDown, ChevronUp, Award } from 'lucide-react';
 import { VerifiedBadge } from './VerifiedBadge';
 import { BorderBeam } from './BorderBeam';
 import { SponsorShowcaseSection } from './SponsorShowcaseSection';
@@ -418,8 +418,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({
       <div className="w-full rounded-3xl border border-neutral-200/80 bg-white p-6 sm:p-10 shadow-sm relative">
         {/* Header */}
         <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-10">
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200 bg-neutral-50/80 px-3.5 py-1 text-xs font-semibold text-neutral-800 shadow-2xs">
-            <Sparkles className="h-3 w-3 fill-amber-500 text-amber-500" />
+          <div className="inline-flex items-center rounded-full border border-neutral-200 bg-neutral-50/80 px-3.5 py-1 text-xs font-semibold text-neutral-800 shadow-2xs">
             <span>Featured Spotlight</span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-extrabold text-neutral-950 tracking-tight mt-3">
@@ -552,7 +551,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({
                   <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
                     <Check className="h-2.5 w-2.5 stroke-[3]" />
                   </div>
-                  <span><strong>1× Dedicated Newsletter Launch Highlight:</strong> Direct founder reach</span>
+                  <span><strong>Category Pinned Spotlight:</strong> Top spot when visitors filter your category</span>
                 </li>
                 <li className="flex items-center gap-2.5">
                   <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
