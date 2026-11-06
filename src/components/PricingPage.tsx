@@ -103,9 +103,8 @@ export const PricingPage: React.FC<PricingPageProps> = ({
       <div className="w-full rounded-3xl border border-neutral-200/80 bg-white p-6 sm:p-10 shadow-sm relative">
         {/* Header */}
         <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-10">
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200 bg-neutral-50/80 px-3.5 py-1 text-xs font-semibold text-neutral-800 shadow-2xs">
-            <span>⚡</span>
-            <span>Our Pricing Plans</span>
+          <div className="inline-flex items-center rounded-full border border-neutral-200 bg-neutral-50/80 px-3.5 py-1 text-xs font-semibold text-neutral-800 shadow-2xs">
+            <span>Pricing Plan</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-neutral-950 tracking-tight mt-3">
             Get started for free
