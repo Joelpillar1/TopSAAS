@@ -42,7 +42,7 @@ Allow: /
 
 # 2. Site Metadata
 Name: TopSAAS
-Description: The curated leaderboard and discovery engine for top SaaS products, AI applications, and developer utilities, plus 3822 open-source SaaS starter repos with per-repo detail pages.
+Description: The curated leaderboard and discovery engine for top SaaS products, AI applications, and developer utilities, plus open-source SaaS starter repos with per-repo detail pages.
 Canonical-URL: https://www.topsaas.space
 Contact: admin@topsaas.space
 Content-License: Open for indexing, AI citation, and public reference

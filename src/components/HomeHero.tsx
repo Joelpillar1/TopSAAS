@@ -113,10 +113,6 @@ export const HomeHero: React.FC<HomeHeroProps> = ({
           <span className="flex items-center gap-1">
             <span className="text-mint-600 font-bold">✓</span> 100% Free
           </span>
-          <span className="text-neutral-300">·</span>
-          <span>
-            <span className="font-bold text-neutral-800 font-mono-num">{totalCategories}</span> categories
-          </span>
           {dealsCount > 0 && onToggleSteals && (
             <>
               <span className="text-neutral-300">·</span>

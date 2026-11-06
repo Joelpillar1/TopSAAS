@@ -680,7 +680,7 @@ export default function App() {
         if (ogDesc) ogDesc.setAttribute('content', desc);
       } else {
         document.title = 'TopSAAS — The Curated Directory of Modern SaaS & AI Tools';
-        const defaultDesc = 'Discover, compare, and launch modern SaaS products and AI tools. Real-time community leaderboard, verified founder launches, weekly spotlights, and 3,800+ open-source starters.';
+        const defaultDesc = 'Discover, compare, and launch modern SaaS products and AI tools. Real-time community leaderboard, verified founder launches, weekly spotlights, and open-source starters.';
         const metaDesc = document.querySelector('meta[name="description"]');
         if (metaDesc) metaDesc.setAttribute('content', defaultDesc);
         const ogTitle = document.querySelector('meta[property="og:title"]');

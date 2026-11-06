@@ -25,7 +25,7 @@ Format: Plain Markdown Table for LLM Context Windows & Agent Ingestion
 ---
 
 ## Open-Source SaaS Starter Catalog
-TopSAAS indexes 3822 clonable open-source starter repos across 23 categories (~47.2M combined GitHub stars). Each repo has an indexable detail page with an editorial write-up, license, stack, and clone command.
+TopSAAS indexes clonable open-source starter repos across multiple categories. Each repo has an indexable detail page with an editorial write-up, license, stack, and clone command.
 
 - **URL pattern**: `https://www.topsaas.space/repo/{owner}/{name}` (example: `https://www.topsaas.space/repo/refinedev/refine`)
 - **All detail pages**: `https://www.topsaas.space/sitemap/repos.xml`

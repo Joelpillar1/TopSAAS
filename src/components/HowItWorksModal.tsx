@@ -57,7 +57,7 @@ export const HowItWorksModal: React.FC<HowItWorksModalProps> = ({
               <span>1. List Your SaaS for Free</span>
             </div>
             <p className="text-neutral-600 leading-relaxed font-normal pl-6">
-              Add your product in under a minute. Listings go live instantly — no review queue, no waiting. Your favicon and tagline are picked up automatically.
+              Add your product with instant AI auto-fill. Free submissions are reviewed by our team, or fast-tracked within 24 hours with a Verified Launch.
             </p>
           </div>
 

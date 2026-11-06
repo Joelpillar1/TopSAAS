@@ -4,7 +4,7 @@
   "url": "https://www.topsaas.space",
   "generated_at": "2026-10-06T00:00:00Z",
   "version": "2.1.0",
-  "summary": "Find your SaaS idea: 3822 open-source starter repos across 23 categories with per-repo editorial detail pages, plus the curated leaderboard for SaaS products, AI tools, and developer utilities.",
+  "summary": "Find your SaaS idea: open-source starter repos across multiple categories with per-repo editorial detail pages, plus the curated leaderboard for SaaS products, AI tools, and developer utilities.",
   "statistics": {
     "categories_count": 28,
     "primary_categories": [
@@ -24,9 +24,6 @@
       "Open Source"
     ],
     "repo_catalog": {
-      "repos_count": 3822,
-      "repo_categories_count": 23,
-      "combined_stars": 8900000,
       "detail_url_pattern": "https://www.topsaas.space/repo/{owner}/{name}",
       "examples": [
         "https://www.topsaas.space/repo/refinedev/refine",

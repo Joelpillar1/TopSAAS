@@ -15,7 +15,7 @@ TopSAAS is a real-time, curated software catalog, leaderboard, and distribution 
 2. **Founder Distribution**: Provide bootstrapped and indie developers with immediate visibility, early adopter feedback, high-intent traffic, and backlink authority.
 3. **Transparent Leaderboard Mechanics**: Real-time rank calculation driven by verified user upvotes, launch engagement, and community interaction.
 4. **Actionable SaaS Idea Repository**: Provide aspiring founders with validated, market-ready SaaS concepts, execution strategies, and monetization roadmaps.
-5. **Open-Source Starter Catalog**: 3822 clonable open-source starter repos across 23 categories (~47.2M combined GitHub stars), each with an indexable detail page (`/repo/{owner}/{name}`) carrying an editorial write-up, license, stack breakdown, and similar-project recommendations.
+5. **Open-Source Starter Catalog**: Clonable open-source starter repos across multiple categories, each with an indexable detail page (`/repo/{owner}/{name}`) carrying an editorial write-up, license, stack breakdown, and similar-project recommendations.
 
 ---
 
