@@ -80,7 +80,7 @@ export const SponsorShowcaseSection: React.FC<SponsorShowcaseSectionProps> = ({
                 <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
                   <Check className="h-2.5 w-2.5 stroke-[3]" />
                 </div>
-                <span>Sticky desktop sidebar rail placement</span>
+                <span>Visible on every page in the right sidebar</span>
               </li>
               <li className="flex items-center gap-2.5">
                 <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
@@ -98,7 +98,7 @@ export const SponsorShowcaseSection: React.FC<SponsorShowcaseSectionProps> = ({
                 <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
                   <Check className="h-2.5 w-2.5 stroke-[3]" />
                 </div>
-                <span>High-visibility placement on all desktop views</span>
+                <span>⭐️ Verified Sponsor partner badge</span>
               </li>
             </ul>
           </div>
@@ -149,13 +149,13 @@ export const SponsorShowcaseSection: React.FC<SponsorShowcaseSectionProps> = ({
                 <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
                   <Check className="h-2.5 w-2.5 stroke-[3]" />
                 </div>
-                <span><strong>30 Days Continuous Rails:</strong> 24/7 Homepage & Product pages</span>
+                <span><strong>30 Days Continuous Rails:</strong> Visible on every page in right sidebar</span>
               </li>
               <li className="flex items-center gap-2.5">
                 <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
                   <Check className="h-2.5 w-2.5 stroke-[3]" />
                 </div>
-                <span><strong>1× Dedicated Newsletter Blast:</strong> Direct launch feature to builders</span>
+                <span><strong>Large sponsored banner</strong> in the weekly launch feed</span>
               </li>
               <li className="flex items-center gap-2.5">
                 <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">

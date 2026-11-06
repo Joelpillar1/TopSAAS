@@ -145,10 +145,10 @@ export const SPONSOR_PLANS: SponsorPlanItem[] = [
     rateNote: '$10 / week',
     description: '24/7 Sticky sidebar rails on Homepage and Product pages for 7 days',
     features: [
+      'Visible on every page in the right sidebar',
       '24/7 Sticky sidebar rails on Homepage and Product Details',
       '⭐️ Verified Sponsor badge on partner cards',
       'Direct DoFollow SEO backlink',
-      'Instant activation upon submission',
     ],
     cta: 'Get 1 Week — $10',
   },
@@ -166,9 +166,9 @@ export const SPONSOR_PLANS: SponsorPlanItem[] = [
     popular: true,
     description: 'Persistent 30-day sticky sidebar rails + category top spotlight',
     features: [
-      '30 days 24/7 sticky sidebar rails on all pages',
+      'Visible on every page in the right sidebar (30 days)',
+      'Large sponsored banner in the weekly launch feed',
       'Pinned top placement in your product category',
-      '1x Newsletter Sponsor Mention to 14,000+ builders',
       '⭐️ Verified Sponsor badge on partner cards',
     ],
     cta: 'Get Monthly — $29',
