@@ -95,3 +95,4 @@ export function invalidateCache(keyPrefix: string): void {
     // Ignore storage errors
   }
 }
+

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Product, Comment } from '../types';
 import { 
   ExternalLink, 
@@ -21,6 +21,9 @@ import {
   Check,
   Star,
   Flame,
+  Compass,
+  Calendar,
+  TrendingUp,
 } from 'lucide-react';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
@@ -151,351 +154,386 @@ export const ProductPage: React.FC<ProductPageProps> = ({
     .filter((p) => p.id !== product.id && (p.category === product.category || Math.abs(p.rank - product.rank) <= 2))
     .slice(0, 3);
 
+  // Top SaaS categories calculated from live product set
+  const topCategories = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const p of allProducts) {
+      if (p.category) {
+        counts[p.category] = (counts[p.category] || 0) + 1;
+      }
+    }
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([name, count]) => ({ name, count }));
+  }, [allProducts]);
+
   return (
-    <div className="min-h-screen bg-white text-neutral-900 flex flex-col font-sans pb-12 sm:pb-16">
-      {/* Main Page Content */}
-      <main className="mx-auto w-full max-w-5xl px-3.5 py-4 sm:px-6 sm:py-6 space-y-5 sm:space-y-6 flex-1">
-        {/* Header Hero Section */}
-        <div className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-8 shadow-xs space-y-5 sm:space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 sm:gap-5">
-            {/* Logo and titles */}
-            <div className="flex items-start gap-3.5 sm:gap-4 min-w-0">
-              <ProductLogo
-                src={product.logoUrl}
-                alt={product.name}
-                containerClassName="relative h-16 w-16 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-2xs flex items-center justify-center"
-                iconClassName="h-8 w-8 text-neutral-500 shrink-0"
-              />
-            </div>
+    <div className="min-h-screen bg-neutral-50/40 text-neutral-900 flex flex-col font-sans pb-12 sm:pb-16">
+      {/* Top Breadcrumb Navigation */}
+      <div className="border-b border-neutral-200/80 bg-white">
+        <div className="mx-auto w-full max-w-7xl px-3.5 py-2.5 sm:px-6 flex items-center justify-between text-xs">
+          <button
+            type="button"
+            onClick={onBack}
+            className="inline-flex items-center gap-1.5 font-bold text-neutral-600 hover:text-neutral-950 transition-colors cursor-pointer"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            <span>Back to directory</span>
+          </button>
+          <div className="flex items-center gap-2 text-neutral-400 text-[11px] truncate">
+            <span className="hidden sm:inline">Directory</span>
+            <span className="hidden sm:inline">/</span>
+            <span className="text-neutral-600 font-semibold">{product.category}</span>
+            <span>/</span>
+            <span className="text-neutral-900 font-bold truncate max-w-[140px] sm:max-w-xs">{product.name}</span>
+          </div>
+        </div>
+      </div>
 
-              <div className="space-y-1.5 min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                  <h1 className="text-xl sm:text-3xl font-black tracking-tight text-neutral-950 truncate">
-                    {product.name}
-                  </h1>
-                  {product.verified && (
-                    <VerifiedBadge className="h-5 w-5 sm:h-6 sm:w-6 shrink-0" title="Verified Startup" />
-                  )}
-                  {product.isSponsored && (
-                    <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-neutral-900 px-2 py-0.5 text-xs font-bold tracking-tight text-white shadow-xs select-none">
-                      <span>Sponsored</span>
-                    </span>
-                  )}
-                  {(product.autoRelaunch || product.isRelaunched) && !product.isSponsored && (
-                    <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-blue-50 border border-blue-200/80 px-2 py-0.5 text-xs font-bold text-blue-700 shadow-2xs select-none">
-                      <span>🚀</span>
-                      <span>Weekly Relaunch</span>
-                    </span>
-                  )}
-                  {product.offerDiscount && (
-                    <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 px-2 py-0.5 text-xs font-black tracking-tight text-white shadow-xs shadow-orange-500/25 select-none">
-                      <Flame className="h-3 w-3 fill-white stroke-white shrink-0" />
-                      <span>{product.offerDiscount}</span>
-                    </span>
-                  )}
-                </div>
+      {/* Main Page Content - Side-by-Side 2-Column Grid starting from the top */}
+      <main className="mx-auto w-full max-w-7xl px-3.5 py-4 sm:px-6 sm:py-6 flex-1">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          
+          {/* LEFT COLUMN: Main Product Details & Discussion (lg:col-span-8) */}
+          <div className="lg:col-span-8 space-y-5 sm:space-y-6 min-w-0">
+            {/* Header Hero Section */}
+            <div className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-7 shadow-xs space-y-5 sm:space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 sm:gap-5">
+                {/* Logo and titles */}
+                <div className="flex items-start gap-3.5 sm:gap-4 min-w-0">
+                  <ProductLogo
+                    src={product.logoUrl}
+                    alt={product.name}
+                    containerClassName="relative h-16 w-16 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-2xs flex items-center justify-center"
+                    iconClassName="h-8 w-8 text-neutral-500 shrink-0"
+                  />
 
-                <p className="text-xs sm:text-base font-medium text-neutral-400 max-w-2xl leading-relaxed">
-                  {product.tagline}
-                </p>
-
-                {/* Built By Founder Hero Badge */}
-                {(product.creatorName || product.creatorAvatar) && (
-                  <div className="flex items-center gap-2 pt-0.5">
-                    <div className="inline-flex items-center gap-1.5 rounded-lg bg-white border border-neutral-200 pl-1 pr-2 py-1 text-xs shadow-2xs">
-                      <CommentAvatar
-                        avatarUrl={product.creatorAvatar}
-                        name={product.creatorName || 'Founder'}
-                        className="h-5 w-5 shrink-0 rounded-full object-cover border border-neutral-600"
-                        fallbackClassName="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-mint-500 text-[9px] font-black text-white"
-                      />
-                      <span className="text-neutral-500 font-medium text-[11px]">Built by</span>
-                      <span className="font-bold text-neutral-900 text-[11px]">{product.creatorName}</span>
-                      {product.creatorRole && (
-                        <span className="text-[9px] font-semibold text-mint-600 bg-mint-500/10 border border-mint-500/25 px-1.5 py-0.5 rounded-md">
-                          {product.creatorRole}
+                  <div className="space-y-1.5 min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                      <h1 className="text-xl sm:text-3xl font-black tracking-tight text-neutral-950 truncate">
+                        {product.name}
+                      </h1>
+                      {product.verified && (
+                        <VerifiedBadge className="h-5 w-5 sm:h-6 sm:w-6 shrink-0" title="Verified Startup" />
+                      )}
+                      {product.isSponsored && (
+                        <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-neutral-900 px-2 py-0.5 text-xs font-bold tracking-tight text-white shadow-xs select-none">
+                          <span>Sponsored</span>
+                        </span>
+                      )}
+                      {(product.autoRelaunch || product.isRelaunched) && !product.isSponsored && (
+                        <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-blue-50 border border-blue-200/80 px-2 py-0.5 text-xs font-bold text-blue-700 shadow-2xs select-none">
+                          <span>🚀</span>
+                          <span>Weekly Relaunch</span>
+                        </span>
+                      )}
+                      {product.offerDiscount && (
+                        <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 px-2 py-0.5 text-xs font-black tracking-tight text-white shadow-xs shadow-orange-500/25 select-none">
+                          <Flame className="h-3 w-3 fill-white stroke-white shrink-0" />
+                          <span>{product.offerDiscount}</span>
                         </span>
                       )}
                     </div>
-                  </div>
-                )}
 
-                {/* Social Links */}
-                {(product.twitterHandle || (product.socials && product.socials.length > 0)) && (
-                  <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 pt-1 text-xs">
-                    {product.twitterHandle && !product.socials?.some((s) => s.platform === 'x') && (
-                      <a
-                        href={`https://x.com/${product.twitterHandle.replace('@', '')}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-700 hover:border-gray-300 hover:bg-gray-200 hover:text-gray-900 transition-colors"
-                      >
-                        <span>X {product.twitterHandle.startsWith('@') ? product.twitterHandle : `@${product.twitterHandle}`}</span>
-                      </a>
+                    <p className="text-xs sm:text-base font-medium text-neutral-500 max-w-2xl leading-relaxed">
+                      {product.tagline}
+                    </p>
+
+                    {/* Built By Founder Hero Badge */}
+                    {(product.creatorName || product.creatorAvatar) && (
+                      <div className="flex items-center gap-2 pt-0.5">
+                        <div className="inline-flex items-center gap-1.5 rounded-lg bg-white border border-neutral-200 pl-1 pr-2 py-1 text-xs shadow-2xs">
+                          <CommentAvatar
+                            avatarUrl={product.creatorAvatar}
+                            name={product.creatorName || 'Founder'}
+                            className="h-5 w-5 shrink-0 rounded-full object-cover border border-neutral-600"
+                            fallbackClassName="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-mint-500 text-[9px] font-black text-white"
+                          />
+                          <span className="text-neutral-500 font-medium text-[11px]">Built by</span>
+                          <span className="font-bold text-neutral-900 text-[11px]">{product.creatorName}</span>
+                          {product.creatorRole && (
+                            <span className="text-[9px] font-semibold text-mint-600 bg-mint-500/10 border border-mint-500/25 px-1.5 py-0.5 rounded-md">
+                              {product.creatorRole}
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     )}
 
-                    {product.socials?.map((s, idx) => {
-                      const name = (() => {
-                        switch (s.platform) {
-                          case 'x': return 'X (Twitter)';
-                          case 'linkedin': return 'LinkedIn';
-                          case 'youtube': return 'YouTube';
-                          case 'reddit': return 'Reddit';
-                          case 'product_hunt': return 'Product Hunt';
-                          case 'github': return 'GitHub';
-                          case 'discord': return 'Discord';
-                          case 'app_store': return 'App Store';
-                          case 'play_store': return 'Google Play';
-                          case 'chrome_web_store': return 'Chrome Extension';
-                          default: return s.platform;
-                        }
-                      })();
-                      return (
-                        <a
-                          key={`${s.platform}-${idx}`}
-                          href={s.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-700 hover:border-gray-300 hover:bg-gray-200 hover:text-gray-900 transition-colors"
-                        >
-                          <span>{name}</span>
-                          <ExternalLink className="h-2.5 w-2.5 opacity-60" />
-                        </a>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+                    {/* Social Links */}
+                    {(product.twitterHandle || (product.socials && product.socials.length > 0)) && (
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 pt-1 text-xs">
+                        {product.twitterHandle && !product.socials?.some((s) => s.platform === 'x') && (
+                          <a
+                            href={`https://x.com/${product.twitterHandle.replace('@', '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-700 hover:border-gray-300 hover:bg-gray-200 hover:text-gray-900 transition-colors"
+                          >
+                            <span>X {product.twitterHandle.startsWith('@') ? product.twitterHandle : `@${product.twitterHandle}`}</span>
+                          </a>
+                        )}
 
-            {/* Action Buttons */}
-            <div className="flex flex-wrap items-center gap-2 pt-2 sm:pt-0">
-              {onUpvote ? (
-                <button
-                  type="button"
-                  onClick={() => onUpvote(product)}
-                  className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-3 text-xs font-bold transition-all cursor-pointer active:scale-95 border min-h-[44px] sm:min-h-[38px] ${
-                    isUpvoted
-                      ? 'bg-mint-500 border-mint-400 text-white'
-                      : 'bg-white border-neutral-200 text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50'
-                  }`}
-                  title={!isSignedIn ? 'Sign in to upvote' : (isUpvoted ? 'Remove upvote' : 'Upvote product')}
-                >
-                  <ChevronUp className="h-4 w-4" />
-                  <span className="font-mono-num font-black text-sm">{(product.upvotes ?? 0).toLocaleString()}</span>
-                </button>
-              ) : (
-                <div className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3.5 py-3 text-xs font-bold text-neutral-900 min-h-[44px] sm:min-h-[38px]">
-                  <ChevronUp className="h-4 w-4 text-mint-600" />
-                  <span className="font-mono-num font-black text-sm">{(product.upvotes ?? 0).toLocaleString()}</span>
-                </div>
-              )}
-
-              <button
-                type="button"
-                onClick={() => {
-                  const el = document.getElementById('product-discussion-section');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3.5 py-3 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-all cursor-pointer min-h-[44px] sm:min-h-[38px]"
-                title="Jump to discussion"
-              >
-                <MessageCircle className="h-4 w-4 text-mint-600" />
-                <span className="font-mono-num font-black text-sm">{comments.length.toLocaleString()}</span>
-              </button>
-
-              <a
-                href={product.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => {
-                  playSound('click', soundEnabled);
-                  onTrackClick(product.id, product.url);
-                }}
-                className="btn-primary px-5 py-2.5 text-xs font-bold text-center min-h-[42px] sm:min-h-[38px]"
-              >
-                <span>Visit Website</span>
-                <ExternalLink className="h-3.5 w-3.5" />
-              </a>
-            </div>
-          </div>
-
-          {/* Exclusive Offer / Viewer Deal Banner */}
-          {(product.offerDiscount || product.offerCode) && (
-            <div className="relative overflow-hidden rounded-2xl border border-mint-500/40 bg-mint-50/70 p-4 sm:p-5">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="flex items-start gap-3 min-w-0">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-mint-500 text-white">
-                    <Tag className="h-5 w-5 fill-white stroke-white" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="rounded-full bg-mint-500 text-white px-2 py-0.5 text-[10px] font-bold">
-                        Exclusive TopSAAS deal
-                      </span>
-                      {product.offerDiscount && (
-                        <span className="text-sm sm:text-base font-black text-mint-600">
-                          {product.offerDiscount}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-neutral-700 mt-1 font-medium">
-                      {product.offerDetails || `Special discount available for TopSAAS viewers.`}
-                    </p>
+                        {product.socials?.map((s, idx) => {
+                          const name = (() => {
+                            switch (s.platform) {
+                              case 'x': return 'X (Twitter)';
+                              case 'linkedin': return 'LinkedIn';
+                              case 'youtube': return 'YouTube';
+                              case 'reddit': return 'Reddit';
+                              case 'product_hunt': return 'Product Hunt';
+                              case 'github': return 'GitHub';
+                              case 'discord': return 'Discord';
+                              case 'app_store': return 'App Store';
+                              case 'play_store': return 'Google Play';
+                              case 'chrome_web_store': return 'Chrome Extension';
+                              default: return s.platform;
+                            }
+                          })();
+                          return (
+                            <a
+                              key={`${s.platform}-${idx}`}
+                              href={s.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-700 hover:border-gray-300 hover:bg-gray-200 hover:text-gray-900 transition-colors"
+                            >
+                              <span>{name}</span>
+                              <ExternalLink className="h-2.5 w-2.5 opacity-60" />
+                            </a>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
-                  {product.offerCode && (
+                {/* Action Buttons */}
+                <div className="flex flex-wrap items-center gap-2 pt-2 sm:pt-0 shrink-0">
+                  {onUpvote ? (
                     <button
                       type="button"
-                      onClick={() => handleCopyOfferCode(product.offerCode!)}
-                      className="flex-1 sm:flex-initial flex items-center justify-center gap-2 rounded-xl border border-dashed border-mint-500/60 bg-white px-3.5 py-2.5 text-xs font-mono font-bold text-mint-700 hover:bg-mint-500/10 hover:border-mint-400 transition-all cursor-pointer min-h-[40px]"
-                      title="Click to copy promo code"
+                      onClick={() => onUpvote(product)}
+                      className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-3 text-xs font-bold transition-all cursor-pointer active:scale-95 border min-h-[44px] sm:min-h-[38px] ${
+                        isUpvoted
+                          ? 'bg-mint-500 border-mint-400 text-white'
+                          : 'bg-white border-neutral-200 text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50'
+                      }`}
+                      title={!isSignedIn ? 'Sign in to upvote' : (isUpvoted ? 'Remove upvote' : 'Upvote product')}
                     >
-                      <span>{product.offerCode}</span>
-                      {copiedOffer ? (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-sans font-black text-mint-700 bg-mint-500/15 px-1.5 py-0.5 rounded">
-                          <Check className="h-3 w-3" /> Copied!
-                        </span>
-                      ) : (
-                        <Copy className="h-3.5 w-3.5 text-neutral-500" />
-                      )}
+                      <ChevronUp className="h-4 w-4" />
+                      <span className="font-mono-num font-black text-sm">{(product.upvotes ?? 0).toLocaleString()}</span>
                     </button>
+                  ) : (
+                    <div className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3.5 py-3 text-xs font-bold text-neutral-900 min-h-[44px] sm:min-h-[38px]">
+                      <ChevronUp className="h-4 w-4 text-mint-600" />
+                      <span className="font-mono-num font-black text-sm">{(product.upvotes ?? 0).toLocaleString()}</span>
+                    </div>
                   )}
 
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const el = document.getElementById('product-discussion-section');
+                      if (el) el.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3.5 py-3 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-all cursor-pointer min-h-[44px] sm:min-h-[38px]"
+                    title="Jump to discussion"
+                  >
+                    <MessageCircle className="h-4 w-4 text-mint-600" />
+                    <span className="font-mono-num font-black text-sm">{comments.length.toLocaleString()}</span>
+                  </button>
+
                   <a
-                    href={product.offerUrl || product.url}
+                    href={product.url}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => {
                       playSound('click', soundEnabled);
-                      onTrackClick(product.id, product.offerUrl || product.url);
+                      onTrackClick(product.id, product.url);
                     }}
-                    className="flex-1 sm:flex-initial btn-primary px-4 py-2 text-xs font-bold min-h-[40px]"
+                    className="btn-primary px-5 py-2.5 text-xs font-bold text-center min-h-[42px] sm:min-h-[38px]"
                   >
-                    <span>Redeem Deal</span>
+                    <span>Visit Website</span>
                     <ExternalLink className="h-3.5 w-3.5" />
                   </a>
                 </div>
               </div>
-            </div>
-          )}
 
-          {/* Metrics bar */}
-          <div className="grid grid-cols-2 gap-3 pt-4 border-t border-neutral-200">
-            <div className="rounded-xl border border-neutral-200 bg-white p-3 shadow-2xs">
-              <div className="text-[11px] font-bold text-neutral-500">
-                Category
-              </div>
-              <div className="text-xs font-bold text-neutral-950 mt-1 truncate">
-                {product.category}
-              </div>
-            </div>
+              {/* Exclusive Offer / Viewer Deal Banner */}
+              {(product.offerDiscount || product.offerCode) && (
+                <div className="relative overflow-hidden rounded-2xl border border-mint-500/40 bg-mint-50/70 p-4 sm:p-5">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-mint-500 text-white">
+                        <Tag className="h-5 w-5 fill-white stroke-white" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="rounded-full bg-mint-500 text-white px-2 py-0.5 text-[10px] font-bold">
+                            Exclusive TopSAAS deal
+                          </span>
+                          {product.offerDiscount && (
+                            <span className="text-sm sm:text-base font-black text-mint-600">
+                              {product.offerDiscount}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-neutral-700 mt-1 font-medium">
+                          {product.offerDetails || `Special discount available for TopSAAS viewers.`}
+                        </p>
+                      </div>
+                    </div>
 
-            <div className="rounded-xl border border-neutral-200 bg-white p-3 shadow-2xs">
-              <div className="text-[11px] font-bold text-neutral-500">
-                {product.pricingModel ? 'Pricing' : 'Status'}
-              </div>
-              <div className="text-xs font-bold text-neutral-950 mt-1 truncate">
-                {product.pricingModel || 'Live on Directory'}
-              </div>
-            </div>
-          </div>
-        </div>
+                    <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+                      {product.offerCode && (
+                        <button
+                          type="button"
+                          onClick={() => handleCopyOfferCode(product.offerCode!)}
+                          className="flex-1 sm:flex-initial flex items-center justify-center gap-2 rounded-xl border border-dashed border-mint-500/60 bg-white px-3.5 py-2.5 text-xs font-mono font-bold text-mint-700 hover:bg-mint-500/10 hover:border-mint-400 transition-all cursor-pointer min-h-[40px]"
+                          title="Click to copy promo code"
+                        >
+                          <span>{product.offerCode}</span>
+                          {copiedOffer ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-sans font-black text-mint-700 bg-mint-500/15 px-1.5 py-0.5 rounded">
+                              <Check className="h-3 w-3" /> Copied!
+                            </span>
+                          ) : (
+                            <Copy className="h-3.5 w-3.5 text-neutral-500" />
+                          )}
+                        </button>
+                      )}
 
-        {/* Product Media: Demo Video (YouTube, Loom, Vimeo, direct MP4) or Screenshots */}
-        {(() => {
-          const videoData = getVideoEmbedUrl(product.demoVideoUrl);
-          if (!videoData) return null;
-
-          return (
-            <section className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-6 shadow-xs space-y-4">
-              <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
-                <div className="flex items-center gap-2">
-                  <Video className="h-4 w-4 text-mint-600" />
-                  <h2 className="text-sm font-bold text-neutral-950">Product demo</h2>
-                </div>
-                <span className="text-[11px] font-bold text-mint-600 bg-mint-50 border border-mint-200 px-2 py-0.5 rounded-md">
-                  Interactive video
-                </span>
-              </div>
-
-              <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-neutral-200 bg-black">
-                {videoData.type === 'iframe' && (
-                  <iframe
-                    src={videoData.embedUrl}
-                    title={`${product.name} demo video`}
-                    className="h-full w-full border-0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowFullScreen
-                  />
-                )}
-                {videoData.type === 'video' && (
-                  <video
-                    src={videoData.embedUrl}
-                    controls
-                    className="h-full w-full object-cover"
-                    poster={product.screenshots?.[0]}
-                  >
-                    Your browser does not support the video tag.
-                  </video>
-                )}
-                {videoData.type === 'link' && (
-                  <div className="flex h-full w-full flex-col items-center justify-center gap-3 p-6 text-center">
-                    <p className="text-sm text-neutral-600">Watch the product demo video:</p>
-                    <a
-                      href={videoData.embedUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 rounded-xl bg-mint-500 px-4 py-2 text-xs font-black text-white hover:bg-mint-600"
-                    >
-                      <Play className="h-4 w-4 fill-current" />
-                      Watch on external site
-                    </a>
+                      <a
+                        href={product.offerUrl || product.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => {
+                          playSound('click', soundEnabled);
+                          onTrackClick(product.id, product.offerUrl || product.url);
+                        }}
+                        className="flex-1 sm:flex-initial btn-primary px-4 py-2 text-xs font-bold min-h-[40px]"
+                      >
+                        <span>Redeem Deal</span>
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    </div>
                   </div>
-                )}
+                </div>
+              )}
+
+              {/* Metrics bar */}
+              <div className="grid grid-cols-2 gap-3 pt-4 border-t border-neutral-200">
+                <div className="rounded-xl border border-neutral-200 bg-white p-3 shadow-2xs">
+                  <div className="text-[11px] font-bold text-neutral-500">
+                    Category
+                  </div>
+                  <div className="text-xs font-bold text-neutral-950 mt-1 truncate">
+                    {product.category}
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-neutral-200 bg-white p-3 shadow-2xs">
+                  <div className="text-[11px] font-bold text-neutral-500">
+                    {product.pricingModel ? 'Pricing' : 'Status'}
+                  </div>
+                  <div className="text-xs font-bold text-neutral-950 mt-1 truncate">
+                    {product.pricingModel || 'Live on Directory'}
+                  </div>
+                </div>
               </div>
-            </section>
-          );
-        })()}
-
-        {/* Screenshots Gallery */}
-        {product.screenshots && product.screenshots.length > 0 && (
-          <section className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-6 shadow-xs space-y-4">
-            <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
-              <h2 className="text-sm font-bold text-neutral-950">Screenshots</h2>
-              <span className="font-mono-num text-xs font-bold text-neutral-500">
-                {product.screenshots.length} {product.screenshots.length === 1 ? 'image' : 'images'}
-              </span>
             </div>
-            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-              {product.screenshots.map((src, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => {
-                    playSound('click', soundEnabled);
-                    setLightboxIndex(i);
-                  }}
-                  className="group relative aspect-video overflow-hidden rounded-xl border border-neutral-200 bg-white cursor-pointer"
-                  aria-label={`View screenshot ${i + 1}`}
-                >
-                  <img
-                    src={src}
-                    alt={`${product.name} screenshot ${i + 1}`}
-                    loading="lazy"
-                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-                  />
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
 
-        {/* Deep-Dive Grid: Everything The Website Does */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          {/* Left 2 Cols: Description, What It Does, Features, Use Cases */}
-          <div className="lg:col-span-2 space-y-6">
+            {/* Product Media: Demo Video (YouTube, Loom, Vimeo, direct MP4) or Screenshots */}
+            {(() => {
+              const videoData = getVideoEmbedUrl(product.demoVideoUrl);
+              if (!videoData) return null;
+
+              return (
+                <section className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-6 shadow-xs space-y-4">
+                  <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
+                    <div className="flex items-center gap-2">
+                      <Video className="h-4 w-4 text-mint-600" />
+                      <h2 className="text-sm font-bold text-neutral-950">Product demo</h2>
+                    </div>
+                    <span className="text-[11px] font-bold text-mint-600 bg-mint-50 border border-mint-200 px-2 py-0.5 rounded-md">
+                      Interactive video
+                    </span>
+                  </div>
+
+                  <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-neutral-200 bg-black">
+                    {videoData.type === 'iframe' && (
+                      <iframe
+                        src={videoData.embedUrl}
+                        title={`${product.name} demo video`}
+                        className="h-full w-full border-0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowFullScreen
+                      />
+                    )}
+                    {videoData.type === 'video' && (
+                      <video
+                        src={videoData.embedUrl}
+                        controls
+                        className="h-full w-full object-cover"
+                        poster={product.screenshots?.[0]}
+                      >
+                        Your browser does not support the video tag.
+                      </video>
+                    )}
+                    {videoData.type === 'link' && (
+                      <div className="flex h-full w-full flex-col items-center justify-center gap-3 p-6 text-center">
+                        <p className="text-sm text-neutral-600">Watch the product demo video:</p>
+                        <a
+                          href={videoData.embedUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 rounded-xl bg-mint-500 px-4 py-2 text-xs font-black text-white hover:bg-mint-600"
+                        >
+                          <Play className="h-4 w-4 fill-current" />
+                          Watch on external site
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </section>
+              );
+            })()}
+
+            {/* Screenshots Gallery */}
+            {product.screenshots && product.screenshots.length > 0 && (
+              <section className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-6 shadow-xs space-y-4">
+                <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
+                  <h2 className="text-sm font-bold text-neutral-950">Screenshots</h2>
+                  <span className="font-mono-num text-xs font-bold text-neutral-500">
+                    {product.screenshots.length} {product.screenshots.length === 1 ? 'image' : 'images'}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+                  {product.screenshots.map((src, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => {
+                        playSound('click', soundEnabled);
+                        setLightboxIndex(i);
+                      }}
+                      className="group relative aspect-video overflow-hidden rounded-xl border border-neutral-200 bg-white cursor-pointer"
+                      aria-label={`View screenshot ${i + 1}`}
+                    >
+                      <img
+                        src={src}
+                        alt={`${product.name} screenshot ${i + 1}`}
+                        loading="lazy"
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                      />
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
+
             {/* About & Executive Overview */}
             <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs space-y-4">
               <div className="border-b border-neutral-200 pb-3">
@@ -524,7 +562,6 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                 </div>
               )}
             </div>
-
 
             {/* Problem / Solution / What Makes It Different */}
             {(() => {
@@ -575,7 +612,6 @@ export const ProductPage: React.FC<ProductPageProps> = ({
               );
             })()}
 
-
             {/* Use Cases & Who Uses It */}
             {product.useCases && product.useCases.length > 0 && (
               <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs space-y-4">
@@ -604,11 +640,196 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                 </div>
               </div>
             )}
+
+            {/* Discussion & Comments */}
+            <div id="product-discussion-section" className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
+                <h2 className="text-sm font-bold text-neutral-950">
+                  Discussion
+                </h2>
+                <span className="font-mono-num text-xs font-bold text-neutral-500">
+                  {comments.length} {comments.length === 1 ? 'comment' : 'comments'}
+                </span>
+              </div>
+
+              {/* Compose box or Sign-in prompt */}
+              {isSignedIn ? (
+                <div className="space-y-3 rounded-xl border border-neutral-200/60 bg-white p-3.5 sm:p-4">
+                  <div className="flex items-center gap-2.5">
+                    <CommentAvatar
+                      avatarUrl={userAvatar}
+                      name={userName || userEmail?.split('@')[0] || 'User'}
+                      className="h-8 w-8 shrink-0 rounded-full object-cover border border-neutral-200 bg-neutral-800"
+                      fallbackClassName="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-mint-500 text-[11px] font-black text-white"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-neutral-950 truncate">
+                          {userName || userEmail?.split('@')[0] || 'Signed-in User'}
+                        </span>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-mint-500/10 border border-mint-500/20 px-2 py-0.5 text-[9px] font-bold text-mint-600">
+                          Verified
+                        </span>
+                      </div>
+                      {userEmail && (
+                        <p className="text-[10px] text-neutral-400 truncate">
+                          {userEmail}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <textarea
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    placeholder={`Ask a question or leave a comment about ${product.name}...`}
+                    rows={3}
+                    maxLength={2000}
+                    className="w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 text-xs font-medium text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-mint-500/30 focus:border-mint-500 transition-shadow resize-none"
+                  />
+
+                  <div className="flex items-center justify-between gap-2 pt-0.5">
+                    <span className="text-[10px] font-medium text-neutral-400">{commentText.length}/2000</span>
+                    <button
+                      type="button"
+                      disabled={!commentText.trim()}
+                      onClick={() => {
+                        const authorName = userName || userEmail?.split('@')[0] || 'User';
+                        playSound('click', soundEnabled);
+                        onAddComment(product.id, commentText, authorName, userEmail, userAvatar);
+                        setCommentText('');
+                      }}
+                      className="rounded-xl bg-mint-500 px-4 py-2 text-xs font-bold text-white hover:bg-mint-600 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-all cursor-pointer"
+                    >
+                      Post comment
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-xl border border-neutral-200/60 bg-white p-4 text-center sm:text-left">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-neutral-100 text-neutral-600 border border-neutral-200">
+                      <UserIcon className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-neutral-950">Join the discussion</p>
+                      <p className="text-[11px] text-neutral-400">Sign in to leave a comment with your name and profile picture.</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playSound('click', soundEnabled);
+                      onOpenSignIn?.();
+                    }}
+                    className="w-full sm:w-auto shrink-0 btn-primary px-4 py-2.5 text-xs font-bold"
+                  >
+                    <LogIn className="h-3.5 w-3.5" />
+                    <span>Sign in to comment</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Comment list */}
+              {comments.length === 0 ? (
+                <p className="py-2 text-xs font-medium text-neutral-400">
+                  No comments yet — start the conversation.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {[...comments]
+                    .sort((a, b) => a.createdAt - b.createdAt)
+                    .map((c) => (
+                      <div key={c.id} className="flex items-start gap-3 rounded-xl border border-neutral-200 bg-white p-3.5">
+                        <CommentAvatar
+                          avatarUrl={c.userAvatar}
+                          name={c.userName}
+                          className="h-8 w-8 shrink-0 rounded-full object-cover border border-neutral-200 bg-neutral-800"
+                          fallbackClassName="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-mint-500 text-[11px] font-black text-white"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-neutral-950">{c.userName}</span>
+                            <span className="text-[10px] font-medium text-neutral-500">{timeAgo(c.createdAt)}</span>
+                          </div>
+                          <p className="mt-1 text-xs leading-relaxed text-neutral-400 break-words whitespace-pre-wrap">
+                            {c.content}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+
+            {/* Explore Related Websites */}
+            {relatedProducts.length > 0 && (
+              <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-bold text-neutral-950">
+                    Explore more websites
+                  </h2>
+                  <button
+                    onClick={onBack}
+                    className="text-xs font-bold text-neutral-500 hover:text-neutral-950 flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>Back to Home</span>
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  {relatedProducts.map((rel) => (
+                    <div
+                      key={rel.id}
+                      onClick={() => {
+                        playSound('click', soundEnabled);
+                        onSelectProduct(rel);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className="rounded-xl border border-neutral-200 bg-white p-4 hover:border-neutral-600 hover:bg-neutral-100 transition-all cursor-pointer space-y-2 group shadow-2xs"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="h-8 w-8 rounded-lg overflow-hidden border border-neutral-200 bg-white flex items-center justify-center shrink-0 shadow-2xs">
+                            {rel.logoUrl ? (
+                              <img src={rel.logoUrl} alt={rel.name} className="h-full w-full object-cover" />
+                            ) : (
+                              <span className="text-xs font-black text-white">{rel.name.slice(0, 2)}</span>
+                            )}
+                          </div>
+                          <div>
+                            <h3 className="text-xs font-black text-neutral-900 group-hover:underline">
+                              {rel.name}
+                            </h3>
+                            <span className="text-[10px] text-neutral-500">{rel.category}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <p className="text-[11px] text-neutral-400 line-clamp-2 leading-relaxed">
+                        {rel.tagline}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Right 1 Col: Specifications, Quick Action Panel */}
-          <div className="space-y-6">
-            {/* Founder / Maker Spotlight Card */}
+          {/* RIGHT COLUMN: Sidebar (lg:col-span-4) - Starts from top with Sponsored first */}
+          <div className="lg:col-span-4 space-y-5 sm:space-y-6 lg:sticky lg:top-20 self-start">
+            {/* 1. Sponsored Partners Sidebar (⚡ Sponsors placed at the very top) */}
+            <SponsoredPartnersSidebar
+              sponsors={allProducts.filter((p) => p.isSponsored)}
+              currentProductId={product.id}
+              soundEnabled={soundEnabled}
+              onSelectProduct={onSelectProduct}
+              onTrackClick={onTrackClick}
+              onOpenFeaturedSpotModal={onOpenFeaturedSpotModal}
+            />
+
+            {/* 2. Founder / Maker Spotlight Card */}
             {(product.creatorName || product.creatorAvatar || product.creatorXHandle) && (
               <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-xs space-y-3.5">
                 <div className="flex items-center justify-between border-b border-neutral-200 pb-2.5">
@@ -658,7 +879,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
               </div>
             )}
 
-            {/* Quick Specs & Highlights */}
+            {/* 3. Quick Specs & Highlights */}
             <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-xs space-y-3.5">
               <h2 className="text-xs font-bold text-neutral-950 border-b border-neutral-200 pb-2">
                 Website specifications
@@ -690,7 +911,6 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                     <span className="font-bold text-neutral-900">{kh.value}</span>
                   </div>
                 ))}
-
 
                 <div className="flex items-center justify-between pt-1 border-t border-neutral-200">
                   <span className="text-neutral-500 font-medium">Official Link</span>
@@ -745,193 +965,97 @@ export const ProductPage: React.FC<ProductPageProps> = ({
               </div>
             </div>
 
-            {/* Sponsored Partners Sidebar Card */}
-            <SponsoredPartnersSidebar
-              sponsors={allProducts.filter((p) => p.isSponsored)}
-              currentProductId={product.id}
-              soundEnabled={soundEnabled}
-              onSelectProduct={onSelectProduct}
-              onTrackClick={onTrackClick}
-              onOpenFeaturedSpotModal={onOpenFeaturedSpotModal}
-            />
-          </div>
-        </div>
-
-        {/* Discussion & Comments */}
-        <div id="product-discussion-section" className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
-            <h2 className="text-sm font-bold text-neutral-950">
-              Discussion
-            </h2>
-            <span className="font-mono-num text-xs font-bold text-neutral-500">
-              {comments.length} {comments.length === 1 ? 'comment' : 'comments'}
-            </span>
-          </div>
-
-          {/* Compose box or Sign-in prompt */}
-          {isSignedIn ? (
-            <div className="space-y-3 rounded-xl border border-neutral-200/60 bg-white p-3.5 sm:p-4">
-              <div className="flex items-center gap-2.5">
-                <CommentAvatar
-                  avatarUrl={userAvatar}
-                  name={userName || userEmail?.split('@')[0] || 'User'}
-                  className="h-8 w-8 shrink-0 rounded-full object-cover border border-neutral-200 bg-neutral-800"
-                  fallbackClassName="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-mint-500 text-[11px] font-black text-white"
-                />
-                <div className="min-w-0 flex-1">
+            {/* 4. Top Categories Card */}
+            {topCategories.length > 0 && (
+              <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-xs space-y-3.5">
+                <div className="flex items-center justify-between border-b border-neutral-100 pb-2.5">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-neutral-950 truncate">
-                      {userName || userEmail?.split('@')[0] || 'Signed-in User'}
-                    </span>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-mint-500/10 border border-mint-500/20 px-2 py-0.5 text-[9px] font-bold text-mint-600">
-                      Verified
-                    </span>
+                    <Tag className="h-4 w-4 text-blue-600" />
+                    <h3 className="text-xs font-black text-neutral-950 uppercase tracking-wider">Top Categories</h3>
                   </div>
-                  {userEmail && (
-                    <p className="text-[10px] text-neutral-400 truncate">
-                      {userEmail}
-                    </p>
-                  )}
+                  <button
+                    type="button"
+                    onClick={onBack}
+                    className="text-[11px] font-bold text-neutral-500 hover:text-blue-600 transition-colors inline-flex items-center gap-0.5 cursor-pointer"
+                  >
+                    <span>View all</span>
+                    <ChevronRight className="h-3 w-3" />
+                  </button>
+                </div>
+                <div className="divide-y divide-neutral-100">
+                  {topCategories.map((cat) => (
+                    <button
+                      key={cat.name}
+                      type="button"
+                      onClick={() => {
+                        playSound('click', soundEnabled);
+                        onBack();
+                      }}
+                      className="w-full flex items-center justify-between py-2 text-xs font-medium text-neutral-700 hover:text-blue-600 group transition-colors cursor-pointer text-left"
+                    >
+                      <span className="truncate group-hover:font-semibold">{cat.name}</span>
+                      <span className="text-[11px] font-mono-num text-neutral-400 group-hover:text-blue-600 bg-neutral-100 px-2 py-0.5 rounded-md">
+                        {cat.count} {cat.count === 1 ? 'project' : 'projects'}
+                      </span>
+                    </button>
+                  ))}
                 </div>
               </div>
+            )}
 
-              <textarea
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                placeholder={`Ask a question or leave a comment about ${product.name}...`}
-                rows={3}
-                maxLength={2000}
-                className="w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 text-xs font-medium text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-mint-500/30 focus:border-mint-500 transition-shadow resize-none"
-              />
-
-              <div className="flex items-center justify-between gap-2 pt-0.5">
-                <span className="text-[10px] font-medium text-neutral-400">{commentText.length}/2000</span>
+            {/* 5. Quick Access Shortcuts */}
+            <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-xs space-y-3">
+              <h3 className="text-xs font-black text-neutral-950 uppercase tracking-wider border-b border-neutral-100 pb-2.5">
+                Quick Access
+              </h3>
+              <div className="space-y-1">
                 <button
                   type="button"
-                  disabled={!commentText.trim()}
                   onClick={() => {
-                    const authorName = userName || userEmail?.split('@')[0] || 'User';
                     playSound('click', soundEnabled);
-                    onAddComment(product.id, commentText, authorName, userEmail, userAvatar);
-                    setCommentText('');
+                    onBack();
                   }}
-                  className="rounded-xl bg-mint-500 px-4 py-2 text-xs font-bold text-white hover:bg-mint-600 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-all cursor-pointer"
+                  className="w-full flex items-center justify-between p-2 rounded-xl text-xs font-semibold text-neutral-700 hover:bg-neutral-50 hover:text-blue-600 transition-colors cursor-pointer text-left"
                 >
-                  Post comment
+                  <span className="flex items-center gap-2">
+                    <Compass className="h-3.5 w-3.5 text-neutral-400" />
+                    <span>Live Directory</span>
+                  </span>
+                  <ChevronRight className="h-3.5 w-3.5 text-neutral-400" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    playSound('click', soundEnabled);
+                    onBack();
+                  }}
+                  className="w-full flex items-center justify-between p-2 rounded-xl text-xs font-semibold text-neutral-700 hover:bg-neutral-50 hover:text-blue-600 transition-colors cursor-pointer text-left"
+                >
+                  <span className="flex items-center gap-2">
+                    <Calendar className="h-3.5 w-3.5 text-neutral-400" />
+                    <span>This Week's Launches</span>
+                  </span>
+                  <ChevronRight className="h-3.5 w-3.5 text-neutral-400" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    playSound('click', soundEnabled);
+                    onBack();
+                  }}
+                  className="w-full flex items-center justify-between p-2 rounded-xl text-xs font-semibold text-neutral-700 hover:bg-neutral-50 hover:text-blue-600 transition-colors cursor-pointer text-left"
+                >
+                  <span className="flex items-center gap-2">
+                    <TrendingUp className="h-3.5 w-3.5 text-neutral-400" />
+                    <span>Trending Now</span>
+                  </span>
+                  <ChevronRight className="h-3.5 w-3.5 text-neutral-400" />
                 </button>
               </div>
             </div>
-          ) : (
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-xl border border-neutral-200/60 bg-white p-4 text-center sm:text-left">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-neutral-100 text-neutral-600 border border-neutral-200">
-                  <UserIcon className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-neutral-950">Join the discussion</p>
-                  <p className="text-[11px] text-neutral-400">Sign in to leave a comment with your name and profile picture.</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  playSound('click', soundEnabled);
-                  onOpenSignIn?.();
-                }}
-                className="w-full sm:w-auto shrink-0 btn-primary px-4 py-2.5 text-xs font-bold"
-              >
-                <LogIn className="h-3.5 w-3.5" />
-                <span>Sign in to comment</span>
-              </button>
-            </div>
-          )}
 
-          {/* Comment list */}
-          {comments.length === 0 ? (
-            <p className="py-2 text-xs font-medium text-neutral-400">
-              No comments yet — start the conversation.
-            </p>
-          ) : (
-            <div className="space-y-3">
-              {[...comments]
-                .sort((a, b) => a.createdAt - b.createdAt)
-                .map((c) => (
-                  <div key={c.id} className="flex items-start gap-3 rounded-xl border border-neutral-200 bg-white p-3.5">
-                    <CommentAvatar
-                      avatarUrl={c.userAvatar}
-                      name={c.userName}
-                      className="h-8 w-8 shrink-0 rounded-full object-cover border border-neutral-200 bg-neutral-800"
-                      fallbackClassName="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-mint-500 text-[11px] font-black text-white"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-neutral-950">{c.userName}</span>
-                        <span className="text-[10px] font-medium text-neutral-500">{timeAgo(c.createdAt)}</span>
-                      </div>
-                      <p className="mt-1 text-xs leading-relaxed text-neutral-400 break-words whitespace-pre-wrap">
-                        {c.content}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-            </div>
-          )}
-        </div>
-
-        {/* Explore Related Websites */}
-        {relatedProducts.length > 0 && (
-          <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-bold text-neutral-950">
-                Explore more websites
-              </h2>
-              <button
-                onClick={onBack}
-                className="text-xs font-bold text-neutral-500 hover:text-neutral-950 flex items-center gap-1 cursor-pointer"
-              >
-                <span>Back to Home</span>
-                <ChevronRight className="h-3.5 w-3.5" />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              {relatedProducts.map((rel) => (
-                <div
-                  key={rel.id}
-                  onClick={() => {
-                    playSound('click', soundEnabled);
-                    onSelectProduct(rel);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  className="rounded-xl border border-neutral-200 bg-white p-4 hover:border-neutral-600 hover:bg-neutral-100 transition-all cursor-pointer space-y-2 group shadow-2xs"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="h-8 w-8 rounded-lg overflow-hidden border border-neutral-200 bg-white flex items-center justify-center shrink-0 shadow-2xs">
-                        {rel.logoUrl ? (
-                          <img src={rel.logoUrl} alt={rel.name} className="h-full w-full object-cover" />
-                        ) : (
-                          <span className="text-xs font-black text-white">{rel.name.slice(0, 2)}</span>
-                        )}
-                      </div>
-                      <div>
-                        <h3 className="text-xs font-black text-neutral-900 group-hover:underline">
-                          {rel.name}
-                        </h3>
-                        <span className="text-[10px] text-neutral-500">{rel.category}</span>
-                      </div>
-                    </div>
-
-                  </div>
-
-                  <p className="text-[11px] text-neutral-400 line-clamp-2 leading-relaxed">
-                    {rel.tagline}
-                  </p>
-                </div>
-              ))}
-            </div>
           </div>
-        )}
+        </div>
       </main>
 
       {/* Screenshots lightbox */}

@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import { Product, Category, Comment, WebsiteSubmission } from '../types';
-import { getWeekNumber } from './weeks';
+import { getMonthKey, getWeekNumber } from './weeks';
 import { getCached, setCached, invalidateCache, CACHE_TTL } from './cache';
 
 export { invalidateCache, CACHE_TTL };
@@ -702,6 +702,8 @@ export interface ProductUpvoteStats {
   total: Map<string, number>;
   /** Upvotes cast per launch week: weekNumber -> productId -> count */
   byWeek: Record<number, Record<string, number>>;
+  /** Upvotes cast per calendar month: 'YYYY-MM' -> productId -> count */
+  byMonth: Record<string, Record<string, number>>;
 }
 
 /**
@@ -712,6 +714,7 @@ export interface ProductUpvoteStats {
 export async function getUpvoteStats(): Promise<ProductUpvoteStats> {
   const total = new Map<string, number>();
   const byWeek: Record<number, Record<string, number>> = {};
+  const byMonth: Record<string, Record<string, number>> = {};
   const PAGE_SIZE = 1000;
   try {
     // Page through all rows so weekly counts stay correct past the default limit
@@ -741,12 +744,18 @@ export async function getUpvoteStats(): Promise<ProductUpvoteStats> {
         const weekCount = (weekMap[pid] ?? 0) + 1;
         weekMap[pid] = weekCount;
         weekMap[alt] = weekCount;
+
+        const month = getMonthKey(ts);
+        const monthMap = (byMonth[month] ??= {});
+        const monthCount = (monthMap[pid] ?? 0) + 1;
+        monthMap[pid] = monthCount;
+        monthMap[alt] = monthCount;
       }
 
       if (data.length < PAGE_SIZE) break;
     }
   } catch { }
-  return { total, byWeek };
+  return { total, byWeek, byMonth };
 }
 
 /**
