@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, ArrowUpDown, Check, X, Clock, ExternalLink, ShieldCheck, Search, Trash2, Eye, RotateCcw, Globe, Twitter, User, Calendar, CheckCircle2, XCircle, AlertCircle, Edit3, Plus, Trophy, Crown, ChevronUp, ChevronDown, Star, LayoutList, Mail, Flame, Tag, Play, Video, Copy, Image as ImageIcon, MessageSquareQuote, Target, Layers, Info, Sparkles, BadgeCheck, Megaphone, Award, LogOut, Rocket
 } from 'lucide-react';
@@ -6,7 +6,7 @@ import confetti from 'canvas-confetti';
 import { WebsiteSubmission, Category, Product } from '../types';
 import { playSound } from '../utils/sound';
 import { getWebsiteFavicon } from '../utils/logo';
-import { publishedProductId } from '../utils/db';
+import { publishedProductId, loadSubmissionById } from '../utils/db';
 import { RichText } from './RichText';
 import { ProductLogo } from './ProductLogo';
 import { RankMedal } from './RankMedal';
@@ -151,6 +151,17 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
   const [viewingDetailsSubmission, setViewingDetailsSubmission] = useState<WebsiteSubmission | null>(null);
   const [copiedOfferCode, setCopiedOfferCode] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+
+  // Lazy-load full submission details (including screenshots) when reviewing a submission
+  useEffect(() => {
+    if (viewingDetailsSubmission?.id && (!viewingDetailsSubmission.screenshots || viewingDetailsSubmission.screenshots.length === 0)) {
+      loadSubmissionById(viewingDetailsSubmission.id).then((fullSub) => {
+        if (fullSub && fullSub.screenshots && fullSub.screenshots.length > 0) {
+          setViewingDetailsSubmission((prev) => (prev?.id === fullSub.id ? { ...prev, ...fullSub } : prev));
+        }
+      });
+    }
+  }, [viewingDetailsSubmission?.id]);
 
   const handleCopyOfferCode = (code: string) => {
     try {

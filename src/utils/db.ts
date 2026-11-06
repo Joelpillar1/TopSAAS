@@ -90,6 +90,53 @@ export const toDbSubmission = (sub: WebsiteSubmission) => {
   };
 };
 
+/**
+ * Lightweight columns for the submissions queue list.
+ * Excludes heavy base64 `screenshots` and long text to cut initial egress by ~95%.
+ */
+export const SUBMISSION_QUEUE_COLUMNS = [
+  'id',
+  'name',
+  'tagline',
+  'url',
+  'logo_url',
+  'category',
+  'backer_name',
+  'backer_email',
+  'status',
+  'submitted_at',
+  'reviewed_at',
+  'rejection_reason',
+  'target_audience',
+  'pricing_model',
+  'submitted_by',
+  'offer_discount',
+  'offer_code',
+  'offer_url',
+  'offer_details',
+  'auto_relaunch',
+  'auto_relaunch_paid',
+  'auto_relaunch_paid_at',
+  'verified',
+  'scheduled_launch_week',
+  'scheduled_launch_date',
+].join(',');
+
+/** Fetch full submission details on-demand (e.g. when reviewing in admin modal) */
+export async function loadSubmissionById(id: string): Promise<WebsiteSubmission | null> {
+  try {
+    const { data, error } = await supabase
+      .from('submissions')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    if (error || !data) return null;
+    return mapDbSubmission(data);
+  } catch {
+    return null;
+  }
+}
+
 // ── Products ──
 
 /** Map a Supabase row to our Product type */
@@ -300,14 +347,81 @@ export function submissionToProduct(sub: WebsiteSubmission, rank: number = 1): P
  * probing or field-stripping to do before a write.
  */
 
-/** Load all products from Supabase */
+/**
+ * Lightweight columns for directory & leaderboard listings.
+ * Excludes heavy `screenshots` (which can contain megabytes of base64 data)
+ * as well as rarely-needed raw arrays, saving ~99% of Supabase bandwidth on directory loads.
+ */
+export const PRODUCT_DIRECTORY_COLUMNS = [
+  'id',
+  'rank',
+  'previous_rank',
+  'name',
+  'tagline',
+  'url',
+  'logo_url',
+  'demo_video_url',
+  'twitter_handle',
+  'socials',
+  'creator_name',
+  'creator_username',
+  'creator_x_handle',
+  'creator_avatar',
+  'creator_role',
+  'category',
+  'upvotes',
+  'dino_score',
+  'total_bid',
+  'clicks',
+  'created_at',
+  'updated_at',
+  'submitted_by',
+  'verified',
+  'is_sponsored',
+  'sponsor_tier',
+  'sponsor_started_at',
+  'sponsor_expires_at',
+  'sponsor_clicks',
+  'pricing_model',
+  'target_audience',
+  'offer_discount',
+  'offer_code',
+  'offer_url',
+  'offer_details',
+  'auto_relaunch',
+  'relaunch_weeks',
+  'is_relaunched',
+  'last_relaunched_at',
+  'scheduled_launch_week',
+  'scheduled_launch_date',
+].join(',');
+
+/** Load all products for the directory/homepage using lightweight columns */
 export async function loadProducts(): Promise<Product[] | null> {
   const { data, error } = await supabase
     .from('products')
-    .select('*')
+    .select(PRODUCT_DIRECTORY_COLUMNS)
     .order('rank', { ascending: true });
   if (error || !data) return null;
-  return data.map(mapDbProduct);
+  return (data as unknown as Record<string, unknown>[]).map(mapDbProduct);
+}
+
+/** Fetch full product details on-demand (including screenshots, features, rich description) */
+export async function loadProductById(id: string): Promise<Product | null> {
+  try {
+    const bare = id.startsWith('prod-') ? id.replace(/^prod-/, '') : id;
+    const canonical = id.startsWith('prod-') ? id : `prod-${id}`;
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .or(`id.eq.${id},id.eq.${canonical},id.eq.${bare}`)
+      .limit(1)
+      .maybeSingle();
+    if (error || !data) return null;
+    return mapDbProduct(data);
+  } catch {
+    return null;
+  }
 }
 
 /** Guaranteed single-request batched rank updates in Supabase — only touches rank columns */

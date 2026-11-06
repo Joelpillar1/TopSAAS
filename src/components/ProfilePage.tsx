@@ -34,6 +34,7 @@ import { playSound } from '../utils/sound';
 import { EmbedBadgeModal } from './EmbedBadgeModal';
 import { RichTextEditor } from './RichTextEditor';
 import { prepareRichText } from '../utils/richText';
+import { uploadScreenshotToStorage } from '../utils/storage';
 import confetti from 'canvas-confetti';
 
 interface ProfilePageProps {
@@ -503,7 +504,12 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
     try {
       for (const file of Array.from(files).slice(0, remaining)) {
         try {
-          added.push(await processImageFile(file, { maxSide: 1280, format: 'image/jpeg', quality: 0.75 }));
+          const storageUrl = await uploadScreenshotToStorage(file, editForm.name || 'product');
+          if (storageUrl) {
+            added.push(storageUrl);
+          } else {
+            added.push(await processImageFile(file, { maxSide: 1280, format: 'image/jpeg', quality: 0.75 }));
+          }
         } catch (err) {
           setEditError(err instanceof Error ? err.message : 'Could not process that screenshot.');
           break;

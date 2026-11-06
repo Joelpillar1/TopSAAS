@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import confetti from 'canvas-confetti';
-import { AlertCircle, Check, ChevronDown, ChevronLeft, ChevronRight, Clock, Loader2, Search, Video, X, Tag, Percent, Gift, Sparkles, Trash2, GripVertical, Star, ShieldCheck, CheckCircle2, Lock, RefreshCw, Copy, Code2 } from 'lucide-react';
+import { AlertCircle, Check, ChevronDown, ChevronLeft, ChevronRight, Clock, Loader2, Search, Video, X, Tag, Percent, Gift, Sparkles, Trash2, GripVertical, Star, ShieldCheck, CheckCircle2, Lock, Copy } from 'lucide-react';
 import { Category, PricingModel, Product, ProductSocial, SubmitProductDetails, WebsiteSubmission } from '../types';
 import { SUBMISSION_CATEGORIES } from './BidModal';
 import { getWebsiteFavicon } from '../utils/logo';
@@ -8,6 +8,7 @@ import { playSound } from '../utils/sound';
 import { BadgeStyle, BadgeTheme, BadgeFormat, generateBadgeSvg, generateBadgeSnippet } from '../utils/badgeSvg';
 import { verifyBadgeViaEdge, fetchHtmlBestEffort, containsBadge } from '../utils/badgeVerify';
 import { prepareRichText } from '../utils/richText';
+import { uploadScreenshotToStorage } from '../utils/storage';
 import { RichTextEditor } from './RichTextEditor';
 import { LaunchWeekSelector } from './LaunchWeekSelector';
 
@@ -536,7 +537,13 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
     try {
       for (const file of Array.from(files).slice(0, remaining)) {
         try {
-          added.push(await processImageFile(file, { maxSide: 1024, format: 'image/jpeg', quality: 0.72 }));
+          // Attempt direct upload to Supabase storage to save egress & database size
+          const storageUrl = await uploadScreenshotToStorage(file, form.name || 'product');
+          if (storageUrl) {
+            added.push(storageUrl);
+          } else {
+            added.push(await processImageFile(file, { maxSide: 1024, format: 'image/jpeg', quality: 0.72 }));
+          }
         } catch (err) {
           setBanner(err instanceof Error ? err.message : 'Could not process that screenshot.');
           break;
@@ -2073,93 +2080,6 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                 </p>
               </div>
 
-              {/* 3. Verification Action Panel */}
-              <div className="rounded-2xl border border-neutral-200 bg-white p-5 space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <h3 className="text-sm font-bold text-neutral-950 flex items-center gap-1.5">
-                      <span>3. Verify Badge Deployment</span>
-                      {isBadgeVerified && <CheckCircle2 className="h-4 w-4 text-mint-600" />}
-                    </h3>
-                    <p className="text-xs text-neutral-500 mt-0.5">
-                      Target Website: <span className="font-mono text-neutral-900 underline font-semibold">{form.url || 'None entered in Step 1'}</span>
-                    </p>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleVerifyBadge}
-                    disabled={isVerifyingBadge || !form.url.trim()}
-                    className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-black transition-all cursor-pointer shadow-sm min-h-[40px] shrink-0 ${
-                      isBadgeVerified
-                        ? 'bg-mint-500/20 text-mint-600 border border-mint-500/40 hover:bg-mint-500/30'
-                        : 'bg-mint-500 text-white hover:bg-mint-400 active:scale-95'
-                    }`}
-                  >
-                    {isVerifyingBadge ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <span>Verifying website…</span>
-                      </>
-                    ) : isBadgeVerified ? (
-                      <>
-                        <RefreshCw className="h-3.5 w-3.5" />
-                        <span>Re-verify Badge</span>
-                      </>
-                    ) : (
-                      <>
-                        <ShieldCheck className="h-4 w-4" />
-                        <span>Verify Badge on Website</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-
-                {/* Verification Feedback Messages */}
-                {badgeVerificationSuccess && (
-                  <div className="rounded-xl border border-mint-500/40 bg-mint-500/10 p-3.5 text-xs text-mint-600 flex items-start gap-2.5">
-                    <CheckCircle2 className="h-4 w-4 text-mint-600 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-bold">Badge Successfully Verified!</p>
-                      <p className="text-[11px] text-mint-700/80 mt-0.5">{badgeVerificationSuccess}</p>
-                      <p className="text-[11px] text-mint-600 font-semibold mt-1">You may now submit your product for review.</p>
-                    </div>
-                  </div>
-                )}
-
-                {badgeVerificationError && (
-                  <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-3.5 text-xs text-red-300 flex items-start gap-2.5">
-                    <AlertCircle className="h-4 w-4 text-red-400 shrink-0 mt-0.5" />
-                    <div className="space-y-1.5 flex-1">
-                      <p className="font-bold">Verification Incomplete</p>
-                      <p className="text-[11px] text-red-200/90 leading-relaxed">{badgeVerificationError}</p>
-                      <div className="pt-1">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsBadgeVerified(true);
-                            setBadgeVerificationSuccess('Manually verified for testing/staging environment.');
-                            setBadgeVerificationError(null);
-                            playSound('success', soundEnabled);
-                            confetti({ particleCount: 35, spread: 50, origin: { y: 0.7 } });
-                          }}
-                          className="text-[11px] font-bold text-neutral-500 hover:text-neutral-950 underline transition-colors cursor-pointer"
-                        >
-                          Running in localhost or private dev environment? Click here to confirm manual verification.
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {!badgeVerificationSuccess && !badgeVerificationError && (
-                  <div className="rounded-xl border border-neutral-200 bg-white p-3 text-[11.5px] text-neutral-500 flex items-center gap-2">
-                    <ShieldCheck className="h-4 w-4 text-mint-500 shrink-0" />
-                    <span>Verifying the badge confirms the TopSAAS badge is active on your site.</span>
-                  </div>
-                )}
-              </div>
-
               {/* 3. Target Launch Round / Date Picker */}
               <div className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-5 shadow-2xs">
                 <LaunchWeekSelector
@@ -2226,6 +2146,32 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                   </span>
                 </div>
               </div>
+
+              {/* Badge Verification Error / Help Notice */}
+              {badgeVerificationError && (
+                <div className="rounded-2xl border border-red-500/40 bg-red-500/10 p-4 text-xs text-red-700 flex items-start gap-2.5">
+                  <AlertCircle className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
+                  <div className="space-y-1.5 flex-1">
+                    <p className="font-bold">Badge Verification Incomplete</p>
+                    <p className="text-[11px] text-red-800/90 leading-relaxed">{badgeVerificationError}</p>
+                    <div className="pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsBadgeVerified(true);
+                          setBadgeVerificationSuccess('Manually verified for testing/staging environment.');
+                          setBadgeVerificationError(null);
+                          playSound('success', soundEnabled);
+                          confetti({ particleCount: 35, spread: 50, origin: { y: 0.7 } });
+                        }}
+                        className="text-[11px] font-bold text-neutral-700 hover:text-neutral-950 underline transition-colors cursor-pointer"
+                      >
+                        Running in localhost or private dev environment? Click here to confirm manual verification.
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </section>
           )}
         </div>
@@ -2260,44 +2206,61 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                 Continue
               </button>
             ) : isSignedIn ? (
-              <button
-                type="button"
-                onClick={handleLaunch}
-                disabled={isSubmitting || !isBadgeVerified}
-                className={`px-5 py-2.5 text-xs font-black transition-all rounded-xl select-none ${
-                  !isBadgeVerified
-                    ? 'bg-neutral-200 text-neutral-400 border border-neutral-300 cursor-not-allowed shadow-none'
-                    : isSubmitting
-                    ? 'btn-primary opacity-80 cursor-wait'
-                    : autoRelaunch
-                    ? 'btn-primary bg-blue-600 hover:bg-blue-500 shadow-blue-500/25 cursor-pointer'
-                    : 'btn-primary cursor-pointer'
-                }`}
-                title={
-                  !isBadgeVerified
-                    ? 'Please verify the TopSAAS badge in Step 5 before submitting'
-                    : autoRelaunch
-                    ? 'Submit website with Weekly Relaunch ($5/mo)'
-                    : 'Submit website for review'
-                }
-              >
-                {isSubmitting ? (
-                  <span className="inline-flex items-center gap-1.5">
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    Submitting…
-                  </span>
-                ) : autoRelaunch ? (
-                  <span className="inline-flex items-center gap-1.5">
-                    <span>🚀</span>
-                    <span>Submit with Weekly Relaunch — $5 (Paid)</span>
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5">
-                    <CheckCircle2 className={`h-3.5 w-3.5 ${!isBadgeVerified ? 'text-neutral-400' : 'text-white/90'}`} />
-                    Submit website
-                  </span>
-                )}
-              </button>
+              !isBadgeVerified ? (
+                <button
+                  type="button"
+                  onClick={handleVerifyBadge}
+                  disabled={isVerifyingBadge}
+                  className="btn-primary inline-flex items-center gap-1.5 px-5 py-2.5 text-xs font-black cursor-pointer shadow-sm active:scale-95"
+                >
+                  {isVerifyingBadge ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      <span>Verifying badge…</span>
+                    </>
+                  ) : (
+                    <>
+                      <ShieldCheck className="h-3.5 w-3.5" />
+                      <span>Verify badge</span>
+                    </>
+                  )}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleLaunch}
+                  disabled={isSubmitting}
+                  className={`px-5 py-2.5 text-xs font-black transition-all rounded-xl select-none ${
+                    isSubmitting
+                      ? 'btn-primary opacity-80 cursor-wait'
+                      : autoRelaunch
+                      ? 'btn-primary bg-blue-600 hover:bg-blue-500 shadow-blue-500/25 cursor-pointer'
+                      : 'btn-primary cursor-pointer'
+                  }`}
+                  title={
+                    autoRelaunch
+                      ? 'Submit website with Weekly Relaunch ($5/mo)'
+                      : 'Submit website for review'
+                  }
+                >
+                  {isSubmitting ? (
+                    <span className="inline-flex items-center gap-1.5">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      Submitting…
+                    </span>
+                  ) : autoRelaunch ? (
+                    <span className="inline-flex items-center gap-1.5">
+                      <span>🚀</span>
+                      <span>Submit with Weekly Relaunch — $5 (Paid)</span>
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-white/90" />
+                      Submit website
+                    </span>
+                  )}
+                </button>
+              )
             ) : (
               <button
                 type="button"

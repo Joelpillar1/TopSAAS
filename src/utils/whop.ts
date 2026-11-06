@@ -93,8 +93,8 @@ export async function getWhopCheckoutUrlFromSupabase(
     planKey === '3mo'
       ? import.meta.env.VITE_WHOP_LINK_3MO
       : planKey === '1yr'
-      ? import.meta.env.VITE_WHOP_LINK_1YR
-      : import.meta.env.VITE_WHOP_LINK_1MO;
+        ? import.meta.env.VITE_WHOP_LINK_1YR
+        : import.meta.env.VITE_WHOP_LINK_1MO;
 
   if (envUrl && typeof envUrl === 'string' && envUrl.trim()) {
     return envUrl.trim();
@@ -143,9 +143,8 @@ export async function createCheckoutSession(
 
   const redirectUrl = encodeURIComponent(returnUrl);
   const separator = baseLink.includes('?') ? '&' : '?';
-  const directUrl = `${baseLink}${separator}redirect_url=${redirectUrl}${
-    customerEmail ? `&email=${encodeURIComponent(customerEmail)}` : ''
-  }`;
+  const directUrl = `${baseLink}${separator}redirect_url=${redirectUrl}${customerEmail ? `&email=${encodeURIComponent(customerEmail)}` : ''
+    }`;
 
   return { checkout_url: directUrl };
 }

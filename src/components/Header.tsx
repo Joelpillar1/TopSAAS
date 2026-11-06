@@ -3,7 +3,7 @@ import { Trophy, Menu, X, User as UserIcon, Zap, TrendingUp, BookOpen, Plus } fr
 import { User } from '@supabase/supabase-js';
 import { navigateTo } from '../utils/nav';
 
-export type DirectoryTab = 'directory' | 'saas-ideas' | 'pricing';
+export type DirectoryTab = 'directory' | 'saas-ideas' | 'mrr-calculator' | 'pricing';
 
 interface HeaderProps {
   onGoHome?: () => void;
@@ -24,11 +24,12 @@ interface TabSwitcherProps {
 const TABS: { key: DirectoryTab; label: string }[] = [
   { key: 'directory', label: 'Directory' },
   { key: 'saas-ideas', label: 'SaaS Ideas' },
+  { key: 'mrr-calculator', label: 'MRR Calculator' },
 ];
 
 const TabSwitcher: React.FC<TabSwitcherProps> = ({ activeTab, onTabChange }) => {
   return (
-    <nav className="flex items-center gap-0.5 rounded-lg bg-gray-100 p-1" aria-label="Browse sections">
+    <nav className="flex items-center gap-5" aria-label="Browse sections">
       {TABS.map((t) => {
         const active = activeTab === t.key;
         return (
@@ -37,12 +38,17 @@ const TabSwitcher: React.FC<TabSwitcherProps> = ({ activeTab, onTabChange }) => 
             type="button"
             onClick={() => onTabChange(t.key)}
             aria-current={active ? 'page' : undefined}
-            className={`flex items-center rounded-md px-3 py-1 text-[13px] transition-colors cursor-pointer ${active
-              ? 'bg-neutral-950 font-bold text-white'
-              : 'font-semibold text-gray-500 hover:bg-white hover:text-neutral-950'
+            className={`relative py-1 text-[13px] transition-colors cursor-pointer ${active
+              ? 'font-bold text-neutral-950'
+              : 'font-semibold text-neutral-500 hover:text-neutral-950'
               }`}
           >
             <span>{t.label}</span>
+            <span
+              aria-hidden="true"
+              className={`absolute inset-x-0 -bottom-0.5 h-0.5 rounded-full bg-neutral-950 transition-opacity ${active ? 'opacity-100' : 'opacity-0'
+                }`}
+            />
           </button>
         );
       })}
@@ -209,7 +215,7 @@ export const Header: React.FC<HeaderProps> = ({
                             }}
                             aria-current={active ? 'page' : undefined}
                             className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] transition-colors cursor-pointer ${active
-                              ? 'bg-neutral-950 font-bold text-white'
+                              ? 'bg-neutral-100 font-bold text-neutral-950'
                               : 'font-semibold text-neutral-700 hover:bg-neutral-100 hover:text-neutral-950'
                               }`}
                           >

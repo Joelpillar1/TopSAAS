@@ -27,7 +27,7 @@ import { LegalTab } from './components/LegalModal';
 import { playSound } from './utils/sound';
 import confetti from 'canvas-confetti';
 import { supabase } from './utils/supabase';
-import { loadProducts, saveAllProducts, saveProductRanksDirect, debouncedSyncProducts, toggleUpvote, getUserUpvotes, getUpvoteCounts, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, setGlobalFeaturedProducts, setProductFeaturedPosition, LOCAL_FEATURED_PRODUCTS_KEY, LOCAL_FEATURED_POSITIONS_MAP_KEY, insertProductDirect, fetchComments, addComment, getCachedCommentsSync, submissionToProduct, publishedProductId, isProductUpvoted, getGuestUpvotes, saveGuestUpvotes, incrementProductUpvotesDirect, getActiveSponsors, mergeSponsorsIntoProducts, recordSponsorUpdate, recordSponsorEnd, getSponsorRailsEnabled, setSponsorRailsEnabled, LOCAL_SPONSOR_RAILS_KEY, getFeaturedPosition, setFeaturedPosition, LOCAL_FEATURED_POSITION_KEY } from './utils/db';
+import { loadProducts, loadProductById, saveAllProducts, saveProductRanksDirect, debouncedSyncProducts, toggleUpvote, getUserUpvotes, getUpvoteCounts, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, setGlobalFeaturedProducts, setProductFeaturedPosition, LOCAL_FEATURED_PRODUCTS_KEY, LOCAL_FEATURED_POSITIONS_MAP_KEY, insertProductDirect, fetchComments, addComment, getCachedCommentsSync, submissionToProduct, publishedProductId, isProductUpvoted, getGuestUpvotes, saveGuestUpvotes, incrementProductUpvotesDirect, getActiveSponsors, mergeSponsorsIntoProducts, recordSponsorUpdate, recordSponsorEnd, getSponsorRailsEnabled, setSponsorRailsEnabled, LOCAL_SPONSOR_RAILS_KEY, getFeaturedPosition, setFeaturedPosition, LOCAL_FEATURED_POSITION_KEY, SUBMISSION_QUEUE_COLUMNS, loadSubmissionById } from './utils/db';
 import { getRecentWeeks, isInWeek, getWeekInfo, WeekInfo } from './utils/weeks';
 import { getWebsiteFavicon } from './utils/logo';
 import { Trophy, X, Plus, ShieldCheck, Loader2, Star, MessageCircle, Flame, Search } from 'lucide-react';
@@ -290,10 +290,10 @@ export default function App() {
         await supabase.auth.getSession();
         const { data, error } = await supabase
           .from('submissions')
-          .select('*')
+          .select(SUBMISSION_QUEUE_COLUMNS)
           .order('submitted_at', { ascending: false });
         if (!error && data) {
-          const dbSubs = data.map(mapDbSubmission);
+          const dbSubs = (data as unknown as Record<string, unknown>[]).map(mapDbSubmission);
           setSubmissions(dbSubs);
           // Persist to localStorage inline (saveSubmissionsToStorage declared later)
           try {
@@ -405,38 +405,34 @@ export default function App() {
 
   // Load global featured product & position from Supabase on mount and check periodically
   useEffect(() => {
-    getGlobalFeaturedProduct().then((config) => {
-      if (config.productIds !== undefined) {
-        setFeaturedProductIds(config.productIds);
-      }
-      if (config.positions !== undefined) {
-        setFeaturedPositions(config.positions);
-      }
-      if (config.productId !== undefined) {
-        setFeaturedProductId(config.productId);
-      }
-      if (config.position !== undefined) {
-        setFeaturedPositionState(config.position);
-      }
-    });
-
-    const interval = setInterval(() => {
+    const syncFeatured = () => {
       getGlobalFeaturedProduct().then((config) => {
-        if (config.productIds !== undefined) {
-          setFeaturedProductIds(config.productIds);
-        }
-        if (config.positions !== undefined) {
-          setFeaturedPositions(config.positions);
-        }
-        if (config.productId !== undefined) {
-          setFeaturedProductId(config.productId);
-        }
-        if (config.position !== undefined) {
-          setFeaturedPositionState(config.position);
-        }
+        if (config.productIds !== undefined) setFeaturedProductIds(config.productIds);
+        if (config.positions !== undefined) setFeaturedPositions(config.positions);
+        if (config.productId !== undefined) setFeaturedProductId(config.productId);
+        if (config.position !== undefined) setFeaturedPositionState(config.position);
       });
-    }, 60_000); // Check every 60 seconds
-    return () => clearInterval(interval);
+    };
+
+    syncFeatured();
+
+    // Check periodically only when the tab is actively visible to eliminate background egress
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+      syncFeatured();
+    }, 180_000); // 3 minutes
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        syncFeatured();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, []);
 
   const handleSetProductFeaturedPosition = async (productId: string, pos: number) => {
@@ -745,6 +741,24 @@ export default function App() {
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [submissionsLoaded, isAdmin, currentRoute]);
+
+  // Lazy-load full product details (screenshots, features, useCases, long text)
+  // only when navigating to a specific product's detail page.
+  useEffect(() => {
+    if (currentRoute !== 'product' || !productRouteId) return;
+    const targetId = productRouteId;
+    loadProductById(targetId).then((fullProd) => {
+      if (!fullProd) return;
+      setProducts((prev) =>
+        prev.map((p) => {
+          if (p.id === fullProd.id || p.id === targetId || p.id === publishedProductId(targetId)) {
+            return { ...p, ...fullProd };
+          }
+          return p;
+        })
+      );
+    });
+  }, [currentRoute, productRouteId]);
 
   // Auth: listen for session changes, get initial session, and save profile
   useEffect(() => {

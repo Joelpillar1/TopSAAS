@@ -42,3 +42,4 @@ end;
 $$;
 
 grant execute on function public.get_whop_checkout_url(text) to anon, authenticated, service_role;
+
