@@ -17,7 +17,7 @@ interface PricingPageProps {
 const faqs = [
   {
     q: 'What is the difference between Free and the $19 Verified Launch?',
-    a: 'Free submissions enter a manual queue that takes 7–14 days, with a standard nofollow backlink. The $19 Verified Launch gives you fast-track review within 24 hours, category top-3 pinned spot (1st month), auto weekly relaunch free for your first month (then optional $5/mo), 1,500+ word story on /blog, permanent high-authority DoFollow backlink, official Verified Mint Badge, /llms.txt AI search inclusion (ChatGPT, Perplexity and more), and "X vs Y" comparison pages.',
+    a: 'Free submissions enter a manual queue that takes 7–14 days, with a standard nofollow backlink. The $19 Verified Launch gives you fast-track review within 24 hours, category top-3 pinned spot (1st month), auto weekly relaunch free for your first month (then optional $5/mo), a dedicated 1,500+ word story on /blog (including "X vs Y" competitor comparison), permanent high-authority DoFollow backlink, official Verified Mint Badge, and /llms.txt AI search inclusion (ChatGPT, Perplexity and more).',
   },
   {
     q: 'Is the $19 Verified Launch a recurring subscription?',
@@ -53,8 +53,7 @@ const comparisonRows: Array<{
   { feature: 'Embeddable badge (your site)',    free: false,            verified: true },
   { feature: 'Auto Weekly Relaunch',            free: '+$5/mo toggle',  verified: '1st Month Free (then $5/mo)' },
   { feature: 'Category pinned placement',       free: false,            verified: 'Top 3 Pinned (1st Month)' },
-  { feature: '"X vs Y" comparison pages',       free: false,            verified: true },
-  { feature: '1,500+ word story on /blog',      free: false,            verified: true },
+  { feature: '1,500+ word story on /blog',      free: false,            verified: 'Included (with "vs" breakdown)' },
   { feature: 'Included in /llms.txt (AI SEO)',  free: false,            verified: 'ChatGPT, Perplexity & more' },
   { feature: 'Pricing model',                   free: '$0 Forever',     verified: '$19 One-Time (Lifetime)' },
 ];
@@ -321,13 +320,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({
                   <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
                     <Check className="h-2.5 w-2.5 stroke-[3]" />
                   </div>
-                  <span><strong>&quot;X vs Y&quot; competitor comparison pages</strong></span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
-                    <Check className="h-2.5 w-2.5 stroke-[3]" />
-                  </div>
-                  <span><strong>1,500+ word story on /blog</strong></span>
+                  <span><strong>1,500+ word story on /blog</strong> (with &quot;X vs Y&quot; competitor breakdown)</span>
                 </li>
                 <li className="flex items-center gap-2.5">
                   <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
