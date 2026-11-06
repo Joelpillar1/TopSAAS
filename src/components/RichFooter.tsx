@@ -36,8 +36,19 @@ export const RichFooter: React.FC<RichFooterProps> = ({
 }) => {
   const currentYear = new Date().getFullYear();
 
+  // The footer is always white site-wide. Drop any background utility passed in
+  // by a page so it can never paint a different footer color.
+  const extraClasses = (className ?? '')
+    .split(/\s+/)
+    .filter((token) => token && !/(^|:)bg-/.test(token))
+    .join(' ');
+
+  const footerClassName = ['mt-10 border-t border-neutral-200 bg-white', extraClasses]
+    .filter(Boolean)
+    .join(' ');
+
   return (
-    <footer className={className || "mt-10 border-t border-neutral-200 bg-white"}>
+    <footer className={footerClassName}>
       <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-12 pb-8">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-8 lg:gap-6">
           {/* Brand Column */}

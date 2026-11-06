@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Product, Comment } from '../types';
 import { 
   ExternalLink, 
@@ -167,6 +167,64 @@ export const ProductPage: React.FC<ProductPageProps> = ({
       .slice(0, 5)
       .map(([name, count]) => ({ name, count }));
   }, [allProducts]);
+
+  // Media gallery (demo video + screenshots unified horizontally)
+  const galleryRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const [activeMediaIndex, setActiveMediaIndex] = useState(0);
+
+  const videoData = useMemo(() => getVideoEmbedUrl(product.demoVideoUrl), [product.demoVideoUrl]);
+  const screenshots = product.screenshots || [];
+  const totalMediaCount = (videoData ? 1 : 0) + screenshots.length;
+
+  const updateScrollState = () => {
+    if (!galleryRef.current) return;
+    const { scrollLeft, scrollWidth, clientWidth } = galleryRef.current;
+    setCanScrollLeft(scrollLeft > 10);
+    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
+
+    const itemWidth = clientWidth * 0.85;
+    if (itemWidth > 0) {
+      const idx = Math.round(scrollLeft / itemWidth);
+      setActiveMediaIndex(Math.max(0, Math.min(idx, totalMediaCount - 1)));
+    }
+  };
+
+  useEffect(() => {
+    updateScrollState();
+    const el = galleryRef.current;
+    if (el) {
+      el.addEventListener('scroll', updateScrollState, { passive: true });
+      window.addEventListener('resize', updateScrollState);
+      return () => {
+        el.removeEventListener('scroll', updateScrollState);
+        window.removeEventListener('resize', updateScrollState);
+      };
+    }
+  }, [totalMediaCount]);
+
+  const handleScrollMedia = (direction: 'left' | 'right') => {
+    playSound('click', soundEnabled);
+    if (!galleryRef.current) return;
+    const container = galleryRef.current;
+    const scrollAmount = container.clientWidth * 0.85;
+    container.scrollBy({
+      left: direction === 'left' ? -scrollAmount : scrollAmount,
+      behavior: 'smooth',
+    });
+  };
+
+  const scrollToMediaIndex = (index: number) => {
+    playSound('click', soundEnabled);
+    if (!galleryRef.current) return;
+    const container = galleryRef.current;
+    const items = container.querySelectorAll<HTMLElement>('[data-media-item]');
+    if (items[index]) {
+      items[index].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      setActiveMediaIndex(index);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-neutral-50/40 text-neutral-900 flex flex-col font-sans pb-12 sm:pb-16">
@@ -422,115 +480,199 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                   </div>
                 </div>
               )}
-
-              {/* Metrics bar */}
-              <div className="grid grid-cols-2 gap-3 pt-4 border-t border-neutral-200">
-                <div className="rounded-xl border border-neutral-200 bg-white p-3 shadow-2xs">
-                  <div className="text-[11px] font-bold text-neutral-500">
-                    Category
-                  </div>
-                  <div className="text-xs font-bold text-neutral-950 mt-1 truncate">
-                    {product.category}
-                  </div>
-                </div>
-
-                <div className="rounded-xl border border-neutral-200 bg-white p-3 shadow-2xs">
-                  <div className="text-[11px] font-bold text-neutral-500">
-                    {product.pricingModel ? 'Pricing' : 'Status'}
-                  </div>
-                  <div className="text-xs font-bold text-neutral-950 mt-1 truncate">
-                    {product.pricingModel || 'Live on Directory'}
-                  </div>
-                </div>
-              </div>
             </div>
 
-            {/* Product Media: Demo Video (YouTube, Loom, Vimeo, direct MP4) or Screenshots */}
-            {(() => {
-              const videoData = getVideoEmbedUrl(product.demoVideoUrl);
-              if (!videoData) return null;
-
-              return (
-                <section className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-6 shadow-xs space-y-4">
-                  <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
-                    <div className="flex items-center gap-2">
-                      <Video className="h-4 w-4 text-mint-600" />
-                      <h2 className="text-sm font-bold text-neutral-950">Product demo</h2>
-                    </div>
-                    <span className="text-[11px] font-bold text-mint-600 bg-mint-50 border border-mint-200 px-2 py-0.5 rounded-md">
-                      Interactive video
-                    </span>
+            {/* Product Media Gallery: Demo Video and Screenshots on the SAME horizontal line */}
+            {totalMediaCount > 0 && (
+              <section className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-6 shadow-xs space-y-4">
+                <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
+                  <div className="flex items-center gap-2">
+                    <Layers className="h-4 w-4 text-blue-600" />
+                    <h2 className="text-sm font-bold text-neutral-950">
+                      Product Preview & Demo
+                    </h2>
                   </div>
 
-                  <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-neutral-200 bg-black">
-                    {videoData.type === 'iframe' && (
-                      <iframe
-                        src={videoData.embedUrl}
-                        title={`${product.name} demo video`}
-                        className="h-full w-full border-0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                        allowFullScreen
-                      />
-                    )}
-                    {videoData.type === 'video' && (
-                      <video
-                        src={videoData.embedUrl}
-                        controls
-                        className="h-full w-full object-cover"
-                        poster={product.screenshots?.[0]}
-                      >
-                        Your browser does not support the video tag.
-                      </video>
-                    )}
-                    {videoData.type === 'link' && (
-                      <div className="flex h-full w-full flex-col items-center justify-center gap-3 p-6 text-center">
-                        <p className="text-sm text-neutral-600">Watch the product demo video:</p>
-                        <a
-                          href={videoData.embedUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-2 rounded-xl bg-mint-500 px-4 py-2 text-xs font-black text-white hover:bg-mint-600"
+                  {/* Header controls (counter + arrows) */}
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono-num text-xs font-semibold text-neutral-500">
+                      {activeMediaIndex + 1} / {totalMediaCount}
+                    </span>
+                    {totalMediaCount > 1 && (
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleScrollMedia('left')}
+                          disabled={!canScrollLeft}
+                          className="flex h-7 w-7 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-100 hover:text-neutral-950 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                          aria-label="Previous preview"
                         >
-                          <Play className="h-4 w-4 fill-current" />
-                          Watch on external site
-                        </a>
+                          <ChevronLeft className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleScrollMedia('right')}
+                          disabled={!canScrollRight}
+                          className="flex h-7 w-7 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-100 hover:text-neutral-950 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                          aria-label="Next preview"
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
                       </div>
                     )}
                   </div>
-                </section>
-              );
-            })()}
+                </div>
 
-            {/* Screenshots Gallery */}
-            {product.screenshots && product.screenshots.length > 0 && (
-              <section className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-6 shadow-xs space-y-4">
-                <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
-                  <h2 className="text-sm font-bold text-neutral-950">Screenshots</h2>
-                  <span className="font-mono-num text-xs font-bold text-neutral-500">
-                    {product.screenshots.length} {product.screenshots.length === 1 ? 'image' : 'images'}
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-                  {product.screenshots.map((src, i) => (
+                {/* Horizontal Scroll Track with Floating Arrow Buttons */}
+                <div className="relative group/gallery">
+                  {/* Floating Prev Arrow */}
+                  {totalMediaCount > 1 && canScrollLeft && (
                     <button
-                      key={i}
                       type="button"
-                      onClick={() => {
-                        playSound('click', soundEnabled);
-                        setLightboxIndex(i);
-                      }}
-                      className="group relative aspect-video overflow-hidden rounded-xl border border-neutral-200 bg-white cursor-pointer"
-                      aria-label={`View screenshot ${i + 1}`}
+                      onClick={() => handleScrollMedia('left')}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 border border-neutral-200 text-neutral-800 shadow-xl hover:bg-white hover:scale-110 active:scale-95 transition-all cursor-pointer"
+                      aria-label="Previous preview"
                     >
-                      <img
-                        src={src}
-                        alt={`${product.name} screenshot ${i + 1}`}
-                        loading="lazy"
-                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-                      />
+                      <ChevronLeft className="h-5 w-5" />
                     </button>
-                  ))}
+                  )}
+
+                  {/* Floating Next Arrow */}
+                  {totalMediaCount > 1 && canScrollRight && (
+                    <button
+                      type="button"
+                      onClick={() => handleScrollMedia('right')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 border border-neutral-200 text-neutral-800 shadow-xl hover:bg-white hover:scale-110 active:scale-95 transition-all cursor-pointer"
+                      aria-label="Next preview"
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </button>
+                  )}
+
+                  {/* Horizontal Scroll Track */}
+                  <div
+                    ref={galleryRef}
+                    className="flex gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory no-scrollbar pb-1 pt-0.5"
+                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                  >
+                    {/* 1. Demo Video (if available, first in horizontal line) */}
+                    {videoData && (
+                      <div
+                        data-media-item
+                        className={`${
+                          totalMediaCount === 1
+                            ? 'w-full'
+                            : 'w-[88%] sm:w-[90%] md:w-[640px]'
+                        } shrink-0 snap-center aspect-video rounded-2xl border border-neutral-200 bg-black overflow-hidden relative shadow-sm`}
+                      >
+                        {videoData.type === 'iframe' && (
+                          <iframe
+                            src={videoData.embedUrl}
+                            title={`${product.name} demo video`}
+                            className="h-full w-full border-0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            allowFullScreen
+                          />
+                        )}
+                        {videoData.type === 'video' && (
+                          <video
+                            src={videoData.embedUrl}
+                            controls
+                            className="h-full w-full object-cover"
+                            poster={screenshots[0]}
+                          >
+                            Your browser does not support the video tag.
+                          </video>
+                        )}
+                        {videoData.type === 'link' && (
+                          <div className="flex h-full w-full flex-col items-center justify-center gap-3 p-6 text-center text-white bg-neutral-900">
+                            <Play className="h-10 w-10 text-mint-500" />
+                            <p className="text-sm text-neutral-300">Watch the product demo video:</p>
+                            <a
+                              href={videoData.embedUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-black text-white hover:bg-blue-700"
+                            >
+                              <Play className="h-4 w-4 fill-current" />
+                              Watch on external site
+                            </a>
+                          </div>
+                        )}
+                        <div className="absolute top-3 left-3 pointer-events-none">
+                          <span className="inline-flex items-center gap-1.5 rounded-lg bg-black/70 backdrop-blur-md px-2.5 py-1 text-[11px] font-bold text-white border border-white/20">
+                            <Video className="h-3 w-3 text-blue-400" />
+                            Demo Video
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 2. Screenshots (on the same horizontal line) */}
+                    {screenshots.map((src, i) => (
+                      <div
+                        key={i}
+                        data-media-item
+                        onClick={() => {
+                          playSound('click', soundEnabled);
+                          setLightboxIndex(i);
+                        }}
+                        className={`${
+                          totalMediaCount === 1
+                            ? 'w-full'
+                            : 'w-[88%] sm:w-[90%] md:w-[640px]'
+                        } shrink-0 snap-center aspect-video rounded-2xl border border-neutral-200 bg-neutral-100 overflow-hidden relative shadow-sm cursor-pointer group`}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            playSound('click', soundEnabled);
+                            setLightboxIndex(i);
+                          }
+                        }}
+                        aria-label={`View screenshot ${i + 1}`}
+                      >
+                        <img
+                          src={src}
+                          alt={`${product.name} screenshot ${i + 1}`}
+                          loading="lazy"
+                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition-colors flex items-center justify-center">
+                          <div className="opacity-0 group-hover:opacity-100 transition-all transform scale-90 group-hover:scale-100 bg-white/95 text-neutral-900 rounded-xl px-3.5 py-2 text-xs font-bold shadow-lg border border-neutral-200 flex items-center gap-1.5">
+                            <ExternalLink className="h-3.5 w-3.5 text-blue-600" />
+                            <span>Click to expand</span>
+                          </div>
+                        </div>
+                        <div className="absolute top-3 left-3 pointer-events-none">
+                          <span className="inline-flex items-center gap-1.5 rounded-lg bg-black/60 backdrop-blur-md px-2.5 py-1 text-[11px] font-bold text-white border border-white/10">
+                            <span>Screenshot {i + 1}</span>
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
+
+                {/* Thumbnails / Slide Dots below if multiple items */}
+                {totalMediaCount > 1 && (
+                  <div className="flex items-center justify-center gap-1.5 pt-2">
+                    {Array.from({ length: totalMediaCount }).map((_, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => scrollToMediaIndex(idx)}
+                        className={`h-2 rounded-full transition-all cursor-pointer ${
+                          activeMediaIndex === idx
+                            ? 'w-6 bg-blue-600'
+                            : 'w-2 bg-neutral-200 hover:bg-neutral-300'
+                        }`}
+                        aria-label={`Go to item ${idx + 1}`}
+                      />
+                    ))}
+                  </div>
+                )}
               </section>
             )}
 

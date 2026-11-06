@@ -2195,7 +2195,7 @@ export default function App() {
           onOpenPrivacy={() => handleNavigateLegal('privacy')}
           onOpenTerms={() => handleNavigateLegal('terms')}
           onOpenPricing={handleOpenPricing}
-          className="border-t border-neutral-200 bg-neutral-100"
+          className="border-t border-neutral-200"
         />
 
         <SignInModal
