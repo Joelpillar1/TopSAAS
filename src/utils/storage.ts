@@ -38,3 +38,4 @@ export async function uploadScreenshotToStorage(
     return null;
   }
 }
+

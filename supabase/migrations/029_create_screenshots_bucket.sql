@@ -38,3 +38,4 @@ create policy "Authenticated users can delete screenshots"
   on storage.objects for delete
   to authenticated
   using (bucket_id = 'screenshots');
+

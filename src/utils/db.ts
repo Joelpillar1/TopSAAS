@@ -1,5 +1,9 @@
 import { supabase } from './supabase';
 import { Product, Category, Comment, WebsiteSubmission } from '../types';
+import { getWeekNumber } from './weeks';
+import { getCached, setCached, invalidateCache, CACHE_TTL } from './cache';
+
+export { invalidateCache, CACHE_TTL };
 
 // ── Submissions ──
 
@@ -122,18 +126,46 @@ export const SUBMISSION_QUEUE_COLUMNS = [
   'scheduled_launch_date',
 ].join(',');
 
-/** Fetch full submission details on-demand (e.g. when reviewing in admin modal) */
-export async function loadSubmissionById(id: string): Promise<WebsiteSubmission | null> {
+/** Fetch full submission details on-demand with caching (e.g. when reviewing in admin modal) */
+export async function loadSubmissionById(id: string, forceFresh = false): Promise<WebsiteSubmission | null> {
+  const cacheKey = `submission_detail_${id}`;
+  if (!forceFresh) {
+    const cached = getCached<WebsiteSubmission>(cacheKey, CACHE_TTL.SUBMISSION_DETAIL);
+    if (cached) return cached;
+  }
   try {
     const { data, error } = await supabase
       .from('submissions')
       .select('*')
       .eq('id', id)
       .maybeSingle();
-    if (error || !data) return null;
-    return mapDbSubmission(data);
+    if (error || !data) return getCached<WebsiteSubmission>(cacheKey, Infinity);
+    const mapped = mapDbSubmission(data);
+    setCached(cacheKey, mapped);
+    return mapped;
   } catch {
-    return null;
+    return getCached<WebsiteSubmission>(cacheKey, Infinity);
+  }
+}
+
+/** Load submissions queue using lightweight columns and caching */
+export async function loadSubmissions(forceFresh = false): Promise<WebsiteSubmission[] | null> {
+  if (!forceFresh) {
+    const cached = getCached<WebsiteSubmission[]>('submissions_queue', CACHE_TTL.SUBMISSIONS);
+    if (cached) return cached;
+  }
+  try {
+    await supabase.auth.getSession();
+    const { data, error } = await supabase
+      .from('submissions')
+      .select(SUBMISSION_QUEUE_COLUMNS)
+      .order('submitted_at', { ascending: false });
+    if (error || !data) return getCached<WebsiteSubmission[]>('submissions_queue', Infinity);
+    const mapped = (data as unknown as Record<string, unknown>[]).map(mapDbSubmission);
+    setCached('submissions_queue', mapped);
+    return mapped;
+  } catch {
+    return getCached<WebsiteSubmission[]>('submissions_queue', Infinity);
   }
 }
 
@@ -396,18 +428,33 @@ export const PRODUCT_DIRECTORY_COLUMNS = [
   'scheduled_launch_date',
 ].join(',');
 
-/** Load all products for the directory/homepage using lightweight columns */
-export async function loadProducts(): Promise<Product[] | null> {
+/** Load all products for the directory/homepage using lightweight columns with caching */
+export async function loadProducts(forceFresh = false): Promise<Product[] | null> {
+  if (!forceFresh) {
+    const cached = getCached<Product[]>('products_list', CACHE_TTL.PRODUCTS);
+    if (cached && cached.length > 0) return cached;
+  }
+
   const { data, error } = await supabase
     .from('products')
     .select(PRODUCT_DIRECTORY_COLUMNS)
     .order('rank', { ascending: true });
-  if (error || !data) return null;
-  return (data as unknown as Record<string, unknown>[]).map(mapDbProduct);
+  if (error || !data) {
+    return getCached<Product[]>('products_list', Infinity) || null;
+  }
+  const mapped = (data as unknown as Record<string, unknown>[]).map(mapDbProduct);
+  setCached('products_list', mapped);
+  return mapped;
 }
 
-/** Fetch full product details on-demand (including screenshots, features, rich description) */
-export async function loadProductById(id: string): Promise<Product | null> {
+/** Fetch full product details on-demand with caching (including screenshots, features, rich description) */
+export async function loadProductById(id: string, forceFresh = false): Promise<Product | null> {
+  const cacheKey = `product_${id}`;
+  if (!forceFresh) {
+    const cached = getCached<Product>(cacheKey, CACHE_TTL.PRODUCT_DETAIL);
+    if (cached) return cached;
+  }
+
   try {
     const bare = id.startsWith('prod-') ? id.replace(/^prod-/, '') : id;
     const canonical = id.startsWith('prod-') ? id : `prod-${id}`;
@@ -417,10 +464,12 @@ export async function loadProductById(id: string): Promise<Product | null> {
       .or(`id.eq.${id},id.eq.${canonical},id.eq.${bare}`)
       .limit(1)
       .maybeSingle();
-    if (error || !data) return null;
-    return mapDbProduct(data);
+    if (error || !data) return getCached<Product>(cacheKey, Infinity);
+    const mapped = mapDbProduct(data);
+    setCached(cacheKey, mapped);
+    return mapped;
   } catch {
-    return null;
+    return getCached<Product>(cacheKey, Infinity);
   }
 }
 
@@ -428,6 +477,7 @@ export async function loadProductById(id: string): Promise<Product | null> {
 export async function saveProductRanksDirect(products: Product[]): Promise<void> {
   if (products.length === 0) return;
   try {
+    invalidateCache('products_list');
     // Keep the real DB upvote counts — never write stale client zeros over them
     const rankRows = products.map((p) => ({ id: p.id, upvotes: p.upvotes ?? 0 }));
     await preserveExistingCounters(rankRows);
@@ -454,6 +504,8 @@ export async function saveProductRanksDirect(products: Product[]): Promise<void>
 export async function saveAllProducts(products: Product[]): Promise<void> {
   if (products.length === 0) return;
   try {
+    invalidateCache('products_list');
+    invalidateCache('product_');
     const rows = products.map((p) => toDbProduct(p));
     // Preserve existing engagement counters so stale client state can't wipe them
     await preserveExistingCounters(rows);
@@ -470,6 +522,8 @@ export async function saveAllProducts(products: Product[]): Promise<void> {
 /** Insert a single product into Supabase with robust fallback */
 export async function insertProductDirect(p: Product): Promise<boolean> {
   try {
+    invalidateCache('products_list');
+    invalidateCache(`product_${p.id}`);
     const row = toDbProduct(p);
     // Never clobber existing engagement counters (upvotes, clicks, bids, dino score)
     await preserveExistingCounters([row]);
@@ -527,6 +581,8 @@ export async function insertProductDirect(p: Product): Promise<boolean> {
 /** Update an existing product in Supabase */
 export async function updateProductDirect(p: Product): Promise<boolean> {
   try {
+    invalidateCache('products_list');
+    invalidateCache(`product_${p.id}`);
     const row = toDbProduct(p);
     const { error } = await supabase.from('products').update(row).eq('id', p.id);
     return !error;
@@ -537,6 +593,8 @@ export async function updateProductDirect(p: Product): Promise<boolean> {
 
 /** Delete a product from Supabase */
 export async function deleteProduct(productId: string): Promise<void> {
+  invalidateCache('products_list');
+  invalidateCache(`product_${productId}`);
   await supabase.from('products').delete().eq('id', productId);
 }
 
@@ -569,6 +627,8 @@ export async function submitVerifiedGameScore(
 
 /** Toggle upvote via Supabase RPC (returns true if upvoted, false if un-upvoted) */
 export async function toggleUpvote(productId: string): Promise<boolean | null> {
+  invalidateCache('upvote_');
+  invalidateCache('products_list');
   const { data, error } = await supabase.rpc('toggle_upvote', { p_product_id: productId });
   if (error) {
     const altId = productId.startsWith('prod-') ? productId.replace(/^prod-/, '') : `prod-${productId}`;
@@ -605,15 +665,22 @@ export function isProductUpvoted(productId?: string | null, upvotedSet?: Set<str
 }
 
 /**
- * Real upvote counts per product, derived from the `upvotes` table (the source
- * of truth for who actually upvoted). Keys are indexed under both 'prod-'
- * prefixed and raw id forms so lookups never miss due to prefix variations.
+ * Real upvote counts per product with caching, derived from the `upvotes` table.
+ * Cached to prevent hitting the database on every page navigation.
  */
-export async function getUpvoteCounts(): Promise<Map<string, number>> {
+export async function getUpvoteCounts(forceFresh = false): Promise<Map<string, number>> {
+  if (!forceFresh) {
+    const cached = getCached<[string, number][]>('upvote_counts', CACHE_TTL.UPVOTE_COUNTS);
+    if (cached) return new Map(cached);
+  }
+
   const counts = new Map<string, number>();
   try {
     const { data, error } = await supabase.from('upvotes').select('product_id');
-    if (error || !data) return counts;
+    if (error || !data) {
+      const fallback = getCached<[string, number][]>('upvote_counts', Infinity);
+      return fallback ? new Map(fallback) : counts;
+    }
     for (const row of data) {
       const pid = (row as { product_id?: string }).product_id;
       if (!pid) continue;
@@ -622,8 +689,64 @@ export async function getUpvoteCounts(): Promise<Map<string, number>> {
       const alt = pid.startsWith('prod-') ? pid.replace(/^prod-/, '') : `prod-${pid}`;
       counts.set(alt, n);
     }
-  } catch { }
+    setCached('upvote_counts', Array.from(counts.entries()));
+  } catch {
+    const fallback = getCached<[string, number][]>('upvote_counts', Infinity);
+    if (fallback) return new Map(fallback);
+  }
   return counts;
+}
+
+export interface ProductUpvoteStats {
+  /** Cumulative upvotes per product (both raw and 'prod-' prefixed keys) */
+  total: Map<string, number>;
+  /** Upvotes cast per launch week: weekNumber -> productId -> count */
+  byWeek: Record<number, Record<string, number>>;
+}
+
+/**
+ * Cumulative and per-week upvote stats derived from the `upvotes` table.
+ * Weekly counts use the upvote's own `created_at`, so a product's weekly
+ * ranking reflects only the votes it earned during that launch week.
+ */
+export async function getUpvoteStats(): Promise<ProductUpvoteStats> {
+  const total = new Map<string, number>();
+  const byWeek: Record<number, Record<string, number>> = {};
+  const PAGE_SIZE = 1000;
+  try {
+    // Page through all rows so weekly counts stay correct past the default limit
+    for (let from = 0; ; from += PAGE_SIZE) {
+      const { data, error } = await supabase
+        .from('upvotes')
+        .select('product_id, created_at')
+        .order('id', { ascending: true })
+        .range(from, from + PAGE_SIZE - 1);
+      if (error || !data || data.length === 0) break;
+
+      for (const row of data as { product_id?: string; created_at?: string | null }[]) {
+        const pid = row.product_id;
+        if (!pid) continue;
+        const alt = pid.startsWith('prod-') ? pid.replace(/^prod-/, '') : `prod-${pid}`;
+
+        const totalCount = (total.get(pid) ?? 0) + 1;
+        total.set(pid, totalCount);
+        total.set(alt, totalCount);
+
+        if (!row.created_at) continue;
+        const ts = new Date(row.created_at).getTime();
+        if (!Number.isFinite(ts)) continue;
+
+        const week = getWeekNumber(ts);
+        const weekMap = (byWeek[week] ??= {});
+        const weekCount = (weekMap[pid] ?? 0) + 1;
+        weekMap[pid] = weekCount;
+        weekMap[alt] = weekCount;
+      }
+
+      if (data.length < PAGE_SIZE) break;
+    }
+  } catch { }
+  return { total, byWeek };
 }
 
 /**
@@ -949,6 +1072,7 @@ export async function getFeaturedPosition(): Promise<number> {
 /** Set position for the featured card in the directory listing */
 export async function setFeaturedPosition(position: number): Promise<void> {
   const pos = Math.max(0, position);
+  invalidateCache('featured_config');
   try {
     localStorage.setItem(LOCAL_FEATURED_POSITION_KEY, pos.toString());
   } catch { }
@@ -965,8 +1089,13 @@ export async function setFeaturedPosition(position: number): Promise<void> {
   }
 }
 
-/** Get global featured product from Supabase (with fallback to localStorage) */
-export async function getGlobalFeaturedProduct(): Promise<FeaturedProductConfig> {
+/** Get global featured product from Supabase (with fallback to cache & localStorage) */
+export async function getGlobalFeaturedProduct(forceFresh = false): Promise<FeaturedProductConfig> {
+  if (!forceFresh) {
+    const cached = getCached<FeaturedProductConfig>('featured_config', CACHE_TTL.FEATURED);
+    if (cached) return cached;
+  }
+
   try {
     const { data, error } = await supabase
       .from('site_settings')
@@ -1207,7 +1336,11 @@ export const SPONSOR_RAILS_ENABLED_KEY = 'sponsor_rails_enabled';
 export const LOCAL_SPONSOR_RAILS_KEY = 'topsaas_sponsor_rails_enabled';
 
 /** Get whether homepage side sponsor rails are enabled (default: false) */
-export async function getSponsorRailsEnabled(): Promise<boolean> {
+export async function getSponsorRailsEnabled(forceFresh = false): Promise<boolean> {
+  if (!forceFresh) {
+    const cached = getCached<boolean>('sponsor_rails_enabled', CACHE_TTL.SPONSOR_RAILS);
+    if (cached !== null) return cached;
+  }
   try {
     const { data, error } = await supabase
       .from('site_settings')
@@ -1220,6 +1353,7 @@ export async function getSponsorRailsEnabled(): Promise<boolean> {
       try {
         localStorage.setItem(LOCAL_SPONSOR_RAILS_KEY, isEnabled ? 'true' : 'false');
       } catch { }
+      setCached('sponsor_rails_enabled', isEnabled);
       return isEnabled;
     }
   } catch { }
@@ -1236,6 +1370,7 @@ export async function getSponsorRailsEnabled(): Promise<boolean> {
 
 /** Set whether homepage side sponsor rails are enabled */
 export async function setSponsorRailsEnabled(enabled: boolean): Promise<void> {
+  invalidateCache('sponsor_rails_enabled');
   try {
     localStorage.setItem(LOCAL_SPONSOR_RAILS_KEY, enabled ? 'true' : 'false');
   } catch { }
@@ -1268,7 +1403,11 @@ export const ACTIVE_SPONSORS_KEY = 'active_sponsors_v1';
 export const LOCAL_SPONSORS_KEY = 'topsaas_active_sponsors_v1';
 
 /** Fetch active sponsors from Supabase site_settings, falling back to localStorage */
-export async function getActiveSponsors(): Promise<ActiveSponsorConfig[]> {
+export async function getActiveSponsors(forceFresh = false): Promise<ActiveSponsorConfig[]> {
+  if (!forceFresh) {
+    const cached = getCached<ActiveSponsorConfig[]>('active_sponsors', CACHE_TTL.SPONSORS);
+    if (cached) return cached;
+  }
   try {
     const { data, error } = await supabase
       .from('site_settings')
@@ -1282,6 +1421,7 @@ export async function getActiveSponsors(): Promise<ActiveSponsorConfig[]> {
         try {
           localStorage.setItem(LOCAL_SPONSORS_KEY, JSON.stringify(parsed));
         } catch { }
+        setCached('active_sponsors', parsed);
         return parsed;
       }
     }
@@ -1308,6 +1448,8 @@ export async function saveActiveSponsors(sponsors: ActiveSponsorConfig[]): Promi
     localStorage.setItem(LOCAL_SPONSORS_KEY, JSON.stringify(sponsors));
   } catch { }
 
+  invalidateCache('active_sponsors');
+  invalidateCache('products_list');
   // Sync to Supabase site_settings
   try {
     await supabase.from('site_settings').upsert({

@@ -27,8 +27,8 @@ import { LegalTab } from './components/LegalModal';
 import { playSound } from './utils/sound';
 import confetti from 'canvas-confetti';
 import { supabase } from './utils/supabase';
-import { loadProducts, loadProductById, saveAllProducts, saveProductRanksDirect, debouncedSyncProducts, toggleUpvote, getUserUpvotes, getUpvoteCounts, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, setGlobalFeaturedProducts, setProductFeaturedPosition, LOCAL_FEATURED_PRODUCTS_KEY, LOCAL_FEATURED_POSITIONS_MAP_KEY, insertProductDirect, fetchComments, addComment, getCachedCommentsSync, submissionToProduct, publishedProductId, isProductUpvoted, getGuestUpvotes, saveGuestUpvotes, incrementProductUpvotesDirect, getActiveSponsors, mergeSponsorsIntoProducts, recordSponsorUpdate, recordSponsorEnd, getSponsorRailsEnabled, setSponsorRailsEnabled, LOCAL_SPONSOR_RAILS_KEY, getFeaturedPosition, setFeaturedPosition, LOCAL_FEATURED_POSITION_KEY, SUBMISSION_QUEUE_COLUMNS, loadSubmissionById } from './utils/db';
-import { getRecentWeeks, isInWeek, getWeekInfo, WeekInfo } from './utils/weeks';
+import { loadProducts, loadProductById, loadSubmissions, invalidateCache, saveAllProducts, saveProductRanksDirect, debouncedSyncProducts, toggleUpvote, getUserUpvotes, getUpvoteStats, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, setGlobalFeaturedProducts, setProductFeaturedPosition, LOCAL_FEATURED_PRODUCTS_KEY, LOCAL_FEATURED_POSITIONS_MAP_KEY, insertProductDirect, fetchComments, addComment, getCachedCommentsSync, submissionToProduct, publishedProductId, isProductUpvoted, getGuestUpvotes, saveGuestUpvotes, incrementProductUpvotesDirect, getActiveSponsors, mergeSponsorsIntoProducts, recordSponsorUpdate, recordSponsorEnd, getSponsorRailsEnabled, setSponsorRailsEnabled, LOCAL_SPONSOR_RAILS_KEY, getFeaturedPosition, setFeaturedPosition, LOCAL_FEATURED_POSITION_KEY, SUBMISSION_QUEUE_COLUMNS, loadSubmissionById } from './utils/db';
+import { getRecentWeeks, isInWeek, getWeekInfo, getWeekNumber, WeekInfo } from './utils/weeks';
 import { getWebsiteFavicon } from './utils/logo';
 import { Trophy, X, Plus, ShieldCheck, Loader2, Star, MessageCircle, Flame, Search } from 'lucide-react';
 import { FeaturedSpotModal } from './components/FeaturedSpotModal';
@@ -279,23 +279,14 @@ export default function App() {
   });
   const [submissionsLoaded, setSubmissionsLoaded] = useState(false);
 
-  // Load submissions from Supabase on mount (Supabase DB is the authoritative source of truth)
+  // Load submissions from cache / Supabase on mount
   useEffect(() => {
-    async function loadSubmissions() {
+    async function loadSubs() {
       try {
-        // Ensure the stored session is attached before querying. Submissions are
-        // RLS-scoped: anonymous visitors only see approved listings, while owners
-        // and admins see their pending/rejected rows (migration 025). Without this
-        // await the very first query can fire before the token is restored.
-        await supabase.auth.getSession();
-        const { data, error } = await supabase
-          .from('submissions')
-          .select(SUBMISSION_QUEUE_COLUMNS)
-          .order('submitted_at', { ascending: false });
-        if (!error && data) {
-          const dbSubs = (data as unknown as Record<string, unknown>[]).map(mapDbSubmission);
+        const dbSubs = await loadSubmissions();
+        if (dbSubs) {
           setSubmissions(dbSubs);
-          // Persist to localStorage inline (saveSubmissionsToStorage declared later)
+          // Persist to localStorage inline
           try {
             if (dbSubs.length === 0) {
               localStorage.removeItem(STORAGE_KEYS.SUBMISSIONS);
@@ -303,12 +294,11 @@ export default function App() {
               localStorage.setItem(STORAGE_KEYS.SUBMISSIONS, JSON.stringify(dbSubs));
             }
           } catch { }
-
         }
       } catch { }
       setSubmissionsLoaded(true);
     }
-    loadSubmissions();
+    loadSubs();
   }, []);
 
   // Load persisted live products (sorted by rank)
@@ -517,6 +507,9 @@ export default function App() {
   // Weekly launch board state: selected week (defaults to current calendar week)
   const [selectedWeek, setSelectedWeek] = useState<WeekInfo | null>(() => getWeekInfo(Date.now()));
 
+  // Upvotes earned per launch week (derived from upvotes.created_at)
+  const [weeklyUpvotes, setWeeklyUpvotes] = useState<Record<number, Record<string, number>>>({});
+
   // Comments (discussion threads on product detail pages)
   const [comments, setComments] = useState<Comment[]>(() => {
     return getCachedCommentsSync();
@@ -529,6 +522,22 @@ export default function App() {
     }
     return counts;
   });
+
+  // Comments left during each launch week, indexed the same way as upvotes
+  const weeklyCommentCounts = React.useMemo(() => {
+    const byWeek: Record<number, Record<string, number>> = {};
+    for (const c of comments) {
+      if (typeof c.createdAt !== 'number' || !Number.isFinite(c.createdAt)) continue;
+      const week = getWeekNumber(c.createdAt);
+      const weekMap = (byWeek[week] ??= {});
+      weekMap[c.productId] = (weekMap[c.productId] ?? 0) + 1;
+      const alt = c.productId.startsWith('prod-')
+        ? c.productId.replace(/^prod-/, '')
+        : `prod-${c.productId}`;
+      weekMap[alt] = weekMap[c.productId];
+    }
+    return byWeek;
+  }, [comments]);
 
   // Product detail route state — resolved from /product/:id or /badge/:id
   const [productRouteId, setProductRouteId] = useState<string | null>(() => {
@@ -832,13 +841,15 @@ export default function App() {
     async function load() {
       if (productsLoadedRef.current) return;
       productsLoadedRef.current = true;
-      const [dbProducts, activeSponsors, upvoteCounts, railsEnabled] = await Promise.all([
+      const [dbProducts, activeSponsors, upvoteStats, railsEnabled] = await Promise.all([
         loadProducts(),
         getActiveSponsors(),
-        getUpvoteCounts(),
+        getUpvoteStats(),
         getSponsorRailsEnabled(),
       ]);
       setSponsorRailsEnabledState(railsEnabled);
+      setWeeklyUpvotes(upvoteStats.byWeek);
+      const upvoteCounts = upvoteStats.total;
 
       // Repair the products table whenever a stored count is lower than reality.
       // Uses the security-definer increment RPC so even anonymous visitors can heal
@@ -1033,6 +1044,61 @@ export default function App() {
     return (a.createdAt ?? 0) - (b.createdAt ?? 0);
   }, [commentCounts]);
 
+  // Weekly upvote/comment lookups (both 'prod-' prefixed and raw id forms)
+  const getWeeklyUpvotes = useCallback(
+    (productId: string, weekNumber: number) => {
+      const weekMap = weeklyUpvotes[weekNumber];
+      if (!weekMap) return 0;
+      const alt = productId.startsWith('prod-')
+        ? productId.replace(/^prod-/, '')
+        : `prod-${productId}`;
+      return weekMap[productId] ?? weekMap[alt] ?? 0;
+    },
+    [weeklyUpvotes]
+  );
+
+  const getWeeklyComments = useCallback(
+    (productId: string, weekNumber: number) => {
+      const weekMap = weeklyCommentCounts[weekNumber];
+      if (!weekMap) return 0;
+      const alt = productId.startsWith('prod-')
+        ? productId.replace(/^prod-/, '')
+        : `prod-${productId}`;
+      return weekMap[productId] ?? weekMap[alt] ?? 0;
+    },
+    [weeklyCommentCounts]
+  );
+
+  // Weekly ranking: engagement earned during that week only.
+  // score = weeklyUpvotes * 2 + weeklyComments, tie-broken by the same counters.
+  const compareProductsForWeek = useCallback(
+    (week: WeekInfo) => (a: Product, b: Product) => {
+      const weekNumber = week.weekNumber;
+      const aUp = getWeeklyUpvotes(a.id, weekNumber);
+      const bUp = getWeeklyUpvotes(b.id, weekNumber);
+      const aComments = getWeeklyComments(a.id, weekNumber);
+      const bComments = getWeeklyComments(b.id, weekNumber);
+      const aScore = aUp * 2 + aComments;
+      const bScore = bUp * 2 + bComments;
+
+      if (bScore !== aScore) return bScore - aScore;
+      if (bUp !== aUp) return bUp - aUp;
+      if (bComments !== aComments) return bComments - aComments;
+
+      // No engagement yet: earliest launch in that round first, then name for stability.
+      // Relaunches without a timestamp this round sort after genuinely new launches.
+      const launchTime = (p: Product) => {
+        if (isInWeek(p.createdAt, week)) return p.createdAt;
+        if (p.lastRelaunchedAt && isInWeek(p.lastRelaunchedAt, week)) return p.lastRelaunchedAt;
+        return week.end;
+      };
+      const createdDiff = launchTime(a) - launchTime(b);
+      if (createdDiff !== 0) return createdDiff;
+      return a.name.localeCompare(b.name);
+    },
+    [getWeeklyUpvotes, getWeeklyComments]
+  );
+
   // Upvote a product (requires an account)
   const handleUpvote = async (product: Product) => {
     if (!user) {
@@ -1062,6 +1128,7 @@ export default function App() {
     });
 
     // 2. Instant optimistic update of products count & live dynamic re-ranking
+    // Weekly views re-sort from weekly engagement, so all-time ranks stay untouched there.
     let reRankedProducts: Product[] = [];
     setProducts((prev) => {
       const updated = prev.map((p) => {
@@ -1073,11 +1140,13 @@ export default function App() {
         return p;
       });
 
-      const reRanked = [...updated].sort(compareProductsByRank).map((p, idx) => ({
-        ...p,
-        previousRank: p.rank !== (idx + 1) ? (p.rank ?? (idx + 1)) : p.previousRank,
-        rank: idx + 1,
-      }));
+      const reRanked = selectedWeek
+        ? updated
+        : [...updated].sort(compareProductsByRank).map((p, idx) => ({
+          ...p,
+          previousRank: p.rank !== (idx + 1) ? (p.rank ?? (idx + 1)) : p.previousRank,
+          rank: idx + 1,
+        }));
       reRankedProducts = reRanked;
 
       try {
@@ -1086,6 +1155,18 @@ export default function App() {
       } catch { }
 
       return reRanked;
+    });
+
+    // The vote just cast belongs to the current calendar week
+    setWeeklyUpvotes((prev) => {
+      const week = getWeekNumber(Date.now());
+      const current = prev[week] ?? {};
+      const nextCount = Math.max(
+        0,
+        (current[product.id] ?? current[altId] ?? 0) + delta
+      );
+      const nextWeek: Record<string, number> = { ...current, [product.id]: nextCount, [altId]: nextCount };
+      return { ...prev, [week]: nextWeek };
     });
 
     // 3. Background persistence to Supabase via toggleUpvote RPC
@@ -1176,6 +1257,7 @@ export default function App() {
       saveSubmissionsToStorage(updated);
       return updated;
     });
+    invalidateCache('submissions_queue');
 
     try {
       const payload = toDbSubmission(newSubmission);
@@ -1219,6 +1301,8 @@ export default function App() {
       saveSubmissionsToStorage(updated);
       return updated;
     });
+    invalidateCache('submissions_queue');
+    invalidateCache('products_list');
 
     try {
       await supabase.from('submissions').update({ status: 'approved', reviewed_at: reviewedAt }).eq('id', sub.id);
@@ -1278,6 +1362,7 @@ export default function App() {
   const handleRejectSubmission = async (submissionId: string, reason?: string) => {
     const reviewedAt = Date.now();
     const rejectionReason = reason || 'Did not meet current directory guidelines';
+    invalidateCache('submissions_queue');
     setSubmissions((prev) =>
       prev.map((s) =>
         s.id === submissionId ? { ...s, status: 'rejected', reviewedAt, rejectionReason } : s
@@ -1292,6 +1377,8 @@ export default function App() {
   const handleDeleteSubmission = async (submissionId: string) => {
     const targetSub = submissions.find((s) => s.id === submissionId);
     markSubmissionDeleted(submissionId);
+    invalidateCache('submissions_queue');
+    invalidateCache('products_list');
     if (targetSub) {
       markSubmissionDeleted(targetSub.url);
       markSubmissionDeleted(targetSub.url.toLowerCase().replace(/\/$/, ''));
@@ -1323,6 +1410,7 @@ export default function App() {
 
   // Admin Update Submission Details
   const handleUpdateSubmission = async (updated: WebsiteSubmission) => {
+    invalidateCache('submissions_queue');
     setSubmissions((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
     try {
       await supabase.from('submissions').update(toDbSubmission(updated)).eq('id', updated.id);
@@ -1827,7 +1915,11 @@ export default function App() {
     return products.filter(isProductDeal).length;
   }, [products]);
 
-  // Filter products by category, search query, and deals filter (within the selected week, strictly honoring rank order)
+  // Filter products by category, search query, and deals filter.
+  // Weekly view ranks by engagement earned that week; All Time uses cumulative engagement.
+  const weekComparator = selectedWeek
+    ? compareProductsForWeek(selectedWeek)
+    : compareProductsByRank;
   const filteredProducts = weekScopedProducts
     .filter((p) => {
       const productCats = p.category ? p.category.split(',').map((c) => c.trim().toLowerCase()) : [];
@@ -1846,7 +1938,7 @@ export default function App() {
       return matchesCat && matchesQuery && matchesSteals;
     })
     .map(markOwnership)
-    .sort(compareProductsByRank);
+    .sort(weekComparator);
 
   // Promoted / featured product used in the rails and mid-board banner
   const promotedProduct = featuredProductId
@@ -2563,6 +2655,7 @@ export default function App() {
                   setSelectedWeek(w);
                   setCurrentPage(1);
                 }}
+                launchCount={selectedWeek ? weekScopedProducts.length : undefined}
                 soundEnabled={soundEnabled}
               />
 
@@ -2671,7 +2764,11 @@ export default function App() {
                       {selectedWeek && weekScopedProducts.length === 0 ? (
                         <>
                           <Trophy className="mx-auto h-10 w-10 text-neutral-700 mb-3" />
-                          <h3 className="text-lg font-bold text-neutral-950">No launches in {selectedWeek.label} yet</h3>
+                          <h3 className="text-lg font-bold text-neutral-950">
+                            {selectedWeek.isCurrent
+                              ? 'No launches this week yet'
+                              : `No launches in ${selectedWeek.label} yet`}
+                          </h3>
                           <p className="text-xs text-neutral-500 max-w-sm mx-auto mt-1 mb-5 font-medium">
                             The round is fresh. Be the first to launch your SaaS this week and take the #1 spot.
                           </p>
@@ -2685,7 +2782,7 @@ export default function App() {
                               }}
                               className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-transparent px-3.5 py-2 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-colors cursor-pointer"
                             >
-                              <span>See all launches</span>
+                              <span>See all-time launches</span>
                             </button>
                             <button
                               type="button"
