@@ -17,11 +17,11 @@ interface PricingPageProps {
 const faqs = [
   {
     q: 'What is the difference between Free and the $19 Verified Launch?',
-    a: 'Free submissions enter a manual queue that takes 7–14 days, with a standard nofollow backlink. The $19 Verified Launch fast-tracks your review within 24 hours, gives you a permanent high-authority DoFollow backlink, the official Verified Mint Badge, and inclusion in our /llms.txt for AI search engines like ChatGPT and Perplexity.',
+    a: 'Free submissions enter a manual queue that takes 7–14 days, with a standard nofollow backlink. The $19 Verified Launch gives you the full suite: fast-track review within 24 hours, category top-3 pinned spot, auto weekly relaunch every Sunday, permanent high-authority DoFollow backlink, official Verified Mint Badge, /llms.txt AI search inclusion, newsletter launch blast + monthly rotation, and "X vs Y" comparison pages.',
   },
   {
     q: 'Is the $19 Verified Launch a recurring subscription?',
-    a: 'No! It is a simple one-time payment of $19 per product. You keep your listing, verified badge, and permanent dofollow SEO backlink indefinitely with zero recurring charges or surprise renewals.',
+    a: 'No! It is a simple one-time payment of $19 per product. You get all premium distribution, relaunch, and SEO features indefinitely with zero recurring charges or surprise renewals.',
   },
   {
     q: 'What is the difference between Featured Spot and Sidebar Sponsor?',
@@ -51,9 +51,12 @@ const comparisonRows: Array<{
   { feature: 'SEO backlink type',               free: 'nofollow',       verified: 'dofollow (permanent)' },
   { feature: 'Verified badge (directory card)', free: false,            verified: true },
   { feature: 'Embeddable badge (your site)',    free: false,            verified: true },
+  { feature: 'Auto Weekly Relaunch',            free: '+$5 toggle',     verified: 'Included (Every Week)' },
+  { feature: 'Category pinned placement',       free: false,            verified: 'Top 3 Pinned' },
+  { feature: 'Newsletter promotion',            free: false,            verified: 'Launch blast + monthly rotation' },
+  { feature: '"X vs Y" comparison pages',       free: false,            verified: true },
+  { feature: 'Editorial blog review post',      free: false,            verified: true },
   { feature: 'Included in /llms.txt (AI SEO)',  free: false,            verified: true },
-  { feature: 'Newsletter launch blast (1×)',    free: false,            verified: true },
-  { feature: 'Weekly Relaunch eligibility',     free: '+$5 toggle',     verified: 'Included' },
   { feature: 'Live click & traffic analytics',  free: true,             verified: true },
   { feature: 'Pricing model',                   free: '$0 Forever',     verified: '$19 One-Time (Lifetime)' },
 ];
@@ -110,7 +113,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({
             Get started for free
           </h1>
           <p className="text-xs sm:text-sm text-neutral-500 mt-2 max-w-lg mx-auto">
-            Submit your SaaS for free, or upgrade to our one-time Verified Launch for 24h approval, permanent dofollow SEO backlink, and verified mint badge.
+            Submit your SaaS for free, or upgrade to our one-time Verified Launch for 24h approval, category top-3 placement, auto weekly relaunch, dofollow SEO backlink, and verified badge.
           </p>
         </div>
 
@@ -257,7 +260,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({
                   </span>
                 </div>
                 <p className="h-10 text-xs text-neutral-500 leading-relaxed mt-1 mb-2 line-clamp-2">
-                  Fast-track 24h approval, permanent dofollow SEO backlink, AI search engine inclusion, and verified mint badge.
+                  Fast-track 24h approval, category top-3 spot, auto weekly relaunch, dofollow SEO backlink, and verified badge.
                 </p>
 
                 <div className="h-10 flex items-baseline gap-1.5 my-1">
@@ -308,13 +311,37 @@ export const PricingPage: React.FC<PricingPageProps> = ({
                   <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
                     <Check className="h-2.5 w-2.5 stroke-[3]" />
                   </div>
-                  <span>Indexed in <strong>/llms.txt</strong> for AI search (ChatGPT, Perplexity)</span>
+                  <span><strong>Auto Weekly Relaunch included</strong> (every Sunday)</span>
                 </li>
                 <li className="flex items-center gap-2.5">
                   <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
                     <Check className="h-2.5 w-2.5 stroke-[3]" />
                   </div>
-                  <span><strong>1× Dedicated newsletter launch highlight</strong></span>
+                  <span><strong>Pinned Top 3</strong> in your primary category</span>
+                </li>
+                <li className="flex items-center gap-2.5">
+                  <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
+                    <Check className="h-2.5 w-2.5 stroke-[3]" />
+                  </div>
+                  <span><strong>Newsletter launch blast</strong> + monthly rotation</span>
+                </li>
+                <li className="flex items-center gap-2.5">
+                  <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
+                    <Check className="h-2.5 w-2.5 stroke-[3]" />
+                  </div>
+                  <span><strong>&quot;X vs Y&quot; competitor comparison pages</strong></span>
+                </li>
+                <li className="flex items-center gap-2.5">
+                  <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
+                    <Check className="h-2.5 w-2.5 stroke-[3]" />
+                  </div>
+                  <span><strong>Dedicated editorial blog review post</strong></span>
+                </li>
+                <li className="flex items-center gap-2.5">
+                  <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
+                    <Check className="h-2.5 w-2.5 stroke-[3]" />
+                  </div>
+                  <span>Indexed in <strong>/llms.txt</strong> for AI search (ChatGPT, Perplexity)</span>
                 </li>
                 <li className="flex items-center gap-2.5">
                   <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
