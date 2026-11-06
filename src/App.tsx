@@ -1432,8 +1432,6 @@ export default function App() {
               previousRank: p.previousRank ?? p.rank,
               upvotes: p.upvotes,
               clicks: p.clicks,
-              totalBid: p.totalBid,
-              bidHistory: p.bidHistory,
               createdAt: p.createdAt,
             }
             : p
@@ -2256,7 +2254,7 @@ export default function App() {
         <HowItWorksModal
           isOpen={isHowItWorksOpen}
           onClose={() => setIsHowItWorksOpen(false)}
-          onStartBidding={() => {
+          onOpenSubmit={() => {
             setIsHowItWorksOpen(false);
             handleOpenSubmit();
           }}
@@ -3286,7 +3284,7 @@ export default function App() {
       <HowItWorksModal
         isOpen={isHowItWorksOpen}
         onClose={() => setIsHowItWorksOpen(false)}
-        onStartBidding={() => {
+        onOpenSubmit={() => {
           setIsHowItWorksOpen(false);
           handleOpenSubmit();
         }}

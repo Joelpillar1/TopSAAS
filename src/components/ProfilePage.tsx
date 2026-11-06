@@ -25,10 +25,9 @@ import {
 } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '../utils/supabase';
-import { Category, PricingModel, Product, ProductSocial, SocialPlatform, WebsiteSubmission } from '../types';
+import { Category, PricingModel, Product, ProductSocial, SocialPlatform, SUBMISSION_CATEGORIES, WebsiteSubmission } from '../types';
 import { getWebsiteFavicon } from '../utils/logo';
 import { mapDbProduct, mapDbSubmission, updateProductDirect, submissionToProduct } from '../utils/db';
-import { SUBMISSION_CATEGORIES } from './BidModal';
 import { ProductLogo } from './ProductLogo';
 import { playSound } from '../utils/sound';
 import { EmbedBadgeModal } from './EmbedBadgeModal';

@@ -30,17 +30,36 @@ export type Category =
   | 'Health & Wellness'
   | (string & {});
 
-export interface BidHistoryEntry {
-  id: string;
-  amount: number;
-  newTotal: number;
-  bidderName: string;
-  bidderHandle?: string;
-  note?: string;
-  timestamp: number;
-  previousRank?: number;
-  newRank: number;
-}
+export const SUBMISSION_CATEGORIES: Category[] = [
+  'AI Tools',
+  'Developer Tools',
+  'Productivity',
+  'Design & UI',
+  'SaaS & Indie',
+  'Social Media & Community',
+  'X / Twitter Tools',
+  'LinkedIn Tools',
+  'YouTube & Video',
+  'Discord & Telegram',
+  'Instagram & TikTok',
+  'Marketing & SEO',
+  'Analytics & Data',
+  'Finance & Fintech',
+  'E-commerce',
+  'Security & Privacy',
+  'Communication & Social',
+  'Sales & CRM',
+  'No-Code & Low-Code',
+  'Education & Learning',
+  'Cloud & DevOps',
+  'Content & Media',
+  'Automation & Workflows',
+  'Open Source',
+  'Crypto & Web3',
+  'HR & Hiring',
+  'Customer Support',
+  'Health & Wellness',
+];
 
 export interface ProductFeature {
   title: string;
@@ -81,11 +100,9 @@ export interface Product {
   category: Category;
   upvotes?: number;
   dinoScore?: number;
-  totalBid?: number;
   clicks: number;
   createdAt: number;
   updatedAt: number;
-  bidHistory?: BidHistoryEntry[];
   isUserOwned?: boolean;
   submittedBy?: string; // user ID of who submitted this product
   featuredQuote?: string;
@@ -136,9 +153,7 @@ export interface LiveActivity {
   productId: string;
   productName: string;
   productLogo?: string;
-  type: 'outbid' | 'new_product' | 'boost' | 'claim_first';
-  bidAmount: number;
-  newTotal: number;
+  type: 'new_product' | 'boost' | 'claim_first';
   newRank: number;
   displacedProductName?: string;
   displacedRank?: number;

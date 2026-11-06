@@ -16,7 +16,7 @@ function getAudioContext(): AudioContext | null {
   return audioCtx;
 }
 
-export type SoundType = 'click' | 'bid' | 'outbid' | 'claim1' | 'hover' | 'upvote' | 'success' | 'error';
+export type SoundType = 'click' | 'claim1' | 'hover' | 'upvote' | 'success' | 'error';
 
 export function playSound(type: SoundType, enabled = true) {
   if (!enabled) return;
@@ -49,7 +49,7 @@ export function playSound(type: SoundType, enabled = true) {
       gain.connect(ctx.destination);
       osc.start(now);
       osc.stop(now + 0.05);
-    } else if (type === 'upvote' || type === 'bid') {
+    } else if (type === 'upvote') {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'sine';
@@ -75,28 +75,6 @@ export function playSound(type: SoundType, enabled = true) {
         osc.start(now + idx * 0.06);
         osc.stop(now + idx * 0.06 + 0.35);
       });
-    } else if (type === 'outbid') {
-      const osc1 = ctx.createOscillator();
-      const osc2 = ctx.createOscillator();
-      const gain = ctx.createGain();
-
-      osc1.type = 'triangle';
-      osc2.type = 'sine';
-      osc1.frequency.setValueAtTime(440, now);
-      osc1.frequency.setValueAtTime(660, now + 0.08);
-      osc2.frequency.setValueAtTime(880, now + 0.08);
-
-      gain.gain.setValueAtTime(0.15, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
-
-      osc1.connect(gain);
-      osc2.connect(gain);
-      gain.connect(ctx.destination);
-
-      osc1.start(now);
-      osc2.start(now + 0.08);
-      osc1.stop(now + 0.28);
-      osc2.stop(now + 0.28);
     } else if (type === 'error') {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();

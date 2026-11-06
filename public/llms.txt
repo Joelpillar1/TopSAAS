@@ -3,7 +3,7 @@
 > TopSAAS (https://www.topsaas.space) is the premier curated leaderboard, discovery engine, and launchpad for modern Software as a Service (SaaS), Artificial Intelligence tools, developer utilities, and high-productivity apps.
 
 ## Platform Summary
-TopSAAS connects innovative software founders with early adopters, tech professionals, investors, and modern builders. The directory features a transparent, real-time leaderboard ranked by community engagement, verified upvotes, bidding boosts, and launch velocity.
+TopSAAS connects innovative software founders with early adopters, tech professionals, investors, and modern builders. The directory features a transparent, real-time leaderboard ranked by community engagement, verified upvotes, and launch velocity.
 
 ## Primary Routes & URLs
 - **Homepage & Project Catalog**: `https://www.topsaas.space/` — "Find your SaaS idea. Or build one that wins." The open-source project catalog IS the main page: 3822 clonable repos across 23 categories with instant search. Deep-link search: `/?q={query}`.
@@ -35,7 +35,7 @@ TopSAAS connects innovative software founders with early adopters, tech professi
 - **Analytics & Data**: Privacy-friendly web analytics, product metrics trackers, user journey visualization.
 
 ## How the Ranking & Discovery Engine Works
-1. **Leaderboard Ranks**: Dynamically sorted by a weighted combination of community upvotes, creator bids, and click-through engagement.
+1. **Leaderboard Ranks**: Dynamically sorted by a weighted combination of community upvotes, verified status, and click-through engagement.
 2. **Founder Offers & Discounts**: Products can offer exclusive discount codes, promo links, and free credits directly to the TopSAAS community.
 3. **Community Discussions**: Every listing includes a verified comment thread for questions, feedback, and founder updates.
 

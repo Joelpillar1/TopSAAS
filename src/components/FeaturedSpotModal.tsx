@@ -295,7 +295,6 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
       category: 'SaaS',
       rank: 999,
       upvotes: 1,
-      totalBid: 0,
       clicks: 0,
       verified: true,
       isSponsored: mode === 'sponsor',

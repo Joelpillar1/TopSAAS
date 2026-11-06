@@ -5,14 +5,14 @@ import { playSound } from '../utils/sound';
 interface HowItWorksModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onStartBidding: () => void;
+  onOpenSubmit: () => void;
   soundEnabled: boolean;
 }
 
 export const HowItWorksModal: React.FC<HowItWorksModalProps> = ({
   isOpen,
   onClose,
-  onStartBidding,
+  onOpenSubmit,
   soundEnabled,
 }) => {
   if (!isOpen) return null;
@@ -102,7 +102,7 @@ export const HowItWorksModal: React.FC<HowItWorksModalProps> = ({
             onClick={() => {
               playSound('click', soundEnabled);
               onClose();
-              onStartBidding();
+              onOpenSubmit();
             }}
             className="w-full flex items-center justify-center gap-2 rounded-xl bg-neutral-950 py-3 text-xs sm:text-sm font-black text-white shadow-2xs hover:bg-neutral-800 active:scale-[0.98] transition-all cursor-pointer min-h-[44px]"
           >

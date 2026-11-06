@@ -192,7 +192,6 @@ export const mapDbProduct = (row: Record<string, unknown>): Product => ({
   category: row.category as Category,
   upvotes: (row.upvotes as number) || 0,
   dinoScore: (row.dino_score as number) || 0,
-  totalBid: (row.total_bid as number) || 0,
   clicks: (row.clicks as number) || 0,
   createdAt: row.created_at as number,
   updatedAt: row.updated_at as number,
@@ -215,7 +214,6 @@ export const mapDbProduct = (row: Record<string, unknown>): Product => ({
   targetAudience: (row.target_audience as string) || undefined,
   pricingModel: (row.pricing_model as string) || undefined,
   keyHighlights: (row.key_highlights as Product['keyHighlights']) || undefined,
-  bidHistory: (row.bid_history as Product['bidHistory']) || [],
   offerDiscount: (row.offer_discount as string) || undefined,
   offerCode: (row.offer_code as string) || undefined,
   offerUrl: (row.offer_url as string) || undefined,
@@ -251,7 +249,6 @@ export const toDbProduct = (p: Product) => {
     category: p.category,
     upvotes: p.upvotes ?? 0,
     dino_score: p.dinoScore ?? 0,
-    total_bid: p.totalBid ?? 0,
     clicks: p.clicks ?? 0,
     created_at: p.createdAt || Date.now(),
     updated_at: p.updatedAt || Date.now(),
@@ -270,7 +267,6 @@ export const toDbProduct = (p: Product) => {
     target_audience: p.targetAudience || null,
     pricing_model: p.pricingModel || null,
     key_highlights: p.keyHighlights || null,
-    bid_history: p.bidHistory || [],
     offer_discount: p.offerDiscount || null,
     offer_code: p.offerCode || null,
     offer_url: p.offerUrl || null,
@@ -333,7 +329,6 @@ export function submissionToProduct(sub: WebsiteSubmission, rank: number = 1): P
     creatorAvatar: sub.creatorAvatar || undefined,
     creatorRole: sub.creatorRole || undefined,
     category: sub.category,
-    totalBid: 0,
     dinoScore: 0,
     upvotes: 0,
     clicks: 0,
@@ -366,7 +361,6 @@ export function submissionToProduct(sub: WebsiteSubmission, rank: number = 1): P
       { label: 'Submitted By', value: sub.backerName || 'Community Creator' },
       { label: 'Status', value: 'Live on Directory' }
     ],
-    bidHistory: [],
     relaunchWeeks: sub.relaunchWeeks,
     isRelaunched: sub.isRelaunched,
     lastRelaunchedAt: sub.lastRelaunchedAt,
@@ -403,7 +397,6 @@ export const PRODUCT_DIRECTORY_COLUMNS = [
   'category',
   'upvotes',
   'dino_score',
-  'total_bid',
   'clicks',
   'created_at',
   'updated_at',
@@ -525,7 +518,7 @@ export async function insertProductDirect(p: Product): Promise<boolean> {
     invalidateCache('products_list');
     invalidateCache(`product_${p.id}`);
     const row = toDbProduct(p);
-    // Never clobber existing engagement counters (upvotes, clicks, bids, dino score)
+    // Never clobber existing engagement counters (upvotes, clicks)
     await preserveExistingCounters([row]);
     const { error } = await supabase.from('products').upsert(row, { onConflict: 'id' });
     if (!error) return true;
@@ -541,7 +534,6 @@ export async function insertProductDirect(p: Product): Promise<boolean> {
       category: p.category,
       upvotes: p.upvotes ?? 0,
       dino_score: p.dinoScore ?? 0,
-      total_bid: p.totalBid ?? 0,
       clicks: p.clicks ?? 0,
       created_at: p.createdAt || Date.now(),
       updated_at: p.updatedAt || Date.now(),
@@ -759,7 +751,7 @@ export async function getUpvoteStats(): Promise<ProductUpvoteStats> {
 }
 
 /**
- * Preserve existing DB counters (upvotes, clicks, dino_score, total_bid) when
+ * Preserve existing DB counters (upvotes, clicks, dino_score) when
  * upserting product rows, so stale client state can never wipe real engagement
  * data. Uses max() because these counters only ever grow in the DB via their
  * RPC paths — decrements (un-upvotes) are applied directly by toggle_upvote.
@@ -771,7 +763,7 @@ async function preserveExistingCounters(rows: Record<string, unknown>[]): Promis
   try {
     const { data, error } = await supabase
       .from('products')
-      .select('id, upvotes, clicks, dino_score, total_bid')
+      .select('id, upvotes, clicks, dino_score')
       .in('id', ids);
     if (error || !data) return;
     const existing = new Map<string, Record<string, unknown>>();
@@ -782,7 +774,6 @@ async function preserveExistingCounters(rows: Record<string, unknown>[]): Promis
       row.upvotes = Math.max((cur.upvotes as number) ?? 0, (row.upvotes as number) ?? 0);
       row.clicks = Math.max((cur.clicks as number) ?? 0, (row.clicks as number) ?? 0);
       row.dino_score = Math.max((cur.dino_score as number) ?? 0, (row.dino_score as number) ?? 0);
-      row.total_bid = Math.max((cur.total_bid as number) ?? 0, (row.total_bid as number) ?? 0);
     }
   } catch { }
 }

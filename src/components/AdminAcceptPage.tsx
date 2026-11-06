@@ -344,7 +344,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
 
   const handleDeleteSubmission = (sub: WebsiteSubmission) => {
     if (!window.confirm(`Are you sure you want to permanently delete "${sub.name}"? This action cannot be undone.`)) return;
-    playSound('outbid', soundEnabled);
+    playSound('click', soundEnabled);
     onDeleteSubmission(sub.id);
   };
 
@@ -381,7 +381,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
 
   const handleDelist = (product: Product) => {
     if (window.confirm(`Permanently delist "${product.name}" from the directory?`)) {
-      playSound('outbid', soundEnabled);
+      playSound('click', soundEnabled);
       onDelistProduct(product.id);
     }
   };
@@ -1044,7 +1044,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                 </div>
                 <div>
                   <span className="text-xs font-bold text-neutral-950">
-                    Featured Spotlight: {activeFeaturedProducts.length > 0 ? `${activeFeaturedProducts.length} tool${activeFeaturedProducts.length > 1 ? 's' : ''} active` : isEmptyFeatured ? 'Empty (Hidden)' : 'Default Open Bid Banner'}
+                    Featured Spotlight: {activeFeaturedProducts.length > 0 ? `${activeFeaturedProducts.length} tool${activeFeaturedProducts.length > 1 ? 's' : ''} active` : isEmptyFeatured ? 'Empty (Hidden)' : 'Default Open Spotlight Banner'}
                   </span>
                   <p className="text-[11px] text-neutral-500">
                     {activeFeaturedProducts.length > 0
@@ -1503,7 +1503,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                         ? 'border-neutral-950 bg-neutral-950 text-white'
                         : 'border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50'
                     }`}
-                    title="Show default reserve/bid banner when no custom featured products"
+                    title="Show default spotlight banner when no custom featured products"
                   >
                     <span>Default Banner</span>
                   </button>
@@ -1971,7 +1971,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="font-bold text-neutral-700">4.</span>
-                  <span>Use &quot;Default Banner&quot; to show the open bid card, or &quot;Hide (Empty)&quot; to remove the spotlight section completely.</span>
+                  <span>Use &quot;Default Banner&quot; to show the open spotlight card, or &quot;Hide (Empty)&quot; to remove the spotlight section completely.</span>
                 </li>
               </ul>
             </div>

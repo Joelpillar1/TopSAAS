@@ -13,7 +13,7 @@ TopSAAS is a real-time, curated software catalog, leaderboard, and distribution 
 ### Core Objectives
 1. **Curated Discovery**: Filter through the noise of AI wrappers to highlight genuinely useful, high-quality, and active software tools.
 2. **Founder Distribution**: Provide bootstrapped and indie developers with immediate visibility, early adopter feedback, high-intent traffic, and backlink authority.
-3. **Transparent Leaderboard Mechanics**: Real-time rank calculation driven by verified user upvotes, optional promotional bidding, engagement tracking, and gamified velocity milestones.
+3. **Transparent Leaderboard Mechanics**: Real-time rank calculation driven by verified user upvotes, launch engagement, and community interaction.
 4. **Actionable SaaS Idea Repository**: Provide aspiring founders with validated, market-ready SaaS concepts, execution strategies, and monetization roadmaps.
 5. **Open-Source Starter Catalog**: 3822 clonable open-source starter repos across 23 categories (~47.2M combined GitHub stars), each with an indexable detail page (`/repo/{owner}/{name}`) carrying an editorial write-up, license, stack breakdown, and similar-project recommendations.
 
@@ -24,7 +24,7 @@ TopSAAS is a real-time, curated software catalog, leaderboard, and distribution 
 - **Client Layer**: React 18 SPA built with Vite and TypeScript, styled with Tailwind CSS, Lucide icon system, and Canvas Confetti animations.
 - **Data Persistence**: Supabase PostgreSQL database with Row Level Security (RLS) policies protecting user profiles and admin operations.
 - **Realtime Synchronization**: Supabase Realtime WebSocket channels broadcasting upvote updates, comments, and leaderboard rank shifts.
-- **Payment & Bidding Processing**: Whop Merchant of Record integration supporting credit cards, Apple Pay, Google Pay, international currencies, and digital payment methods.
+- **Payment Processing**: Whop Merchant of Record integration supporting credit cards, Apple Pay, Google Pay, international currencies, and digital payment methods.
 
 ---
 
@@ -53,7 +53,7 @@ The canonical JSON data model for a listed SaaS product:
 export interface Product {
   id: string;                      // Unique identifier (e.g., 'prod-1')
   rank: number;                    // Current leaderboard position (1-indexed)
-  previousRank?: number;           // Prior rank before latest vote/bid update
+  previousRank?: number;           // Prior rank before latest vote update
   name: string;                    // Official product name
   tagline: string;                 // Concise one-line value statement (< 120 chars)
   url: string;                     // Canonical website destination URL
@@ -72,7 +72,6 @@ export interface Product {
   creatorRole?: string;            // Creator title (e.g. 'Founder & CEO')
   category: Category;              // Primary classification category
   upvotes: number;                 // Total community upvotes
-  totalBid: number;                // Total promotional bid points ($)
   clicks: number;                  // Total outbound click count
   createdAt: number;               // Epoch millisecond creation timestamp
   updatedAt: number;               // Epoch millisecond last modification timestamp
