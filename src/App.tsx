@@ -28,7 +28,7 @@ import { playSound } from './utils/sound';
 import confetti from 'canvas-confetti';
 import { supabase } from './utils/supabase';
 import { loadProducts, loadProductById, loadSubmissions, invalidateCache, saveAllProducts, saveProductRanksDirect, debouncedSyncProducts, toggleUpvote, getUserUpvotes, getUpvoteStats, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, setGlobalFeaturedProducts, setProductFeaturedPosition, LOCAL_FEATURED_PRODUCTS_KEY, LOCAL_FEATURED_POSITIONS_MAP_KEY, insertProductDirect, fetchComments, addComment, getCachedCommentsSync, submissionToProduct, publishedProductId, isProductUpvoted, getGuestUpvotes, saveGuestUpvotes, incrementProductUpvotesDirect, getActiveSponsors, mergeSponsorsIntoProducts, recordSponsorUpdate, recordSponsorEnd, getSponsorRailsEnabled, setSponsorRailsEnabled, LOCAL_SPONSOR_RAILS_KEY, getFeaturedPosition, setFeaturedPosition, LOCAL_FEATURED_POSITION_KEY, SUBMISSION_QUEUE_COLUMNS, loadSubmissionById } from './utils/db';
-import { getRecentWeeks, isInWeek, getWeekInfo, getWeekNumber, WeekInfo } from './utils/weeks';
+import { isInWeek, getWeekInfo, getWeekNumber, getWeekByNumber, getMonthKey, isInMonth, formatMonthLabel, formatWeekDateRange, WeekInfo } from './utils/weeks';
 import { getWebsiteFavicon } from './utils/logo';
 import { Trophy, X, Plus, ShieldCheck, Loader2, Star, MessageCircle, Flame, Search } from 'lucide-react';
 import { FeaturedSpotModal } from './components/FeaturedSpotModal';
@@ -40,6 +40,7 @@ import { ProductRow, timeAgo } from './components/ProductRow';
 import { SponsorTile } from './components/SponsorTile';
 import { HeroSponsorRails } from './components/HeroSponsorRails';
 import { WeeklyLaunchView } from './components/WeeklyLaunchView';
+import { BestOfSection } from './components/BestOfSection';
 import { ProductLogo } from './components/ProductLogo';
 import { AdminLoginGate } from './components/AdminLoginGate';
 import { isAdminSessionActive, clearAdminSession } from './utils/adminAuth';
@@ -496,6 +497,7 @@ export default function App() {
   const [shareProduct, setShareProduct] = useState<Product | null>(null);
   const [isHowItWorksOpen, setIsHowItWorksOpen] = useState(false);
   const [isFeaturedSpotModalOpen, setIsFeaturedSpotModalOpen] = useState(false);
+  const [featuredModalMode, setFeaturedModalMode] = useState<'featured' | 'sponsor'>('featured');
   const [featuredInitialTier, setFeaturedInitialTier] = useState<'1mo' | '3mo' | '1yr' | 'trial'>('3mo');
   const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
   const [legalTab, setLegalTab] = useState<LegalTab>('privacy');
@@ -509,6 +511,8 @@ export default function App() {
 
   // Upvotes earned per launch week (derived from upvotes.created_at)
   const [weeklyUpvotes, setWeeklyUpvotes] = useState<Record<number, Record<string, number>>>({});
+  // Upvotes earned per calendar month (derived from upvotes.created_at)
+  const [monthlyUpvotes, setMonthlyUpvotes] = useState<Record<string, Record<string, number>>>({});
 
   // Comments (discussion threads on product detail pages)
   const [comments, setComments] = useState<Comment[]>(() => {
@@ -537,6 +541,22 @@ export default function App() {
       weekMap[alt] = weekMap[c.productId];
     }
     return byWeek;
+  }, [comments]);
+
+  // Comments left during each calendar month, indexed the same way as upvotes
+  const monthlyCommentCounts = React.useMemo(() => {
+    const byMonth: Record<string, Record<string, number>> = {};
+    for (const c of comments) {
+      if (typeof c.createdAt !== 'number' || !Number.isFinite(c.createdAt)) continue;
+      const month = getMonthKey(c.createdAt);
+      const monthMap = (byMonth[month] ??= {});
+      monthMap[c.productId] = (monthMap[c.productId] ?? 0) + 1;
+      const alt = c.productId.startsWith('prod-')
+        ? c.productId.replace(/^prod-/, '')
+        : `prod-${c.productId}`;
+      monthMap[alt] = monthMap[c.productId];
+    }
+    return byMonth;
   }, [comments]);
 
   // Product detail route state — resolved from /product/:id or /badge/:id
@@ -849,6 +869,7 @@ export default function App() {
       ]);
       setSponsorRailsEnabledState(railsEnabled);
       setWeeklyUpvotes(upvoteStats.byWeek);
+      setMonthlyUpvotes(upvoteStats.byMonth);
       const upvoteCounts = upvoteStats.total;
 
       // Repair the products table whenever a stored count is lower than reality.
@@ -1099,6 +1120,52 @@ export default function App() {
     [getWeeklyUpvotes, getWeeklyComments]
   );
 
+  // Monthly upvote/comment lookups for "This Month's Best"
+  const getMonthlyUpvotes = useCallback(
+    (productId: string, monthKey: string) => {
+      const monthMap = monthlyUpvotes[monthKey];
+      if (!monthMap) return 0;
+      const alt = productId.startsWith('prod-')
+        ? productId.replace(/^prod-/, '')
+        : `prod-${productId}`;
+      return monthMap[productId] ?? monthMap[alt] ?? 0;
+    },
+    [monthlyUpvotes]
+  );
+
+  const getMonthlyComments = useCallback(
+    (productId: string, monthKey: string) => {
+      const monthMap = monthlyCommentCounts[monthKey];
+      if (!monthMap) return 0;
+      const alt = productId.startsWith('prod-')
+        ? productId.replace(/^prod-/, '')
+        : `prod-${productId}`;
+      return monthMap[productId] ?? monthMap[alt] ?? 0;
+    },
+    [monthlyCommentCounts]
+  );
+
+  // Monthly ranking: engagement earned during that calendar month only.
+  const compareProductsForMonth = useCallback(
+    (monthKey: string) => (a: Product, b: Product) => {
+      const aUp = getMonthlyUpvotes(a.id, monthKey);
+      const bUp = getMonthlyUpvotes(b.id, monthKey);
+      const aComments = getMonthlyComments(a.id, monthKey);
+      const bComments = getMonthlyComments(b.id, monthKey);
+      const aScore = aUp * 2 + aComments;
+      const bScore = bUp * 2 + bComments;
+
+      if (bScore !== aScore) return bScore - aScore;
+      if (bUp !== aUp) return bUp - aUp;
+      if (bComments !== aComments) return bComments - aComments;
+
+      const createdDiff = (a.createdAt ?? 0) - (b.createdAt ?? 0);
+      if (createdDiff !== 0) return createdDiff;
+      return a.name.localeCompare(b.name);
+    },
+    [getMonthlyUpvotes, getMonthlyComments]
+  );
+
   // Upvote a product (requires an account)
   const handleUpvote = async (product: Product) => {
     if (!user) {
@@ -1167,6 +1234,18 @@ export default function App() {
       );
       const nextWeek: Record<string, number> = { ...current, [product.id]: nextCount, [altId]: nextCount };
       return { ...prev, [week]: nextWeek };
+    });
+
+    // ...and the current calendar month
+    setMonthlyUpvotes((prev) => {
+      const month = getMonthKey(Date.now());
+      const current = prev[month] ?? {};
+      const nextCount = Math.max(
+        0,
+        (current[product.id] ?? current[altId] ?? 0) + delta
+      );
+      const nextMonth: Record<string, number> = { ...current, [product.id]: nextCount, [altId]: nextCount };
+      return { ...prev, [month]: nextMonth };
     });
 
     // 3. Background persistence to Supabase via toggleUpvote RPC
@@ -1544,9 +1623,38 @@ export default function App() {
     handleUpdateProduct(updatedProduct);
   };
 
-  // Rent the featured spotlight (side rail ad card)
+  // Activate featured spot in directory listing (above the product cards)
+  const handleActivateFeatured = async (
+    product: Product,
+    durationDays: number = 7,
+    email?: string
+  ) => {
+    // 1. Remove from active sponsors so it never appears in the side rails
+    await recordSponsorEnd(product.id);
+
+    // 2. Add product to featuredProductIds (placed first in priority order)
+    const nextFeaturedIds = [product.id, ...featuredProductIds.filter((id) => id !== product.id)];
+    await handleSetFeaturedProducts(nextFeaturedIds, 'active');
+
+    // 3. Ensure placement is Top (above #1 card)
+    await handleSetProductFeaturedPosition(product.id, 0);
+    setFeaturedPositionState(0);
+    await setFeaturedPosition(0);
+
+    // 4. Update product state so isSponsored is strictly false
+    const updatedProduct: Product = {
+      ...product,
+      isSponsored: false,
+      sponsorTier: undefined,
+      sponsorExpiresAt: undefined,
+    };
+    handleUpdateProduct(updatedProduct);
+  };
+
+  // Rent the side rail sponsor ad card
   const openRentSpotlight = () => {
     playSound('click', soundEnabled);
+    setFeaturedModalMode('sponsor');
     if (!user) {
       setIsSignInModalOpen(true);
     } else {
@@ -1890,7 +1998,6 @@ export default function App() {
   }, [products]);
 
   // Weekly launch rounds: scope products to the selected week, upvote-ranked
-  const weeks = getRecentWeeks(6);
   const weekScopedProducts = selectedWeek
     ? products.filter((p) => {
       if (isInWeek(p.createdAt, selectedWeek)) return true;
@@ -1945,15 +2052,30 @@ export default function App() {
     ? products.find((p) => p.id === featuredProductId) || null
     : null;
 
-  // Last week's best (right rail archive — top upvoted launches from the previous week)
-  const lastWeek = weeks[weeks.length - 2];
-  const lastWeekBest = (() => {
-    if (!lastWeek) return [];
-    return [...products]
-      .filter((p) => isInWeek(p.createdAt, lastWeek))
-      .sort((a, b) => (b.upvotes ?? 0) - (a.upvotes ?? 0))
-      .slice(0, 5);
-  })();
+  // Last week's best (previous completed launch round)
+  const currentWeekInfo = getWeekInfo(Date.now());
+  const lastWeekInfo = currentWeekInfo.weekNumber > 1
+    ? getWeekByNumber(currentWeekInfo.weekNumber - 1)
+    : null;
+  const lastWeekBest = lastWeekInfo
+    ? [...products]
+      .filter((p) => {
+        if (isInWeek(p.createdAt, lastWeekInfo)) return true;
+        if (p.autoRelaunch) return true;
+        if (p.lastRelaunchedAt && isInWeek(p.lastRelaunchedAt, lastWeekInfo)) return true;
+        return Boolean(p.relaunchWeeks?.includes(lastWeekInfo.weekNumber));
+      })
+      .sort(compareProductsForWeek(lastWeekInfo))
+    : [];
+
+  // Last month's best (previous calendar month)
+  const nowDate = new Date();
+  const lastMonthReference = new Date(nowDate.getFullYear(), nowDate.getMonth() - 1, 15).getTime();
+  const lastMonthKey = getMonthKey(lastMonthReference);
+  const lastMonthLabel = formatMonthLabel(lastMonthReference);
+  const lastMonthBest = [...products]
+    .filter((p) => isInMonth(p.createdAt, lastMonthReference))
+    .sort(compareProductsForMonth(lastMonthKey));
 
   // Reset page to 1 when filters change
   useEffect(() => {
@@ -2086,9 +2208,12 @@ export default function App() {
           onClose={() => setIsFeaturedSpotModalOpen(false)}
           products={products}
           user={user}
+          mode={featuredModalMode}
+          featuredProductIds={featuredProductIds}
           initialTier={featuredInitialTier}
           soundEnabled={soundEnabled}
           onActivateSponsor={handleActivateSponsorTrial}
+          onActivateFeatured={handleActivateFeatured}
           onOpenSubmitModal={() => {
             setIsFeaturedSpotModalOpen(false);
             handleOpenSubmit();
@@ -2286,9 +2411,12 @@ export default function App() {
           onClose={() => setIsFeaturedSpotModalOpen(false)}
           products={products}
           user={user}
+          mode={featuredModalMode}
+          featuredProductIds={featuredProductIds}
           initialTier={featuredInitialTier}
           soundEnabled={soundEnabled}
           onActivateSponsor={handleActivateSponsorTrial}
+          onActivateFeatured={handleActivateFeatured}
           onOpenSubmitModal={() => {
             setIsFeaturedSpotModalOpen(false);
             handleOpenSubmit();
@@ -2378,8 +2506,11 @@ export default function App() {
           onClose={() => setIsFeaturedSpotModalOpen(false)}
           products={products}
           user={user}
+          mode={featuredModalMode}
+          featuredProductIds={featuredProductIds}
           soundEnabled={soundEnabled}
           onActivateSponsor={handleActivateSponsorTrial}
+          onActivateFeatured={handleActivateFeatured}
           onOpenSubmitModal={() => {
             setIsFeaturedSpotModalOpen(false);
             handleOpenSubmit();
@@ -2451,9 +2582,12 @@ export default function App() {
           onClose={() => setIsFeaturedSpotModalOpen(false)}
           products={products}
           user={user}
+          mode={featuredModalMode}
+          featuredProductIds={featuredProductIds}
           initialTier={featuredInitialTier}
           soundEnabled={soundEnabled}
           onActivateSponsor={handleActivateSponsorTrial}
+          onActivateFeatured={handleActivateFeatured}
           onOpenSubmitModal={() => {
             setIsFeaturedSpotModalOpen(false);
             handleOpenSubmit();
@@ -2617,11 +2751,21 @@ export default function App() {
             {/* ── Hero: brand statement + search ── */}
             <HeroSponsorRails
               enabled={sponsorRailsEnabled}
-              sponsors={sponsorRailsEnabled ? products.filter((p) => p.isSponsored) : []}
+              sponsors={
+                sponsorRailsEnabled
+                  ? products.filter(
+                      (p) =>
+                        p.isSponsored &&
+                        !featuredProductIds.includes(p.id) &&
+                        p.id !== featuredProductId
+                    )
+                  : []
+              }
               soundEnabled={soundEnabled}
               onTrackClick={handleTrackClick}
               onOpenProduct={handleOpenProduct}
               onOpenFeaturedSpotModal={() => {
+                setFeaturedModalMode('sponsor');
                 if (!user) {
                   setIsSignInModalOpen(true);
                 } else {
@@ -2893,6 +3037,7 @@ export default function App() {
                                     onUpvote={handleUpvote}
                                     upvoted={isProductUpvoted(fp.id, userUpvotes)}
                                     onOpenFeaturedSpotModal={() => {
+                                      setFeaturedModalMode('featured');
                                       if (!user) {
                                         setIsSignInModalOpen(true);
                                       } else {
@@ -2913,6 +3058,7 @@ export default function App() {
                               onUpvote={handleUpvote}
                               upvoted={false}
                               onOpenFeaturedSpotModal={() => {
+                                setFeaturedModalMode('featured');
                                 if (!user) {
                                   setIsSignInModalOpen(true);
                                 } else {
@@ -2968,6 +3114,7 @@ export default function App() {
                                       onUpvote={handleUpvote}
                                       upvoted={isProductUpvoted(fp.id, userUpvotes)}
                                       onOpenFeaturedSpotModal={() => {
+                                        setFeaturedModalMode('featured');
                                         if (!user) {
                                           setIsSignInModalOpen(true);
                                         } else {
@@ -2985,6 +3132,7 @@ export default function App() {
                                     onUpvote={handleUpvote}
                                     upvoted={false}
                                     onOpenFeaturedSpotModal={() => {
+                                      setFeaturedModalMode('featured');
                                       if (!user) {
                                         setIsSignInModalOpen(true);
                                       } else {
@@ -3023,6 +3171,43 @@ export default function App() {
 
                 </div>
               </section>
+
+              {/* ── Period highlights ── */}
+              <div className="w-full space-y-4 pb-2 pt-6">
+                <BestOfSection
+                  id="last-week-best"
+                  title="Last Week's Best"
+                  subtitle={
+                    lastWeekInfo
+                      ? `${lastWeekInfo.label} · ${formatWeekDateRange(lastWeekInfo, 'to')} · ranked by engagement earned that week`
+                      : 'The previous launch round'
+                  }
+                  products={lastWeekBest}
+                  emptyMessage={
+                    lastWeekInfo
+                      ? `No launches were ranked in ${lastWeekInfo.label}.`
+                      : "Last week's round hasn't wrapped yet. Winners will appear here when this launch week ends."
+                  }
+                  soundEnabled={soundEnabled}
+                  commentCounts={commentCounts}
+                  onOpenProduct={handleOpenProduct}
+                  onUpvote={handleUpvote}
+                  isUpvoted={(productId) => isProductUpvoted(productId, userUpvotes)}
+                />
+
+                <BestOfSection
+                  id="last-month-best"
+                  title="Last Month's Best"
+                  subtitle={`${lastMonthLabel} · ranked by that month's upvotes and comments`}
+                  products={lastMonthBest}
+                  emptyMessage="No launches were ranked last month."
+                  soundEnabled={soundEnabled}
+                  commentCounts={commentCounts}
+                  onOpenProduct={handleOpenProduct}
+                  onUpvote={handleUpvote}
+                  isUpvoted={(productId) => isProductUpvoted(productId, userUpvotes)}
+                />
+              </div>
             </HeroSponsorRails>
           </>
         )}
@@ -3080,9 +3265,12 @@ export default function App() {
         onClose={() => setIsFeaturedSpotModalOpen(false)}
         products={products}
         user={user}
+        mode={featuredModalMode}
+        featuredProductIds={featuredProductIds}
         initialTier={featuredInitialTier}
         soundEnabled={soundEnabled}
         onActivateSponsor={handleActivateSponsorTrial}
+        onActivateFeatured={handleActivateFeatured}
         onOpenSubmitModal={() => {
           setIsFeaturedSpotModalOpen(false);
           handleOpenSubmit();

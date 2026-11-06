@@ -15,6 +15,7 @@ import {
   Globe,
   Image as ImageIcon,
   FileText,
+  Star,
 } from 'lucide-react';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import confetti from 'canvas-confetti';
@@ -33,9 +34,16 @@ interface FeaturedSpotModalProps {
   soundEnabled: boolean;
   onOpenSubmitModal: () => void;
   initialTier?: SponsorPlanId;
+  mode?: 'featured' | 'sponsor';
+  featuredProductIds?: string[];
   onActivateSponsor?: (
     product: Product,
     tier: 'trial' | 'paid' | '1mo' | '3mo' | '1yr',
+    email?: string
+  ) => Promise<void> | void;
+  onActivateFeatured?: (
+    product: Product,
+    durationDays?: number,
     email?: string
   ) => Promise<void> | void;
 }
@@ -154,7 +162,10 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
   soundEnabled,
   onOpenSubmitModal,
   initialTier,
+  mode = 'featured',
+  featuredProductIds = [],
   onActivateSponsor,
+  onActivateFeatured,
 }) => {
   const [step, setStep] = useState<'product' | 'plan' | 'confirm'>('product');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -245,8 +256,8 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
       totalBid: 0,
       clicks: 0,
       verified: true,
-      isSponsored: true,
-      sponsorTier: selectedPlanId === 'trial' ? 'trial' : 'paid',
+      isSponsored: mode === 'sponsor',
+      sponsorTier: mode === 'sponsor' ? (selectedPlanId === 'trial' ? 'trial' : 'paid') : undefined,
       createdAt: Date.now(),
       updatedAt: Date.now(),
       submittedBy: user?.id,
@@ -316,12 +327,21 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
     setPaymentError(null);
 
     try {
-      if (onActivateSponsor) {
-        await onActivateSponsor(selectedProduct, 'trial', contactEmail.trim());
+      if (mode === 'featured') {
+        if (onActivateFeatured) {
+          await onActivateFeatured(selectedProduct, 7, contactEmail.trim());
+        }
+        setSuccessMessage(
+          `Congratulations! ${selectedProduct.name} is now in the Featured Spot above the product cards for 7 days!`
+        );
+      } else {
+        if (onActivateSponsor) {
+          await onActivateSponsor(selectedProduct, 'trial', contactEmail.trim());
+        }
+        setSuccessMessage(
+          `Congratulations! ${selectedProduct.name} is now spotlighted as a sponsor for 7 days.`
+        );
       }
-      setSuccessMessage(
-        `Congratulations! ${selectedProduct.name} is now spotlighted as a sponsor for 7 days.`
-      );
       playSound('success', soundEnabled);
       confetti({ particleCount: 70, spread: 80, origin: { y: 0.6 } });
     } catch (err) {
@@ -349,28 +369,58 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
           ? '3mo'
           : '1yr';
 
-      try {
-        await redirectToCheckout({
-          planType,
-          productName: selectedProduct.name,
-          targetProductId: selectedProduct.id,
-          customerEmail: email,
-        });
-      } catch (checkoutErr) {
-        console.warn('Checkout note, activating placement directly:', checkoutErr);
-        if (onActivateSponsor) {
-          await onActivateSponsor(
-            selectedProduct,
-            selectedPlan.id,
-            contactEmail.trim()
+      if (mode === 'featured') {
+        let durationDays = 30;
+        if (selectedPlan.id === '3mo') durationDays = 90;
+        else if (selectedPlan.id === '1yr') durationDays = 365;
+
+        try {
+          await redirectToCheckout({
+            planType,
+            productName: selectedProduct.name,
+            targetProductId: selectedProduct.id,
+            customerEmail: email,
+          });
+        } catch (checkoutErr) {
+          console.warn('Checkout note, activating featured placement directly:', checkoutErr);
+          if (onActivateFeatured) {
+            await onActivateFeatured(
+              selectedProduct,
+              durationDays,
+              contactEmail.trim()
+            );
+          }
+          setSuccessMessage(
+            `Congratulations! ${selectedProduct.name} is now in the Featured Spot above the product cards for ${selectedPlan.duration}!`
           );
+          playSound('success', soundEnabled);
+          confetti({ particleCount: 80, spread: 80, origin: { y: 0.6 } });
+          setIsProcessing(false);
         }
-        setSuccessMessage(
-          `Congratulations! ${selectedProduct.name} is now spotlighted as a ${selectedPlan.name} (${selectedPlan.duration}).`
-        );
-        playSound('success', soundEnabled);
-        confetti({ particleCount: 80, spread: 80, origin: { y: 0.6 } });
-        setIsProcessing(false);
+      } else {
+        try {
+          await redirectToCheckout({
+            planType,
+            productName: selectedProduct.name,
+            targetProductId: selectedProduct.id,
+            customerEmail: email,
+          });
+        } catch (checkoutErr) {
+          console.warn('Checkout note, activating placement directly:', checkoutErr);
+          if (onActivateSponsor) {
+            await onActivateSponsor(
+              selectedProduct,
+              selectedPlan.id,
+              contactEmail.trim()
+            );
+          }
+          setSuccessMessage(
+            `Congratulations! ${selectedProduct.name} is now spotlighted as a ${selectedPlan.name} (${selectedPlan.duration}).`
+          );
+          playSound('success', soundEnabled);
+          confetti({ particleCount: 80, spread: 80, origin: { y: 0.6 } });
+          setIsProcessing(false);
+        }
       }
     } catch (err: unknown) {
       console.error('Payment checkout error:', err);
@@ -441,13 +491,19 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
                 <div className="space-y-4">
                   <div className="text-center">
                     <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 border border-blue-200 text-blue-600 mb-2">
-                      <Megaphone className="h-5 w-5" />
+                      {mode === 'featured' ? (
+                        <Star className="h-5 w-5 fill-amber-400 text-amber-500" />
+                      ) : (
+                        <Megaphone className="h-5 w-5" />
+                      )}
                     </div>
                     <h2 className="text-xl font-black text-neutral-950 tracking-tight">
-                      Sponsor Your App on TopSAAS
+                      {mode === 'featured' ? 'Feature Your App on TopSAAS' : 'Sponsor Your App on TopSAAS'}
                     </h2>
                     <p className="text-xs text-neutral-500 mt-1 max-w-sm mx-auto">
-                      Spotlight your product 24/7 on top & side rails across the entire directory.
+                      {mode === 'featured'
+                        ? 'Pin your product in the Featured Spotlight directly above the directory cards.'
+                        : 'Spotlight your product 24/7 on top & side rails across the entire directory.'}
                     </p>
                   </div>
 
@@ -466,7 +522,7 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
                           : 'text-neutral-500 hover:text-neutral-950'
                       }`}
                     >
-                      + Add New App to Sponsor
+                      + Add New App to {mode === 'featured' ? 'Feature' : 'Sponsor'}
                     </button>
                     <button
                       type="button"
@@ -625,20 +681,20 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
                           </div>
                         ) : (
                           filteredProducts.map((p) => {
-                            const isAlreadySponsored = Boolean(
-                              p.isSponsored && (p.sponsorExpiresAt ? p.sponsorExpiresAt > Date.now() : true)
-                            );
+                            const isAlreadyActive = mode === 'featured'
+                              ? Boolean(featuredProductIds.includes(p.id))
+                              : Boolean(p.isSponsored && (p.sponsorExpiresAt ? p.sponsorExpiresAt > Date.now() : true));
                             return (
                               <div
                                 key={p.id}
                                 role="button"
-                                tabIndex={isAlreadySponsored ? -1 : 0}
+                                tabIndex={isAlreadyActive ? -1 : 0}
                                 onClick={() => {
-                                  if (isAlreadySponsored) return;
+                                  if (isAlreadyActive) return;
                                   handleSelectProduct(p);
                                 }}
                                 className={`flex items-center justify-between p-3 rounded-xl border transition-all text-left ${
-                                  isAlreadySponsored
+                                  isAlreadyActive
                                     ? 'border-neutral-200 bg-neutral-50/70 opacity-60 cursor-not-allowed'
                                     : 'border-neutral-200 bg-white hover:border-blue-500/50 hover:bg-neutral-50 cursor-pointer group'
                                 }`}
@@ -655,20 +711,22 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
                                       <h4 className="text-xs font-bold text-neutral-950 group-hover:text-blue-600 transition-colors truncate">
                                         {p.name}
                                       </h4>
-                                      {isAlreadySponsored && (
-                                        <span className="inline-flex shrink-0 items-center rounded-md bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 text-[9px] font-bold text-emerald-700">
-                                          Active on Sponsor Rails
+                                      {isAlreadyActive && (
+                                        <span className="inline-flex shrink-0 items-center rounded-md bg-amber-50 border border-amber-200 px-1.5 py-0.2 text-[9px] font-bold text-amber-700">
+                                          {mode === 'featured' ? 'Active in Featured Spot' : 'Active on Sponsor Rails'}
                                         </span>
                                       )}
                                     </div>
                                     <p className="text-[11px] text-neutral-500 truncate max-w-sm">
-                                      {isAlreadySponsored
-                                        ? 'This product is already live on the homepage sponsor rails'
+                                      {isAlreadyActive
+                                        ? (mode === 'featured'
+                                            ? 'This product is already active in the featured spot'
+                                            : 'This product is already live on the homepage sponsor rails')
                                         : p.tagline}
                                     </p>
                                   </div>
                                 </div>
-                                {!isAlreadySponsored ? (
+                                {!isAlreadyActive ? (
                                   <ArrowRight className="h-4 w-4 text-neutral-400 group-hover:text-blue-600 transition-colors shrink-0 ml-2" />
                                 ) : (
                                   <span className="text-[10px] font-bold text-neutral-400 shrink-0 ml-2">
@@ -692,14 +750,16 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
                   <div className="space-y-1">
                     <div className="flex items-center justify-between flex-wrap gap-2">
                       <h2 className="text-xl sm:text-2xl font-black text-neutral-950 tracking-tight">
-                        Sponsorship Plans
+                        {mode === 'featured' ? 'Featured Spotlight Plans' : 'Sponsorship Plans'}
                       </h2>
                       <span className="text-[11px] text-blue-700 font-bold bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">
                         {selectedProduct.name}
                       </span>
                     </div>
                     <p className="text-xs text-neutral-500 leading-relaxed">
-                      Choose the plan that fits your budget. These are one-time payments, not a recurring subscription.
+                      {mode === 'featured'
+                        ? 'Choose the plan that fits your budget. Your product will be pinned in the Featured Spot directly above the directory cards.'
+                        : 'Choose the plan that fits your budget. These are one-time payments, not a recurring subscription.'}
                     </p>
                   </div>
 
@@ -781,13 +841,15 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
                       </span>
                       <div className="min-w-0">
                         <p className="text-xs font-bold text-neutral-950 flex items-center gap-1.5">
-                          <span>7-Day Free Sponsor Test Drive</span>
+                          <span>{mode === 'featured' ? '7-Day Free Featured Spotlight' : '7-Day Free Sponsor Test Drive'}</span>
                           <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded">
                             No Card Required
                           </span>
                         </p>
                         <p className="text-[11px] text-neutral-500 truncate">
-                          Test sponsor rails free for 7 days before upgrading to a paid tier
+                          {mode === 'featured'
+                            ? 'Pin your product in the Featured Spot above directory cards free for 7 days'
+                            : 'Test sponsor rails free for 7 days before upgrading to a paid tier'}
                         </p>
                       </div>
                     </div>
@@ -865,7 +927,9 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
                     </h2>
                     <p className="text-xs text-neutral-500 mt-1">
                       {selectedPlanId === 'trial'
-                        ? 'Activate your complimentary 7-day sponsor placement'
+                        ? (mode === 'featured'
+                            ? 'Activate your complimentary 7-day featured spot above the directory cards'
+                            : 'Activate your complimentary 7-day sponsor placement')
                         : 'Review order summary and proceed to checkout'}
                     </p>
                   </div>
@@ -901,7 +965,9 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-neutral-500">Placement</span>
                         <span className="font-semibold text-blue-600">
-                          Hero Rails + Directory Spotlight
+                          {mode === 'featured'
+                            ? 'Featured Spot (Above Directory Cards)'
+                            : 'Homepage Side Rails'}
                         </span>
                       </div>
                       <div className="border-t border-neutral-100 pt-2 flex items-center justify-between">

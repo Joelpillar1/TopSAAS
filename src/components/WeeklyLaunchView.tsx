@@ -76,7 +76,7 @@ export const WeeklyLaunchView: React.FC<WeeklyLaunchViewProps> = ({
       className={`sticky top-[53px] z-30 w-full py-2 bg-white/95 backdrop-blur-md border-b border-neutral-200/70 shadow-2xs select-none transition-all ${className}`}
       aria-label="Weekly launches navigation"
     >
-      <div className="flex items-center justify-center gap-2 sm:gap-4 md:gap-6 overflow-x-auto scrollbar-none px-2">
+      <div className="flex items-center justify-start sm:justify-center gap-2 sm:gap-4 md:gap-6 overflow-x-auto scrollbar-none px-2">
         {/* View switch: recurring All Time entry point */}
         <button
           type="button"

@@ -2,6 +2,7 @@ import React from 'react';
 import { ExternalLink, MessageCircle, Flame, ChevronUp } from 'lucide-react';
 import { VerifiedBadge } from './VerifiedBadge';
 import { RankMedal } from './RankMedal';
+import { BorderBeam } from './BorderBeam';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
@@ -13,6 +14,8 @@ interface ProductRowProps {
   showVerified?: boolean;
   /** Comment count shown in the row actions */
   commentCount?: number;
+  /** Highlights the row with the featured gradient frame (used for top 3) */
+  featuredFrame?: boolean;
   onOpen: (product: Product) => void;
   /** When provided the row shows an upvote control */
   onUpvote?: (product: Product) => void;
@@ -37,6 +40,7 @@ export const ProductRow: React.FC<ProductRowProps> = ({
   soundEnabled,
   showVerified = false,
   commentCount,
+  featuredFrame = false,
   onOpen,
   onUpvote,
   upvoted = false,
@@ -78,7 +82,7 @@ export const ProductRow: React.FC<ProductRowProps> = ({
     }
   };
 
-  return (
+  const row = (
     <div
       role="button"
       tabIndex={0}
@@ -89,7 +93,11 @@ export const ProductRow: React.FC<ProductRowProps> = ({
           handleOpen();
         }
       }}
-      className="group relative flex w-full items-center gap-3.5 rounded-2xl border border-neutral-200/80 bg-white p-4 text-left transition-all duration-200 ease-out cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 sm:gap-4 hover:border-neutral-300 hover:bg-neutral-50/70 shadow-2xs"
+      className={`group relative flex w-full items-center gap-3.5 rounded-2xl border p-4 text-left transition-all duration-200 ease-out cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 sm:gap-4 ${
+        featuredFrame
+          ? 'border-neutral-300/80 bg-gradient-to-r from-neutral-200/65 via-neutral-100/35 to-white/95 shadow-[0_2px_12px_rgba(0,0,0,0.05)] hover:border-neutral-400 hover:shadow-[0_4px_18px_rgba(0,0,0,0.08)]'
+          : 'border-neutral-200/80 bg-white shadow-2xs hover:border-neutral-300 hover:bg-neutral-50/70'
+      }`}
     >
       {/* Rank medal / number */}
       {rank !== undefined && rank > 0 && (
@@ -201,5 +209,13 @@ export const ProductRow: React.FC<ProductRowProps> = ({
         </button>
       </div>
     </div>
+  );
+
+  if (!featuredFrame) return row;
+
+  return (
+    <BorderBeam size="md" colorVariant="colorful" strength={0.8} className="w-full rounded-2xl">
+      {row}
+    </BorderBeam>
   );
 };

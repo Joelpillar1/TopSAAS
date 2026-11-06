@@ -240,6 +240,14 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
     } else {
       onSetFeatured(nextIds[0]);
     }
+    const target = products.find((p) => p.id === productId);
+    if (target && target.isSponsored && onUpdateProduct) {
+      onUpdateProduct({
+        ...target,
+        isSponsored: false,
+        sponsorExpiresAt: Date.now() - 1000,
+      });
+    }
     playSound('success', soundEnabled);
     try {
       confetti({

@@ -92,6 +92,24 @@ export function isInWeek(ts: number, week: WeekInfo | { start: number; end: numb
   return ts >= week.start && ts < week.end;
 }
 
+/** Calendar month key in local time, e.g. "2026-11" */
+export function getMonthKey(ts: number = Date.now()): string {
+  const d = new Date(ts);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+/** True if the timestamp falls in the same calendar month as the reference time */
+export function isInMonth(ts: number, reference: number = Date.now()): boolean {
+  const a = new Date(ts);
+  const b = new Date(reference);
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
+}
+
+/** Human-readable calendar month, e.g. "November 2026" */
+export function formatMonthLabel(reference: number = Date.now()): string {
+  return new Date(reference).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+}
+
 /** Internal scale capacity per week. (Do not expose this ceiling number directly to visitors) */
 export const MAX_WEEKLY_LAUNCH_CAP = 30;
 
