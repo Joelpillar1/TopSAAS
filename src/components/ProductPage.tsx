@@ -26,6 +26,9 @@ import {
   Compass,
   Calendar,
   TrendingUp,
+  CornerDownRight,
+  Heart,
+  Share2,
 } from 'lucide-react';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
@@ -154,8 +157,53 @@ export const ProductPage: React.FC<ProductPageProps> = ({
   onOpenFeaturedSpotModal,
 }) => {
   const [commentText, setCommentText] = useState('');
+  const [rating, setRating] = useState<number | null>(null);
+  const [hoverRating, setHoverRating] = useState<number | null>(null);
+  const [commentUpvotes, setCommentUpvotes] = useState<Record<string, number>>({});
+  const [likedComments, setLikedComments] = useState<Record<string, boolean>>({});
+  const commentInputRef = useRef<HTMLTextAreaElement>(null);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [copiedOffer, setCopiedOffer] = useState(false);
+
+  const hasLinks = /(https?:\/\/|www\.|\.[a-z]{2,}\/)/i.test(commentText);
+
+  const handlePostComment = () => {
+    if (!commentText.trim() && !rating) return;
+    if (hasLinks) return;
+    if (!isSignedIn) {
+      playSound('click', soundEnabled);
+      onOpenSignIn?.();
+      return;
+    }
+    const authorName = userName || userEmail?.split('@')[0] || 'User';
+    playSound('click', soundEnabled);
+    const trimmed = commentText.trim();
+    const finalContent = rating ? `[${rating}★ Review] ${trimmed || 'Rated ' + rating + '/5 stars'}` : trimmed;
+    onAddComment(product.id, finalContent, authorName, userEmail, userAvatar);
+    setCommentText('');
+    setRating(null);
+  };
+
+  const handleToggleCommentLike = (commentId: string) => {
+    playSound('click', soundEnabled);
+    setLikedComments((prev) => {
+      const isCurrentlyLiked = Boolean(prev[commentId]);
+      setCommentUpvotes((curr) => ({
+        ...curr,
+        [commentId]: Math.max(0, (curr[commentId] || 0) + (isCurrentlyLiked ? -1 : 1)),
+      }));
+      return {
+        ...prev,
+        [commentId]: !isCurrentlyLiked,
+      };
+    });
+  };
+
+  const handleReplyTo = (author: string) => {
+    playSound('click', soundEnabled);
+    setCommentText((prev) => (prev ? `${prev.trim()} @${author} ` : `@${author} `));
+    commentInputRef.current?.focus();
+  };
 
   const handleCopyOfferCode = (code: string) => {
     playSound('click', soundEnabled);
@@ -786,157 +834,279 @@ export const ProductPage: React.FC<ProductPageProps> = ({
               </div>
             )}
 
-            {/* Discussion & Comments (Modern, Clean Product Hunt / Linear Style) */}
-            <div id="product-discussion-section" className="rounded-2xl border border-neutral-200 bg-white p-5 sm:p-7 shadow-xs space-y-6">
+            {/* Discussion & Comments (Modern Product Hunt Style) */}
+            <div id="product-discussion-section" className="space-y-4">
               {/* Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-neutral-100 pb-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 border border-blue-100/80 shadow-2xs">
-                    <MessageSquare className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-base font-black text-neutral-950 tracking-tight">
-                        Discussion
-                      </h2>
-                      <span className="inline-flex items-center justify-center rounded-full bg-blue-50 border border-blue-100 text-blue-700 px-2.5 py-0.5 text-xs font-bold font-mono-num">
-                        {comments.length}
-                      </span>
-                    </div>
-                  </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base font-bold text-neutral-950 tracking-tight">
+                    Discussion
+                  </h2>
+                  <span className="inline-flex items-center justify-center rounded-full bg-neutral-100 text-neutral-600 px-2.5 py-0.5 text-xs font-bold font-mono-num">
+                    {comments.length}
+                  </span>
                 </div>
-                <p className="text-xs text-neutral-400 font-medium">
-                  Share feedback, ask questions or leave a review
-                </p>
+                <span className="text-xs text-neutral-400 font-medium">
+                  Ask a question or leave a review
+                </span>
               </div>
 
-              {/* Compose box or Sign-in prompt */}
-              {isSignedIn ? (
-                <div className="rounded-2xl border border-neutral-200/80 bg-neutral-50/50 p-4 transition-all focus-within:bg-white focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/10 focus-within:shadow-sm">
-                  <div className="flex items-start gap-3">
-                    <CommentAvatar
-                      avatarUrl={userAvatar}
-                      name={userName || userEmail?.split('@')[0] || 'User'}
-                      className="h-9 w-9 shrink-0 rounded-full object-cover border border-neutral-200 shadow-2xs"
+              {/* Composer Box (Matching Product Hunt: Resting, Active Typing, and Rating States) */}
+              <div className="rounded-2xl border border-neutral-200/90 bg-white p-4 sm:p-5 shadow-xs transition-all focus-within:border-neutral-300 focus-within:shadow-xs space-y-3">
+                <div className="flex items-start gap-3">
+                  <CommentAvatar
+                    avatarUrl={userAvatar}
+                    name={userName || userEmail?.split('@')[0] || 'User'}
+                    className="h-9 w-9 shrink-0 rounded-full object-cover border border-neutral-200 shadow-2xs mt-0.5"
+                  />
+                  <div className="min-w-0 flex-1 space-y-2.5">
+                    <textarea
+                      ref={commentInputRef}
+                      value={commentText}
+                      onChange={(e) => setCommentText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                          e.preventDefault();
+                          if ((commentText.trim() || rating) && !hasLinks) {
+                            handlePostComment();
+                          }
+                        }
+                      }}
+                      onClick={() => {
+                        if (!isSignedIn) {
+                          playSound('click', soundEnabled);
+                          onOpenSignIn?.();
+                        }
+                      }}
+                      placeholder={
+                        rating 
+                          ? `Write a review for ${product.name}...` 
+                          : `What do you think? Ask a question or leave a note — or add stars to write a review`
+                      }
+                      rows={commentText.length > 60 || commentText.includes('\n') ? 3 : 2}
+                      maxLength={2000}
+                      className="w-full bg-transparent border-0 p-0 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-0 resize-none min-h-[46px] leading-relaxed"
                     />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-xs font-bold text-neutral-900 truncate">
-                          {userName || userEmail?.split('@')[0] || 'Signed-in User'}
-                        </span>
-                        <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 border border-blue-200/80 px-1.5 py-0.5 text-[10px] font-bold text-blue-700">
-                          Verified
-                        </span>
-                      </div>
 
-                      <textarea
-                        value={commentText}
-                        onChange={(e) => setCommentText(e.target.value)}
-                        placeholder={`What do you think of ${product.name}? Ask a question or share your experience...`}
-                        rows={3}
-                        maxLength={2000}
-                        className="w-full bg-transparent border-0 p-0 text-xs sm:text-sm font-normal text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-0 resize-none min-h-[64px] leading-relaxed"
-                      />
-
-                      <div className="flex items-center justify-between pt-3 border-t border-neutral-200/60 mt-1">
-                        <span className="text-[11px] font-mono-num text-neutral-400">
-                          {commentText.length}/2000
-                        </span>
+                    {/* Divider line across */}
+                    <div className="border-t border-neutral-100 pt-3 flex flex-wrap items-center justify-between gap-3">
+                      {/* Left Controls: @ Mention, Rate Stars & Helper Text */}
+                      <div className="flex flex-wrap items-center gap-3">
+                        {/* Circular @ button */}
                         <button
                           type="button"
-                          disabled={!commentText.trim()}
                           onClick={() => {
-                            const authorName = userName || userEmail?.split('@')[0] || 'User';
                             playSound('click', soundEnabled);
-                            onAddComment(product.id, commentText, authorName, userEmail, userAvatar);
-                            setCommentText('');
+                            const target = product.creatorUsername || product.creatorName || product.name;
+                            setCommentText((prev) => (prev ? `${prev.trim()} @${target} ` : `@${target} `));
+                            commentInputRef.current?.focus();
                           }}
-                          className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed shadow-xs active:scale-95 transition-all cursor-pointer"
+                          className="flex h-7 w-7 items-center justify-center rounded-full border border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50 text-neutral-600 font-semibold text-xs transition-colors cursor-pointer"
+                          title="Mention maker"
                         >
-                          <span>Post comment</span>
-                          <Send className="h-3 w-3" />
+                          @
                         </button>
+
+                        {/* Interactive Rate Stars */}
+                        <div className="flex items-center gap-1.5 text-xs text-neutral-500 select-none">
+                          <span className="text-[11px] font-medium text-neutral-400">Rate</span>
+                          <div className="flex items-center gap-0.5">
+                            {[1, 2, 3, 4, 5].map((star) => {
+                              const filled = hoverRating !== null ? hoverRating >= star : (rating !== null && rating >= star);
+                              return (
+                                <button
+                                  key={star}
+                                  type="button"
+                                  onMouseEnter={() => setHoverRating(star)}
+                                  onMouseLeave={() => setHoverRating(null)}
+                                  onClick={() => {
+                                    playSound('click', soundEnabled);
+                                    setRating(rating === star ? null : star);
+                                  }}
+                                  className="p-0.5 text-neutral-300 hover:text-amber-400 transition-colors cursor-pointer"
+                                  aria-label={`Rate ${star} star`}
+                                >
+                                  <Star className={`h-4 w-4 ${filled ? 'fill-amber-400 text-amber-400' : 'text-neutral-300'}`} />
+                                </button>
+                              );
+                            })}
+                          </div>
+                          {rating && (
+                            <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded ml-0.5">
+                              {rating}★
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Helper text when typing */}
+                        {commentText.length > 0 && (
+                          <div className="text-[10.5px] leading-tight text-neutral-400 hidden sm:flex items-center gap-1.5 pl-2 border-l border-neutral-100">
+                            <span className={hasLinks ? 'text-rose-500 font-bold' : 'text-neutral-400'}>
+                              {hasLinks ? "Links aren't allowed" : "Links aren't allowed"}
+                            </span>
+                            <span>·</span>
+                            <span className="font-mono-num">
+                              Ctrl + Enter to post · {commentText.length}/2000
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Right Controls: Post button [ ▶ Post ] or Pill Comment button */}
+                      <div className="flex items-center gap-2 ml-auto">
+                        {commentText.trim() ? (
+                          <button
+                            type="button"
+                            disabled={hasLinks}
+                            onClick={handlePostComment}
+                            className={`inline-flex items-center gap-1.5 rounded-full px-5 py-2 text-xs font-bold transition-all ${
+                              hasLinks
+                                ? 'border border-neutral-200 bg-neutral-100 text-neutral-400 cursor-not-allowed'
+                                : 'bg-neutral-950 text-white hover:bg-neutral-800 shadow-sm active:scale-95 cursor-pointer'
+                            }`}
+                          >
+                            <Play className="h-3 w-3 fill-current" />
+                            <span>Post</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={!rating}
+                            onClick={() => {
+                              if (!isSignedIn) {
+                                playSound('click', soundEnabled);
+                                onOpenSignIn?.();
+                                return;
+                              }
+                              if (rating) {
+                                handlePostComment();
+                              }
+                            }}
+                            className={`rounded-full px-5 py-2 text-xs font-semibold transition-all ${
+                              rating
+                                ? 'bg-amber-400 text-neutral-950 font-bold hover:bg-amber-500 shadow-xs cursor-pointer'
+                                : 'border border-neutral-200 bg-neutral-100/90 text-neutral-400 cursor-not-allowed'
+                            }`}
+                          >
+                            Comment
+                          </button>
+                        )}
                       </div>
                     </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl border border-neutral-200/80 bg-gradient-to-r from-blue-50/40 via-white to-neutral-50 p-4 sm:p-5 shadow-2xs">
-                  <div className="flex items-center gap-3.5">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white border border-neutral-200 text-blue-600 shadow-2xs">
-                      <MessageCircle className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-neutral-950">Join the discussion</p>
-                      <p className="text-xs text-neutral-500 mt-0.5">Sign in to leave a comment with your name and avatar.</p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      playSound('click', soundEnabled);
-                      onOpenSignIn?.();
-                    }}
-                    className="w-full sm:w-auto shrink-0 btn-primary px-4 py-2.5 text-xs font-bold flex items-center justify-center gap-2"
-                  >
-                    <LogIn className="h-3.5 w-3.5" />
-                    <span>Sign in to comment</span>
-                  </button>
-                </div>
-              )}
 
-              {/* Comment list */}
-              {comments.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-8 text-center rounded-2xl border border-dashed border-neutral-200 bg-neutral-50/40 p-6">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white border border-neutral-200 text-neutral-400 mb-2.5 shadow-2xs">
-                    <MessageSquareQuote className="h-6 w-6 text-neutral-400" />
+                    {/* Warning if links found */}
+                    {hasLinks && (
+                      <p className="text-[11px] text-rose-500 font-medium pt-1">
+                        ⚠️ Links aren't allowed in comments.
+                      </p>
+                    )}
                   </div>
-                  <p className="text-sm font-bold text-neutral-900">No comments yet</p>
-                  <p className="text-xs text-neutral-500 mt-0.5 max-w-sm leading-relaxed">
-                    Be the first to share your experience, ask a question, or support the maker!
-                  </p>
                 </div>
-              ) : (
-                <div className="divide-y divide-neutral-100">
-                  {[...comments]
-                    .sort((a, b) => b.createdAt - a.createdAt)
-                    .map((c) => {
-                      const isMaker = Boolean(
-                        (product.creatorName && c.userName && c.userName.toLowerCase() === product.creatorName.toLowerCase()) ||
-                        (product.creatorUsername && c.userName && c.userName.toLowerCase() === product.creatorUsername.toLowerCase())
-                      );
+              </div>
 
-                      return (
-                        <div key={c.id} className="py-4 first:pt-1 last:pb-1 flex items-start gap-3.5 group">
-                          <CommentAvatar
-                            avatarUrl={c.userAvatar}
-                            name={c.userName}
-                            className="h-9 w-9 shrink-0 rounded-full object-cover border border-neutral-200 shadow-2xs"
-                          />
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="text-xs font-bold text-neutral-950">
-                                {c.userName}
-                              </span>
-                              {isMaker && (
-                                <span className="inline-flex items-center gap-0.5 rounded-md bg-blue-50 border border-blue-200/80 px-1.5 py-0.5 text-[10px] font-bold text-blue-700">
-                                  Maker
-                                </span>
-                              )}
-                              <span className="text-neutral-300">·</span>
-                              <span className="text-[11px] font-medium text-neutral-400">
-                                {timeAgo(c.createdAt)}
-                              </span>
+              {/* Comments Thread List (Modern, Clean Thread — No blogspot box-in-a-box) */}
+              <div className="rounded-2xl border border-neutral-200/90 bg-white p-5 sm:p-6 shadow-xs">
+                {comments.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-center p-4">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-neutral-100 text-neutral-400 mb-2.5">
+                      <MessageSquare className="h-5 w-5 text-neutral-400" />
+                    </div>
+                    <p className="text-sm font-bold text-neutral-900">No comments yet</p>
+                    <p className="text-xs text-neutral-500 mt-0.5 max-w-sm leading-relaxed">
+                      Be the first to share your thoughts, ask a question, or leave a review for {product.name}!
+                    </p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-neutral-100">
+                    {[...comments]
+                      .sort((a, b) => b.createdAt - a.createdAt)
+                      .map((c) => {
+                        const isMaker = Boolean(
+                          (product.creatorName && c.userName && c.userName.toLowerCase() === product.creatorName.toLowerCase()) ||
+                          (product.creatorUsername && c.userName && c.userName.toLowerCase() === product.creatorUsername.toLowerCase())
+                        );
+
+                        // Parse [X★ Review] prefix
+                        const ratingMatch = c.content.match(/^\[([1-5])★ Review\]\s*/i);
+                        const commentRating = ratingMatch ? parseInt(ratingMatch[1], 10) : null;
+                        const displayBody = ratingMatch ? c.content.replace(ratingMatch[0], '') : c.content;
+
+                        const isLiked = Boolean(likedComments[c.id]);
+                        const upvotes = (commentUpvotes[c.id] || 0) + (isLiked ? 1 : 0);
+
+                        return (
+                          <div key={c.id} className="py-4 first:pt-1 last:pb-1 group">
+                            <div className="flex items-start gap-3.5">
+                              <CommentAvatar
+                                avatarUrl={c.userAvatar}
+                                name={c.userName}
+                                className="h-9 w-9 shrink-0 rounded-full object-cover border border-neutral-200 shadow-2xs mt-0.5"
+                              />
+                              <div className="min-w-0 flex-1 space-y-1.5">
+                                {/* Commenter Info Row */}
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="text-xs font-bold text-neutral-950">
+                                    {c.userName}
+                                  </span>
+                                  {isMaker && (
+                                    <span className="inline-flex items-center gap-0.5 rounded-full bg-blue-50 border border-blue-200/80 px-2 py-0.5 text-[9.5px] font-bold text-blue-700">
+                                      Maker
+                                    </span>
+                                  )}
+                                  {commentRating && (
+                                    <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 border border-amber-200/60 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">
+                                      <span>★ {commentRating}/5</span>
+                                    </span>
+                                  )}
+                                  <span className="text-neutral-300">·</span>
+                                  <span className="text-[11px] font-medium text-neutral-400">
+                                    {timeAgo(c.createdAt)}
+                                  </span>
+                                </div>
+
+                                {/* Body with @mention highlight */}
+                                <div className="text-sm leading-relaxed text-neutral-800 break-words whitespace-pre-wrap font-normal">
+                                  {displayBody.split(/(@[a-zA-Z0-9_-]+)/g).map((part, i) =>
+                                    part.startsWith('@') ? (
+                                      <span key={i} className="text-blue-600 font-semibold hover:underline">
+                                        {part}
+                                      </span>
+                                    ) : (
+                                      part
+                                    )
+                                  )}
+                                </div>
+
+                                {/* Action Buttons: Helpful & Reply */}
+                                <div className="flex items-center gap-4 pt-1 text-xs">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleCommentLike(c.id)}
+                                    className={`inline-flex items-center gap-1.5 text-xs font-semibold transition-colors cursor-pointer ${
+                                      isLiked ? 'text-rose-600 font-bold' : 'text-neutral-400 hover:text-neutral-700'
+                                    }`}
+                                  >
+                                    <Heart className={`h-3.5 w-3.5 ${isLiked ? 'fill-rose-600 text-rose-600' : 'text-neutral-400'}`} />
+                                    <span>{upvotes > 0 ? upvotes : 'Helpful'}</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => handleReplyTo(c.userName)}
+                                    className="inline-flex items-center gap-1 text-xs font-semibold text-neutral-400 hover:text-neutral-700 transition-colors cursor-pointer"
+                                  >
+                                    <CornerDownRight className="h-3.5 w-3.5" />
+                                    <span>Reply</span>
+                                  </button>
+                                </div>
+                              </div>
                             </div>
-                            <p className="mt-1.5 text-xs sm:text-sm leading-relaxed text-neutral-700 break-words whitespace-pre-wrap font-normal">
-                              {c.content}
-                            </p>
                           </div>
-                        </div>
-                      );
-                    })}
-                </div>
-              )}
+                        );
+                      })}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Explore Related Websites */}
