@@ -99,7 +99,7 @@ export const SponsorShowcaseSection: React.FC<SponsorShowcaseSectionProps> = ({
                 <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
                   <Check className="h-2.5 w-2.5 stroke-[3]" />
                 </div>
-                <span>Real-time outbound click and impression tracking</span>
+                <span>High-visibility placement on all desktop views</span>
               </li>
             </ul>
           </div>
@@ -119,7 +119,7 @@ export const SponsorShowcaseSection: React.FC<SponsorShowcaseSectionProps> = ({
                 </span>
               </div>
               <p className="h-10 text-xs text-neutral-500 leading-relaxed mt-1 mb-2 line-clamp-2">
-                Full 30 days of high-frequency sticky brand impressions across all visitor sessions.
+                Full 30 days of high-frequency sticky brand visibility across all visitor sessions.
               </p>
 
               <div className="h-10 flex items-baseline gap-1.5 my-1">

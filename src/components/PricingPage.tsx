@@ -25,7 +25,7 @@ const faqs = [
   },
   {
     q: 'What is the difference between Featured Spot and Sidebar Sponsor?',
-    a: 'Featured Spot ($15/week or $39/month) pins your product card directly at the top of the main product feed above normal listings for maximum clicks while visitors browse and upvote. Sidebar Sponsor ($10/week or $29/month) places your product on the 24/7 sticky side rails across the Homepage and Product Details pages for sustained peripheral awareness.',
+    a: 'Featured Spot ($15/week or $39/month) pins your product card directly at the top of the main product feed above normal listings for maximum visibility while visitors browse and upvote. Sidebar Sponsor ($10/week or $29/month) places your product on the 24/7 sticky side rails across the Homepage and Product Details pages for sustained peripheral awareness.',
   },
   {
     q: 'What is a DoFollow backlink?',
@@ -56,7 +56,6 @@ const comparisonRows: Array<{
   { feature: '"X vs Y" comparison pages',       free: false,            verified: true },
   { feature: 'Editorial blog review post',      free: false,            verified: true },
   { feature: 'Included in /llms.txt (AI SEO)',  free: false,            verified: 'ChatGPT, Perplexity & more' },
-  { feature: 'Live click & traffic analytics',  free: true,             verified: true },
   { feature: 'Pricing model',                   free: '$0 Forever',     verified: '$19 One-Time (Lifetime)' },
 ];
 
@@ -221,7 +220,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({
                   <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
                     <Check className="h-2.5 w-2.5 stroke-[3]" />
                   </div>
-                  <span>Real-time click & impression analytics</span>
+                  <span>Dedicated product profile page</span>
                 </li>
                 <li className="flex items-center gap-2.5">
                   <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
@@ -427,7 +426,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({
             Pin Your Product Above Directory Cards
           </h2>
           <p className="text-xs sm:text-sm text-neutral-500 mt-2 max-w-lg mx-auto">
-            Take over the guaranteed #1 spot of the main product feed for maximum views, outbound clicks, and community upvotes.
+            Take over the guaranteed #1 spot of the main product feed for maximum visibility, founder reach, and community upvotes.
           </p>
         </div>
 
@@ -487,13 +486,13 @@ export const PricingPage: React.FC<PricingPageProps> = ({
                   <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
                     <Check className="h-2.5 w-2.5 stroke-[3]" />
                   </div>
-                  <span>2.4× average clickthrough rate</span>
+                  <span>High-visibility prominent badge & card highlight</span>
                 </li>
                 <li className="flex items-center gap-2.5">
                   <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
                     <Check className="h-2.5 w-2.5 stroke-[3]" />
                   </div>
-                  <span>Real-time outbound click analytics</span>
+                  <span>Direct outbound referral link to your website</span>
                 </li>
                 <li className="flex items-center gap-2.5">
                   <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
@@ -565,7 +564,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({
                   <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
                     <Check className="h-2.5 w-2.5 stroke-[3]" />
                   </div>
-                  <span><strong>Outbound Click Tracker:</strong> Monitor daily traffic conversion in real time</span>
+                  <span><strong>Priority Placement:</strong> Front & center above all organic cards</span>
                 </li>
                 <li className="flex items-center gap-2.5">
                   <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
