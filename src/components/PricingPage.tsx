@@ -498,7 +498,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({
                   <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
                     <Check className="h-2.5 w-2.5 stroke-[3]" />
                   </div>
-                  <span>Free 7-day test drive for newly launched tools</span>
+                  <span>Instant activation upon checkout</span>
                 </li>
               </ul>
             </div>
