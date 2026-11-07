@@ -2632,37 +2632,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                         </div>
                       </div>
                     </div>
-                  ) : (
-                    <div className="rounded-2xl border border-neutral-200 bg-neutral-50/70 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
-                      <div>
-                        <p className="text-xs font-bold text-neutral-900 flex items-center gap-1.5">
-                          <ShieldCheck className="h-4 w-4 text-neutral-700" />
-                          <span>4. VERIFY BADGE PLACEMENT</span>
-                        </p>
-                        <p className="text-[11px] text-neutral-500 mt-0.5">
-                          Add the snippet to {form.url || 'your website'} and verify to unlock the submit button.
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={handleVerifyBadge}
-                        disabled={isVerifyingBadge}
-                        className="btn-primary inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold cursor-pointer"
-                      >
-                        {isVerifyingBadge ? (
-                          <>
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            <span>Verifying…</span>
-                          </>
-                        ) : (
-                          <>
-                            <ShieldCheck className="h-3.5 w-3.5" />
-                            <span>Verify Badge Now</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  )}
+                  ) : null}
                 </div>
               )}
 
