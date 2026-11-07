@@ -4,6 +4,7 @@ import { VerifiedBadge } from './VerifiedBadge';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
+import { formatOutboundUrl, trackOutboundClick } from '../utils/referral';
 
 interface HeroClaimBannerProps {
   topProduct?: Product;
@@ -20,16 +21,16 @@ export const HeroClaimBanner: React.FC<HeroClaimBannerProps> = ({
 
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     playSound('click', soundEnabled);
-    onTrackClick(topProduct.id, topProduct.url);
+    trackOutboundClick(topProduct.id, topProduct.url, topProduct.name, onTrackClick);
   };
 
   return (
     <a
-        id="hero-claim-banner"
-        href={topProduct.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={handleClick}
+      id="hero-claim-banner"
+      href={formatOutboundUrl(topProduct.url, { campaign: 'hero_claim_banner' })}
+      target="_blank"
+      rel="noopener"
+      onClick={handleClick}
         className="group relative flex items-center justify-between overflow-hidden rounded-xl border border-neutral-200 bg-white px-3.5 py-3 sm:px-4 sm:py-3 hover:bg-neutral-50/70 hover:border-neutral-300 transition-all cursor-pointer text-left block w-full"
       >
       {/* Left: Featured Product Info */}

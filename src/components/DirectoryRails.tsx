@@ -3,6 +3,7 @@ import { ArrowUpRight, BadgeCheck, Megaphone } from 'lucide-react';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
+import { formatOutboundUrl, trackOutboundClick } from '../utils/referral';
 
 interface SpotlightCardProps {
   soundEnabled: boolean;
@@ -248,12 +249,12 @@ export const SponsoredLaunchBanner: React.FC<SponsoredLaunchBannerProps> = ({
       </button>
 
       <a
-        href={product.url}
+        href={formatOutboundUrl(product.url, { campaign: 'directory_rails' })}
         target="_blank"
-        rel="noopener noreferrer"
+        rel="noopener"
         onClick={() => {
           playSound('click', soundEnabled);
-          onTrackClick(product.id, product.url);
+          trackOutboundClick(product.id, product.url, product.name, onTrackClick);
         }}
         className="flex shrink-0 items-center gap-1 rounded-xl bg-neutral-900 px-3.5 py-2 text-[11px] font-bold text-white transition-colors hover:bg-neutral-800 self-center mr-3 cursor-pointer"
       >

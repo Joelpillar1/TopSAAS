@@ -8,6 +8,7 @@ import { ProductLogo } from './ProductLogo';
 import { RankMedal } from './RankMedal';
 import { HeroClaimBanner } from './HeroClaimBanner';
 import { BorderBeam } from './BorderBeam';
+import { openOutboundUrl } from '../utils/referral';
 
 interface LeaderboardTableProps {
   products: Product[];
@@ -111,15 +112,23 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                   return;
                 }
                 playSound('click', soundEnabled);
-                window.open(product.url, '_blank', 'noopener,noreferrer');
-                onTrackClick(product.id, product.url);
+                openOutboundUrl(product.url, {
+                  productId: product.id,
+                  productName: product.name,
+                  campaign: 'leaderboard_table',
+                  onTrackClick,
+                });
               };
 
               const handleVisit = (e: React.MouseEvent) => {
                 e.stopPropagation();
                 playSound('click', soundEnabled);
-                onTrackClick(product.id, product.url);
-                window.open(product.url, '_blank', 'noopener,noreferrer');
+                openOutboundUrl(product.url, {
+                  productId: product.id,
+                  productName: product.name,
+                  campaign: 'leaderboard_table',
+                  onTrackClick,
+                });
               };
 
               const isUpvoted = isProductUpvoted(product.id, upvotedIds);

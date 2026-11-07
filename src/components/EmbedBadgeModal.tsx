@@ -73,12 +73,12 @@ export const EmbedBadgeModal: React.FC<EmbedBadgeModalProps> = ({
   if (!isOpen) return null;
 
   const selectedBadge = BADGE_OPTIONS.find((b) => b.id === selectedVariant) || BADGE_OPTIONS[0];
-  const productListingUrl = `https://topsaas.space/product/${encodeURIComponent(product.id)}`;
+  const productListingUrl = `https://topsaas.space/product/${encodeURIComponent(product.id)}?ref=badge`;
   const badgeAltText = `Featured on TopSAAS`;
 
   const snippet = (() => {
     if (format === 'html') {
-      return `<a href="${productListingUrl}" target="_blank" rel="noopener noreferrer">\n  <img src="${selectedBadge.fullUrl}" alt="${badgeAltText}" height="36" />\n</a>`;
+      return `<a href="${productListingUrl}" target="_blank" rel="noopener">\n  <img src="${selectedBadge.fullUrl}" alt="${badgeAltText}" height="36" />\n</a>`;
     }
     if (format === 'markdown') {
       return `[![${badgeAltText}](${selectedBadge.fullUrl})](${productListingUrl})`;

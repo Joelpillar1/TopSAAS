@@ -27,7 +27,8 @@ import { LegalTab } from './components/LegalModal';
 import { playSound } from './utils/sound';
 import confetti from 'canvas-confetti';
 import { supabase } from './utils/supabase';
-import { loadProducts, loadProductById, loadSubmissions, invalidateCache, saveAllProducts, saveProductRanksDirect, debouncedSyncProducts, toggleUpvote, getUserUpvotes, getUpvoteStats, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, setGlobalFeaturedProducts, setProductFeaturedPosition, LOCAL_FEATURED_PRODUCTS_KEY, LOCAL_FEATURED_POSITIONS_MAP_KEY, insertProductDirect, fetchComments, addComment, getCachedCommentsSync, submissionToProduct, publishedProductId, isProductUpvoted, getGuestUpvotes, saveGuestUpvotes, incrementProductUpvotesDirect, getActiveSponsors, mergeSponsorsIntoProducts, recordSponsorUpdate, recordSponsorEnd, getSponsorRailsEnabled, setSponsorRailsEnabled, LOCAL_SPONSOR_RAILS_KEY, getFeaturedPosition, setFeaturedPosition, LOCAL_FEATURED_POSITION_KEY, SUBMISSION_QUEUE_COLUMNS, loadSubmissionById } from './utils/db';
+import { loadProducts, loadProductById, loadSubmissions, invalidateCache, saveAllProducts, saveProductRanksDirect, debouncedSyncProducts, toggleUpvote, getUserUpvotes, getUpvoteStats, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, setGlobalFeaturedProducts, setProductFeaturedPosition, LOCAL_FEATURED_PRODUCTS_KEY, LOCAL_FEATURED_POSITIONS_MAP_KEY, insertProductDirect, fetchComments, addComment, getCachedCommentsSync, submissionToProduct, publishedProductId, isProductUpvoted, getGuestUpvotes, saveGuestUpvotes, incrementProductUpvotesDirect, incrementProductClicksDirect, getActiveSponsors, mergeSponsorsIntoProducts, recordSponsorUpdate, recordSponsorEnd, getSponsorRailsEnabled, setSponsorRailsEnabled, LOCAL_SPONSOR_RAILS_KEY, getFeaturedPosition, setFeaturedPosition, LOCAL_FEATURED_POSITION_KEY, SUBMISSION_QUEUE_COLUMNS, loadSubmissionById } from './utils/db';
+import { trackGoal } from './utils/trackkit';
 import { isInWeek, getWeekInfo, getWeekNumber, getWeekByNumber, getMonthKey, isInMonth, formatMonthLabel, formatWeekDateRange, WeekInfo } from './utils/weeks';
 import { getWebsiteFavicon } from './utils/logo';
 import { Trophy, X, Plus, ShieldCheck, Loader2, Star, MessageCircle, Flame, Search } from 'lucide-react';
@@ -705,8 +706,31 @@ export default function App() {
   // JSON-LD), so search-engine site-search results land with the query applied.
   useEffect(() => {
     try {
-      const q = new URLSearchParams(window.location.search).get('q');
+      const searchParams = new URLSearchParams(window.location.search);
+      const q = searchParams.get('q');
       if (q) setSearchQuery(q);
+
+      // Inbound referral tracking (?ref=badge, ?utm_source=..., etc.)
+      const ref = searchParams.get('ref');
+      const utmSource = searchParams.get('utm_source');
+      const utmMedium = searchParams.get('utm_medium');
+      const utmCampaign = searchParams.get('utm_campaign');
+      const referrer = typeof document !== 'undefined' ? document.referrer : '';
+
+      if (ref === 'badge' || utmSource === 'badge') {
+        trackGoal('badge_inbound_click', {
+          referrer: referrer || undefined,
+          path: window.location.pathname,
+        });
+      } else if (ref || utmSource) {
+        trackGoal('inbound_referral', {
+          ref: ref || undefined,
+          utm_source: utmSource || undefined,
+          utm_medium: utmMedium || undefined,
+          utm_campaign: utmCampaign || undefined,
+          referrer: referrer || undefined,
+        });
+      }
     } catch { }
   }, []);
 
@@ -1586,9 +1610,13 @@ export default function App() {
     } catch { }
   };
 
-  // Track click on a website (counts the visit + pushes a live traffic event + tracks sponsor performance)
+  // Track click on a website (counts the visit + pushes a live traffic event + tracks sponsor performance + persists to Supabase)
   const handleTrackClick = (productId: string, _url: string) => {
     const now = Date.now();
+    // Persist click increment to database atomically
+    incrementProductClicksDirect(productId).catch(() => {});
+    trackGoal('outbound_click', { product_id: productId });
+
     setProducts((prev) =>
       prev.map((p) => {
         if (p.id !== productId) return p;

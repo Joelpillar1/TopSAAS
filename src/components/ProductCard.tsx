@@ -5,6 +5,7 @@ import { Product } from '../types';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
 import { RankMedal } from './RankMedal';
+import { formatOutboundUrl, trackOutboundClick } from '../utils/referral';
 
 interface ProductCardProps {
   product: Product;
@@ -156,14 +157,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   return (
     <a
       id={`mobile-product-card-${product.id}`}
-      href={product.url}
+      href={formatOutboundUrl(product.url, { campaign: 'product_card_mobile' })}
       target="_blank"
-      rel="noopener noreferrer"
+      rel="noopener"
       onClick={(e) => {
         const target = e.target as HTMLElement;
         if (target.closest('button')) return;
         playSound('click', soundEnabled);
-        onTrackClick(product.id, product.url);
+        trackOutboundClick(product.id, product.url, product.name, onTrackClick);
       }}
       className={sharedClass}
     >

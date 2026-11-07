@@ -6,6 +6,7 @@ import { BorderBeam } from './BorderBeam';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
+import { openOutboundUrl } from '../utils/referral';
 
 interface ProductRowProps {
   product: Product;
@@ -20,6 +21,7 @@ interface ProductRowProps {
   /** When provided the row shows an upvote control */
   onUpvote?: (product: Product) => void;
   upvoted?: boolean;
+  onTrackClick?: (productId: string, url: string) => void;
 }
 
 export function timeAgo(timestamp: number): string {
@@ -44,6 +46,7 @@ export const ProductRow: React.FC<ProductRowProps> = ({
   onOpen,
   onUpvote,
   upvoted = false,
+  onTrackClick,
 }) => {
   const handleOpen = () => {
     playSound('click', soundEnabled);
@@ -76,7 +79,12 @@ export const ProductRow: React.FC<ProductRowProps> = ({
     e.stopPropagation();
     playSound('click', soundEnabled);
     if (product.url) {
-      window.open(product.url, '_blank', 'noopener,noreferrer');
+      openOutboundUrl(product.url, {
+        productId: product.id,
+        productName: product.name,
+        campaign: 'leaderboard_row',
+        onTrackClick,
+      });
     } else {
       handleOpen();
     }

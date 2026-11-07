@@ -6,6 +6,7 @@ import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
 import { getWebsiteFavicon } from '../utils/logo';
 import { BorderBeam } from './BorderBeam';
+import { openOutboundUrl } from '../utils/referral';
 
 interface SponsorTileProps {
   soundEnabled: boolean;
@@ -30,8 +31,12 @@ export const SponsorTile: React.FC<SponsorTileProps> = ({
     playSound('click', soundEnabled);
     if (product) {
       if (product.url) {
-        onTrackClick?.(product.id, product.url);
-        window.open(product.url, '_blank', 'noopener,noreferrer');
+        openOutboundUrl(product.url, {
+          productId: product.id,
+          productName: product.name,
+          campaign: 'sponsor_tile',
+          onTrackClick,
+        });
       } else if (onOpenProduct) {
         onOpenProduct(product);
       }
@@ -59,7 +64,12 @@ export const SponsorTile: React.FC<SponsorTileProps> = ({
       e.stopPropagation();
       playSound('click', soundEnabled);
       if (product.url) {
-        window.open(product.url, '_blank', 'noopener,noreferrer');
+        openOutboundUrl(product.url, {
+          productId: product.id,
+          productName: product.name,
+          campaign: 'sponsor_tile',
+          onTrackClick,
+        });
       } else {
         handleClick();
       }

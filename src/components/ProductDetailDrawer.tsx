@@ -4,6 +4,7 @@ import { VerifiedBadge } from './VerifiedBadge';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
+import { formatOutboundUrl, trackOutboundClick } from '../utils/referral';
 
 interface ProductDetailDrawerProps {
   product: Product | null;
@@ -73,10 +74,10 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
               </div>
               <div className="flex items-center gap-2 mt-0.5">
           <a
-            href={product.url}
+            href={formatOutboundUrl(product.url, { campaign: 'product_drawer_link' })}
             target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => onTrackClick(product.id, product.url)}
+            rel="noopener"
+            onClick={() => trackOutboundClick(product.id, product.url, product.name, onTrackClick)}
             className="inline-flex items-center gap-1 text-xs font-bold text-black hover:underline"
           >
                   <span>{product.url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}</span>
@@ -142,12 +143,12 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
         {/* Bottom CTAs */}
         <div className="pt-4 border-t border-neutral-200 mt-4 space-y-2">
           <a
-            href={product.url}
+            href={formatOutboundUrl(product.url, { campaign: 'product_drawer_cta' })}
             target="_blank"
-            rel="noopener noreferrer"
+            rel="noopener"
             onClick={() => {
               playSound('click', soundEnabled);
-              onTrackClick(product.id, product.url);
+              trackOutboundClick(product.id, product.url, product.name, onTrackClick);
             }}
             className="w-full flex items-center justify-center gap-2 rounded-xl bg-black py-3 text-xs font-black text-white shadow-2xs hover:bg-neutral-800 active:scale-[0.98] transition-all cursor-pointer min-h-[44px]"
           >

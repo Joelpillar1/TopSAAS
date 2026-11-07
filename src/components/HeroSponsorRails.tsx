@@ -4,6 +4,7 @@ import { Product } from '../types';
 import { playSound } from '../utils/sound';
 import { BorderBeam } from './BorderBeam';
 import { ProductLogo } from './ProductLogo';
+import { openOutboundUrl } from '../utils/referral';
 
 interface HeroSponsorRailsProps {
   sponsors?: Product[];
@@ -86,8 +87,12 @@ const ActiveSponsorCard: React.FC<{
   const handleClick = () => {
     playSound('click', soundEnabled);
     if (product.url) {
-      onTrackClick?.(product.id, product.url);
-      window.open(product.url, '_blank', 'noopener,noreferrer');
+      openOutboundUrl(product.url, {
+        productId: product.id,
+        productName: product.name,
+        campaign: 'hero_sponsor_rail',
+        onTrackClick,
+      });
     } else {
       onOpenProduct?.(product);
     }

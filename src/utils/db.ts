@@ -835,6 +835,38 @@ export async function incrementProductUpvotesDirect(productId: string, delta: nu
   }
 }
 
+/** Direct atomic increment of product outbound clicks in Supabase */
+export async function incrementProductClicksDirect(productId: string): Promise<number | null> {
+  try {
+    const { data, error } = await supabase.rpc('increment_product_clicks', {
+      p_product_id: productId,
+    });
+    if (!error && typeof data === 'number') {
+      return data;
+    }
+
+    // Graceful fallback: update table directly if RPC not yet applied in remote database
+    const { data: current } = await supabase
+      .from('products')
+      .select('id, clicks')
+      .or(`id.eq.${productId},id.eq.prod-${productId}`)
+      .limit(1)
+      .maybeSingle();
+
+    if (current) {
+      const nextClicks = (current.clicks || 0) + 1;
+      await supabase
+        .from('products')
+        .update({ clicks: nextClicks, updated_at: Date.now() })
+        .eq('id', current.id);
+      return nextClicks;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 // ── Comments (with Caching & DB Sync) ──
 
 const COMMENTS_CACHE_KEY = 'topsaas_comments_cache_v2';

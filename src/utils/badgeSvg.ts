@@ -155,7 +155,7 @@ export function generateBadgeDataUrl(product: Product, options: BadgeOptions = {
  */
 export function getProductTopSaasUrl(product: Product, baseOrigin?: string): string {
   const origin = baseOrigin || (typeof window !== 'undefined' ? window.location.origin : 'https://topsaas.space');
-  return `${origin}/product/${encodeURIComponent(product.id)}`;
+  return `${origin}/product/${encodeURIComponent(product.id)}?ref=badge`;
 }
 
 /**

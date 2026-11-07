@@ -3,6 +3,7 @@ import { Zap, ExternalLink, Megaphone, ArrowUpRight } from 'lucide-react';
 import { Product } from '../types';
 import { ProductLogo } from './ProductLogo';
 import { playSound } from '../utils/sound';
+import { openOutboundUrl } from '../utils/referral';
 
 interface SponsoredPartnersSidebarProps {
   sponsors: Product[];
@@ -62,8 +63,12 @@ export const SponsoredPartnersSidebar: React.FC<SponsoredPartnersSidebarProps> =
               onClick={() => {
                 playSound('click', soundEnabled);
                 if (sponsor.url) {
-                  onTrackClick?.(sponsor.id, sponsor.url);
-                  window.open(sponsor.url, '_blank', 'noopener,noreferrer');
+                  openOutboundUrl(sponsor.url, {
+                    campaign: 'sponsored_partners_sidebar',
+                    productId: sponsor.id,
+                    productName: sponsor.name,
+                    onTrackClick,
+                  });
                 } else {
                   onSelectProduct(sponsor);
                 }
@@ -73,8 +78,12 @@ export const SponsoredPartnersSidebar: React.FC<SponsoredPartnersSidebarProps> =
                   e.preventDefault();
                   playSound('click', soundEnabled);
                   if (sponsor.url) {
-                    onTrackClick?.(sponsor.id, sponsor.url);
-                    window.open(sponsor.url, '_blank', 'noopener,noreferrer');
+                    openOutboundUrl(sponsor.url, {
+                      campaign: 'sponsored_partners_sidebar',
+                      productId: sponsor.id,
+                      productName: sponsor.name,
+                      onTrackClick,
+                    });
                   } else {
                     onSelectProduct(sponsor);
                   }

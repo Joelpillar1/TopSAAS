@@ -35,6 +35,7 @@ import { VerifiedBadge } from './VerifiedBadge';
 import { SponsoredPartnersSidebar } from './SponsoredPartnersSidebar';
 import { timeAgo } from './ProductRow';
 import { applyPageSeo } from '../utils/pageSeo';
+import { formatOutboundUrl, trackOutboundClick } from '../utils/referral';
 
 function getVideoEmbedUrl(url?: string): { type: 'iframe' | 'video' | 'link'; embedUrl: string } | null {
   if (!url) return null;
@@ -511,12 +512,12 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                   </button>
 
                   <a
-                    href={product.url}
+                    href={formatOutboundUrl(product.url, { campaign: 'product_page' })}
                     target="_blank"
-                    rel="noopener noreferrer"
+                    rel="noopener"
                     onClick={() => {
                       playSound('click', soundEnabled);
-                      onTrackClick(product.id, product.url);
+                      trackOutboundClick(product.id, product.url, product.name, onTrackClick);
                     }}
                     className="btn-primary px-5 py-2.5 text-xs font-bold text-center min-h-[42px] sm:min-h-[38px]"
                   >
@@ -571,12 +572,12 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                       )}
 
                       <a
-                        href={product.offerUrl || product.url}
+                        href={formatOutboundUrl(product.offerUrl || product.url, { campaign: 'product_deal' })}
                         target="_blank"
-                        rel="noopener noreferrer"
+                        rel="noopener"
                         onClick={() => {
                           playSound('click', soundEnabled);
-                          onTrackClick(product.id, product.offerUrl || product.url);
+                          trackOutboundClick(product.id, product.offerUrl || product.url, product.name, onTrackClick);
                         }}
                         className="flex-1 sm:flex-initial btn-primary px-4 py-2 text-xs font-bold min-h-[40px]"
                       >
@@ -1137,10 +1138,10 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                 <div className="flex items-center justify-between pt-1 border-t border-neutral-200/60">
                   <span className="text-neutral-500 font-medium">Official Link</span>
                   <a
-                    href={product.url}
+                    href={formatOutboundUrl(product.url, { campaign: 'product_sidebar_overview' })}
                     target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => onTrackClick(product.id, product.url)}
+                    rel="noopener"
+                    onClick={() => trackOutboundClick(product.id, product.url, product.name, onTrackClick)}
                     className="font-bold text-blue-600 underline flex items-center gap-1 hover:text-blue-700 transition-colors"
                   >
                     <span>Visit</span>

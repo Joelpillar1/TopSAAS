@@ -775,11 +775,11 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
     'type2-light': 'https://topsaas.space/Share%20Badge/TopSAAS%20Type%202%20-%20light.png',
   };
   const badgeImgSrc = BADGE_IMG_SRCS[badgeVariant];
-  const productListingUrl = `https://topsaas.space/product/${encodeURIComponent(previewProduct.id)}`;
+  const productListingUrl = `https://topsaas.space/product/${encodeURIComponent(previewProduct.id)}?ref=badge`;
   const badgeAltText = 'Featured on TopSAAS';
   const badgeEmbedSnippet = badgeFormat === 'markdown'
     ? `[![${badgeAltText}](${badgeImgSrc})](${productListingUrl})`
-    : `<a href="${productListingUrl}" target="_blank" rel="noopener noreferrer">\n  <img src="${badgeImgSrc}" alt="${badgeAltText}" height="36" />\n</a>`;
+    : `<a href="${productListingUrl}" target="_blank" rel="noopener">\n  <img src="${badgeImgSrc}" alt="${badgeAltText}" height="36" />\n</a>`;
 
   const handleCopyBadgeSnippet = async () => {
     playSound('click', soundEnabled);
