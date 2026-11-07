@@ -46,6 +46,7 @@ export const SignInModal: React.FC<SignInModalProps> = ({
         {/* Google Sign In Button */}
         <button
           type="button"
+          data-ml-goal="signup_click"
           onClick={onSignIn}
           className="btn-secondary w-full py-3 px-4 text-sm font-bold"
         >

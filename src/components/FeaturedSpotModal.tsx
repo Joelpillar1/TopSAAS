@@ -1049,6 +1049,7 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
                   {selectedPlanId === 'trial' ? (
                     <button
                       type="button"
+                      data-ml-goal="start_trial"
                       onClick={handleActivateTrial}
                       disabled={isProcessing}
                       className="w-full btn-primary py-3 px-4 text-xs font-bold disabled:opacity-60 disabled:cursor-not-allowed justify-center"
@@ -1068,6 +1069,8 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
                   ) : (
                     <button
                       type="button"
+                      data-ml-goal="checkout_click"
+                      data-ml-goal-plan={selectedPlan.id}
                       onClick={handleProceedPayment}
                       disabled={isProcessing}
                       className="w-full btn-primary py-3 px-4 text-xs font-bold disabled:opacity-60 disabled:cursor-not-allowed justify-center"

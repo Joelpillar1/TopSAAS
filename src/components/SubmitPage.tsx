@@ -12,6 +12,7 @@ import { RichTextEditor } from './RichTextEditor';
 import { LaunchWeekSelector } from './LaunchWeekSelector';
 import { autofillWithOpenAI } from '../utils/autofill';
 import { redirectToCheckout, WHOP_LINKS } from '../utils/whop';
+import { appendTrackkitParams } from '../utils/trackkit';
 import { VerifiedBadge } from './VerifiedBadge';
 import { applyPageSeo } from '../utils/pageSeo';
 
@@ -287,12 +288,16 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
   }, []);
 
   const [form, setForm] = useState<FormState>(() => {
-    const draft = loadDraft();
+    // Only load cached draft if the user is authenticated; logged out users get a completely clean form
+    const draft = isSignedIn ? loadDraft() : null;
+    if (!isSignedIn) {
+      clearDraft();
+    }
     const initial: FormState = {
       ...EMPTY_FORM,
-      creatorName: defaultCreatorName || '',
-      creatorAvatar: defaultCreatorAvatar || '',
-      ...draft,
+      creatorName: isSignedIn ? (defaultCreatorName || '') : '',
+      creatorAvatar: isSignedIn ? (defaultCreatorAvatar || '') : '',
+      ...(draft || {}),
     };
     if (draft?.categories && draft.categories.length > 0 && !draft.category) {
       initial.category = draft.categories.join(', ');
@@ -313,7 +318,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
   const [errors, setErrors] = useState<Partial<Record<FieldKey, string>>>({});
   const [banner, setBanner] = useState<string | null>(null);
 
-  const [step, setStep] = useState<number>(() => loadSavedStep());
+  const [step, setStep] = useState<number>(() => (isSignedIn ? loadSavedStep() : 0));
   const [autoRelaunch, setAutoRelaunch] = useState<boolean>(() => {
     try {
       const fromPricing = localStorage.getItem('topsaas_submit_auto_relaunch');
@@ -329,10 +334,46 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
   const [isPayingRelaunch, setIsPayingRelaunch] = useState(false);
   const [relaunchEmail, setRelaunchEmail] = useState('');
 
-  // Automatically persist form inputs and active step on every change
+  // Automatically persist form inputs and active step on every change ONLY when signed in
   useEffect(() => {
+    if (!isSignedIn) {
+      clearDraft();
+      return;
+    }
     saveDraft(form, step);
-  }, [form, step]);
+  }, [form, step, isSignedIn]);
+
+  // When authentication status changes: if logged out, wipe any cached drafts and reset form
+  useEffect(() => {
+    if (!isSignedIn) {
+      clearDraft();
+      setForm({
+        ...EMPTY_FORM,
+        creatorName: '',
+        creatorAvatar: '',
+      });
+      setStep(0);
+      setIsBadgeVerified(false);
+      setBadgeVerificationError(null);
+    } else {
+      const draft = loadDraft();
+      if (draft) {
+        setForm((prev) => ({
+          ...prev,
+          creatorName: prev.creatorName || defaultCreatorName || '',
+          creatorAvatar: prev.creatorAvatar || defaultCreatorAvatar || '',
+          ...draft,
+        }));
+        setStep(loadSavedStep());
+      } else if (defaultCreatorName || defaultCreatorAvatar) {
+        setForm((prev) => ({
+          ...prev,
+          creatorName: prev.creatorName || defaultCreatorName || '',
+          creatorAvatar: prev.creatorAvatar || defaultCreatorAvatar || '',
+        }));
+      }
+    }
+  }, [isSignedIn, defaultCreatorName, defaultCreatorAvatar]);
 
   // Ensure prefilled URL from localStorage (e.g. from HomeHero "Launch Now") is loaded
   useEffect(() => {
@@ -965,7 +1006,12 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
   };
 
   const handleSaveDraft = () => {
-    saveDraft(form);
+    if (!isSignedIn) {
+      playSound('click', soundEnabled);
+      onSignInRequest();
+      return;
+    }
+    saveDraft(form, step);
     setDraftSaved(true);
     playSound('click', soundEnabled);
     setTimeout(() => setDraftSaved(false), 2600);
@@ -973,7 +1019,11 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
 
   const handleStartOver = () => {
     clearDraft();
-    setForm({ ...EMPTY_FORM });
+    setForm({
+      ...EMPTY_FORM,
+      creatorName: isSignedIn ? (defaultCreatorName || '') : '',
+      creatorAvatar: isSignedIn ? (defaultCreatorAvatar || '') : '',
+    });
     setErrors({});
     setBanner(null);
     setLaunched(null);
@@ -2669,6 +2719,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
               submissionPlan === 'paid_19' ? (
                 <button
                   type="button"
+                  data-ml-goal="checkout_click"
+                  data-ml-goal-plan="verified_launch"
                   onClick={handleLaunch}
                   disabled={isSubmitting}
                   className="btn-primary inline-flex items-center gap-2 px-6 py-2.5 text-xs font-black cursor-pointer shadow-md shadow-blue-600/20 active:scale-95"
@@ -2707,6 +2759,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
               ) : (
                 <button
                   type="button"
+                  data-ml-goal={autoRelaunch ? 'checkout_click' : 'submit_free_launch'}
+                  data-ml-goal-plan={autoRelaunch ? 'weekly_relaunch' : 'free'}
                   onClick={handleLaunch}
                   disabled={isSubmitting}
                   className={`px-5 py-2.5 text-xs font-black transition-all rounded-xl select-none ${isSubmitting
@@ -2882,13 +2936,15 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                           }`
                         );
                         const emailParam = relaunchEmail.trim() ? `&email=${encodeURIComponent(relaunchEmail.trim())}` : '';
-                        const whopUrl = `https://whop.com/topsaas/weekly-relaunch/?redirect_url=${returnUrl}${emailParam}`;
+                        const whopUrl = appendTrackkitParams(`https://whop.com/checkout/plan_81SmEHd2w16EG?redirect_url=${returnUrl}${emailParam}`);
                         window.location.href = whopUrl;
                       } catch (err) {
                         console.error('Whop checkout error:', err);
                         setIsPayingRelaunch(false);
                       }
                     }}
+                    data-ml-goal="checkout_click"
+                    data-ml-goal-plan="weekly_relaunch"
                     className="btn-primary flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-500 px-5 py-2.5 text-xs font-black text-white shadow-md shadow-blue-600/25 cursor-pointer flex-1 sm:flex-none"
                   >
                     {isPayingRelaunch ? (

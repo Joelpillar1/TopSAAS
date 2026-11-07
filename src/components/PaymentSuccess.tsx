@@ -40,6 +40,12 @@ export const PaymentSuccess: React.FC<PaymentSuccessProps> = ({
       status: statusParam,
     });
     playSound('success', soundEnabled);
+    try {
+      window.trackkit?.('goal', 'payment_success', {
+        plan: planParam || undefined,
+        product: productParam || undefined,
+      });
+    } catch {}
 
     // Commit any verified launch from SubmitPage upon return from successful Whop checkout
     try {

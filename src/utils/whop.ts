@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { getTrackkitAttribution, appendTrackkitParams } from './trackkit';
 
 export const WHOP_LINKS = {
   // Weekly Relaunch ($5/week)
@@ -172,6 +173,7 @@ export async function createCheckoutSession(
 ): Promise<CheckoutResponse> {
   const { planType, productName, targetProductId, customerEmail } = options;
   const planKey = normalizePlanKey(planType);
+  const attribution = getTrackkitAttribution();
 
   const returnUrl = `${window.location.origin}/payment-success?plan=${planType}&product=${encodeURIComponent(
     productName
@@ -188,12 +190,17 @@ export async function createCheckoutSession(
           target_product_id: targetProductId,
           customer_email: customerEmail,
           return_url: returnUrl,
+          ml_visitor_id: attribution.ml_visitor_id,
+          ml_session_id: attribution.ml_session_id,
         },
       }
     );
 
     if (!error && isValidCheckoutUrl(data?.checkout_url)) {
-      return data;
+      return {
+        ...data,
+        checkout_url: appendTrackkitParams(data.checkout_url),
+      };
     }
   } catch (err) {
     console.debug('whop-checkout function note, reading from direct config:', err);
@@ -214,7 +221,7 @@ export async function createCheckoutSession(
   const separator = baseLink.includes('?') ? '&' : '?';
   const directUrl = `${baseLink}${separator}redirect_url=${redirectUrl}${customerEmail ? `&email=${encodeURIComponent(customerEmail)}` : ''}`;
 
-  return { checkout_url: directUrl };
+  return { checkout_url: appendTrackkitParams(directUrl) };
 }
 
 /**
@@ -231,5 +238,6 @@ export async function redirectToCheckout(options: CheckoutOptions): Promise<void
     throw new Error('No checkout URL received from Whop payment provider.');
   }
 
-  window.location.href = checkout_url;
+  const finalUrl = appendTrackkitParams(checkout_url);
+  window.location.href = finalUrl;
 }

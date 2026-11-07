@@ -12,6 +12,16 @@ function apiDevServerPlugin(): Plugin {
     name: 'api-dev-server-middleware',
     configureServer(server) {
       server.middlewares.use(async (req, res, next) => {
+        const AI_BOT_RE = /chatgpt-user|gptbot|claudebot|claude-web|perplexitybot|google-extended|deepseek|bytespider|applebot-extended/i;
+        const ua = (req.headers['user-agent'] as string) || '';
+        if (AI_BOT_RE.test(ua)) {
+          fetch('https://minilytics.trackkit.workers.dev/api/sites/5y6c5l0e536b6o6v/bot', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'User-Agent': ua },
+            body: JSON.stringify({ path: req.url || '/' }),
+          }).catch(() => {});
+        }
+
         const isAutofill = req.url && req.url.startsWith('/api/autofill-submission');
         const isVerifyBadge = req.url && req.url.startsWith('/api/verify-badge');
 
@@ -81,7 +91,7 @@ function badgeServerPlugin(): Plugin {
               id: productId,
               name: isShipOs ? 'ShipOS' : 'TopSAAS Product',
               tagline: 'Ship faster with modern SaaS boilerplate',
-              url: 'https://topsaas.org',
+              url: 'https://topsaas.space',
               category: 'Developer Tools' as const,
               rank: 1,
               upvotes: 3,

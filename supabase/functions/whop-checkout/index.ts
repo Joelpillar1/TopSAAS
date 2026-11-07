@@ -13,6 +13,8 @@ interface CheckoutRequestBody {
   target_product_id?: string;
   customer_email?: string;
   return_url?: string;
+  ml_visitor_id?: string;
+  ml_session_id?: string;
 }
 
 serve(async (req: Request) => {
@@ -27,6 +29,16 @@ serve(async (req: Request) => {
 
     const body: CheckoutRequestBody = await req.json();
     const { plan_type, product_name, target_product_id, customer_email, return_url } = body;
+
+    // Read Trackkit attribution IDs from body or request cookies
+    const cookieHeader = req.headers.get('cookie') || '';
+    const getCookie = (name: string) => {
+      const match = cookieHeader.match(new RegExp(`(^|;\\s*)${name}=([^;]*)`));
+      return match ? decodeURIComponent(match[2]) : '';
+    };
+
+    const visitorId = body.ml_visitor_id || getCookie('ml_vid') || '';
+    const sessionId = body.ml_session_id || getCookie('ml_sid') || '';
 
     if (!plan_type) {
       return new Response(
@@ -109,6 +121,8 @@ serve(async (req: Request) => {
       if (customer_email) parsed.searchParams.set('email', customer_email);
       if (target_product_id) parsed.searchParams.set('metadata[product_id]', target_product_id);
       if (product_name) parsed.searchParams.set('metadata[product_name]', product_name);
+      if (visitorId) parsed.searchParams.set('metadata[ml_visitor_id]', visitorId);
+      if (sessionId) parsed.searchParams.set('metadata[ml_session_id]', sessionId);
 
       return new Response(
         JSON.stringify({ checkout_url: parsed.toString() }),
@@ -133,6 +147,8 @@ serve(async (req: Request) => {
               target_product_id: target_product_id || '',
               product_name: product_name || '',
               plan_type: plan_type,
+              ml_visitor_id: visitorId || '',
+              ml_session_id: sessionId || '',
             },
             ...(customer_email ? { email: customer_email } : {}),
           }),
@@ -160,6 +176,8 @@ serve(async (req: Request) => {
     const directUrl = new URL(`https://whop.com/checkout/${resolvedPlanId}`);
     directUrl.searchParams.set('redirect_url', redirectTarget);
     if (customer_email) directUrl.searchParams.set('email', customer_email);
+    if (visitorId) directUrl.searchParams.set('metadata[ml_visitor_id]', visitorId);
+    if (sessionId) directUrl.searchParams.set('metadata[ml_session_id]', sessionId);
 
     return new Response(
       JSON.stringify({ checkout_url: directUrl.toString() }),

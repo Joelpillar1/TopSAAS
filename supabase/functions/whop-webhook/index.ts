@@ -43,19 +43,75 @@ serve(async (req: Request) => {
       const email = data.email || data.user?.email || metadata.customer_email || null;
       const targetProductId = metadata.target_product_id || customFields.target_product_id;
       const productName = metadata.product_name || customFields.product_name;
-      const planType = metadata.plan_type || '1mo';
+      const rawPlanType = String(metadata.plan_type || customFields.plan_type || '').toLowerCase();
+      const planId = String(data.plan_id || '');
+
+      const isVerifiedLaunch =
+        rawPlanType === 'onetime' ||
+        rawPlanType === 'verified_launch' ||
+        rawPlanType === 'per_product_pass' ||
+        planId === 'plan_B4wY8ei9eab1S';
+
+      const isWeeklyRelaunch =
+        rawPlanType === 'weekly_relaunch' ||
+        rawPlanType === 'relaunch' ||
+        planId === 'plan_81SmEHd2w16EG';
+
+      const isFeatured =
+        rawPlanType.startsWith('featured') ||
+        planId === 'plan_YGXtgHZnspc77' ||
+        planId === 'plan_GBN00B27YgYdx';
 
       let durationDays = 30;
-      if (planType === '3mo' || (data.plan_id && data.plan_id.includes('3mo'))) {
+      if (
+        rawPlanType.includes('1wk') ||
+        rawPlanType.includes('7days') ||
+        rawPlanType.includes('weekly') ||
+        planId === 'plan_Ux5pdAxT3WN7D' ||
+        planId === 'plan_YGXtgHZnspc77'
+      ) {
+        durationDays = 7;
+      } else if (rawPlanType === '3mo' || planId.includes('3mo') || planId === 'plan_SMad32AkVoMeu') {
         durationDays = 90;
-      } else if (planType === '1yr' || (data.plan_id && data.plan_id.includes('1yr'))) {
+      } else if (rawPlanType === '1yr' || planId.includes('1yr') || planId === 'plan_2uumEoGYQUKtb') {
         durationDays = 365;
       }
 
       const now = new Date();
       const expiresAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
 
-      // 1. Locate product to sponsor
+      // Handle Verified Launch ($19 Fast-Track)
+      if (isVerifiedLaunch) {
+        if (targetProductId) {
+          await supabase.from('submissions').update({ verified: true }).eq('id', targetProductId);
+          await supabase.from('products').update({ verified: true }).eq('id', targetProductId);
+        }
+        if (productName) {
+          await supabase.from('submissions').update({ verified: true }).ilike('name', productName);
+          await supabase.from('products').update({ verified: true }).ilike('name', productName);
+        }
+        console.log(`Successfully verified submission for product: ${productName || targetProductId}`);
+      }
+
+      // Handle Weekly Relaunch ($5)
+      if (isWeeklyRelaunch) {
+        const relaunchPayload = {
+          auto_relaunch: true,
+          auto_relaunch_paid: true,
+          auto_relaunch_paid_at: now.getTime(),
+          is_relaunched: true,
+          last_relaunched_at: now.getTime(),
+        };
+        if (targetProductId) {
+          await supabase.from('submissions').update(relaunchPayload).eq('id', targetProductId);
+        }
+        if (productName) {
+          await supabase.from('submissions').update(relaunchPayload).ilike('name', productName);
+        }
+        console.log(`Successfully scheduled weekly relaunch for product: ${productName || targetProductId}`);
+      }
+
+      // 1. Locate product record
       let productRecord = null;
       if (targetProductId) {
         const { data: p } = await supabase
@@ -75,7 +131,56 @@ serve(async (req: Request) => {
         productRecord = p;
       }
 
-      if (productRecord) {
+      const finalProductId = productRecord?.id || targetProductId;
+
+      // Handle Featured Spot (Pinned top banner)
+      if (isFeatured && finalProductId) {
+        try {
+          const { data: settingRow } = await supabase
+            .from('site_settings')
+            .select('value')
+            .eq('key', 'featured_products')
+            .maybeSingle();
+
+          let currentFeatured: string[] = [];
+          if (settingRow?.value) {
+            try {
+              currentFeatured = JSON.parse(settingRow.value);
+            } catch {}
+          }
+          if (!Array.isArray(currentFeatured)) currentFeatured = [];
+          if (!currentFeatured.includes(finalProductId)) {
+            currentFeatured.unshift(finalProductId);
+          }
+
+          await supabase.from('site_settings').upsert([
+            {
+              key: 'featured_products',
+              value: JSON.stringify(currentFeatured),
+              description: 'Active pinned featured products list',
+              updated_at: now.toISOString(),
+            },
+            {
+              key: 'featured_product',
+              value: finalProductId,
+              description: 'Primary pinned featured product',
+              updated_at: now.toISOString(),
+            },
+            {
+              key: 'featured_expiry',
+              value: expiresAt.getTime().toString(),
+              description: 'Expiry timestamp for pinned featured spot',
+              updated_at: now.toISOString(),
+            },
+          ]);
+          console.log(`Successfully activated featured banner for product ${finalProductId} for ${durationDays} days`);
+        } catch (featErr) {
+          console.error('Error activating featured spot in site_settings:', featErr);
+        }
+      }
+
+      // Handle Sponsor Spot (Sidebar rails)
+      if (!isVerifiedLaunch && !isWeeklyRelaunch && !isFeatured && productRecord) {
         const { error: updateErr } = await supabase
           .from('products')
           .update({
@@ -92,8 +197,48 @@ serve(async (req: Request) => {
         } else {
           console.log(`Successfully activated sponsorship for product ${productRecord.name} (${productRecord.id}) for ${durationDays} days`);
         }
-      } else {
-        console.warn(`Product not found for sponsorship (targetProductId: ${targetProductId}, productName: ${productName})`);
+
+        // Also add to site_settings 'active_sponsors'
+        try {
+          const { data: sponsorsRow } = await supabase
+            .from('site_settings')
+            .select('value')
+            .eq('key', 'active_sponsors')
+            .maybeSingle();
+
+          let sponsorsList: any[] = [];
+          if (sponsorsRow?.value) {
+            try {
+              sponsorsList = JSON.parse(sponsorsRow.value);
+            } catch {}
+          }
+          if (!Array.isArray(sponsorsList)) sponsorsList = [];
+
+          const existingIdx = sponsorsList.findIndex((s) => s.productId === productRecord.id);
+          const sponsorEntry = {
+            productId: productRecord.id,
+            productName: productRecord.name,
+            tier: durationDays >= 365 ? '1yr' : durationDays >= 90 ? '3mo' : durationDays === 7 ? 'trial' : '1mo',
+            startedAt: now.getTime(),
+            expiresAt: expiresAt.getTime(),
+            customerEmail: email || undefined,
+          };
+
+          if (existingIdx >= 0) {
+            sponsorsList[existingIdx] = sponsorEntry;
+          } else {
+            sponsorsList.push(sponsorEntry);
+          }
+
+          await supabase.from('site_settings').upsert({
+            key: 'active_sponsors',
+            value: JSON.stringify(sponsorsList),
+            description: 'List of currently active sponsors',
+            updated_at: now.toISOString(),
+          });
+        } catch (sponErr) {
+          console.warn('Could not update active_sponsors in site_settings:', sponErr);
+        }
       }
 
       // Record transaction if sponsor_orders exists

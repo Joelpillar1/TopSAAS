@@ -24,7 +24,7 @@ export const BadgeRoute: React.FC<BadgeRouteProps> = ({ productId, products, sub
     id: productId,
     name: 'TopSAAS Product',
     tagline: 'Discover top SaaS tools',
-    url: 'https://topsaas.org',
+    url: 'https://topsaas.space',
     category: 'Developer Tools' as Product['category'],
     rank: 1,
     upvotes: 0,

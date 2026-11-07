@@ -94,6 +94,7 @@ export const HomeHero: React.FC<HomeHeroProps> = ({
           />
           <button
             type="submit"
+            data-ml-goal="launch_cta_click"
             className="shrink-0 btn-primary px-5 py-2.5 text-xs sm:text-sm font-bold rounded-xl"
           >
             Launch Now

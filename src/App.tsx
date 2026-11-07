@@ -830,7 +830,14 @@ export default function App() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       setAuthLoaded(true);
-      if (session?.user) saveUserProfile(session.user);
+      if (session?.user) {
+        saveUserProfile(session.user);
+        window.trackkit?.('identify', {
+          user_id: session.user.id,
+          email: session.user.email,
+          name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || '',
+        });
+      }
     }).catch(() => {
       setAuthLoaded(true);
     });
@@ -839,6 +846,25 @@ export default function App() {
       setUser(session?.user ?? null);
       if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION')) {
         saveUserProfile(session.user);
+        window.trackkit?.('identify', {
+          user_id: session.user.id,
+          email: session.user.email,
+          name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || '',
+        });
+        if (event === 'SIGNED_IN') {
+          window.trackkit?.('goal', 'signup_completed');
+        }
+      }
+      if (event === 'SIGNED_OUT' || !session?.user) {
+        try {
+          localStorage.removeItem('topsaas_launch_draft_v1');
+          localStorage.removeItem('topsaas_launch_step_v1');
+          localStorage.removeItem('topsaas_pending_paid_submission');
+          localStorage.removeItem('topsaas_submit_plan');
+          localStorage.removeItem('topsaas_submit_initial_url');
+          localStorage.removeItem('topsaas_submit_auto_relaunch');
+          localStorage.removeItem('topsaas_guest_upvotes');
+        } catch { }
       }
     });
 
@@ -1082,6 +1108,15 @@ export default function App() {
 
   // Auth: sign out
   const handleSignOut = async () => {
+    try {
+      localStorage.removeItem('topsaas_launch_draft_v1');
+      localStorage.removeItem('topsaas_launch_step_v1');
+      localStorage.removeItem('topsaas_pending_paid_submission');
+      localStorage.removeItem('topsaas_submit_plan');
+      localStorage.removeItem('topsaas_submit_initial_url');
+      localStorage.removeItem('topsaas_submit_auto_relaunch');
+      localStorage.removeItem('topsaas_guest_upvotes');
+    } catch { }
     const { error } = await supabase.auth.signOut();
     if (error) console.error('Sign out error:', error.message);
   };

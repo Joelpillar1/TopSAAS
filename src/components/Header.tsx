@@ -130,6 +130,7 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Submit Button - always takes founder directly to /submit */}
             <button
               type="button"
+              data-ml-goal="submit_nav_click"
               onClick={handleSubmitClick}
               className="flex items-center gap-1.5 rounded-lg bg-neutral-950 px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs font-bold text-white hover:bg-neutral-800 transition-all cursor-pointer shadow-2xs active:scale-[0.98]"
             >
@@ -166,6 +167,7 @@ export const Header: React.FC<HeaderProps> = ({
                 /* Sign in with Google */
                 <button
                   type="button"
+                  data-ml-goal="signup_click"
                   onClick={onSignIn}
                   className="flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3.5 py-2 text-xs font-bold text-neutral-800 hover:border-neutral-300 hover:bg-neutral-50 transition-all cursor-pointer shadow-2xs active:scale-[0.98]"
                 >
@@ -228,6 +230,7 @@ export const Header: React.FC<HeaderProps> = ({
                   )}
                   <button
                     type="button"
+                    data-ml-goal="submit_nav_click"
                     onClick={() => {
                       handleSubmitClick();
                       closeMenu();
@@ -275,6 +278,7 @@ export const Header: React.FC<HeaderProps> = ({
                   ) : (
                     <button
                       type="button"
+                      data-ml-goal="signup_click"
                       onClick={() => {
                         onSignIn?.();
                         closeMenu();

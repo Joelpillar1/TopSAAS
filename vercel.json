@@ -19,6 +19,10 @@
       "dest": "/api/verify-badge"
     },
     {
+      "src": "/api/autofill-submission",
+      "dest": "/api/autofill-submission"
+    },
+    {
       "src": "/badge/(.*)",
       "dest": "/api/badge/$1"
     },

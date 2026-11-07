@@ -5,6 +5,7 @@ import { BorderBeam } from './BorderBeam';
 import { SponsorShowcaseSection } from './SponsorShowcaseSection';
 import { playSound } from '../utils/sound';
 import { WHOP_LINKS } from '../utils/whop';
+import { appendTrackkitParams } from '../utils/trackkit';
 import { applyPageSeo } from '../utils/pageSeo';
 
 interface PricingPageProps {
@@ -161,6 +162,8 @@ export const PricingPage: React.FC<PricingPageProps> = ({
 
               <button
                 type="button"
+                data-ml-goal="pricing_cta"
+                data-ml-goal-plan="free"
                 onClick={() => {
                   playSound('click', soundEnabled);
                   try {
@@ -291,9 +294,11 @@ export const PricingPage: React.FC<PricingPageProps> = ({
               </div>
 
               <a
-                href={WHOP_LINKS.oneTime}
+                href={appendTrackkitParams(WHOP_LINKS.oneTime)}
                 target="_blank"
-                rel="noopener noreferrer"
+                rel="noopener"
+                data-ml-goal="pricing_cta"
+                data-ml-goal-plan="verified_launch"
                 onClick={() => playSound('click', soundEnabled)}
                 className="btn-primary w-full mt-4 py-3 px-4 text-xs font-bold rounded-xl text-center flex items-center justify-center gap-1.5"
               >
@@ -470,6 +475,8 @@ export const PricingPage: React.FC<PricingPageProps> = ({
 
               <button
                 type="button"
+                data-ml-goal="pricing_cta"
+                data-ml-goal-plan="featured_1wk"
                 onClick={() => handleOpenFeatured('1wk')}
                 className="btn-secondary w-full mt-4 py-3 px-4 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5"
               >
@@ -542,6 +549,8 @@ export const PricingPage: React.FC<PricingPageProps> = ({
 
               <button
                 type="button"
+                data-ml-goal="pricing_cta"
+                data-ml-goal-plan="featured_1mo"
                 onClick={() => handleOpenFeatured('1mo')}
                 className="btn-primary w-full mt-4 py-3 px-4 text-xs font-bold rounded-xl text-center flex items-center justify-center gap-1.5"
               >

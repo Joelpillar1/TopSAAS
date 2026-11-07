@@ -262,3 +262,14 @@ export interface WebsiteSubmission {
   isRelaunched?: boolean;
   lastRelaunchedAt?: number;
 }
+
+declare global {
+  interface Window {
+    trackkit?: ((cmd: 'goal' | 'identify' | 'pageview', a?: any, b?: any) => void) & {
+      attribution?: () => { ml_visitor_id?: string; ml_session_id?: string };
+    };
+    minilytics?: ((cmd: 'goal' | 'identify' | 'pageview', a?: any, b?: any) => void) & {
+      attribution?: () => { ml_visitor_id?: string; ml_session_id?: string };
+    };
+  }
+}

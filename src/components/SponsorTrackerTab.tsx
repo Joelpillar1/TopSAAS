@@ -187,14 +187,11 @@ export const SponsorTrackerTab: React.FC<SponsorTrackerTabProps> = ({
 
   const handleTogglePause = async (product: Product) => {
     playSound('click', soundEnabled);
-    const updated = await recordSponsorPauseToggle(product.id);
-    if (updated) {
+    const result = await recordSponsorPauseToggle(product.id);
+    if (result?.updatedProduct) {
       onUpdateProduct({
         ...product,
-        isSponsored: !updated.isPaused,
-        isSponsorPaused: Boolean(updated.isPaused),
-        sponsorExpiresAt: updated.expiresAt,
-        sponsorPausedRemainingMs: updated.pausedRemainingMs,
+        ...result.updatedProduct,
       });
     }
   };

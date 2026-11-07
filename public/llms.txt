@@ -9,7 +9,7 @@ TopSAAS connects innovative software founders with early adopters, tech professi
 - **Homepage & Project Catalog**: `https://www.topsaas.space/` — Curated SaaS leaderboard and open-source starter catalog with instant search. Deep-link search: `/?q={query}`.
 - **Open-Source Starter Catalog**: `https://www.topsaas.space/ideas` — Clonable starter repos across categories (SaaS Starters, Auth & Identity, Databases, AI & ML, DevOps, Payments, and more) with star/fork counts and instant filtering.
 - **Repo Detail Pages**: `https://www.topsaas.space/repo/{owner}/{name}` — one indexable page per repo with an editorial write-up, stars, forks, license, language breakdown, self-hosting verdict, clone command, and similar projects. Examples: `https://www.topsaas.space/repo/refinedev/refine`, `https://www.topsaas.space/repo/t3-oss/create-t3-app`.
-- **Trending**: `https://www.topsaas.space/trending` — projects that pushed code in the last 90 days, ranked by star velocity weighted with recency; a Newest tab lists projects by creation date. Category filters included.
+- **Trending**: `https://www.topsaas.space/trending` — open-source projects that pushed code in the last 90 days, ranked by star velocity weighted with recency; a Newest tab lists projects by creation date. Category filters included.
 - **Build Guides**: `https://www.topsaas.space/guides` — original walkthroughs that ship a real product on one curated repo. Guides: `/guides/refine-admin-dashboard`, `/guides/n8n-automation-mvp`, `/guides/create-t3-app-fullstack-saas` (HowTo + FAQ structured data on each).
 - **SaaS MRR Calculator**: `https://www.topsaas.space/mrr-calculator` — free browser-based monthly recurring revenue calculator that returns MRR and annualized ARR from average revenue per customer and paying customers, with formulas, worked examples, annual plan conversion, metric comparisons, and a 14-question MRR FAQ.
 - **Pricing**: `https://www.topsaas.space/pricing` — Pro plan and featured-spot pricing.
@@ -29,6 +29,23 @@ TopSAAS connects innovative software founders with early adopters, tech professi
 - **Included in MRR**: recurring subscription fees, recurring seat charges, recurring add-ons, recurring usage charges, and the monthly equivalent of annual or quarterly plans.
 - **Excluded from MRR**: one-time setup and services fees, taxes, refunds, free or trial users, hardware, and cash collected in advance for a future period.
 - **Worked example**: $99 average revenue per customer × 20 paying customers = $1,980 MRR, or $23,760 ARR.
+
+## Trending Repository Ranking
+- **Trending page**: `https://www.topsaas.space/trending` ranks curated open-source repositories by current momentum, with category filters and a Newest tab.
+- **Eligibility window**: only repositories with a GitHub push inside the last 90 days are eligible for the Trending view.
+- **Trend score**: `log10((stars / max(repository age in years, 0.25)) + 1) × recency weight`.
+- **Recency weights**: 7 days or less = 1.00; 8 to 14 days = 0.85; 15 to 30 days = 0.70; 31 to 60 days = 0.55; 61 to 90 days = 0.40.
+- **Newest view**: every curated repository sorted by creation date, newest first.
+- **Health score**: a separate 0-100 score built from activity 40, popularity 25, engagement 15, issue load 10, and open-source hygiene 10. Archived projects are capped at 30.
+- **Structured data**: the Trending page carries `CollectionPage`, `ItemList`, `FAQPage`, and `BreadcrumbList` schema.
+
+## Build Guides
+- **Index**: `https://www.topsaas.space/guides` — original, free, step-by-step walkthroughs that take one curated open-source project and ship a working product on top of it.
+- **`/guides/refine-admin-dashboard`**: ship an internal admin dashboard with refine. Beginner, about 8 to 12 hours. Stack: React, TypeScript, Vite or Next.js, REST or GraphQL.
+- **`/guides/n8n-automation-mvp`**: automate SaaS operations with n8n. Beginner, about 4 to 6 hours. Stack: Docker, HTTP webhooks, Node.js services, SaaS APIs.
+- **`/guides/create-t3-app-fullstack-saas`**: launch a full-stack SaaS starter with create-t3-app. Intermediate, about a weekend. Stack: Next.js, tRPC, Prisma or Drizzle, Tailwind CSS, Auth.js.
+- **What each guide includes**: copy-paste commands, a production checklist, customization notes, a foundation repo link with license and health score, and a guide-specific FAQ.
+- **Structured data**: the index carries `CollectionPage`, `ItemList`, `FAQPage`, and `BreadcrumbList`; each guide detail page carries `HowTo` and `FAQPage`.
 
 ## Open-Source SaaS Starter Catalog
 - **Scale**: Continuously updated catalog of curated repos across multiple categories with live GitHub signals.
