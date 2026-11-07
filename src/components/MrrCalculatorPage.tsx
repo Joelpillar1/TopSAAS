@@ -549,13 +549,16 @@ export const MrrCalculatorPage: React.FC<MrrCalculatorPageProps> = ({ soundEnabl
     <div className="mx-auto w-full max-w-6xl px-3.5 sm:px-6 pt-5 pb-16">
       {/* Breadcrumb */}
       <nav aria-label="Breadcrumb" className="text-[11px] font-semibold text-neutral-500">
-        <button
-          type="button"
-          onClick={() => navigateTo('/')}
-          className="transition-colors hover:text-neutral-950 cursor-pointer"
+        <a
+          href="/"
+          onClick={(e) => {
+            e.preventDefault();
+            navigateTo('/');
+          }}
+          className="transition-colors hover:text-neutral-950"
         >
           Home
-        </button>
+        </a>
         <span className="px-1.5 text-neutral-300">/</span>
         <span aria-current="page" className="text-neutral-700">
           MRR Calculator
@@ -776,6 +779,19 @@ export const MrrCalculatorPage: React.FC<MrrCalculatorPageProps> = ({ soundEnabl
               net new MRR, and the SaaS quick ratio. If you only track one recurring metric, track
               MRR, then break it down into new, expansion, contraction, and churn every month.
             </p>
+            <p className="text-sm font-medium leading-relaxed text-neutral-600">
+              ChartMogul&apos;s{' '}
+              <a
+                href="https://chartmogul.com/saas-metrics/mrr"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold text-neutral-700 underline decoration-neutral-300 underline-offset-4 transition-colors hover:text-neutral-950 hover:decoration-neutral-950"
+              >
+                SaaS metrics library
+              </a>{' '}
+              defines MRR as normalized, predictable subscription revenue that excludes one-time
+              fees. This page uses that same definition.
+            </p>
           </section>
 
           {/* How to calculate */}
@@ -925,6 +941,19 @@ export const MrrCalculatorPage: React.FC<MrrCalculatorPageProps> = ({ soundEnabl
               by the number of months in the term. If a customer receives a multi-month discount,
               spread the discounted total across the term rather than recording the list price.
             </p>
+            <p className="text-sm font-medium leading-relaxed text-neutral-600">
+              Stripe&apos;s billing documentation follows the same rule: an annual subscription for
+              $1,200 counts as $100 toward MRR. See{' '}
+              <a
+                href="https://support.stripe.com/questions/understanding-monthly-recurring-revenue-%28mrr%29-and-annual-recurring-revenue-%28arr%29"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold text-neutral-700 underline decoration-neutral-300 underline-offset-4 transition-colors hover:text-neutral-950 hover:decoration-neutral-950"
+              >
+                Stripe&apos;s MRR and ARR guide
+              </a>
+              .
+            </p>
           </section>
 
           {/* MRR vs ARR vs ARPA */}
@@ -1037,9 +1066,30 @@ export const MrrCalculatorPage: React.FC<MrrCalculatorPageProps> = ({ soundEnabl
             <p className="text-sm font-medium leading-relaxed text-neutral-600">
               For example, if a business adds $2,000 of new MRR, earns $500 of expansion, loses $400
               to churn, and loses $100 to contraction, net new MRR is $2,000. Its quick ratio is
-              (2,000 + 500) ÷ (400 + 100) = 5.0. A quick ratio above 4 is generally considered strong,
-              but the right target depends on stage and market.
+              (2,000 + 500) ÷ (400 + 100) = 5.0. A quick ratio above 4 is often cited as
+              strong, but the right target depends on stage and market.
             </p>
+          </section>
+
+          {/* Pricing models */}
+          <section id="pricing-models" aria-labelledby="pricing-models-heading" className="scroll-mt-24 space-y-4">
+            <h2 id="pricing-models-heading" className="text-xl font-black tracking-tight text-neutral-950 sm:text-2xl">
+              MRR by pricing model
+            </h2>
+            <DirectAnswer>
+              The MRR formula stays the same across pricing models, but the inputs change. Normalize
+              every recurring charge to a monthly amount before adding it to the total.
+            </DirectAnswer>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {PRICING_MODELS.map((model) => (
+                <div key={model.title} className="rounded-xl border border-neutral-200 bg-white p-4">
+                  <h3 className="text-sm font-bold text-neutral-950">{model.title}</h3>
+                  <p className="mt-1 text-sm font-medium leading-relaxed text-neutral-600">
+                    {model.body}
+                  </p>
+                </div>
+              ))}
+            </div>
           </section>
 
           {/* Mistakes */}
@@ -1184,14 +1234,15 @@ export const MrrCalculatorPage: React.FC<MrrCalculatorPageProps> = ({ soundEnabl
         </p>
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {RELATED_TOOLS.map((tool) => (
-            <button
+            <a
               key={tool.route}
-              type="button"
-              onClick={() => {
+              href={tool.route}
+              onClick={(e) => {
+                e.preventDefault();
                 playSound('click', soundEnabled);
                 navigateTo(tool.route);
               }}
-              className="group flex h-full flex-col rounded-2xl border border-neutral-200 bg-white p-5 text-left transition-all hover:border-neutral-300 hover:bg-neutral-50/70 cursor-pointer"
+              className="group flex h-full flex-col rounded-2xl border border-neutral-200 bg-white p-5 text-left transition-all hover:border-neutral-300 hover:bg-neutral-50/70"
             >
               <span className="flex items-center justify-between gap-2">
                 <span className="text-sm font-black text-neutral-950">{tool.title}</span>
@@ -1200,7 +1251,7 @@ export const MrrCalculatorPage: React.FC<MrrCalculatorPageProps> = ({ soundEnabl
               <span className="mt-2 text-xs font-medium leading-relaxed text-neutral-600">
                 {tool.body}
               </span>
-            </button>
+            </a>
           ))}
         </div>
       </section>
@@ -1214,17 +1265,18 @@ export const MrrCalculatorPage: React.FC<MrrCalculatorPageProps> = ({ soundEnabl
             adopters.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => {
+        <a
+          href="/submit"
+          onClick={(e) => {
+            e.preventDefault();
             playSound('click', soundEnabled);
             navigateTo('/submit');
           }}
-          className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-neutral-950 px-4 py-2.5 text-xs font-bold text-white transition-colors hover:bg-neutral-800 cursor-pointer"
+          className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-neutral-950 px-4 py-2.5 text-xs font-bold text-white transition-colors hover:bg-neutral-800"
         >
           Launch your SaaS
           <ArrowUpRight className="h-3.5 w-3.5" />
-        </button>
+        </a>
       </div>
     </div>
   );

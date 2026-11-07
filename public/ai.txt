@@ -54,6 +54,7 @@ Catalog-Markdown: https://www.topsaas.space/catalog.md
 Catalog-JSON: https://www.topsaas.space/products.json
 OpenAPI-Spec: https://www.topsaas.space/openapi.json
 AI-Snapshot: https://www.topsaas.space/ai-snapshot.json
+SaaS-MRR-Calculator: https://www.topsaas.space/mrr-calculator
 Sitemap: https://www.topsaas.space/sitemap.xml
 Repo-Sitemap: https://www.topsaas.space/sitemap/repos.xml
 

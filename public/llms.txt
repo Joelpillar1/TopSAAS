@@ -11,11 +11,24 @@ TopSAAS connects innovative software founders with early adopters, tech professi
 - **Repo Detail Pages**: `https://www.topsaas.space/repo/{owner}/{name}` — one indexable page per repo with an editorial write-up, stars, forks, license, language breakdown, self-hosting verdict, clone command, and similar projects. Examples: `https://www.topsaas.space/repo/refinedev/refine`, `https://www.topsaas.space/repo/t3-oss/create-t3-app`.
 - **Trending**: `https://www.topsaas.space/trending` — projects that pushed code in the last 90 days, ranked by star velocity weighted with recency; a Newest tab lists projects by creation date. Category filters included.
 - **Build Guides**: `https://www.topsaas.space/guides` — original walkthroughs that ship a real product on one curated repo. Guides: `/guides/refine-admin-dashboard`, `/guides/n8n-automation-mvp`, `/guides/create-t3-app-fullstack-saas` (HowTo + FAQ structured data on each).
+- **SaaS MRR Calculator**: `https://www.topsaas.space/mrr-calculator` — free browser-based monthly recurring revenue calculator that returns MRR and annualized ARR from average revenue per customer and paying customers, with formulas, worked examples, annual plan conversion, metric comparisons, and a 14-question MRR FAQ.
 - **Pricing**: `https://www.topsaas.space/pricing` — Pro plan and featured-spot pricing.
 - **Submit / Launch Portal**: `https://www.topsaas.space/submit` — 4-step wizard for founders to list their software with media galleries, demo videos, promo discounts, and founder profiles.
 - **Creator Profile**: `https://www.topsaas.space/profile` — Creator submissions status tracking and profile details.
 - **Privacy Policy**: `https://www.topsaas.space/privacy` — Data retention, user privacy, and GDPR/CCPA compliance details.
 - **Terms of Service**: `https://www.topsaas.space/terms` — Directory guidelines, content standards, and listing terms.
+
+## Free SaaS Metrics Tools
+- **SaaS MRR Calculator** (`https://www.topsaas.space/mrr-calculator`): calculates monthly recurring revenue and annual run rate entirely in the browser. No sign-up, no server-side storage.
+- **Core formula**: `MRR = average revenue per customer × number of active paying customers`.
+- **Annual run rate**: `ARR = MRR × 12`.
+- **Average revenue per account**: `ARPA = MRR ÷ active paying customers`.
+- **Net new MRR**: `new MRR + expansion MRR + reactivation MRR − contraction MRR − churned MRR`.
+- **SaaS quick ratio**: `(new MRR + expansion MRR) ÷ (churned MRR + contraction MRR)`.
+- **Annual plan conversion**: divide the annual price by 12. A $1,200 annual plan contributes $100 to MRR.
+- **Included in MRR**: recurring subscription fees, recurring seat charges, recurring add-ons, recurring usage charges, and the monthly equivalent of annual or quarterly plans.
+- **Excluded from MRR**: one-time setup and services fees, taxes, refunds, free or trial users, hardware, and cash collected in advance for a future period.
+- **Worked example**: $99 average revenue per customer × 20 paying customers = $1,980 MRR, or $23,760 ARR.
 
 ## Open-Source SaaS Starter Catalog
 - **Scale**: Continuously updated catalog of curated repos across multiple categories with live GitHub signals.
