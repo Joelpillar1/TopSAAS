@@ -114,7 +114,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
   // Active view tab: submissions queue vs products management vs featured vs sponsors
   const [activeView, setActiveView] = useState<'submissions' | 'products' | 'featured' | 'sponsors'>('submissions');
   const activeSponsorsCount = products.filter(
-    (p) => (p.isSponsored || p.sponsorTier === 'trial' || p.sponsorTier === 'paid' || p.sponsorTier === '1mo' || p.sponsorTier === '3mo' || p.sponsorTier === '1yr') && (p.sponsorExpiresAt ? p.sponsorExpiresAt > Date.now() : true)
+    (p) => Boolean(p.isSponsored) && (!p.sponsorExpiresAt || p.sponsorExpiresAt > Date.now())
   ).length;
 
   // If new pending submissions come in, make sure we show the queue
@@ -245,7 +245,9 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
       onUpdateProduct({
         ...target,
         isSponsored: false,
-        sponsorExpiresAt: Date.now() - 1000,
+        sponsorTier: undefined,
+        sponsorStartedAt: undefined,
+        sponsorExpiresAt: undefined,
       });
     }
     playSound('success', soundEnabled);
@@ -1302,7 +1304,9 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                     onUpdateProduct({
                                       ...product,
                                       isSponsored: false,
-                                      sponsorExpiresAt: Date.now() - 1000,
+                                      sponsorTier: undefined,
+                                      sponsorStartedAt: undefined,
+                                      sponsorExpiresAt: undefined,
                                     });
                                   }}
                                   className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700 hover:bg-blue-100 transition-all cursor-pointer shadow-2xs"

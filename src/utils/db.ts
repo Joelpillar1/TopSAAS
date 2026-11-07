@@ -1483,24 +1483,19 @@ export async function recordSponsorUpdate(config: ActiveSponsorConfig): Promise<
 /** Remove or end a sponsor configuration in site_settings */
 export async function recordSponsorEnd(productId: string): Promise<ActiveSponsorConfig[]> {
   const current = await getActiveSponsors();
-  const now = Date.now();
-  const next = current.map((s) => {
-    if (s.productId === productId || s.productId === `prod-${productId}` || `prod-${s.productId}` === productId) {
-      return { ...s, ended: true, expiresAt: now - 1000 };
-    }
-    return s;
-  });
+  const cleanId = (id: string) => id.replace(/^prod-/, '');
+  const targetClean = cleanId(productId);
+  const next = current.filter((s) => cleanId(s.productId) !== targetClean);
   await saveActiveSponsors(next);
   return next;
 }
 
 /** Merge active sponsors configs into loaded products */
 export function mergeSponsorsIntoProducts(products: Product[], sponsors: ActiveSponsorConfig[]): Product[] {
-  if (!sponsors || sponsors.length === 0) return products;
   const now = Date.now();
-
+  const activeSponsors = (sponsors || []).filter((s) => !s.ended && (!s.expiresAt || s.expiresAt > now));
   const sponsorMap = new Map<string, ActiveSponsorConfig>();
-  for (const s of sponsors) {
+  for (const s of activeSponsors) {
     sponsorMap.set(s.productId, s);
     if (!s.productId.startsWith('prod-')) {
       sponsorMap.set(`prod-${s.productId}`, s);
@@ -1511,18 +1506,26 @@ export function mergeSponsorsIntoProducts(products: Product[], sponsors: ActiveS
 
   return products.map((p) => {
     const s = sponsorMap.get(p.id);
-    if (!s) return p;
+    if (s) {
+      return {
+        ...p,
+        isSponsored: true,
+        sponsorTier: s.tier,
+        sponsorStartedAt: s.startedAt,
+        sponsorExpiresAt: s.expiresAt,
+        sponsorContactEmail: s.contactEmail || p.sponsorContactEmail,
+        sponsorClicks: s.clicks !== undefined ? s.clicks : (p.sponsorClicks || 0),
+        autoRelaunch: p.autoRelaunch,
+      };
+    }
 
-    const isStillActive = !s.ended && s.expiresAt > now;
+    // Not in active sponsors list — ensure sponsor flags are completely cleared
     return {
       ...p,
-      isSponsored: isStillActive,
-      sponsorTier: s.tier,
-      sponsorStartedAt: s.startedAt,
-      sponsorExpiresAt: s.expiresAt,
-      sponsorContactEmail: s.contactEmail || p.sponsorContactEmail,
-      sponsorClicks: s.clicks !== undefined ? s.clicks : (p.sponsorClicks || 0),
-      autoRelaunch: p.autoRelaunch,
+      isSponsored: false,
+      sponsorTier: undefined,
+      sponsorStartedAt: undefined,
+      sponsorExpiresAt: undefined,
     };
   });
 }

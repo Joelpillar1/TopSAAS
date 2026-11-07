@@ -72,9 +72,9 @@ export const SponsorTrackerTab: React.FC<SponsorTrackerTabProps> = ({
   const isPaidSponsorTier = (tier?: string) =>
     tier === 'paid' || tier === '1mo' || tier === '3mo' || tier === '1yr';
 
-  // All products that have ever had sponsor status or are currently sponsored
+  // All active sponsored products or active trials
   const allSponsors = products.filter(
-    (p) => p.isSponsored || isSponsorTier(p.sponsorTier)
+    (p) => Boolean(p.isSponsored) && (!p.sponsorExpiresAt || p.sponsorExpiresAt > now)
   );
 
   // Categorize
@@ -166,7 +166,9 @@ export const SponsorTrackerTab: React.FC<SponsorTrackerTabProps> = ({
     const updated: Product = {
       ...product,
       isSponsored: false,
-      sponsorExpiresAt: now - 1000,
+      sponsorTier: undefined,
+      sponsorStartedAt: undefined,
+      sponsorExpiresAt: undefined,
     };
     onUpdateProduct(updated);
   };

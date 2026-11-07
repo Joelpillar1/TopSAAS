@@ -1589,7 +1589,7 @@ export default function App() {
         contactEmail: updatedProduct.sponsorContactEmail,
         clicks: updatedProduct.sponsorClicks || 0,
       }).catch(console.warn);
-    } else if (updatedProduct.isSponsored === false && (updatedProduct.sponsorTier || updatedProduct.sponsorExpiresAt)) {
+    } else if (!updatedProduct.isSponsored) {
       recordSponsorEnd(updatedProduct.id).catch(console.warn);
     }
 
