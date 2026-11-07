@@ -241,10 +241,9 @@ interface SubmitPageProps {
 }
 
 const inputClass = (invalid: boolean) =>
-  `w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 transition-shadow ${
-    invalid
-      ? 'border-red-500/70 focus:border-red-500 focus:ring-red-500/25'
-      : 'border-neutral-300 focus:border-neutral-900 focus:ring-neutral-900/10'
+  `w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 transition-shadow ${invalid
+    ? 'border-red-500/70 focus:border-red-500 focus:ring-red-500/25'
+    : 'border-neutral-300 focus:border-neutral-900 focus:ring-neutral-900/10'
   }`;
 
 const labelClass = 'mb-1.5 block text-xs font-bold text-neutral-900';
@@ -307,7 +306,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
         localStorage.removeItem('topsaas_submit_initial_url');
         initial.url = autoFormatUrl(prefillUrl);
       }
-    } catch {}
+    } catch { }
 
     return initial;
   });
@@ -322,7 +321,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
         localStorage.removeItem('topsaas_submit_auto_relaunch');
         return true;
       }
-    } catch {}
+    } catch { }
     return false;
   });
   const [autoRelaunchPaid, setAutoRelaunchPaid] = useState<boolean>(false);
@@ -349,7 +348,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
         localStorage.removeItem('topsaas_submit_auto_relaunch');
         setAutoRelaunch(true);
       }
-    } catch {}
+    } catch { }
   }, []);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
@@ -365,7 +364,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
     try {
       const fromStorage = localStorage.getItem('topsaas_submit_plan');
       if (fromStorage === 'paid_19' || fromStorage === 'verified') return 'paid_19';
-    } catch {}
+    } catch { }
     return 'free';
   });
   const [showOptionalBadge, setShowOptionalBadge] = useState(false);
@@ -438,7 +437,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
         const nextCats = (d.categories && d.categories.length > 0)
           ? d.categories
           : (d.category ? [d.category] : prev.categories);
-        
+
         return {
           ...prev,
           url: targetUrl,
@@ -470,7 +469,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
 
       try {
         confetti({ particleCount: 50, spread: 60, origin: { y: 0.4 } });
-      } catch {}
+      } catch { }
 
       setTimeout(() => setAutofillSuccess(false), 3000);
     } catch (err: any) {
@@ -635,11 +634,11 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
     }
   };
 
-  // ── Feature screenshots (up to 6) ──
+  // ── Feature screenshots (up to 4) ──
   const applyScreenshotFiles = async (files: FileList | File[]) => {
-    const remaining = 6 - form.screenshots.length;
+    const remaining = 4 - form.screenshots.length;
     if (remaining <= 0) {
-      setBanner('You can add up to 6 screenshots.');
+      setBanner('You can add up to 4 screenshots.');
       return;
     }
     setIsAddingShots(true);
@@ -660,7 +659,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
         }
       }
       if (added.length > 0) {
-        set('screenshots', [...form.screenshots, ...added].slice(0, 6));
+        set('screenshots', [...form.screenshots, ...added].slice(0, 4));
         playSound('click', soundEnabled);
       }
     } finally {
@@ -729,9 +728,9 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
 
   // PNG badge snippet — links back to the product's TopSAAS listing so the verifier detects topsaas.space
   const BADGE_IMG_SRCS: Record<string, string> = {
-    'type1-blue':  'https://topsaas.space/Share%20Badge/TopSAAS%20Type%201%20-%20blue.png',
+    'type1-blue': 'https://topsaas.space/Share%20Badge/TopSAAS%20Type%201%20-%20blue.png',
     'type1-light': 'https://topsaas.space/Share%20Badge/TopSAAS%20Type%201%20-%20light.png',
-    'type2-blue':  'https://topsaas.space/Share%20Badge/TopSAAS%20Type%202%20-%20blue.png',
+    'type2-blue': 'https://topsaas.space/Share%20Badge/TopSAAS%20Type%202%20-%20blue.png',
     'type2-light': 'https://topsaas.space/Share%20Badge/TopSAAS%20Type%202%20-%20light.png',
   };
   const badgeImgSrc = BADGE_IMG_SRCS[badgeVariant];
@@ -745,7 +744,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
     playSound('click', soundEnabled);
     try {
       await navigator.clipboard.writeText(badgeEmbedSnippet);
-    } catch {}
+    } catch { }
     setCopiedBadge(true);
     setTimeout(() => setCopiedBadge(false), 2000);
   };
@@ -907,8 +906,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
       if (form.chromeWebStore.trim()) socials.push({ platform: 'chrome_web_store', url: cleanUrl(form.chromeWebStore) });
       const finalCategory = form.categories.length > 0 ? (form.categories.join(', ') as Category) : form.category;
 
-      const isRelaunch = overrideAutoRelaunch !== undefined ? overrideAutoRelaunch : autoRelaunch;
-      const isPaid = overridePaid !== undefined ? overridePaid : autoRelaunchPaid;
+      const isRelaunch = overrideAutoRelaunch !== undefined ? overrideAutoRelaunch : (submissionPlan === 'paid_19' ? true : autoRelaunch);
+      const isPaid = overridePaid !== undefined ? overridePaid : (submissionPlan === 'paid_19' ? true : autoRelaunchPaid);
 
       const newId = await onSubmit({
         name: form.name.trim(),
@@ -917,7 +916,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
         category: finalCategory,
         description: prepareRichText(form.description) || undefined,
         logoUrl: form.logoDataUrl || undefined,
-        screenshots: form.screenshots.length > 0 ? form.screenshots.slice(0, 10) : undefined,
+        screenshots: form.screenshots.length > 0 ? form.screenshots.slice(0, 4) : undefined,
         demoVideoUrl: form.demoVideoUrl ? autoFormatUrl(form.demoVideoUrl) : undefined,
         twitterHandle: normalizeTwitterHandle(form.twitter) || undefined,
         socials: socials.length > 0 ? socials : undefined,
@@ -954,7 +953,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
       playSound('success', soundEnabled);
       try {
         confetti({ particleCount: 90, spread: 70, origin: { y: 0.55 }, colors: ['#ffffff', '#66cc88', '#9aa5b1'] });
-      } catch {}
+      } catch { }
       clearDraft();
       setLaunched({ id: newId, name: form.name.trim() });
       return newId;
@@ -1094,20 +1093,18 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                   role="tab"
                   aria-selected={active}
                   onClick={() => handleTabClick(i)}
-                  className={`flex items-center justify-center gap-1.5 sm:gap-2 rounded-xl px-1.5 sm:px-2 py-2.5 text-xs font-bold transition-all cursor-pointer ${
-                    active
+                  className={`flex items-center justify-center gap-1.5 sm:gap-2 rounded-xl px-1.5 sm:px-2 py-2.5 text-xs font-bold transition-all cursor-pointer ${active
                       ? 'bg-neutral-950 text-white shadow-2xs'
                       : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-950'
-                  }`}
+                    }`}
                 >
                   <span
-                    className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-black shrink-0 ${
-                      active
+                    className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-black shrink-0 ${active
                         ? 'bg-mint-500 text-white'
                         : isCompleted
-                        ? 'bg-mint-500/20 text-mint-700 border border-mint-500/40'
-                        : 'bg-neutral-100 text-neutral-600 border border-neutral-200'
-                    }`}
+                          ? 'bg-mint-500/20 text-mint-700 border border-mint-500/40'
+                          : 'bg-neutral-100 text-neutral-600 border border-neutral-200'
+                      }`}
                   >
                     {isCompleted ? <Check className="h-3 w-3" strokeWidth={3.5} /> : i + 1}
                   </span>
@@ -1148,9 +1145,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                     type="button"
                     onClick={() => handleAutofill()}
                     disabled={isAutofilling || !form.url.trim()}
-                    className={`btn-primary rounded-xl px-4 py-2.5 text-xs font-bold shrink-0 cursor-pointer ${
-                      autofillSuccess ? '!bg-emerald-600 !border-emerald-700' : ''
-                    }`}
+                    className={`btn-primary rounded-xl px-4 py-2.5 text-xs font-bold shrink-0 cursor-pointer ${autofillSuccess ? '!bg-emerald-600 !border-emerald-700' : ''
+                      }`}
                   >
                     {isAutofilling ? (
                       <>
@@ -1229,9 +1225,6 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                   minHeightClass="min-h-[150px]"
                   ariaLabel="Description"
                 />
-                <p className="mt-1.5 text-[11px] font-medium text-neutral-600">
-                  Optional — headings, bold, lists and links render exactly like this on your listing page.
-                </p>
               </div>
             </section>
           )}
@@ -1267,11 +1260,10 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                     }}
                     onDragLeave={() => setIsDraggingLogo(false)}
                     onDrop={handleDrop}
-                    className={`flex min-h-[120px] cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-4 text-center transition-colors outline-none ${
-                      isDraggingLogo
+                    className={`flex min-h-[120px] cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-4 text-center transition-colors outline-none ${isDraggingLogo
                         ? 'border-neutral-900 bg-neutral-50'
                         : 'border-neutral-300 bg-white hover:border-neutral-500 hover:bg-neutral-50/50'
-                    }`}
+                      }`}
                   >
                     {form.logoDataUrl ? (
                       <>
@@ -1315,7 +1307,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                 </div>
               </div>
 
-              {/* Feature screenshots gallery (up to 6) */}
+              {/* Feature screenshots gallery (up to 4) */}
               <div className="mt-6 border-t border-neutral-200 pt-6">
                 <div className="mb-2 flex items-baseline justify-between gap-2">
                   <div>
@@ -1325,7 +1317,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                     </p>
                   </div>
                   <span className="font-mono-num text-[11px] font-bold text-neutral-700 bg-neutral-50 px-2 py-0.5 rounded-md border border-neutral-200 shrink-0">
-                    {form.screenshots.length}/6
+                    {form.screenshots.length}/4
                   </span>
                 </div>
 
@@ -1364,15 +1356,14 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                           setDraggedScreenshotIndex(null);
                           setDragOverScreenshotIndex(null);
                         }}
-                        className={`group relative aspect-video overflow-hidden rounded-xl border bg-[#1f1f1f] shadow-sm transition-all duration-150 cursor-grab active:cursor-grabbing ${
-                          isDragOver
+                        className={`group relative aspect-video overflow-hidden rounded-xl border bg-[#1f1f1f] shadow-sm transition-all duration-150 cursor-grab active:cursor-grabbing ${isDragOver
                             ? 'border-mint-500 ring-2 ring-mint-500/50 scale-[1.03] z-10'
                             : isDragging
-                            ? 'opacity-40 border-neutral-600'
-                            : isFirst
-                            ? 'border-mint-500/50 hover:border-mint-500/80'
-                            : 'border-neutral-200 hover:border-neutral-500'
-                        }`}
+                              ? 'opacity-40 border-neutral-600'
+                              : isFirst
+                                ? 'border-mint-500/50 hover:border-mint-500/80'
+                                : 'border-neutral-200 hover:border-neutral-500'
+                          }`}
                       >
                         <img
                           src={src}
@@ -1459,7 +1450,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                     );
                   })}
 
-                  {form.screenshots.length < 6 && (
+                  {form.screenshots.length < 4 && (
                     <button
                       type="button"
                       onClick={() => screenshotsInputRef.current?.click()}
@@ -1493,9 +1484,6 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                     e.target.value = '';
                   }}
                 />
-                <p className="mt-2 text-[11px] font-medium text-neutral-500">
-                  Optional — up to 6 screenshots, shown in a gallery on your listing page in this exact order.
-                </p>
               </div>
 
               {/* Demo Video URL Input */}
@@ -1586,13 +1574,12 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                       setIsCategoryOpen((o) => !o);
                       setCategorySearch('');
                     }}
-                    className={`w-full flex items-center justify-between rounded-xl border bg-white px-3.5 py-2.5 text-sm font-semibold text-neutral-900 transition-all cursor-pointer text-left ${
-                      showCategoryError
+                    className={`w-full flex items-center justify-between rounded-xl border bg-white px-3.5 py-2.5 text-sm font-semibold text-neutral-900 transition-all cursor-pointer text-left ${showCategoryError
                         ? 'border-red-500/70'
                         : isCategoryOpen
                           ? 'border-neutral-900 ring-2 ring-neutral-900/10'
                           : 'border-neutral-300 hover:border-neutral-400'
-                    }`}
+                      }`}
                   >
                     <span className="text-neutral-700 font-medium">
                       {form.categories.length > 0
@@ -1600,9 +1587,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                         : 'Choose up to 3 categories...'}
                     </span>
                     <ChevronDown
-                      className={`h-4 w-4 shrink-0 text-neutral-500 transition-transform duration-200 ${
-                        isCategoryOpen ? 'rotate-180' : ''
-                      }`}
+                      className={`h-4 w-4 shrink-0 text-neutral-500 transition-transform duration-200 ${isCategoryOpen ? 'rotate-180' : ''
+                        }`}
                     />
                   </button>
 
@@ -1630,11 +1616,10 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                                 key={cat}
                                 type="button"
                                 onClick={() => toggleCategory(cat)}
-                                className={`w-full flex items-center justify-between rounded-lg px-2.5 py-2 text-left text-xs transition-colors cursor-pointer ${
-                                  selected
+                                className={`w-full flex items-center justify-between rounded-lg px-2.5 py-2 text-left text-xs transition-colors cursor-pointer ${selected
                                     ? 'bg-mint-500/20 font-bold text-mint-700'
                                     : 'font-medium text-neutral-700 hover:bg-neutral-100 hover:text-neutral-950'
-                                }`}
+                                  }`}
                               >
                                 <span className="truncate">{cat}</span>
                                 {selected && <Check className="h-3.5 w-3.5 shrink-0 text-mint-600 stroke-[3]" />}
@@ -1664,11 +1649,10 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                           playSound('click', soundEnabled);
                           set('pricingModel', selected ? '' : opt.value);
                         }}
-                        className={`rounded-xl border px-3 py-2.5 text-left transition-all cursor-pointer ${
-                          selected
+                        className={`rounded-xl border px-3 py-2.5 text-left transition-all cursor-pointer ${selected
                             ? 'border-neutral-950 bg-neutral-950 text-white'
                             : 'border-neutral-200 bg-white hover:border-neutral-400 text-neutral-900'
-                        }`}
+                          }`}
                       >
                         <span className={`block text-xs font-bold ${selected ? 'text-white' : 'text-neutral-900'}`}>
                           {opt.value}
@@ -1680,9 +1664,6 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                     );
                   })}
                 </div>
-                <p className="mt-1.5 text-[11px] font-medium text-neutral-500">
-                  Optional — shown on your listing page.
-                </p>
               </div>
 
               {/* Special Offer & Viewer Discount */}
@@ -1699,9 +1680,6 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                           Boosts Clicks
                         </span>
                       </h3>
-                      <p className="text-[11px] text-neutral-500">
-                        Offer TopSAAS viewers a discount code or promo to drive conversions and early customers.
-                      </p>
                     </div>
                   </div>
                   <span className="text-[10px] font-semibold text-neutral-500">
@@ -1728,11 +1706,10 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                               set('offerCode', `TOPSAAS${num}`);
                             }
                           }}
-                          className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all cursor-pointer ${
-                            form.offerDiscount === preset
+                          className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all cursor-pointer ${form.offerDiscount === preset
                               ? 'bg-mint-500 text-white border border-mint-400 shadow-2xs'
                               : 'bg-white text-neutral-700 border border-neutral-200 hover:border-neutral-400 hover:bg-neutral-50 hover:text-neutral-950'
-                          }`}
+                            }`}
                         >
                           {preset}
                         </button>
@@ -1753,9 +1730,6 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                         placeholder="e.g. 20% OFF or 50% Lifetime"
                         className={inputClass(false)}
                       />
-                      <p className="mt-1 text-[10px] text-neutral-500">
-                        Shown as a badge on directory cards & listing page.
-                      </p>
                     </div>
 
                     <div>
@@ -1770,9 +1744,6 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                         placeholder="e.g. TOPSAAS20"
                         className={`${inputClass(false)} font-mono font-bold tracking-wider`}
                       />
-                      <p className="mt-1 text-[10px] text-neutral-500">
-                        Visitors can copy this with one click on your listing.
-                      </p>
                     </div>
                   </div>
 
@@ -1792,9 +1763,6 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                         placeholder="e.g. https://yoursite.com/deal or checkout link"
                         className={inputClass(false)}
                       />
-                      <p className="mt-1 text-[10px] text-neutral-500">
-                        Optional — leave blank to use your main website URL.
-                      </p>
                     </div>
 
                     <div>
@@ -1809,9 +1777,6 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                         placeholder="e.g. Valid on first year of annual plans"
                         className={inputClass(false)}
                       />
-                      <p className="mt-1 text-[10px] text-neutral-500">
-                        Optional note displayed under the promo code.
-                      </p>
                     </div>
                   </div>
                 </div>
@@ -1819,7 +1784,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
 
               {/* Who it's for */}
               <div className="border-t border-neutral-200 pt-5">
-                <h2 className="mb-3 text-[11px] font-black uppercase tracking-wider text-neutral-700">
+                <h2 className="mb-3 text-[11px] font-bold text-neutral-700">
                   Who it&apos;s for
                 </h2>
                 <div className="space-y-4">
@@ -1868,15 +1833,12 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                     />
                   </div>
                 </div>
-                <p className="mt-2 text-[11px] font-medium text-neutral-600">
-                  Optional — these fill the What it does section of your listing page.
-                </p>
               </div>
 
               {/* Social & Distribution Links */}
               <div className="border-t border-neutral-200 pt-5 space-y-4">
                 <div>
-                  <h2 className="text-[11px] font-black uppercase tracking-wider text-neutral-700">
+                  <h2 className="text-[11px] font-bold text-neutral-700">
                     Social & Distribution Links
                   </h2>
                   <p className="mt-1 text-xs text-neutral-500">
@@ -2002,10 +1964,6 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                     />
                   </div>
                 </div>
-
-                <p className="mt-1 text-[11px] font-medium text-neutral-600">
-                  Optional — displayed on your listing page so users can join your community or download your apps.
-                </p>
               </div>
             </section>
           )}
@@ -2137,11 +2095,10 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                       key={role}
                       type="button"
                       onClick={() => set('creatorRole', role)}
-                      className={`rounded-lg px-2 py-1 text-[10px] font-bold transition-colors cursor-pointer ${
-                        form.creatorRole === role
+                      className={`rounded-lg px-2 py-1 text-[10px] font-bold transition-colors cursor-pointer ${form.creatorRole === role
                           ? 'bg-mint-500/15 text-mint-700 border border-mint-500/40'
                           : 'bg-white text-neutral-700 border border-neutral-200 hover:text-neutral-950 hover:border-neutral-400 hover:bg-neutral-50'
-                      }`}
+                        }`}
                     >
                       {role}
                     </button>
@@ -2157,7 +2114,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
               {/* 1. Choose Your Launch Plan */}
               <div className="space-y-3">
                 <div>
-                  <h3 className="text-xs font-bold text-neutral-600 uppercase tracking-wider">1. CHOOSE YOUR LAUNCH PLAN</h3>
+                  <h3 className="text-xs font-bold text-neutral-700">1. Choose Your Launch Plan</h3>
                   <p className="text-xs text-neutral-500 mt-0.5">Select how you want to launch your product on TopSAAS.</p>
                 </div>
 
@@ -2168,20 +2125,18 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                       playSound('click', soundEnabled);
                       setSubmissionPlan('free');
                     }}
-                    className={`relative rounded-3xl border transition-all cursor-pointer flex flex-col justify-between p-5 sm:p-6 ${
-                      submissionPlan === 'free'
+                    className={`relative rounded-3xl border transition-all cursor-pointer flex flex-col justify-between p-5 sm:p-6 ${submissionPlan === 'free'
                         ? 'border-neutral-900 bg-white shadow-xl shadow-neutral-900/5 ring-2 ring-neutral-950'
                         : 'border-neutral-200/90 bg-white hover:border-neutral-300 hover:shadow-md'
-                    }`}
+                      }`}
                   >
                     <div>
                       <div className="flex items-center justify-between gap-2">
                         <h4 className="text-xl sm:text-2xl font-black text-neutral-950 tracking-tight">Starter</h4>
-                        <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
-                          submissionPlan === 'free'
+                        <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${submissionPlan === 'free'
                             ? 'border border-emerald-300 bg-emerald-50 text-emerald-700'
                             : 'border border-neutral-200 bg-neutral-100 text-neutral-600'
-                        }`}>
+                          }`}>
                           {submissionPlan === 'free' ? 'Selected' : 'Free Forever'}
                         </span>
                       </div>
@@ -2195,8 +2150,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                       </div>
 
                       <div className="pt-2 mb-4 space-y-2.5">
-                        <p className="text-[10px] font-black uppercase tracking-wider text-neutral-400">
-                          GET STARTED WITH:
+                        <p className="text-[11px] font-bold text-neutral-500">
+                          Get started with:
                         </p>
                         <ul className="space-y-2.5 text-xs sm:text-[13px] text-neutral-700 font-medium">
                           <li className="flex items-start gap-2.5 leading-snug">
@@ -2271,11 +2226,10 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                         playSound('click', soundEnabled);
                         setSubmissionPlan('free');
                       }}
-                      className={`w-full rounded-2xl py-3 px-4 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                        submissionPlan === 'free'
+                      className={`w-full rounded-2xl py-3 px-4 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${submissionPlan === 'free'
                           ? 'border border-neutral-900 bg-neutral-950 text-white shadow-xs'
                           : 'border border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-800 shadow-2xs'
-                      }`}
+                        }`}
                     >
                       <span>{submissionPlan === 'free' ? 'Selected ✓' : 'Select Starter →'}</span>
                     </button>
@@ -2286,16 +2240,16 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                     onClick={() => {
                       playSound('click', soundEnabled);
                       setSubmissionPlan('paid_19');
+                      setAutoRelaunch(false);
                     }}
-                    className={`relative rounded-3xl border transition-all cursor-pointer flex flex-col justify-between p-5 sm:p-6 bg-gradient-to-b from-blue-50/60 via-slate-50/40 to-white ${
-                      submissionPlan === 'paid_19'
+                    className={`relative rounded-3xl border transition-all cursor-pointer flex flex-col justify-between p-5 sm:p-6 bg-gradient-to-b from-blue-50/60 via-slate-50/40 to-white ${submissionPlan === 'paid_19'
                         ? 'border-blue-600 shadow-xl shadow-blue-500/10 ring-2 ring-blue-600'
                         : 'border-slate-200/90 hover:border-blue-300 hover:shadow-md'
-                    }`}
+                      }`}
                   >
                     {/* Overlapping Most Popular Tag */}
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10 whitespace-nowrap">
-                      <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-600 bg-blue-600 px-3.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white shadow-sm shadow-blue-600/25">
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-600 bg-blue-600 px-3.5 py-0.5 text-[10px] font-bold text-white shadow-sm shadow-blue-600/25">
                         <Sparkles className="h-3 w-3 fill-white/20" />
                         <span>Most Popular</span>
                       </span>
@@ -2308,7 +2262,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                           <VerifiedBadge className="h-5 w-5" />
                         </div>
                         {submissionPlan === 'paid_19' && (
-                          <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider border border-blue-200 bg-blue-50 text-blue-700">
+                          <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-blue-200 bg-blue-50 text-blue-700">
                             Selected
                           </span>
                         )}
@@ -2324,8 +2278,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                       </div>
 
                       <div className="pt-2 mb-4 space-y-2.5">
-                        <p className="text-[10px] font-black uppercase tracking-wider text-neutral-500">
-                          EVERYTHING IN STARTER, PLUS:
+                        <p className="text-[11px] font-bold text-neutral-700">
+                          Everything in Starter, plus:
                         </p>
                         <ul className="space-y-2.5 text-xs sm:text-[13px] text-neutral-800 font-medium">
                           <li className="flex items-start gap-2.5 leading-snug">
@@ -2360,7 +2314,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                                 <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200/90 text-emerald-600 mt-0.5">
                                   <Check className="h-3 w-3 stroke-[3]" />
                                 </div>
-                                <span><strong>Auto Weekly Relaunch:</strong> 1st Month Free (then $5/mo optional)</span>
+                                <span><strong>Auto Weekly Relaunch:</strong> 1st Month Free (then $5/week optional)</span>
                               </li>
                               <li className="flex items-start gap-2.5 leading-snug animate-in fade-in-50 duration-150">
                                 <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200/90 text-emerald-600 mt-0.5">
@@ -2411,6 +2365,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                         e.stopPropagation();
                         playSound('click', soundEnabled);
                         setSubmissionPlan('paid_19');
+                        setAutoRelaunch(false);
                       }}
                       className="w-full rounded-2xl bg-neutral-950 hover:bg-neutral-800 text-white py-3 px-4 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-neutral-950/20"
                     >
@@ -2451,20 +2406,19 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                         <p className="text-[11px] font-bold text-neutral-700">CHOOSE YOUR OPTIONAL BADGE</p>
                         <div className="grid grid-cols-4 gap-2 sm:gap-2.5">
                           {([
-                            { id: 'type1-blue',  src: '/Share%20Badge/TopSAAS%20Type%201%20-%20blue.png',  label: 'Type 1 · Blue',  bg: 'bg-[#1a2580]' },
+                            { id: 'type1-blue', src: '/Share%20Badge/TopSAAS%20Type%201%20-%20blue.png', label: 'Type 1 · Blue', bg: 'bg-[#1a2580]' },
                             { id: 'type1-light', src: '/Share%20Badge/TopSAAS%20Type%201%20-%20light.png', label: 'Type 1 · Light', bg: 'bg-white' },
-                            { id: 'type2-blue',  src: '/Share%20Badge/TopSAAS%20Type%202%20-%20blue.png',  label: 'Type 2 · Blue',  bg: 'bg-[#1a2580]' },
+                            { id: 'type2-blue', src: '/Share%20Badge/TopSAAS%20Type%202%20-%20blue.png', label: 'Type 2 · Blue', bg: 'bg-[#1a2580]' },
                             { id: 'type2-light', src: '/Share%20Badge/TopSAAS%20Type%202%20-%20light.png', label: 'Type 2 · Light', bg: 'bg-white' },
                           ] as { id: BadgeVariant; src: string; label: string; bg: string }[]).map(({ id, src, label, bg }) => (
                             <button
                               key={id}
                               type="button"
                               onClick={() => { playSound('click', soundEnabled); setBadgeVariant(id); }}
-                              className={`relative flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 p-2 sm:p-2.5 transition-all cursor-pointer ${
-                                badgeVariant === id
+                              className={`relative flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 p-2 sm:p-2.5 transition-all cursor-pointer ${badgeVariant === id
                                   ? 'border-mint-500 shadow-sm shadow-mint-500/20'
                                   : 'border-neutral-200 hover:border-neutral-400'
-                              } ${bg}`}
+                                } ${bg}`}
                             >
                               {badgeVariant === id && (
                                 <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-mint-500">
@@ -2472,9 +2426,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                                 </span>
                               )}
                               <img src={src} alt={label} className="h-6 sm:h-7.5 w-auto max-w-[85%] object-contain" draggable={false} />
-                              <span className={`text-[9px] sm:text-[10px] font-bold text-center leading-tight truncate max-w-full ${
-                                id.endsWith('light') ? 'text-neutral-700' : 'text-white/85'
-                              }`}>{label}</span>
+                              <span className={`text-[9px] sm:text-[10px] font-bold text-center leading-tight truncate max-w-full ${id.endsWith('light') ? 'text-neutral-700' : 'text-white/85'
+                                }`}>{label}</span>
                             </button>
                           ))}
                         </div>
@@ -2485,9 +2438,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                         <button
                           type="button"
                           onClick={handleCopyBadgeSnippet}
-                          className={`absolute top-2.5 right-2.5 inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-bold transition-all cursor-pointer shadow-xs ${
-                            copiedBadge ? 'bg-mint-500 text-white' : 'bg-white text-neutral-800 hover:bg-neutral-100 border border-neutral-300'
-                          }`}
+                          className={`absolute top-2.5 right-2.5 inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-bold transition-all cursor-pointer shadow-xs ${copiedBadge ? 'bg-mint-500 text-white' : 'bg-white text-neutral-800 hover:bg-neutral-100 border border-neutral-300'
+                            }`}
                         >
                           {copiedBadge ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                           <span>{copiedBadge ? 'Copied' : 'Copy'}</span>
@@ -2501,28 +2453,22 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                 <div className="space-y-5 border-t border-neutral-200 pt-5">
                   {/* Badge Picker */}
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs font-bold text-neutral-600">2. CHOOSE YOUR BADGE</p>
-                      <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
-                        Required for Free Launch
-                      </span>
-                    </div>
+                    <p className="text-xs font-bold text-neutral-700">2. Choose Your Badge</p>
                     <div className="grid grid-cols-4 gap-2 sm:gap-2.5">
                       {([
-                        { id: 'type1-blue',  src: '/Share%20Badge/TopSAAS%20Type%201%20-%20blue.png',  label: 'Type 1 · Blue',  bg: 'bg-[#1a2580]' },
+                        { id: 'type1-blue', src: '/Share%20Badge/TopSAAS%20Type%201%20-%20blue.png', label: 'Type 1 · Blue', bg: 'bg-[#1a2580]' },
                         { id: 'type1-light', src: '/Share%20Badge/TopSAAS%20Type%201%20-%20light.png', label: 'Type 1 · Light', bg: 'bg-white' },
-                        { id: 'type2-blue',  src: '/Share%20Badge/TopSAAS%20Type%202%20-%20blue.png',  label: 'Type 2 · Blue',  bg: 'bg-[#1a2580]' },
+                        { id: 'type2-blue', src: '/Share%20Badge/TopSAAS%20Type%202%20-%20blue.png', label: 'Type 2 · Blue', bg: 'bg-[#1a2580]' },
                         { id: 'type2-light', src: '/Share%20Badge/TopSAAS%20Type%202%20-%20light.png', label: 'Type 2 · Light', bg: 'bg-white' },
                       ] as { id: BadgeVariant; src: string; label: string; bg: string }[]).map(({ id, src, label, bg }) => (
                         <button
                           key={id}
                           type="button"
                           onClick={() => { playSound('click', soundEnabled); setBadgeVariant(id); }}
-                          className={`relative flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 p-2 sm:p-2.5 transition-all cursor-pointer ${
-                            badgeVariant === id
+                          className={`relative flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 p-2 sm:p-2.5 transition-all cursor-pointer ${badgeVariant === id
                               ? 'border-mint-500 shadow-sm shadow-mint-500/20'
                               : 'border-neutral-200 hover:border-neutral-400'
-                          } ${bg}`}
+                            } ${bg}`}
                         >
                           {badgeVariant === id && (
                             <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-mint-500">
@@ -2535,9 +2481,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                             className="h-6 sm:h-7.5 w-auto max-w-[85%] object-contain"
                             draggable={false}
                           />
-                          <span className={`text-[9px] sm:text-[10px] font-bold text-center leading-tight truncate max-w-full ${
-                            id.endsWith('light') ? 'text-neutral-700' : 'text-white/85'
-                          }`}>{label}</span>
+                          <span className={`text-[9px] sm:text-[10px] font-bold text-center leading-tight truncate max-w-full ${id.endsWith('light') ? 'text-neutral-700' : 'text-white/85'
+                            }`}>{label}</span>
                         </button>
                       ))}
                     </div>
@@ -2546,7 +2491,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                   {/* Copy Code Snippet */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-neutral-900">3. COPY SNIPPET TO YOUR WEBSITE</span>
+                      <span className="text-xs font-bold text-neutral-900">3. Copy Snippet to Your Website</span>
                       <div className="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-neutral-200 text-[11px]">
                         <button
                           type="button"
@@ -2570,9 +2515,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                       <button
                         type="button"
                         onClick={handleCopyBadgeSnippet}
-                        className={`absolute top-2.5 right-2.5 inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-bold transition-all cursor-pointer shadow-xs ${
-                          copiedBadge ? 'bg-mint-500 text-white' : 'bg-white text-neutral-800 hover:bg-neutral-100 border border-neutral-300'
-                        }`}
+                        className={`absolute top-2.5 right-2.5 inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-bold transition-all cursor-pointer shadow-xs ${copiedBadge ? 'bg-mint-500 text-white' : 'bg-white text-neutral-800 hover:bg-neutral-100 border border-neutral-300'
+                          }`}
                       >
                         {copiedBadge ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                         <span>{copiedBadge ? 'Copied' : 'Copy'}</span>
@@ -2616,19 +2560,6 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                           >
                             Try again
                           </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setIsBadgeVerified(true);
-                              setBadgeVerificationSuccess('Badge placement confirmed. Your listing has been queued for review.');
-                              setBadgeVerificationError(null);
-                              playSound('success', soundEnabled);
-                              confetti({ particleCount: 35, spread: 50, origin: { y: 0.7 } });
-                            }}
-                            className="rounded-lg border border-neutral-300 bg-white hover:bg-neutral-100 text-neutral-700 px-3 py-1.5 text-[11px] font-semibold transition-colors cursor-pointer"
-                          >
-                            I've added the badge, proceed to submit
-                          </button>
                         </div>
                       </div>
                     </div>
@@ -2653,55 +2584,54 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                 />
               </div>
 
-              {/* Weekly Relaunch Add-on */}
-              <div
-                onClick={() => {
-                  playSound('click', soundEnabled);
-                  setAutoRelaunch((prev) => !prev);
-                }}
-                className={`rounded-2xl border p-4 sm:p-5 transition-all cursor-pointer select-none ${
-                  autoRelaunch
-                    ? 'border-blue-500 bg-blue-50/70 ring-1 ring-blue-500/30 shadow-xs'
-                    : 'border-neutral-200 bg-white hover:border-neutral-300'
-                }`}
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-start gap-3 min-w-0">
-                    <div className="h-10 w-10 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center shrink-0 text-xl font-bold">
-                      🚀
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-black text-neutral-950">Auto Weekly Relaunch</span>
-                        <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700">
-                          +$5 / month
-                        </span>
-                      </div>
-                      <p className="text-xs text-neutral-600 mt-1 leading-relaxed">
-                        Relaunch into active weekly voting rounds every Sunday automatically. Re-engage the community, reset weekly votes, and get fresh homepage exposure every week.
-                      </p>
-                      {autoRelaunch && (
-                        <p className="text-[11px] font-semibold text-blue-700 mt-1 flex items-center gap-1">
-                          <Check className="h-3 w-3 stroke-[3]" />
-                          <span>Selected: Payment of $5 will be prompted when you click Submit</span>
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  {/* Switch */}
-                  <span
-                    className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
-                      autoRelaunch ? 'bg-blue-600' : 'bg-neutral-300'
+              {/* Weekly Relaunch Add-on (only shown for free plan, as it is already included in $19 plan) */}
+              {submissionPlan !== 'paid_19' && (
+                <div
+                  onClick={() => {
+                    playSound('click', soundEnabled);
+                    setAutoRelaunch((prev) => !prev);
+                  }}
+                  className={`rounded-2xl border p-4 sm:p-5 transition-all cursor-pointer select-none ${autoRelaunch
+                      ? 'border-blue-500 bg-blue-50/70 ring-1 ring-blue-500/30 shadow-xs'
+                      : 'border-neutral-200 bg-white hover:border-neutral-300'
                     }`}
-                  >
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div className="h-10 w-10 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center shrink-0 text-xl font-bold">
+                        🚀
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-black text-neutral-950">Auto Weekly Relaunch</span>
+                          <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700">
+                            +$5 / week
+                          </span>
+                        </div>
+                        <p className="text-xs text-neutral-600 mt-1 leading-relaxed">
+                          Relaunch into active weekly voting rounds every Sunday automatically. Re-engage the community, reset weekly votes, and get fresh homepage exposure every week.
+                        </p>
+                        {autoRelaunch && (
+                          <p className="text-[11px] font-semibold text-blue-700 mt-1 flex items-center gap-1">
+                            <Check className="h-3 w-3 stroke-[3]" />
+                            <span>Selected: Payment of $5 will be prompted when you click Submit</span>
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    {/* Switch */}
                     <span
-                      className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-xs transition-transform ${
-                        autoRelaunch ? 'translate-x-4.5' : 'translate-x-1'
-                      }`}
-                    />
-                  </span>
+                      className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${autoRelaunch ? 'bg-blue-600' : 'bg-neutral-300'
+                        }`}
+                    >
+                      <span
+                        className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-xs transition-transform ${autoRelaunch ? 'translate-x-4.5' : 'translate-x-1'
+                          }`}
+                      />
+                    </span>
+                  </div>
                 </div>
-              </div>
+              )}
             </section>
           )}
         </div>
@@ -2779,16 +2709,15 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                   type="button"
                   onClick={handleLaunch}
                   disabled={isSubmitting}
-                  className={`px-5 py-2.5 text-xs font-black transition-all rounded-xl select-none ${
-                    isSubmitting
+                  className={`px-5 py-2.5 text-xs font-black transition-all rounded-xl select-none ${isSubmitting
                       ? 'btn-primary opacity-80 cursor-wait'
                       : autoRelaunch
-                      ? 'btn-primary bg-blue-600 hover:bg-blue-500 shadow-blue-500/25 cursor-pointer'
-                      : 'btn-primary cursor-pointer'
-                  }`}
+                        ? 'btn-primary bg-blue-600 hover:bg-blue-500 shadow-blue-500/25 cursor-pointer'
+                        : 'btn-primary cursor-pointer'
+                    }`}
                   title={
                     autoRelaunch
-                      ? 'Submit website with Weekly Relaunch ($5/mo)'
+                      ? 'Submit website with Weekly Relaunch ($5/week)'
                       : 'Submit website for review'
                   }
                 >
@@ -2860,7 +2789,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                 <div className="flex items-baseline justify-between gap-2">
                   <div>
                     <span className="text-3xl sm:text-4xl font-black text-neutral-950">$5</span>
-                    <span className="text-xs font-bold text-neutral-600"> / month</span>
+                    <span className="text-xs font-bold text-neutral-600"> / week</span>
                   </div>
                   <span className="rounded-full bg-blue-600 px-3 py-1 text-[11px] font-bold text-white shadow-xs">
                     Cancel anytime
@@ -2949,8 +2878,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                       try {
                         const newId = await executeSubmission(true, true);
                         const returnUrl = encodeURIComponent(
-                          `${window.location.origin}/payment-success?plan=weekly_relaunch&product=${encodeURIComponent(form.name.trim())}${
-                            newId ? `&target_product_id=${encodeURIComponent(newId)}` : ''
+                          `${window.location.origin}/payment-success?plan=weekly_relaunch&product=${encodeURIComponent(form.name.trim())}${newId ? `&target_product_id=${encodeURIComponent(newId)}` : ''
                           }`
                         );
                         const emailParam = relaunchEmail.trim() ? `&email=${encodeURIComponent(relaunchEmail.trim())}` : '';

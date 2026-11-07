@@ -18,7 +18,7 @@ interface PricingPageProps {
 const faqs = [
   {
     q: 'What is the difference between Free and the $19 Verified Launch?',
-    a: 'Free submissions enter a manual queue that takes 7–14 days, with a standard nofollow backlink. The $19 Verified Launch gives you fast-track review within 24 hours, category top-3 pinned spot (1st month), auto weekly relaunch free for your first month (then optional $5/mo), a dedicated 1,500+ word story on /blog (including "X vs Y" competitor comparison), permanent high-authority DoFollow backlink, official Verified Mint Badge, and /llms.txt AI search inclusion (ChatGPT, Perplexity and more).',
+    a: 'Free submissions enter a manual queue that takes 7–14 days, with a standard nofollow backlink. The $19 Verified Launch gives you fast-track review within 24 hours, category top-3 pinned spot (1st month), auto weekly relaunch free for your first month (then optional $5/week), a dedicated 1,500+ word story on /blog (including "X vs Y" competitor comparison), permanent high-authority DoFollow backlink, official Verified Mint Badge, and /llms.txt AI search inclusion (ChatGPT, Perplexity and more).',
   },
   {
     q: 'Is the $19 Verified Launch a recurring subscription?',
@@ -52,7 +52,7 @@ const comparisonRows: Array<{
   { feature: 'SEO backlink type',               free: 'nofollow',       verified: 'dofollow (permanent)' },
   { feature: 'Verified badge (directory card)', free: false,            verified: true },
   { feature: 'Embeddable badge (your site)',    free: false,            verified: true },
-  { feature: 'Auto Weekly Relaunch',            free: '+$5/mo toggle',  verified: '1st Month Free (then $5/mo)' },
+  { feature: 'Auto Weekly Relaunch',            free: '+$5/week toggle',  verified: '1st Month Free (then $5/week)' },
   { feature: 'Category pinned placement',       free: false,            verified: 'Top 3 Pinned (1st Month)' },
   { feature: '1,500+ word story on /blog',      free: false,            verified: 'Included (with "vs" breakdown)' },
   { feature: 'Included in /llms.txt (AI SEO)',  free: false,            verified: 'ChatGPT, Perplexity & more' },
@@ -203,7 +203,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({
                     <div className="min-w-0">
                       <p className="text-xs font-bold text-neutral-950 flex items-center gap-1.5">
                         <span>Auto Weekly Relaunch</span>
-                        <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">+$5/mo</span>
+                        <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">+$5/week</span>
                       </p>
                       <p className="text-[11px] text-neutral-500 truncate mt-0.5">
                         Re-enters active leaderboard every Sunday
@@ -330,7 +330,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({
                   <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
                     <Check className="h-2.5 w-2.5 stroke-[3]" />
                   </div>
-                  <span><strong>Auto Weekly Relaunch:</strong> 1st Month Free (then $5/mo optional)</span>
+                  <span><strong>Auto Weekly Relaunch:</strong> 1st Month Free (then $5/week optional)</span>
                 </li>
                 <li className="flex items-center gap-2.5">
                   <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">

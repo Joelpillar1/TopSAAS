@@ -823,7 +823,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                 {(sub.autoRelaunch || sub.autoRelaunchPaid) && (
                                   <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/15 border border-blue-500/30 px-2 py-0.5 text-[10px] font-bold text-blue-600">
                                     <Rocket className="h-3 w-3 text-blue-600" />
-                                    <span>Auto-Relaunch Paid ($5/mo)</span>
+                                    <span>Auto-Relaunch Paid ($5/week)</span>
                                   </span>
                                 )}
 
@@ -878,7 +878,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                 {(sub.autoRelaunch || sub.autoRelaunchPaid) && (
                                   <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 border border-blue-200 px-2 py-0.5 text-[10.5px] font-bold text-blue-800">
                                     <Rocket className="h-3 w-3 text-blue-600" />
-                                    <span>Auto-Relaunch: Active ($5/mo)</span>
+                                    <span>Auto-Relaunch: Active ($5/week)</span>
                                   </span>
                                 )}
                               </div>

@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 
 export const WHOP_LINKS = {
-  // Weekly Relaunch ($5/mo)
+  // Weekly Relaunch ($5/week)
   weeklyRelaunch: 'https://whop.com/checkout/plan_81SmEHd2w16EG',
 
   // $19 Per Product Pass / One-Time Verified Launch

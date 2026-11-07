@@ -2,7 +2,6 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Product, Comment } from '../types';
 import { 
   ExternalLink, 
-  CheckCircle2, 
   Layers, 
   Sparkles, 
   ChevronRight, 
@@ -337,7 +336,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
   return (
     <div className="min-h-screen bg-neutral-50/40 text-neutral-900 flex flex-col font-sans pb-12 sm:pb-16">
       {/* Top Breadcrumb Navigation */}
-      <div className="border-b border-neutral-200/80 bg-white">
+      <div className="bg-white">
         <div className="mx-auto w-full max-w-7xl px-3.5 py-2.5 sm:px-6 flex items-center justify-between text-xs">
           <button
             type="button"
@@ -345,7 +344,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
             className="inline-flex items-center gap-1.5 font-bold text-neutral-600 hover:text-neutral-950 transition-colors cursor-pointer"
           >
             <ChevronLeft className="h-4 w-4" />
-            <span>Back to directory</span>
+            <span>Back</span>
           </button>
           <div className="flex items-center gap-2 text-neutral-400 text-[11px] truncate">
             <span className="hidden sm:inline">Directory</span>
@@ -596,38 +595,9 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                 <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
                   <div className="flex items-center gap-2">
                     <Layers className="h-4 w-4 text-blue-600" />
-                    <h2 className="text-sm font-bold text-neutral-950">
+                    <h2 className="text-lg sm:text-xl font-bold text-neutral-950">
                       Product Preview & Demo
                     </h2>
-                  </div>
-
-                  {/* Header controls (counter + arrows) */}
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono-num text-xs font-semibold text-neutral-500">
-                      {activeMediaIndex + 1} / {totalMediaCount}
-                    </span>
-                    {totalMediaCount > 1 && (
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => handleScrollMedia('left')}
-                          disabled={!canScrollLeft}
-                          className="flex h-7 w-7 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-100 hover:text-neutral-950 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                          aria-label="Previous preview"
-                        >
-                          <ChevronLeft className="h-4 w-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleScrollMedia('right')}
-                          disabled={!canScrollRight}
-                          className="flex h-7 w-7 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-100 hover:text-neutral-950 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                          aria-label="Next preview"
-                        >
-                          <ChevronRight className="h-4 w-4" />
-                        </button>
-                      </div>
-                    )}
                   </div>
                 </div>
 
@@ -787,7 +757,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
             {/* About & Executive Overview */}
             <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs space-y-4">
               <div className="border-b border-neutral-200 pb-3">
-                <h2 className="text-sm font-bold text-neutral-950">
+                <h2 className="text-lg sm:text-xl font-bold text-neutral-950">
                   About {product.name}
                 </h2>
               </div>
@@ -835,7 +805,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
               return (
                 <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs space-y-5">
                   <div className="border-b border-neutral-200 pb-3">
-                    <h2 className="text-sm font-bold text-neutral-950">
+                    <h2 className="text-lg sm:text-xl font-bold text-neutral-950">
                       What {product.name} does
                     </h2>
                   </div>
@@ -846,14 +816,14 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                         key={section.title}
                         className={`${idx > 0 ? 'pt-5' : ''} ${idx < sections.length - 1 ? 'pb-5' : ''} space-y-1.5`}
                       >
-                        <div className="mb-1">
-                          <span className="text-xs font-bold text-mint-600">
+                        <div className="mb-1.5">
+                          <h3 className="text-base sm:text-lg font-bold text-neutral-950">
                             {section.title}
-                          </span>
+                          </h3>
                         </div>
                         <RichText
                           html={section.content}
-                          className="text-xs sm:text-sm text-neutral-700 leading-relaxed"
+                          className="text-sm sm:text-base leading-relaxed text-neutral-700 font-normal"
                         />
                       </div>
                     ))}
@@ -866,7 +836,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
             {product.useCases && product.useCases.length > 0 && (
               <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs space-y-4">
                 <div className="border-b border-neutral-200 pb-3">
-                  <h2 className="text-sm font-bold text-neutral-950">
+                  <h2 className="text-lg sm:text-xl font-bold text-neutral-950">
                     Who uses it and real-world use cases
                   </h2>
                 </div>
@@ -895,7 +865,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
             <div id="product-discussion-section" className="rounded-2xl border border-neutral-200/90 bg-white p-5 sm:p-7 shadow-xs space-y-4">
               {/* Header */}
               <div className="flex items-center justify-between pb-3.5 border-b border-neutral-200">
-                <h2 className="text-base sm:text-lg font-bold text-neutral-950">
+                <h2 className="text-lg sm:text-xl font-bold text-neutral-950">
                   Discussion
                 </h2>
                 <span className="text-xs sm:text-sm font-medium text-neutral-500">
@@ -918,14 +888,9 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                       <span className="text-sm font-bold text-neutral-900 truncate">
                         {isSignedIn ? (userName || userEmail?.split('@')[0] || 'User') : 'Guest User'}
                       </span>
-                      {isSignedIn && (
-                        <span className="inline-flex items-center rounded-full bg-blue-50 border border-blue-200/80 px-2.5 py-0.5 text-xs font-semibold text-blue-600">
-                          Verified
-                        </span>
-                      )}
                     </div>
                     <p className="text-xs text-neutral-400 truncate mt-0.5">
-                      {isSignedIn ? (userEmail || 'Verified account') : 'Sign in to join the conversation'}
+                      {isSignedIn ? (userEmail || '') : 'Sign in to join the conversation'}
                     </p>
                   </div>
                 </div>
@@ -1138,7 +1103,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
 
             {/* 2. Quick Specs & Highlights (Website Specifications placed above meet founder) */}
             <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-xs space-y-3.5">
-              <h2 className="text-xs font-bold text-neutral-950 border-b border-neutral-100 pb-2.5 uppercase tracking-wider">
+              <h2 className="text-sm sm:text-base font-bold text-neutral-950 border-b border-neutral-100 pb-2.5">
                 Website specifications
               </h2>
 
@@ -1227,14 +1192,10 @@ export const ProductPage: React.FC<ProductPageProps> = ({
               <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-xs space-y-3.5">
                 <div className="flex items-center justify-between border-b border-neutral-100 pb-2.5">
                   <div>
-                    <h2 className="text-xs font-bold text-neutral-950 uppercase tracking-wider">
+                    <h2 className="text-sm sm:text-base font-bold text-neutral-950">
                       Meet the founder
                     </h2>
                   </div>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200/80 px-2 py-0.5 text-[9px] font-bold text-blue-700">
-                    <CheckCircle2 className="h-2.5 w-2.5 fill-blue-600 text-white" />
-                    Verified Maker
-                  </span>
                 </div>
 
                 <div className="flex items-center gap-3.5">
@@ -1273,7 +1234,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
 
             {/* 4. Quick Access Shortcuts */}
             <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-xs space-y-3">
-              <h3 className="text-xs font-black text-neutral-950 uppercase tracking-wider border-b border-neutral-100 pb-2.5">
+              <h3 className="text-sm sm:text-base font-black text-neutral-950 border-b border-neutral-100 pb-2.5">
                 Quick Access
               </h3>
               <div className="space-y-1">

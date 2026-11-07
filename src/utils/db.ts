@@ -85,12 +85,6 @@ export const toDbSubmission = (sub: WebsiteSubmission) => {
     problem_it_solves: sub.problemItSolves || null,
     solution: sub.solution || null,
     unique_selling_point: sub.uniqueSellingPoint || null,
-    auto_relaunch: sub.autoRelaunch || false,
-    auto_relaunch_paid: sub.autoRelaunchPaid || false,
-    auto_relaunch_paid_at: sub.autoRelaunchPaidAt || null,
-    verified: sub.verified || false,
-    scheduled_launch_week: sub.scheduledLaunchWeek || null,
-    scheduled_launch_date: sub.scheduledLaunchDate || null,
   };
 };
 
@@ -158,7 +152,7 @@ export async function loadSubmissions(forceFresh = false): Promise<WebsiteSubmis
     await supabase.auth.getSession();
     const { data, error } = await supabase
       .from('submissions')
-      .select(SUBMISSION_QUEUE_COLUMNS)
+      .select('*')
       .order('submitted_at', { ascending: false });
     if (error || !data) return getCached<WebsiteSubmission[]>('submissions_queue', Infinity);
     const mapped = (data as unknown as Record<string, unknown>[]).map(mapDbSubmission);
@@ -255,8 +249,6 @@ export const toDbProduct = (p: Product) => {
     is_user_owned: false,
     submitted_by: isUuid ? p.submittedBy : null,
     verified: p.verified || false,
-    scheduled_launch_week: p.scheduledLaunchWeek || null,
-    scheduled_launch_date: p.scheduledLaunchDate || null,
     description: p.description || null,
     problem_it_solves: p.problemItSolves || null,
     solution: p.solution || null,
@@ -430,7 +422,7 @@ export async function loadProducts(forceFresh = false): Promise<Product[] | null
 
   const { data, error } = await supabase
     .from('products')
-    .select(PRODUCT_DIRECTORY_COLUMNS)
+    .select('*')
     .order('rank', { ascending: true });
   if (error || !data) {
     return getCached<Product[]>('products_list', Infinity) || null;

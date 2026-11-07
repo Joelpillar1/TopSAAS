@@ -89,12 +89,15 @@ export const PaymentSuccess: React.FC<PaymentSuccessProps> = ({
       return { name: 'Fast-Track Launch ($19)', price: '$19' };
     }
     if (p === 'weekly_relaunch') {
-      return { name: 'Auto Weekly Relaunch', price: '$5/mo' };
+      return { name: 'Auto Weekly Relaunch', price: '$5/week' };
     }
-    if (p === '1mo' || p === '30days') return { name: '1-Month Sponsor', price: '$29' };
+    if (p === 'featured_1wk' || p === 'featured1wk') return { name: '1-Week Featured Spot', price: '$15/week' };
+    if (p === 'featured_1mo' || p === 'featured1mo') return { name: '1-Month Featured Spot', price: '$39/month' };
+    if (p === 'sponsor_1wk' || p === 'sponsor1wk') return { name: '1-Week Sidebar Sponsor', price: '$10/week' };
+    if (p === 'sponsor_1mo' || p === 'sponsor1mo' || p === '1mo' || p === '30days') return { name: '1-Month Sponsor', price: '$29/month' };
     if (p === '3mo') return { name: '3-Month Sponsor', price: '$69' };
     if (p === '1yr') return { name: '1-Year Partner Sponsor', price: '$199' };
-    if (p === '7days') return { name: '7-Day Sponsor', price: '$59' };
+    if (p === '7days') return { name: '7-Day Sponsor', price: '$10' };
     return { name: 'Launch & Spotlight Pass', price: 'Paid' };
   })();
 

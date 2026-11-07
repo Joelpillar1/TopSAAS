@@ -229,7 +229,7 @@ export default function App() {
       if (path === '/accept' || hash === '#accept' || hash === '#/accept') {
         return '/accept';
       }
-      if (path === '/payment-success' || hash === '#payment-success' || hash === '#/payment-success') {
+      if (path === '/payment-success' || path === '/payment/success' || hash === '#payment-success' || hash === '#/payment-success') {
         return '/payment-success';
       }
       if (path === '/profile' || hash === '#profile' || hash === '#/profile') {
@@ -620,7 +620,7 @@ export default function App() {
         setGuideSlug(gm ? decodeURIComponent(gm[1]) : null);
       } else if (path === '/accept' || hash === '#accept' || hash === '#/accept') {
         setCurrentRoute('/accept');
-      } else if (path === '/payment-success' || hash === '#payment-success' || hash === '#/payment-success') {
+      } else if (path === '/payment-success' || path === '/payment/success' || hash === '#payment-success' || hash === '#/payment-success') {
         setCurrentRoute('/payment-success');
       } else if (path === '/profile' || hash === '#profile' || hash === '#/profile') {
         setCurrentRoute('/profile');
@@ -1316,7 +1316,7 @@ export default function App() {
       tagline,
       url,
       logoUrl,
-      screenshots: details.screenshots && details.screenshots.length > 0 ? details.screenshots.slice(0, 6) : undefined,
+      screenshots: details.screenshots && details.screenshots.length > 0 ? details.screenshots.slice(0, 4) : undefined,
       demoVideoUrl: details.demoVideoUrl?.trim() || undefined,
       twitterHandle: details.twitterHandle || undefined,
       socials: details.socials && details.socials.length > 0 ? details.socials : undefined,
@@ -2024,7 +2024,7 @@ export default function App() {
   const weekScopedProducts = selectedWeek
     ? products.filter((p) => {
       if (isInWeek(p.createdAt, selectedWeek)) return true;
-      // Auto weekly relaunch for users who opted for $5/mo weekly relaunch
+      // Auto weekly relaunch for users who opted for $5/week weekly relaunch
       if (p.autoRelaunch) return true;
       if (p.relaunchWeeks && selectedWeek.weekNumber && p.relaunchWeeks.includes(selectedWeek.weekNumber)) return true;
       if (p.lastRelaunchedAt && isInWeek(p.lastRelaunchedAt, selectedWeek)) return true;

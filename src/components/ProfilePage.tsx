@@ -492,9 +492,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
   const applyScreenshotFiles = async (files: FileList | File[]) => {
     const current = editForm.screenshots || [];
-    const remaining = 6 - current.length;
+    const remaining = 4 - current.length;
     if (remaining <= 0) {
-      setEditError('You can add up to 6 screenshots.');
+      setEditError('You can add up to 4 screenshots.');
       return;
     }
     setIsAddingShots(true);
@@ -517,7 +517,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
       if (added.length > 0) {
         setEditForm((prev) => ({
           ...prev,
-          screenshots: [...(prev.screenshots || []), ...added].slice(0, 6),
+          screenshots: [...(prev.screenshots || []), ...added].slice(0, 4),
         }));
         playSound('click', soundEnabled);
       }
@@ -1143,11 +1143,11 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                           <span>Feature Screenshots</span>
                         </label>
                         <p className="text-[11px] text-neutral-500 mt-0.5">
-                          Upload up to 6 screenshots. Drag to reorder or use the arrow buttons. The first image (#1) is your primary listing cover.
+                          Upload up to 4 screenshots. Drag to reorder or use the arrow buttons. The first image (#1) is your primary listing cover.
                         </p>
                       </div>
                       <span className="font-mono-num text-[11px] font-bold text-neutral-700 bg-neutral-100 px-2.5 py-0.5 rounded-full border border-neutral-200 shrink-0">
-                        {editForm.screenshots.length}/6
+                        {editForm.screenshots.length}/4
                       </span>
                     </div>
 
@@ -1282,7 +1282,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                         );
                       })}
 
-                      {editForm.screenshots.length < 6 && (
+                      {editForm.screenshots.length < 4 && (
                         <button
                           type="button"
                           onClick={() => screenshotsInputRef.current?.click()}
