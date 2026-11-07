@@ -122,6 +122,16 @@ const METRIC_COMPARISON = [
     answers: 'The yearly value of a single customer contract.',
   },
   {
+    metric: 'Bookings',
+    formula: 'Total contract value signed in the period',
+    answers: 'How much new contract value sales closed, before revenue is recognized.',
+  },
+  {
+    metric: 'Cash collected',
+    formula: 'Payments received in the period',
+    answers: 'How much money actually arrived in the bank, including annual prepayments.',
+  },
+  {
     metric: 'Net new MRR',
     formula: 'New + expansion + reactivation − contraction − churn',
     answers: 'How much MRR the business gained or lost in a period.',
@@ -130,6 +140,25 @@ const METRIC_COMPARISON = [
     metric: 'Quick ratio',
     formula: '(New MRR + expansion MRR) ÷ (churned MRR + contraction MRR)',
     answers: 'How efficiently growth offsets revenue lost to churn and downgrades.',
+  },
+];
+
+const PRICING_MODELS = [
+  {
+    title: 'Flat-rate subscriptions',
+    body: 'Every customer pays the same monthly price. Multiply that price by the number of active subscribers. This is the simplest model to report.',
+  },
+  {
+    title: 'Per-seat pricing',
+    body: 'Each customer pays for a number of seats. Sum seats multiplied by the per-seat price across all accounts, then normalize any annual contracts to a monthly figure.',
+  },
+  {
+    title: 'Usage-based pricing',
+    body: 'Include the recurring portion of usage revenue that you can forecast. Exclude one-off overages and unpredictable spikes, or report them separately from core MRR.',
+  },
+  {
+    title: 'Hybrid pricing',
+    body: 'Add the fixed platform fee and the normalized recurring usage or seat component. Keep one-time implementation fees out of MRR even when they appear on the same invoice.',
   },
 ];
 
@@ -280,6 +309,7 @@ const TOC = [
   { id: 'mrr-vs-arr', label: 'MRR vs ARR vs ARPA' },
   { id: 'include-exclude', label: 'What counts in MRR' },
   { id: 'types-of-mrr', label: 'Types of MRR' },
+  { id: 'pricing-models', label: 'MRR by pricing model' },
   { id: 'mistakes', label: 'Common mistakes' },
   { id: 'growth', label: 'How to grow MRR' },
   { id: 'faq', label: 'FAQ' },
@@ -401,6 +431,30 @@ export const MrrCalculatorPage: React.FC<MrrCalculatorPageProps> = ({ soundEnabl
       jsonLd: {
         '@context': 'https://schema.org',
         '@graph': [
+          {
+            '@type': 'WebPage',
+            '@id': 'https://www.topsaas.space/mrr-calculator#webpage',
+            url: 'https://www.topsaas.space/mrr-calculator',
+            name: 'SaaS MRR Calculator',
+            description:
+              'Free monthly recurring revenue calculator for SaaS businesses, with formulas, worked examples, annual plan conversion, and an MRR FAQ.',
+            inLanguage: 'en',
+            dateModified: '2026-11-07',
+            isPartOf: {
+              '@type': 'WebSite',
+              name: 'TopSAAS',
+              url: 'https://www.topsaas.space/',
+            },
+            about: {
+              '@type': 'Thing',
+              name: 'Monthly recurring revenue',
+            },
+            publisher: {
+              '@type': 'Organization',
+              name: 'TopSAAS',
+              url: 'https://www.topsaas.space/',
+            },
+          },
           {
             '@type': 'WebApplication',
             name: 'SaaS MRR Calculator',
