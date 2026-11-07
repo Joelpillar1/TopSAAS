@@ -113,6 +113,8 @@ export interface Product {
   sponsorExpiresAt?: number;
   sponsorClicks?: number;
   sponsorContactEmail?: string;
+  isSponsorPaused?: boolean;
+  sponsorPausedRemainingMs?: number;
   description?: string;
   whatItDoes?: string[];
   features?: ProductFeature[];

@@ -113,7 +113,7 @@ export const Header: React.FC<HeaderProps> = ({
               alt="TopSAAS"
               className="h-8 w-8 shrink-0 rounded-lg object-contain transition-transform group-hover:scale-105"
             />
-            <span className="font-black text-lg sm:text-xl tracking-tight text-neutral-950 whitespace-nowrap inline-block shrink-0">
+            <span className="font-display font-black text-lg sm:text-xl tracking-tight text-neutral-950 whitespace-nowrap inline-block shrink-0">
               TopSAAS
             </span>
           </button>

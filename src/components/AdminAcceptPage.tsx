@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  ArrowLeft, ArrowUpDown, Check, X, Clock, ExternalLink, ShieldCheck, Search, Trash2, Eye, RotateCcw, Globe, Twitter, User, Calendar, CheckCircle2, XCircle, AlertCircle, Edit3, Plus, Trophy, Crown, ChevronUp, ChevronDown, Star, LayoutList, Mail, Flame, Tag, Play, Video, Copy, Image as ImageIcon, MessageSquareQuote, Target, Layers, Info, Sparkles, BadgeCheck, Megaphone, Award, LogOut, Rocket
+  ArrowLeft, ArrowUpDown, Check, X, Clock, ExternalLink, ShieldCheck, Search, Trash2, Eye, RotateCcw, Globe, Twitter, User, Calendar, CheckCircle2, XCircle, AlertCircle, Edit3, Plus, Trophy, Crown, ChevronUp, ChevronDown, Star, LayoutList, Mail, Flame, Tag, Play, Pause, Video, Copy, Image as ImageIcon, MessageSquareQuote, Target, Layers, Info, Sparkles, BadgeCheck, Megaphone, Award, LogOut, Rocket
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { WebsiteSubmission, Category, Product } from '../types';
 import { playSound } from '../utils/sound';
 import { getWebsiteFavicon } from '../utils/logo';
 import { publishedProductId, loadSubmissionById } from '../utils/db';
+import { getCountdown, formatRemainingMs } from '../utils/countdown';
 import { RichText } from './RichText';
 import { ProductLogo } from './ProductLogo';
 import { RankMedal } from './RankMedal';
@@ -63,6 +64,7 @@ interface AdminAcceptPageProps {
   soundEnabled: boolean;
   onToggleSound: () => void;
   featuredProductId: string | null;
+  featuredExpiresAt?: number | null;
   onSetFeatured: (productId: string | null) => void;
   featuredProductIds?: string[];
   onSetFeaturedProducts?: (productIds: string[], mode?: 'active' | 'default' | 'empty') => void;
@@ -93,6 +95,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
   onSeedSampleSubmissions,
   soundEnabled,
   featuredProductId,
+  featuredExpiresAt,
   onSetFeatured,
   featuredProductIds = [],
   onSetFeaturedProducts,
@@ -1296,7 +1299,15 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                           {/* Actions */}
                           <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
                             {onUpdateProduct && (
-                              product.isSponsored ? (
+                              product.isSponsorPaused ? (
+                                <span
+                                  className="inline-flex items-center gap-1 rounded-lg border border-amber-300 bg-amber-50 px-2 py-1 text-xs font-bold text-amber-800 shadow-2xs"
+                                  title={`Sponsor is paused — ${formatRemainingMs(product.sponsorPausedRemainingMs)} preserved. Resume in Sponsors tab.`}
+                                >
+                                  <Pause className="h-3 w-3 text-amber-600" />
+                                  <span>Paused ({formatRemainingMs(product.sponsorPausedRemainingMs)} left)</span>
+                                </span>
+                              ) : product.isSponsored ? (
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -1304,6 +1315,8 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                     onUpdateProduct({
                                       ...product,
                                       isSponsored: false,
+                                      isSponsorPaused: false,
+                                      sponsorPausedRemainingMs: undefined,
                                       sponsorTier: undefined,
                                       sponsorStartedAt: undefined,
                                       sponsorExpiresAt: undefined,
@@ -1313,7 +1326,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                   title={`Sponsored (${product.sponsorTier || 'Active'}) — click to revoke sponsor status`}
                                 >
                                   <Award className="h-3 w-3" />
-                                  <span>Sponsored</span>
+                                  <span>Sponsored {product.sponsorTier ? `(${product.sponsorTier})` : ''} · {getCountdown(product.sponsorExpiresAt).formatted} left</span>
                                 </button>
                               ) : (
                                 <button
@@ -1468,6 +1481,12 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                     ? 'No featured cards displayed'
                     : 'Reserve spot card visible'}
                 </p>
+                {featuredExpiresAt && activeFeaturedProducts.length > 0 && (
+                  <div className="mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-200 px-2.5 py-1 text-[11px] font-bold text-amber-800">
+                    <Clock className="h-3 w-3 text-amber-600" />
+                    <span>Countdown: {getCountdown(featuredExpiresAt).formatted} left</span>
+                  </div>
+                )}
               </div>
 
               <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-2xs">
@@ -1754,6 +1773,12 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                 <span className="rounded-md bg-neutral-100 border border-neutral-200 px-1.5 py-0.5 text-[10px] font-bold text-neutral-600">
                                   {p.category}
                                 </span>
+                                {featuredExpiresAt && (
+                                  <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+                                    <Clock className="h-3 w-3 text-amber-600" />
+                                    <span>{getCountdown(featuredExpiresAt).formatted} left</span>
+                                  </span>
+                                )}
                               </div>
                               <p className="text-xs text-neutral-500 truncate mt-0.5">{p.tagline}</p>
                               <div className="flex items-center gap-3 mt-1 text-[11px] text-neutral-400">

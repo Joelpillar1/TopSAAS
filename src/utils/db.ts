@@ -1389,6 +1389,8 @@ export interface ActiveSponsorConfig {
   contactEmail?: string;
   clicks?: number;
   ended?: boolean;
+  isPaused?: boolean;
+  pausedRemainingMs?: number;
 }
 
 export const ACTIVE_SPONSORS_KEY = 'active_sponsors_v1';
@@ -1490,12 +1492,63 @@ export async function recordSponsorEnd(productId: string): Promise<ActiveSponsor
   return next;
 }
 
+/** Toggle pause/resume on a sponsor configuration in site_settings */
+export async function recordSponsorPauseToggle(productId: string): Promise<{ sponsors: ActiveSponsorConfig[]; updatedProduct?: Partial<Product> }> {
+  const current = await getActiveSponsors();
+  const cleanId = (id: string) => id.replace(/^prod-/, '');
+  const targetClean = cleanId(productId);
+  const now = Date.now();
+  let updatedPartial: Partial<Product> = {};
+
+  const next = current.map((s) => {
+    if (cleanId(s.productId) === targetClean) {
+      if (s.isPaused) {
+        // Resume sponsor placement
+        const remaining = s.pausedRemainingMs && s.pausedRemainingMs > 0 ? s.pausedRemainingMs : 7 * 86400 * 1000;
+        const newExpiresAt = now + remaining;
+        updatedPartial = {
+          isSponsored: true,
+          isSponsorPaused: false,
+          sponsorStartedAt: now,
+          sponsorExpiresAt: newExpiresAt,
+          sponsorPausedRemainingMs: undefined,
+        };
+        return {
+          ...s,
+          isPaused: false,
+          expiresAt: newExpiresAt,
+          pausedRemainingMs: undefined,
+        };
+      } else {
+        // Pause sponsor placement
+        const remaining = Math.max(0, s.expiresAt - now);
+        updatedPartial = {
+          isSponsored: false,
+          isSponsorPaused: true,
+          sponsorPausedRemainingMs: remaining,
+        };
+        return {
+          ...s,
+          isPaused: true,
+          pausedRemainingMs: remaining,
+        };
+      }
+    }
+    return s;
+  });
+
+  await saveActiveSponsors(next);
+  return { sponsors: next, updatedProduct: updatedPartial };
+}
+
 /** Merge active sponsors configs into loaded products */
 export function mergeSponsorsIntoProducts(products: Product[], sponsors: ActiveSponsorConfig[]): Product[] {
   const now = Date.now();
-  const activeSponsors = (sponsors || []).filter((s) => !s.ended && (!s.expiresAt || s.expiresAt > now));
   const sponsorMap = new Map<string, ActiveSponsorConfig>();
-  for (const s of activeSponsors) {
+  for (const s of sponsors || []) {
+    if (s.ended) continue;
+    // Skip if not paused and already expired
+    if (!s.isPaused && s.expiresAt && s.expiresAt <= now) continue;
     sponsorMap.set(s.productId, s);
     if (!s.productId.startsWith('prod-')) {
       sponsorMap.set(`prod-${s.productId}`, s);
@@ -1507,9 +1560,12 @@ export function mergeSponsorsIntoProducts(products: Product[], sponsors: ActiveS
   return products.map((p) => {
     const s = sponsorMap.get(p.id);
     if (s) {
+      const isLive = !s.isPaused && s.expiresAt > now;
       return {
         ...p,
-        isSponsored: true,
+        isSponsored: isLive,
+        isSponsorPaused: Boolean(s.isPaused),
+        sponsorPausedRemainingMs: s.pausedRemainingMs,
         sponsorTier: s.tier,
         sponsorStartedAt: s.startedAt,
         sponsorExpiresAt: s.expiresAt,
@@ -1523,6 +1579,8 @@ export function mergeSponsorsIntoProducts(products: Product[], sponsors: ActiveS
     return {
       ...p,
       isSponsored: false,
+      isSponsorPaused: false,
+      sponsorPausedRemainingMs: undefined,
       sponsorTier: undefined,
       sponsorStartedAt: undefined,
       sponsorExpiresAt: undefined,

@@ -1,7 +1,76 @@
 @import "tailwindcss";
 
+/* ── Custom Font: Clash Grotesk (Headlines & Display) ── */
+@font-face {
+  font-family: 'Clash Grotesk';
+  src: url('/fonts/ClashGrotesk-Variable.woff2') format('woff2-variations'),
+       url('/fonts/ClashGrotesk-Regular.woff2') format('woff2');
+  font-weight: 200 700;
+  font-display: swap;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Clash Grotesk';
+  src: url('/fonts/ClashGrotesk-Extralight.woff2') format('woff2'),
+       url('/fonts/ClashGrotesk-Extralight.woff') format('woff');
+  font-weight: 200;
+  font-display: swap;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Clash Grotesk';
+  src: url('/fonts/ClashGrotesk-Light.woff2') format('woff2'),
+       url('/fonts/ClashGrotesk-Light.woff') format('woff');
+  font-weight: 300;
+  font-display: swap;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Clash Grotesk';
+  src: url('/fonts/ClashGrotesk-Regular.woff2') format('woff2'),
+       url('/fonts/ClashGrotesk-Regular.woff') format('woff');
+  font-weight: 400;
+  font-display: swap;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Clash Grotesk';
+  src: url('/fonts/ClashGrotesk-Medium.woff2') format('woff2'),
+       url('/fonts/ClashGrotesk-Medium.woff') format('woff');
+  font-weight: 500;
+  font-display: swap;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Clash Grotesk';
+  src: url('/fonts/ClashGrotesk-Semibold.woff2') format('woff2'),
+       url('/fonts/ClashGrotesk-Semibold.woff') format('woff');
+  font-weight: 600;
+  font-display: swap;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Clash Grotesk';
+  src: url('/fonts/ClashGrotesk-Bold.woff2') format('woff2'),
+       url('/fonts/ClashGrotesk-Bold.woff') format('woff');
+  font-weight: 700;
+  font-display: swap;
+  font-style: normal;
+}
+
 /* ── Anthropic Brand System (Light Mode: Warm Parchment + Claude Terracotta) ── */
 @theme {
+  --font-sans: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Clash Grotesk', 'Space Grotesk', sans-serif;
+  --font-headline: 'Clash Grotesk', 'Space Grotesk', sans-serif;
+  --font-heading: 'Clash Grotesk', 'Space Grotesk', sans-serif;
+
   --color-black: #0b0f19;
   --color-white: #ffffff;
 
@@ -85,8 +154,21 @@
   }
 
   body {
-    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: var(--font-sans, 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
     color: #0b0f19;
+  }
+
+  /* Form controls & interactive elements inherit the base body typography */
+  input, button, select, textarea, optgroup, dialog {
+    font-family: inherit;
+  }
+
+  h1, h2, h3, h4, h5, h6,
+  .font-display,
+  .font-headline,
+  .font-heading {
+    font-family: var(--font-display, 'Clash Grotesk', 'Space Grotesk', sans-serif);
+    letter-spacing: -0.015em;
   }
 
   /* Anthropic warm terracotta ambient glow */

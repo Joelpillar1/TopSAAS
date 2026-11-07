@@ -110,8 +110,8 @@ export function formatMonthLabel(reference: number = Date.now()): string {
   return new Date(reference).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 }
 
-/** Internal scale capacity per week. (Do not expose this ceiling number directly to visitors) */
-export const MAX_WEEKLY_LAUNCH_CAP = 30;
+/** Internal scale capacity per week. TopSAAS launches 25 apps each week. */
+export const MAX_WEEKLY_LAUNCH_CAP = 25;
 
 /** Formats a WeekInfo into a clean human date range, e.g. "Nov 9 to Nov 15" */
 export function formatWeekDateRange(week: WeekInfo, format: 'to' | '–' = 'to'): string {
@@ -168,7 +168,7 @@ export function getUpcomingLaunchSlots(
     } else if (isFull) {
       statusLabel = 'Round Full';
       badgeStyle = 'bg-neutral-100 text-neutral-500 border-neutral-200';
-    } else if (count >= 25) {
+    } else if (count >= 20) {
       statusLabel = 'Filling Fast';
       badgeStyle = 'bg-amber-50 text-amber-700 border-amber-200';
     } else if (count >= 15) {

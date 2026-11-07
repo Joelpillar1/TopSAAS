@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Megaphone,
   Mail,
@@ -18,10 +18,14 @@ import {
   RefreshCw,
   Award,
   ChevronDown,
+  Pause,
+  Play,
 } from 'lucide-react';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
+import { getCountdown, formatRemainingMs } from '../utils/countdown';
+import { recordSponsorPauseToggle } from '../utils/db';
 import confetti from 'canvas-confetti';
 
 interface SponsorTrackerTabProps {
@@ -64,7 +68,13 @@ export const SponsorTrackerTab: React.FC<SponsorTrackerTabProps> = ({
     copied: false,
   });
 
-  const now = Date.now();
+  const [now, setNow] = useState(Date.now());
+
+  // Real-time ticking for live countdowns (updates every second)
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const isSponsorTier = (tier?: string) =>
     tier === 'trial' || tier === 'paid' || tier === '1mo' || tier === '3mo' || tier === '1yr';
@@ -72,26 +82,26 @@ export const SponsorTrackerTab: React.FC<SponsorTrackerTabProps> = ({
   const isPaidSponsorTier = (tier?: string) =>
     tier === 'paid' || tier === '1mo' || tier === '3mo' || tier === '1yr';
 
-  // All active sponsored products or active trials
+  // All active sponsored products, paused sponsors, or active trials
   const allSponsors = products.filter(
-    (p) => Boolean(p.isSponsored) && (!p.sponsorExpiresAt || p.sponsorExpiresAt > now)
+    (p) => (Boolean(p.isSponsored) || Boolean(p.isSponsorPaused)) && (!p.sponsorExpiresAt || p.sponsorExpiresAt > now || p.isSponsorPaused)
   );
 
   // Categorize
   const activeTrials = allSponsors.filter(
-    (p) => p.sponsorTier === 'trial' && p.sponsorExpiresAt && p.sponsorExpiresAt > now
+    (p) => !p.isSponsorPaused && p.sponsorTier === 'trial' && p.sponsorExpiresAt && p.sponsorExpiresAt > now
   );
 
   const paidSponsors = allSponsors.filter(
-    (p) => isPaidSponsorTier(p.sponsorTier) && (!p.sponsorExpiresAt || p.sponsorExpiresAt > now)
+    (p) => isPaidSponsorTier(p.sponsorTier) && (!p.sponsorExpiresAt || p.sponsorExpiresAt > now || p.isSponsorPaused)
   );
 
   const expiringSoon = allSponsors.filter(
-    (p) => p.sponsorExpiresAt && p.sponsorExpiresAt > now && (p.sponsorExpiresAt - now) <= 2 * 86400 * 1000
+    (p) => !p.isSponsorPaused && p.sponsorExpiresAt && p.sponsorExpiresAt > now && (p.sponsorExpiresAt - now) <= 2 * 86400 * 1000
   );
 
-  const expiredTrials = allSponsors.filter(
-    (p) => !p.isSponsored && (!p.sponsorExpiresAt || p.sponsorExpiresAt <= now)
+  const expiredTrials = products.filter(
+    (p) => !p.isSponsored && !p.isSponsorPaused && p.sponsorTier && (!p.sponsorExpiresAt || p.sponsorExpiresAt <= now)
   );
 
   const totalClicksDelivered = allSponsors.reduce(
@@ -166,11 +176,27 @@ export const SponsorTrackerTab: React.FC<SponsorTrackerTabProps> = ({
     const updated: Product = {
       ...product,
       isSponsored: false,
+      isSponsorPaused: false,
+      sponsorPausedRemainingMs: undefined,
       sponsorTier: undefined,
       sponsorStartedAt: undefined,
       sponsorExpiresAt: undefined,
     };
     onUpdateProduct(updated);
+  };
+
+  const handleTogglePause = async (product: Product) => {
+    playSound('click', soundEnabled);
+    const updated = await recordSponsorPauseToggle(product.id);
+    if (updated) {
+      onUpdateProduct({
+        ...product,
+        isSponsored: !updated.isPaused,
+        isSponsorPaused: Boolean(updated.isPaused),
+        sponsorExpiresAt: updated.expiresAt,
+        sponsorPausedRemainingMs: updated.pausedRemainingMs,
+      });
+    }
   };
 
   const handleGrantSponsor = () => {
@@ -710,24 +736,35 @@ https://topsaas.space`,
                         )}
                       </td>
 
-                      {/* Expiry & Days Left */}
+                      {/* Expiry & Live Countdown */}
                       <td className="py-3.5 px-4 whitespace-nowrap">
-                        {isExpired ? (
+                        {p.isSponsorPaused ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-md bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+                            <Pause className="h-3 w-3 text-amber-600" />
+                            <span>Paused · {formatRemainingMs(p.sponsorPausedRemainingMs)} left</span>
+                          </span>
+                        ) : isExpired ? (
                           <span className="inline-flex items-center gap-1 rounded-md bg-red-50 border border-red-200 px-2 py-0.5 text-[10px] font-bold text-red-700">
                             <AlertCircle className="h-3 w-3" />
                             <span>Expired</span>
                           </span>
-                        ) : daysLeft <= 2 ? (
-                          <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-700">
-                            <Clock className="h-3 w-3" />
-                            <span>{daysLeft === 0 ? 'Expires today' : `${daysLeft}d left (Soon)`}</span>
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
-                            <CheckCircle2 className="h-3 w-3" />
-                            <span>Active • {daysLeft}d left</span>
-                          </span>
-                        )}
+                        ) : (() => {
+                          const cd = getCountdown(p.sponsorExpiresAt, now);
+                          if (cd.isUrgent) {
+                            return (
+                              <span className="inline-flex items-center gap-1.5 rounded-md bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-700 animate-pulse">
+                                <Clock className="h-3 w-3" />
+                                <span>{cd.formatted} left (Soon)</span>
+                              </span>
+                            );
+                          }
+                          return (
+                            <span className="inline-flex items-center gap-1.5 rounded-md bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                              <CheckCircle2 className="h-3 w-3" />
+                              <span>Active · {cd.formatted} left</span>
+                            </span>
+                          );
+                        })()}
                       </td>
 
                       {/* Clicks */}
@@ -738,6 +775,36 @@ https://topsaas.space`,
                       {/* Actions */}
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                          {/* Pause / Resume Button */}
+                          {(p.isSponsored || p.isSponsorPaused) && (
+                            <button
+                              type="button"
+                              onClick={() => handleTogglePause(p)}
+                              className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-bold transition-all cursor-pointer shadow-2xs ${
+                                p.isSponsorPaused
+                                  ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                  : 'border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100'
+                              }`}
+                              title={
+                                p.isSponsorPaused
+                                  ? 'Resume sponsor placement (restores visibility to public homepage rails)'
+                                  : 'Pause sponsor placement (hides from homepage rails and freezes remaining time)'
+                              }
+                            >
+                              {p.isSponsorPaused ? (
+                                <>
+                                  <Play className="h-3 w-3 fill-emerald-600 text-emerald-600" />
+                                  <span>Resume</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Pause className="h-3 w-3 fill-amber-600 text-amber-600" />
+                                  <span>Pause</span>
+                                </>
+                              )}
+                            </button>
+                          )}
+
                           <button
                             type="button"
                             onClick={() => openOutreach(p, isExpired ? 'day7' : daysLeft <= 2 ? 'day5' : 'day1')}
@@ -785,7 +852,7 @@ https://topsaas.space`,
                             $69/3mo
                           </button>
 
-                          {p.isSponsored && (
+                          {(p.isSponsored || p.isSponsorPaused) && (
                             <button
                               type="button"
                               onClick={() => handleEndSponsor(p)}

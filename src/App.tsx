@@ -365,6 +365,15 @@ export default function App() {
     return {};
   });
 
+  const [featuredExpiresAt, setFeaturedExpiresAt] = useState<number | null>(() => {
+    try {
+      const raw = localStorage.getItem('topsaas_featured_expiry');
+      return raw ? parseInt(raw, 10) : null;
+    } catch {
+      return null;
+    }
+  });
+
   const [featuredProductId, setFeaturedProductId] = useState<string | null>(() => {
     try {
       const id = localStorage.getItem('topsaas_featured_product');
@@ -402,6 +411,7 @@ export default function App() {
         if (config.positions !== undefined) setFeaturedPositions(config.positions);
         if (config.productId !== undefined) setFeaturedProductId(config.productId);
         if (config.position !== undefined) setFeaturedPositionState(config.position);
+        if (config.expiresAt !== undefined) setFeaturedExpiresAt(config.expiresAt);
       });
     };
 
@@ -2663,6 +2673,7 @@ export default function App() {
           soundEnabled={soundEnabled}
           onToggleSound={() => setSoundEnabled(!soundEnabled)}
           featuredProductId={featuredProductId}
+          featuredExpiresAt={featuredExpiresAt}
           onSetFeatured={handleSetFeatured}
           featuredProductIds={featuredProductIds}
           onSetFeaturedProducts={handleSetFeaturedProducts}

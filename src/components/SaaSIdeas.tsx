@@ -169,7 +169,7 @@ export const SaaSIdeas: React.FC<SaaSIdeasProps> = ({
           className={cn(
             '[mask-image:radial-gradient(560px_circle_at_center,white,transparent)]',
             'inset-x-0 inset-y-[-30%] h-[200%] skew-y-12',
-            'fill-neutral-800/60 stroke-neutral-800/50',
+            'fill-neutral-300/30 stroke-neutral-300/40',
           )}
         />
         <div className="relative z-10 mx-auto flex max-w-2xl flex-col items-center text-center">
