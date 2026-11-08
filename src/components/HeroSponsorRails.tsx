@@ -223,25 +223,25 @@ const TickerItemPill: React.FC<{
       <button
         type="button"
         onClick={handleClick}
-        className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold text-neutral-800 hover:text-black transition-colors shrink-0 group cursor-pointer"
+        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs sm:text-[13px] font-semibold text-neutral-800 hover:text-black transition-colors shrink-0 group cursor-pointer"
       >
         {p.logoUrl ? (
           <img
             src={p.logoUrl}
             alt={p.name}
-            className="h-3.5 w-3.5 rounded object-contain shrink-0 border border-neutral-200/80 bg-white"
+            className="h-4 w-4 rounded-md object-contain shrink-0 border border-neutral-200/80 bg-white shadow-2xs"
             onError={(e) => {
               (e.currentTarget as HTMLImageElement).style.display = 'none';
             }}
           />
         ) : (
-          <span className="text-xs">🔥</span>
+          <span className="text-sm">🔥</span>
         )}
         <span className="font-bold text-neutral-900 group-hover:underline">
           {p.name}
         </span>
         {p.tagline && (
-          <span className="text-[11px] text-neutral-500 font-normal max-w-[130px] truncate hidden xs:inline">
+          <span className="text-[11px] sm:text-xs text-neutral-500 font-normal max-w-[150px] truncate hidden xs:inline">
             — {p.tagline}
           </span>
         )}
@@ -260,13 +260,13 @@ const TickerItemPill: React.FC<{
     <button
       type="button"
       onClick={handleClick}
-      className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold text-neutral-700 hover:text-neutral-950 transition-colors shrink-0 cursor-pointer group"
+      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs sm:text-[13px] font-semibold text-neutral-700 hover:text-neutral-950 transition-colors shrink-0 cursor-pointer group"
     >
-      <span className="text-neutral-500 group-hover:text-neutral-950 font-bold transition-colors">
+      <span className="text-neutral-600 group-hover:text-neutral-950 font-bold transition-colors">
         + your product
       </span>
-      <span className="text-[10px] font-mono text-neutral-400">
-        · {item.badge || '$29/mo'}
+      <span className="text-[11px] font-mono text-emerald-600 font-semibold">
+        · {item.badge || 'Free 7 days'}
       </span>
     </button>
   );
@@ -283,12 +283,12 @@ function buildTickerItems(sponsors: Product[]): TickerItem[] {
     active.forEach((sp, i) => {
       base.push({ id: `sp-${sp.id}-${i}`, type: 'sponsor', product: sp });
     });
-    base.push({ id: 'cta-1', type: 'cta', badge: 'Free 7d' });
-    base.push({ id: 'cta-2', type: 'cta', badge: '$29/mo' });
+    base.push({ id: 'cta-1', type: 'cta', badge: 'Free 7 days' });
+    base.push({ id: 'cta-2', type: 'cta', badge: 'Free trial' });
   } else {
-    base.push({ id: 'cta-open-1', type: 'cta', badge: 'Free 7d' });
+    base.push({ id: 'cta-open-1', type: 'cta', badge: 'Free 7 days' });
     base.push({ id: 'cta-open-2', type: 'cta', badge: 'Boost visits' });
-    base.push({ id: 'cta-open-3', type: 'cta', badge: '$29/mo' });
+    base.push({ id: 'cta-open-3', type: 'cta', badge: 'Free 7 days' });
     base.push({ id: 'cta-open-4', type: 'cta', badge: 'Claim spot' });
   }
 
@@ -319,7 +319,7 @@ export const MobileTopSponsorTicker: React.FC<{
   const items = React.useMemo(() => buildTickerItems(sponsors), [sponsors]);
 
   return (
-    <div className="block lg:hidden w-full bg-white border-b border-neutral-200/80 overflow-hidden relative select-none h-8 sm:h-8.5 z-30">
+    <div className="block lg:hidden w-full bg-white/95 backdrop-blur-md border-b border-neutral-200/80 overflow-hidden relative select-none h-11 sm:h-12">
       {/* Edge gradient fade masks */}
       <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white via-white/80 to-transparent z-10" />
       <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white via-white/80 to-transparent z-10" />
@@ -334,7 +334,7 @@ export const MobileTopSponsorTicker: React.FC<{
               onOpenProduct={onOpenProduct}
               onOpenFeaturedSpotModal={onOpenFeaturedSpotModal}
             />
-            <span className="text-neutral-300 text-[10px] select-none">·</span>
+            <span className="text-neutral-300 text-xs select-none">·</span>
           </React.Fragment>
         ))}
       </div>
@@ -364,7 +364,7 @@ export const MobileBottomStickySponsorTicker: React.FC<{
   const items = React.useMemo(() => buildTickerItems(sponsors), [sponsors]);
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 block lg:hidden w-full bg-white/95 backdrop-blur-md border-t border-neutral-200/90 shadow-xs overflow-hidden select-none h-8.5 sm:h-9">
+    <div className="fixed bottom-0 left-0 right-0 z-40 block lg:hidden w-full bg-white/95 backdrop-blur-md border-t border-neutral-200/90 shadow-xs overflow-hidden select-none h-11 sm:h-12">
       {/* Edge gradient fade masks */}
       <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white via-white/80 to-transparent z-10" />
       <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white via-white/80 to-transparent z-10" />
@@ -379,7 +379,7 @@ export const MobileBottomStickySponsorTicker: React.FC<{
               onOpenProduct={onOpenProduct}
               onOpenFeaturedSpotModal={onOpenFeaturedSpotModal}
             />
-            <span className="text-neutral-300 text-[10px] select-none">·</span>
+            <span className="text-neutral-300 text-xs select-none">·</span>
           </React.Fragment>
         ))}
       </div>

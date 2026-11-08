@@ -2258,7 +2258,7 @@ export default function App() {
     : [];
 
   const globalHeader = (
-    <>
+    <div className="sticky top-0 z-40 w-full">
       {/* Mobile-only Infinite Scrolling Sponsors ABOVE Top Nav */}
       <MobileTopSponsorTicker
         enabled={sponsorRailsEnabled}
@@ -2280,7 +2280,7 @@ export default function App() {
         activeTab={activeTab}
         onTabChange={handleTabChange}
       />
-    </>
+    </div>
   );
 
   // 0. PAYMENT SUCCESS ROUTE (/payment-success)
@@ -2829,7 +2829,7 @@ export default function App() {
 
   // Shared chrome (header + footer) for the standalone routes below.
   const routeChrome = (page: React.ReactNode) => (
-    <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between selection:bg-mint-500/20 selection:text-neutral-900 font-sans pb-10 lg:pb-0">
+    <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between selection:bg-mint-500/20 selection:text-neutral-900 font-sans pb-14 lg:pb-0">
       {globalHeader}
       {page}
       <RichFooter
@@ -2881,7 +2881,7 @@ export default function App() {
 
   // 2. MAIN DIRECTORY HOMEPAGE ROUTE
   return (
-    <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between selection:bg-mint-500/20 selection:text-neutral-900 font-sans pb-10 lg:pb-0">
+    <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between selection:bg-mint-500/20 selection:text-neutral-900 font-sans pb-14 lg:pb-0">
       {globalHeader}
       {/* Main Content Area */}
       <main className="mx-auto w-full max-w-7xl px-3.5 sm:px-6 space-y-4 sm:space-y-5 flex-1 pb-16 pt-4 sm:pt-6">

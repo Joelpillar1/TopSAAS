@@ -99,7 +99,7 @@ export const Header: React.FC<HeaderProps> = ({
   const closeMenu = () => setMenuOpen(false);
 
   return (
-    <header id="main-header" className="sticky top-0 z-40 w-full border-b border-neutral-200 bg-white/90 backdrop-blur-md">
+    <header id="main-header" className="w-full border-b border-neutral-200 bg-white/90 backdrop-blur-md">
       <div className="mx-auto max-w-7xl px-4 py-2.5 sm:px-6">
         <div className="flex items-center justify-between gap-3">
           {/* Left: Logo */}
