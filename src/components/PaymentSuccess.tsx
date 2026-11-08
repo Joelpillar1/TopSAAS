@@ -66,6 +66,7 @@ export const PaymentSuccess: React.FC<PaymentSuccessProps> = ({
     if (pendingNewProdJson) {
       try {
         const parsed = JSON.parse(pendingNewProdJson);
+        parsed.isSponsorOnly = true;
         insertProductDirect(parsed);
       } catch (err) {
         console.warn('Error saving pending new product on payment success:', err);

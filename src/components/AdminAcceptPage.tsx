@@ -6,7 +6,7 @@ import confetti from 'canvas-confetti';
 import { WebsiteSubmission, Category, Product } from '../types';
 import { playSound } from '../utils/sound';
 import { getWebsiteFavicon } from '../utils/logo';
-import { publishedProductId, loadSubmissionById } from '../utils/db';
+import { publishedProductId, loadSubmissionById, isSponsorOnlyProduct } from '../utils/db';
 import { getCountdown, formatRemainingMs } from '../utils/countdown';
 import { RichText } from './RichText';
 import { ProductLogo } from './ProductLogo';
@@ -197,8 +197,8 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
     })
     .sort((a, b) => (b.submittedAt ?? 0) - (a.submittedAt ?? 0));
 
-  // Sorted products for management
-  const sortedProducts = [...products].sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0));
+  // Sorted products for management (excluding sponsor-only ads)
+  const sortedProducts = [...products].filter((p) => !isSponsorOnlyProduct(p)).sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0));
 
   // Filtered products
   const filteredProducts = sortedProducts.filter((p) => {
@@ -1016,7 +1016,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                   <span>Live Products</span>
                   <CheckCircle2 className="h-4 w-4" />
                 </div>
-                <div className="text-2xl sm:text-3xl font-black text-white">{products.length}</div>
+                <div className="text-2xl sm:text-3xl font-black text-white">{products.filter((p) => !isSponsorOnlyProduct(p)).length}</div>
                 <p className="text-[11px] text-neutral-400 mt-1">In the directory</p>
               </div>
               <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-2xs">

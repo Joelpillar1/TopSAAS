@@ -120,6 +120,7 @@ interface ProductPageProps {
   product: Product;
   topProduct: Product;
   allProducts: Product[];
+  sponsors?: Product[];
   comments: Comment[];
   soundEnabled: boolean;
   isSignedIn?: boolean;
@@ -140,6 +141,7 @@ interface ProductPageProps {
 export const ProductPage: React.FC<ProductPageProps> = ({
   product,
   allProducts,
+  sponsors,
   comments,
   soundEnabled,
   isSignedIn = false,
@@ -1094,7 +1096,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
           <div className="lg:col-span-4 space-y-5 sm:space-y-6 lg:sticky lg:top-20 self-start">
             {/* 1. Sponsored Partners Sidebar (⚡ Sponsors placed at the very top) */}
             <SponsoredPartnersSidebar
-              sponsors={allProducts.filter((p) => p.isSponsored)}
+              sponsors={sponsors && sponsors.length > 0 ? sponsors : allProducts.filter((p) => p.isSponsored)}
               currentProductId={product.id}
               soundEnabled={soundEnabled}
               onSelectProduct={onSelectProduct}

@@ -24,7 +24,7 @@ import { playSound } from '../utils/sound';
 import { redirectToCheckout, PlanType } from '../utils/whop';
 import { ProductLogo } from './ProductLogo';
 import { getWebsiteFavicon } from '../utils/logo';
-import { insertProductDirect } from '../utils/db';
+import { insertProductDirect, isSponsorOnlyProduct } from '../utils/db';
 
 interface FeaturedSpotModalProps {
   isOpen: boolean;
@@ -241,12 +241,13 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
 
   const userId = user?.id;
 
-  // Show user's products first, or all products if searching
+  // Show user's products first, or all directory products if searching (exclude sponsor-only ads)
+  const directoryProducts = products.filter((p) => !isSponsorOnlyProduct(p));
   const userOwnedItems = user
-    ? products.filter((p) => userId && p.submittedBy === userId)
+    ? directoryProducts.filter((p) => userId && p.submittedBy === userId)
     : [];
 
-  const displayList = userOwnedItems.length > 0 ? userOwnedItems : products;
+  const displayList = userOwnedItems.length > 0 ? userOwnedItems : directoryProducts;
 
   const filteredProducts = displayList.filter((p) => {
     const q = productSearch.toLowerCase();
@@ -294,11 +295,12 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
       url,
       logoUrl: resolvedLogo,
       category: 'SaaS',
-      rank: 999,
-      upvotes: 1,
+      rank: 9999,
+      upvotes: 0,
       clicks: 0,
       verified: true,
       isSponsored: false,
+      isSponsorOnly: true,
       sponsorTier: undefined,
       createdAt: Date.now(),
       updatedAt: Date.now(),
@@ -371,6 +373,7 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
         const prodToInsert: Product = {
           ...selectedProduct,
           isSponsored: mode === 'sponsor',
+          isSponsorOnly: true,
           sponsorTier: mode === 'sponsor' ? 'trial' : undefined,
           sponsorStartedAt: mode === 'sponsor' ? Date.now() : undefined,
           sponsorExpiresAt: mode === 'sponsor' ? Date.now() + 7 * 86400 * 1000 : undefined,
@@ -431,6 +434,7 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
         const pendingProduct: Product = {
           ...selectedProduct,
           isSponsored: mode === 'sponsor',
+          isSponsorOnly: true,
           sponsorTier: mode === 'sponsor' ? (selectedPlan.id === '3mo' ? '3mo' : selectedPlan.id === '1yr' ? '1yr' : 'paid') : undefined,
           sponsorStartedAt: Date.now(),
           sponsorExpiresAt: Date.now() + durationDays * 86400 * 1000,

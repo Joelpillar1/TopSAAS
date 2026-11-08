@@ -108,6 +108,8 @@ export interface Product {
   featuredQuote?: string;
   verified?: boolean;
   isSponsored?: boolean;
+  /** True if this item is only an ad sponsor and was NOT submitted to the directory */
+  isSponsorOnly?: boolean;
   sponsorTier?: 'trial' | 'paid' | '1mo' | '3mo' | '1yr' | 'none';
   sponsorStartedAt?: number;
   sponsorExpiresAt?: number;

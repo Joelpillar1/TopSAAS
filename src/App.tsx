@@ -27,7 +27,7 @@ import { LegalTab } from './components/LegalModal';
 import { playSound } from './utils/sound';
 import confetti from 'canvas-confetti';
 import { supabase } from './utils/supabase';
-import { loadProducts, loadProductById, loadSubmissions, invalidateCache, saveAllProducts, saveProductRanksDirect, debouncedSyncProducts, toggleUpvote, getUserUpvotes, getUpvoteStats, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, setGlobalFeaturedProducts, setProductFeaturedPosition, LOCAL_FEATURED_PRODUCTS_KEY, LOCAL_FEATURED_POSITIONS_MAP_KEY, insertProductDirect, fetchComments, addComment, getCachedCommentsSync, submissionToProduct, publishedProductId, isProductUpvoted, getGuestUpvotes, saveGuestUpvotes, incrementProductUpvotesDirect, incrementProductClicksDirect, getActiveSponsors, mergeSponsorsIntoProducts, recordSponsorUpdate, recordSponsorEnd, getSponsorRailsEnabled, setSponsorRailsEnabled, LOCAL_SPONSOR_RAILS_KEY, getFeaturedPosition, setFeaturedPosition, LOCAL_FEATURED_POSITION_KEY, SUBMISSION_QUEUE_COLUMNS, loadSubmissionById } from './utils/db';
+import { loadProducts, loadProductById, loadSubmissions, invalidateCache, saveAllProducts, saveProductRanksDirect, debouncedSyncProducts, toggleUpvote, getUserUpvotes, getUpvoteStats, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, setGlobalFeaturedProducts, setProductFeaturedPosition, LOCAL_FEATURED_PRODUCTS_KEY, LOCAL_FEATURED_POSITIONS_MAP_KEY, insertProductDirect, fetchComments, addComment, getCachedCommentsSync, submissionToProduct, publishedProductId, isProductUpvoted, getGuestUpvotes, saveGuestUpvotes, incrementProductUpvotesDirect, incrementProductClicksDirect, getActiveSponsors, mergeSponsorsIntoProducts, recordSponsorUpdate, recordSponsorEnd, getSponsorRailsEnabled, setSponsorRailsEnabled, LOCAL_SPONSOR_RAILS_KEY, getFeaturedPosition, setFeaturedPosition, LOCAL_FEATURED_POSITION_KEY, SUBMISSION_QUEUE_COLUMNS, loadSubmissionById, isSponsorOnlyProduct } from './utils/db';
 import { trackGoal } from './utils/trackkit';
 import { isInWeek, getWeekInfo, getWeekNumber, getWeekByNumber, getMonthKey, isInMonth, formatMonthLabel, formatWeekDateRange, WeekInfo } from './utils/weeks';
 import { getWebsiteFavicon } from './utils/logo';
@@ -1667,7 +1667,10 @@ export default function App() {
     }
 
     setProducts((prev) => {
-      const next = prev.map((p) => (p.id === updatedProduct.id ? updatedProduct : p));
+      const exists = prev.some((p) => p.id === updatedProduct.id);
+      const next = exists
+        ? prev.map((p) => (p.id === updatedProduct.id ? updatedProduct : p))
+        : [...prev, updatedProduct];
       try {
         localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(next));
         localStorage.setItem('topsaas_products_cache_v2', JSON.stringify(next));
@@ -1958,7 +1961,9 @@ export default function App() {
 
   const explicitFeaturedProduct = featuredProducts[0] || null;
 
-  const sortedByRankProducts = [...products].sort(compareProductsByRank);
+  // Only submitted directory products belong in the leaderboard/rankings table (exclude sponsor-only ads)
+  const directoryProducts = products.filter((p) => !isSponsorOnlyProduct(p));
+  const sortedByRankProducts = [...directoryProducts].sort(compareProductsByRank);
   const topProduct = explicitFeaturedProduct || sortedByRankProducts[0] || null;
 
   // Compute isUserOwned dynamically from submittedBy or myProductId
@@ -1978,7 +1983,7 @@ export default function App() {
   const pendingReviewCount = submissions.filter((s) => s.status === 'under_review').length;
 
   // Derived directory stats for the public homepage
-  const newestListings = [...products].sort((a, b) => b.createdAt - a.createdAt).slice(0, 9);
+  const newestListings = [...directoryProducts].sort((a, b) => b.createdAt - a.createdAt).slice(0, 9);
 
   // Load comments from Supabase once on mount and derive per-product counts
   useEffect(() => {
@@ -2057,7 +2062,7 @@ export default function App() {
   const directoryCategories = React.useMemo(() => {
     const seen = new Set<string>();
     const cats: string[] = [];
-    for (const p of products) {
+    for (const p of directoryProducts) {
       if (p.category) {
         const parts = p.category.split(',').map((c) => c.trim()).filter(Boolean);
         for (const cat of parts) {
@@ -2091,11 +2096,11 @@ export default function App() {
       'HR & Hiring',
       'Design & UI',
     ];
-  }, [products]);
+  }, [directoryProducts]);
 
   // Weekly launch rounds: scope products to the selected week, upvote-ranked
   const weekScopedProducts = selectedWeek
-    ? products.filter((p) => {
+    ? directoryProducts.filter((p) => {
       if (isInWeek(p.createdAt, selectedWeek)) return true;
       // Auto weekly relaunch for users who opted for $5/week weekly relaunch
       if (p.autoRelaunch) return true;
@@ -2103,7 +2108,7 @@ export default function App() {
       if (p.lastRelaunchedAt && isInWeek(p.lastRelaunchedAt, selectedWeek)) return true;
       return false;
     })
-    : products;
+    : directoryProducts;
 
   // Helper to determine if a product has an active deal/discount/promo code
   const isProductDeal = (p: Product) =>
@@ -2115,8 +2120,8 @@ export default function App() {
 
   // Total exclusive deals across all live products
   const totalDealsCount = React.useMemo(() => {
-    return products.filter(isProductDeal).length;
-  }, [products]);
+    return directoryProducts.filter(isProductDeal).length;
+  }, [directoryProducts]);
 
   // Filter products by category, search query, and deals filter.
   // Weekly view ranks by engagement earned that week; All Time uses cumulative engagement.
@@ -2154,7 +2159,7 @@ export default function App() {
     ? getWeekByNumber(currentWeekInfo.weekNumber - 1)
     : null;
   const lastWeekBest = lastWeekInfo
-    ? [...products]
+    ? [...directoryProducts]
       .filter((p) => {
         if (isInWeek(p.createdAt, lastWeekInfo)) return true;
         if (p.autoRelaunch) return true;
@@ -2169,7 +2174,7 @@ export default function App() {
   const lastMonthReference = new Date(nowDate.getFullYear(), nowDate.getMonth() - 1, 15).getTime();
   const lastMonthKey = getMonthKey(lastMonthReference);
   const lastMonthLabel = formatMonthLabel(lastMonthReference);
-  const lastMonthBest = [...products]
+  const lastMonthBest = [...directoryProducts]
     .filter((p) => isInMonth(p.createdAt, lastMonthReference))
     .sort(compareProductsForMonth(lastMonthKey));
 
@@ -2292,7 +2297,7 @@ export default function App() {
           soundEnabled={soundEnabled}
         />
         <RichFooter
-          totalProducts={products.length}
+          totalProducts={directoryProducts.length}
           soundEnabled={soundEnabled}
           onOpenSubmit={handleOpenSubmit}
           onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
@@ -2457,6 +2462,7 @@ export default function App() {
           product={product}
           topProduct={topProduct || product}
           allProducts={sortedByRankProducts.map((p, idx) => ({ ...markOwnership(p), rank: idx + 1 }))}
+          sponsors={products.filter((p) => p.isSponsored && (p.sponsorExpiresAt ? p.sponsorExpiresAt > Date.now() : true))}
           onOpenFeaturedSpotModal={() => setIsFeaturedSpotModalOpen(true)}
           comments={comments.filter((c) => c.productId === product.id)}
           soundEnabled={soundEnabled}
@@ -2483,7 +2489,7 @@ export default function App() {
           isUpvoted={isProductUpvoted(product.id, userUpvotes)}
         />
         <RichFooter
-          totalProducts={products.length}
+          totalProducts={directoryProducts.length}
           soundEnabled={soundEnabled}
           onOpenSubmit={handleOpenSubmit}
           onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
@@ -2584,7 +2590,7 @@ export default function App() {
           }}
         />
         <RichFooter
-          totalProducts={products.length}
+          totalProducts={directoryProducts.length}
           soundEnabled={soundEnabled}
           onOpenSubmit={handleOpenSubmit}
           onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
@@ -2660,7 +2666,7 @@ export default function App() {
           submissions={submissions}
         />
         <RichFooter
-          totalProducts={products.length}
+          totalProducts={directoryProducts.length}
           soundEnabled={soundEnabled}
           onOpenSubmit={handleOpenSubmit}
           onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
@@ -2773,7 +2779,7 @@ export default function App() {
           initialDoc={currentRoute === '/terms' ? 'terms' : 'privacy'}
           onBack={handleBackToLeaderboard}
           onOpenSubmit={handleOpenSubmit}
-          totalProducts={products.length}
+          totalProducts={directoryProducts.length}
           soundEnabled={soundEnabled}
           onSelectCategory={setSelectedCategory}
           onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
@@ -2789,7 +2795,7 @@ export default function App() {
       {globalHeader}
       {page}
       <RichFooter
-        totalProducts={products.length}
+        totalProducts={directoryProducts.length}
         soundEnabled={soundEnabled}
         onOpenSubmit={handleOpenSubmit}
         onSelectCategory={setSelectedCategory}
@@ -2880,7 +2886,7 @@ export default function App() {
               }}
             >
               <HomeHero
-                totalProducts={products.length}
+                totalProducts={directoryProducts.length}
                 totalCategories={directoryCategories.length}
                 searchQuery={searchQuery}
                 onSearchChange={(v) => {
@@ -3321,7 +3327,7 @@ export default function App() {
 
       {/* Footer */}
       <RichFooter
-        totalProducts={products.length}
+        totalProducts={directoryProducts.length}
         soundEnabled={soundEnabled}
         onOpenSubmit={handleOpenSubmit}
         onOpenHowItWorks={() => setIsHowItWorksOpen(true)}

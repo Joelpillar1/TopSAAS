@@ -193,6 +193,7 @@ export const mapDbProduct = (row: Record<string, unknown>): Product => ({
   submittedBy: (row.submitted_by as string) || undefined,
   verified: (row.verified as boolean) || false,
   isSponsored: (row.is_sponsored as boolean) || false,
+  isSponsorOnly: Boolean(row.is_sponsor_only) || (typeof row.id === 'string' && row.id.startsWith('prod_sp_')),
   sponsorTier: (row.sponsor_tier as Product['sponsorTier']) || undefined,
   sponsorStartedAt: (row.sponsor_started_at as number) || undefined,
   sponsorExpiresAt: (row.sponsor_expires_at as number) || undefined,
@@ -270,6 +271,17 @@ export const toDbProduct = (p: Product) => {
     last_relaunched_at: p.lastRelaunchedAt || null,
   };
 };
+
+/**
+ * Determine if a product was added purely as an ad sponsor from the modal
+ * rather than being a submitted/approved directory product.
+ */
+export function isSponsorOnlyProduct(p: { id?: string; isSponsorOnly?: boolean } | null | undefined): boolean {
+  if (!p) return false;
+  if (p.isSponsorOnly) return true;
+  if (p.id && (p.id.startsWith('prod_sp_') || p.id.startsWith('sponsor_'))) return true;
+  return false;
+}
 
 /**
  * Deterministic published-listing id: an approved submission always owns exactly
@@ -1605,6 +1617,11 @@ export function mergeSponsorsIntoProducts(products: Product[], sponsors: ActiveS
         sponsorClicks: s.clicks !== undefined ? s.clicks : (p.sponsorClicks || 0),
         autoRelaunch: p.autoRelaunch,
       };
+    }
+
+    // If the product is already marked sponsored in DB and has not expired, preserve it
+    if (p.isSponsored && (!p.sponsorExpiresAt || p.sponsorExpiresAt > now)) {
+      return p;
     }
 
     // Not in active sponsors list — ensure sponsor flags are completely cleared
