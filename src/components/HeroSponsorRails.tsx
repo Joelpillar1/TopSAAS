@@ -187,102 +187,202 @@ const OpenAdCard: React.FC<OpenAdCardProps> = ({
   );
 };
 
-const MobileActiveSponsorCard: React.FC<{
-  product: Product;
+interface TickerItem {
+  id: string;
+  type: 'sponsor' | 'cta';
+  product?: Product;
+  title?: string;
+  badge?: string;
+}
+
+const TickerItemPill: React.FC<{
+  item: TickerItem;
   soundEnabled: boolean;
   onTrackClick?: (productId: string, url: string) => void;
   onOpenProduct?: (product: Product) => void;
-}> = ({ product, soundEnabled, onTrackClick, onOpenProduct }) => {
-  const handleClick = () => {
+  onOpenFeaturedSpotModal?: () => void;
+}> = ({ item, soundEnabled, onTrackClick, onOpenProduct, onOpenFeaturedSpotModal }) => {
+  if (item.type === 'sponsor' && item.product) {
+    const p = item.product;
+    const handleClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      playSound('click', soundEnabled);
+      if (p.url) {
+        openOutboundUrl(p.url, {
+          productId: p.id,
+          productName: p.name,
+          campaign: 'mobile_ticker_sponsor',
+          onTrackClick,
+        });
+      } else {
+        onOpenProduct?.(p);
+      }
+    };
+
+    return (
+      <button
+        type="button"
+        onClick={handleClick}
+        className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold text-neutral-800 hover:text-black transition-colors shrink-0 group cursor-pointer"
+      >
+        {p.logoUrl ? (
+          <img
+            src={p.logoUrl}
+            alt={p.name}
+            className="h-3.5 w-3.5 rounded object-contain shrink-0 border border-neutral-200/80 bg-white"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).style.display = 'none';
+            }}
+          />
+        ) : (
+          <span className="text-xs">🔥</span>
+        )}
+        <span className="font-bold text-neutral-900 group-hover:underline">
+          {p.name}
+        </span>
+        {p.tagline && (
+          <span className="text-[11px] text-neutral-500 font-normal max-w-[130px] truncate hidden xs:inline">
+            — {p.tagline}
+          </span>
+        )}
+      </button>
+    );
+  }
+
+  // CTA item
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     playSound('click', soundEnabled);
-    if (product.url) {
-      openOutboundUrl(product.url, {
-        productId: product.id,
-        productName: product.name,
-        campaign: 'mobile_hero_sponsor_rail',
-        onTrackClick,
-      });
-    } else {
-      onOpenProduct?.(product);
-    }
+    onOpenFeaturedSpotModal?.();
   };
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
+    <button
+      type="button"
       onClick={handleClick}
-      className="group relative flex w-[230px] sm:w-[250px] shrink-0 flex-col justify-between rounded-2xl border border-blue-100/90 bg-gradient-to-br from-white via-white to-blue-50/40 p-3 text-left shadow-2xs transition-all hover:border-blue-300 hover:shadow-xs cursor-pointer select-none"
+      className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold text-neutral-700 hover:text-neutral-950 transition-colors shrink-0 cursor-pointer group"
     >
-      <div className="flex items-center gap-2.5 min-w-0">
-        <ProductLogo
-          src={product.logoUrl}
-          alt={product.name}
-          containerClassName="h-7 w-7 rounded-xl border border-neutral-200 bg-white shrink-0 overflow-hidden relative flex items-center justify-center group-hover:scale-105 transition-transform"
-          iconClassName="h-3.5 w-3.5 text-neutral-700 shrink-0"
-        />
-        <div className="min-w-0 flex-1">
-          <h4 className="truncate text-xs font-bold text-neutral-950 group-hover:text-blue-600 transition-colors">
-            {product.name}
-          </h4>
-          <span className="text-[10px] text-neutral-400 font-medium truncate block">
-            {product.category || 'SaaS'}
-          </span>
-        </div>
-        <span className="shrink-0 text-[9px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded-full border border-blue-200">
-          Sponsored
-        </span>
-      </div>
+      <span className="text-neutral-500 group-hover:text-neutral-950 font-bold transition-colors">
+        + your product
+      </span>
+      <span className="text-[10px] font-mono text-neutral-400">
+        · {item.badge || '$29/mo'}
+      </span>
+    </button>
+  );
+};
 
-      <p className="mt-1.5 text-[11px] font-medium text-neutral-500 line-clamp-1 leading-snug">
-        {product.tagline}
-      </p>
+function buildTickerItems(sponsors: Product[]): TickerItem[] {
+  const active = (sponsors || []).filter(
+    (p) => p.isSponsored && (p.sponsorExpiresAt ? p.sponsorExpiresAt > Date.now() : true)
+  );
 
-      <div className="mt-1.5 flex items-center justify-between text-[10px] font-semibold text-neutral-400 border-t border-neutral-100 pt-1">
-        <span>Partner Spot</span>
-        <span className="text-blue-600 group-hover:underline">Visit →</span>
+  const base: TickerItem[] = [];
+
+  if (active.length > 0) {
+    active.forEach((sp, i) => {
+      base.push({ id: `sp-${sp.id}-${i}`, type: 'sponsor', product: sp });
+    });
+    base.push({ id: 'cta-1', type: 'cta', badge: 'Free 7d' });
+    base.push({ id: 'cta-2', type: 'cta', badge: '$29/mo' });
+  } else {
+    base.push({ id: 'cta-open-1', type: 'cta', badge: 'Free 7d' });
+    base.push({ id: 'cta-open-2', type: 'cta', badge: 'Boost visits' });
+    base.push({ id: 'cta-open-3', type: 'cta', badge: '$29/mo' });
+    base.push({ id: 'cta-open-4', type: 'cta', badge: 'Claim spot' });
+  }
+
+  // Repeat enough times for a seamless, continuous infinite loop
+  const repeat = Math.max(3, Math.ceil(8 / Math.max(1, base.length)));
+  return Array.from({ length: repeat }, () => base).flat();
+}
+
+/**
+ * Upper infinite scrolling ticker for mobile (placed directly ABOVE the top nav bar)
+ */
+export const MobileTopSponsorTicker: React.FC<{
+  sponsors?: Product[];
+  soundEnabled: boolean;
+  enabled?: boolean;
+  onTrackClick?: (productId: string, url: string) => void;
+  onOpenProduct?: (product: Product) => void;
+  onOpenFeaturedSpotModal?: () => void;
+}> = ({
+  sponsors = [],
+  soundEnabled,
+  enabled = true,
+  onTrackClick,
+  onOpenProduct,
+  onOpenFeaturedSpotModal,
+}) => {
+  if (enabled === false) return null;
+  const items = React.useMemo(() => buildTickerItems(sponsors), [sponsors]);
+
+  return (
+    <div className="block lg:hidden w-full bg-white border-b border-neutral-200/80 overflow-hidden relative select-none h-8 sm:h-8.5 z-30">
+      {/* Edge gradient fade masks */}
+      <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white via-white/80 to-transparent z-10" />
+      <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white via-white/80 to-transparent z-10" />
+
+      <div className="animate-marquee-infinite flex items-center h-full w-max">
+        {items.map((item, idx) => (
+          <React.Fragment key={`top-${item.id}-${idx}`}>
+            <TickerItemPill
+              item={item}
+              soundEnabled={soundEnabled}
+              onTrackClick={onTrackClick}
+              onOpenProduct={onOpenProduct}
+              onOpenFeaturedSpotModal={onOpenFeaturedSpotModal}
+            />
+            <span className="text-neutral-300 text-[10px] select-none">·</span>
+          </React.Fragment>
+        ))}
       </div>
     </div>
   );
 };
 
-const MobileOpenAdCard: React.FC<{
-  title?: string;
-  subtitle?: string;
+/**
+ * Sticky bottom infinite scrolling ticker for mobile (fixed at bottom of screen)
+ */
+export const MobileBottomStickySponsorTicker: React.FC<{
+  sponsors?: Product[];
   soundEnabled: boolean;
-  onOpenModal?: () => void;
+  enabled?: boolean;
+  onTrackClick?: (productId: string, url: string) => void;
+  onOpenProduct?: (product: Product) => void;
+  onOpenFeaturedSpotModal?: () => void;
 }> = ({
-  title = 'Advertise',
-  subtitle = 'Open Sponsor Spot',
+  sponsors = [],
   soundEnabled,
-  onOpenModal,
+  enabled = true,
+  onTrackClick,
+  onOpenProduct,
+  onOpenFeaturedSpotModal,
 }) => {
-  const handleClick = () => {
-    playSound('click', soundEnabled);
-    onOpenModal?.();
-  };
+  if (enabled === false) return null;
+  const items = React.useMemo(() => buildTickerItems(sponsors), [sponsors]);
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={handleClick}
-      className="group relative flex w-[230px] sm:w-[250px] shrink-0 items-center gap-2.5 rounded-2xl border-2 border-dashed border-neutral-300 hover:border-neutral-400 bg-white/80 p-3 text-left transition-all hover:bg-neutral-50 cursor-pointer select-none shadow-2xs"
-    >
-      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-neutral-100 text-neutral-600 group-hover:text-neutral-950 group-hover:scale-105 transition-transform">
-        <Megaphone className="h-3.5 w-3.5 stroke-[2]" />
+    <div className="fixed bottom-0 left-0 right-0 z-40 block lg:hidden w-full bg-white/95 backdrop-blur-md border-t border-neutral-200/90 shadow-xs overflow-hidden select-none h-8.5 sm:h-9">
+      {/* Edge gradient fade masks */}
+      <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white via-white/80 to-transparent z-10" />
+      <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white via-white/80 to-transparent z-10" />
+
+      <div className="animate-marquee-reverse flex items-center h-full w-max">
+        {items.map((item, idx) => (
+          <React.Fragment key={`bot-${item.id}-${idx}`}>
+            <TickerItemPill
+              item={item}
+              soundEnabled={soundEnabled}
+              onTrackClick={onTrackClick}
+              onOpenProduct={onOpenProduct}
+              onOpenFeaturedSpotModal={onOpenFeaturedSpotModal}
+            />
+            <span className="text-neutral-300 text-[10px] select-none">·</span>
+          </React.Fragment>
+        ))}
       </div>
-      <div className="min-w-0 flex-1">
-        <h4 className="truncate text-xs font-bold text-neutral-900 group-hover:text-blue-600 transition-colors">
-          {title}
-        </h4>
-        <p className="text-[10px] font-medium text-neutral-400 truncate">
-          {subtitle} <span className="text-emerald-600 font-semibold">(7d Free)</span>
-        </p>
-      </div>
-      <span className="shrink-0 text-[10px] font-bold text-blue-600 group-hover:underline">
-        Claim →
-      </span>
     </div>
   );
 };
@@ -317,117 +417,8 @@ export const HeroSponsorRails: React.FC<HeroSponsorRailsProps> = ({
   const leftSponsors = activeSponsors.filter((_, i) => i % 2 === 0);
   const rightSponsors = activeSponsors.filter((_, i) => i % 2 === 1);
 
-  // Mobile infinite scrolling lists:
-  // Top row (Above hero): left/even sponsors + open claim slots
-  // Bottom row (Below directory): right/odd sponsors + open claim slots
-  const row1Base: React.ReactNode[] = [];
-  const row2Base: React.ReactNode[] = [];
-
-  if (activeSponsors.length === 0) {
-    LEFT_SLOTS.slice(0, 4).forEach((slot) => {
-      row1Base.push(
-        <MobileOpenAdCard
-          key={`m-top-${slot.id}`}
-          title={slot.title}
-          subtitle={slot.subtitle}
-          soundEnabled={soundEnabled}
-          onOpenModal={onOpenFeaturedSpotModal}
-        />
-      );
-    });
-    RIGHT_SLOTS.slice(0, 4).forEach((slot) => {
-      row2Base.push(
-        <MobileOpenAdCard
-          key={`m-bot-${slot.id}`}
-          title={slot.title}
-          subtitle={slot.subtitle}
-          soundEnabled={soundEnabled}
-          onOpenModal={onOpenFeaturedSpotModal}
-        />
-      );
-    });
-  } else {
-    activeSponsors.forEach((sp, i) => {
-      const card = (
-        <MobileActiveSponsorCard
-          key={`m-sp-${sp.id}-${i}`}
-          product={sp}
-          soundEnabled={soundEnabled}
-          onTrackClick={onTrackClick}
-          onOpenProduct={onOpenProduct}
-        />
-      );
-      if (activeSponsors.length === 1) {
-        row1Base.push(card);
-        row2Base.push(card);
-      } else if (i % 2 === 0) {
-        row1Base.push(card);
-      } else {
-        row2Base.push(card);
-      }
-    });
-
-    row1Base.push(
-      <MobileOpenAdCard
-        key="m-claim-top"
-        title="Promote Your Startup"
-        subtitle="Claim open sponsor slot"
-        soundEnabled={soundEnabled}
-        onOpenModal={onOpenFeaturedSpotModal}
-      />
-    );
-    row2Base.push(
-      <MobileOpenAdCard
-        key="m-claim-bot"
-        title="Advertise Here"
-        subtitle="7-day free trial"
-        soundEnabled={soundEnabled}
-        onOpenModal={onOpenFeaturedSpotModal}
-      />
-    );
-  }
-
-  // Ensure enough items so that translateX(-50%) has a seamless, smooth infinite loop
-  const repeatCount1 = Math.max(2, Math.ceil(6 / Math.max(1, row1Base.length)));
-  const repeatCount2 = Math.max(2, Math.ceil(6 / Math.max(1, row2Base.length)));
-
-  const row1Items = Array.from({ length: repeatCount1 }, () => row1Base).flat();
-  const row2Items = Array.from({ length: repeatCount2 }, () => row2Base).flat();
-
   return (
     <div className="relative w-full">
-      {/* ── MOBILE: Infinite Scrolling Sponsors ABOVE Hero ── */}
-      <div className="block lg:hidden w-full mb-4">
-        <div className="flex items-center justify-between px-1 mb-1.5">
-          <div className="flex items-center gap-1.5 text-[10px] font-bold text-neutral-500 uppercase tracking-wider">
-            <span className="flex h-1.5 w-1.5 rounded-full bg-blue-600 animate-pulse" />
-            <span>Featured Sponsors</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              playSound('click', soundEnabled);
-              onOpenFeaturedSpotModal?.();
-            }}
-            className="text-[10px] font-bold text-blue-600 hover:underline cursor-pointer"
-          >
-            Advertise +
-          </button>
-        </div>
-
-        <div className="relative w-full overflow-hidden py-1">
-          {/* Subtle edge fade masks */}
-          <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-6 sm:w-10 bg-gradient-to-r from-neutral-50/90 via-neutral-50/50 to-transparent z-10" />
-          <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-6 sm:w-10 bg-gradient-to-l from-neutral-50/90 via-neutral-50/50 to-transparent z-10" />
-
-          <div className="animate-marquee-infinite flex items-center gap-2.5 w-max">
-            {row1Items.map((item, idx) => (
-              <React.Fragment key={`top-m-${idx}`}>{item}</React.Fragment>
-            ))}
-          </div>
-        </div>
-      </div>
-
       <div className="flex flex-col lg:flex-row items-center lg:items-start justify-center gap-4 xl:gap-8 pt-1">
         {/* Left Side Rail (Desktop - 6 sticky ad spots that stay in place) */}
         <div className="hidden lg:flex flex-col gap-2 w-[215px] xl:w-[245px] shrink-0 sticky top-16 self-start">
@@ -504,38 +495,6 @@ export const HeroSponsorRails: React.FC<HeroSponsorRailsProps> = ({
               </BorderBeam>
             );
           })}
-        </div>
-      </div>
-
-      {/* ── MOBILE: Infinite Scrolling Sponsors BELOW Directory ── */}
-      <div className="block lg:hidden w-full mt-6 pt-2">
-        <div className="flex items-center justify-between px-1 mb-1.5">
-          <div className="flex items-center gap-1.5 text-[10px] font-bold text-neutral-500 uppercase tracking-wider">
-            <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Sponsored Showcase</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              playSound('click', soundEnabled);
-              onOpenFeaturedSpotModal?.();
-            }}
-            className="text-[10px] font-bold text-blue-600 hover:underline cursor-pointer"
-          >
-            Claim Spot (Free 7d) →
-          </button>
-        </div>
-
-        <div className="relative w-full overflow-hidden py-1">
-          {/* Subtle edge fade masks */}
-          <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-6 sm:w-10 bg-gradient-to-r from-neutral-50/90 via-neutral-50/50 to-transparent z-10" />
-          <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-6 sm:w-10 bg-gradient-to-l from-neutral-50/90 via-neutral-50/50 to-transparent z-10" />
-
-          <div className="animate-marquee-reverse flex items-center gap-2.5 w-max">
-            {row2Items.map((item, idx) => (
-              <React.Fragment key={`bot-m-${idx}`}>{item}</React.Fragment>
-            ))}
-          </div>
         </div>
       </div>
     </div>
