@@ -1,6 +1,8 @@
 import React from 'react';
 import { Check, ArrowRight } from 'lucide-react';
 import { playSound } from '../utils/sound';
+import { WHOP_LINKS } from '../utils/whop';
+import { appendTrackkitParams } from '../utils/trackkit';
 
 interface SponsorShowcaseSectionProps {
   onOpenSponsor?: (tier?: '1wk' | '1mo') => void;
@@ -129,14 +131,18 @@ export const SponsorShowcaseSection: React.FC<SponsorShowcaseSectionProps> = ({
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => handleSelectTier('1mo')}
+            <a
+              href={appendTrackkitParams(WHOP_LINKS.sponsor1mo)}
+              target="_blank"
+              rel="noopener"
+              data-ml-goal="pricing_cta"
+              data-ml-goal-plan="sponsor_1mo"
+              onClick={() => playSound('click', soundEnabled)}
               className="btn-primary w-full mt-4 py-3 px-4 text-xs font-bold rounded-xl text-center flex items-center justify-center gap-1.5"
             >
               <span>Get 1-Month Sponsor</span>
               <ArrowRight className="h-3 w-3" />
-            </button>
+            </a>
           </div>
 
           {/* Feature Checklist Below Pod */}

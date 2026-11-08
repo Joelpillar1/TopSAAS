@@ -12,7 +12,7 @@ export const WHOP_LINKS = {
 
   // Sponsor Spot (Sidebar Rails: $10/wk & $29/mo)
   sponsor1wk: 'https://whop.com/checkout/plan_Ux5pdAxT3WN7D',
-  sponsor1mo: 'https://whop.com/checkout/plan_VHCOSyqWd9l9Q',
+  sponsor1mo: 'https://whop.com/checkout/zero-ce-84f1',
   sponsor3mo: 'https://whop.com/checkout/plan_SMad32AkVoMeu',
   sponsor1yr: 'https://whop.com/checkout/plan_2uumEoGYQUKtb',
 
@@ -20,8 +20,8 @@ export const WHOP_LINKS = {
   featured1wk: 'https://whop.com/checkout/plan_YGXtgHZnspc77',
   featured1mo: 'https://whop.com/checkout/plan_GBN00B27YgYdx',
 
-  // Zero Plan ($0 testing & confirmation)
-  zero: 'https://whop.com/topsaas/zero-ce-84f1',
+  // Zero Plan ($0 testing & confirmation direct checkout)
+  zero: 'https://whop.com/checkout/zero-ce-84f1',
 } as const;
 
 export type PlanType =
