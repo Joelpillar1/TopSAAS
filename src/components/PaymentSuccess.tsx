@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { CheckCircle, ArrowLeft, Crown, ExternalLink } from 'lucide-react';
 import { playSound } from '../utils/sound';
-import { setGlobalFeaturedProduct, insertProductDirect } from '../utils/db';
+import { setGlobalFeaturedProduct, insertProductDirect, recordSponsorUpdate } from '../utils/db';
 import { supabase } from '../utils/supabase';
 
 interface PaymentSuccessProps {
@@ -73,19 +73,45 @@ export const PaymentSuccess: React.FC<PaymentSuccessProps> = ({
       localStorage.removeItem('topsaas_featured_pending_new_product');
     }
 
-    // After successful payment, activate the pending featured product globally in Supabase
+    // After successful payment, activate the pending featured or sponsor product globally in Supabase
     const pendingProductId = targetProductId || localStorage.getItem('topsaas_featured_pending');
     const pendingPlan = planParam || localStorage.getItem('topsaas_featured_pending_plan');
     if (pendingProductId) {
       let durationDays = 30;
       if (pendingPlan === '3mo') durationDays = 90;
       else if (pendingPlan === '1yr') durationDays = 365;
-      else if (pendingPlan === '7days') durationDays = 7;
+      else if (pendingPlan === '7days' || pendingPlan === 'sponsor_1wk' || pendingPlan === 'featured_1wk') durationDays = 7;
 
-      setGlobalFeaturedProduct(pendingProductId, durationDays);
+      const isSponsorPlan = pendingPlan?.startsWith('sponsor') || pendingPlan === '3mo' || pendingPlan === '1yr';
+      if (isSponsorPlan) {
+        const expiresAt = Date.now() + durationDays * 86400 * 1000;
+        const tier = (pendingPlan === '3mo' ? '3mo' : pendingPlan === '1yr' ? '1yr' : 'paid') as 'paid' | '3mo' | '1yr';
+        recordSponsorUpdate({
+          productId: pendingProductId,
+          tier,
+          startedAt: Date.now(),
+          expiresAt,
+          clicks: 0,
+          ended: false,
+        }).catch((err) => console.warn('Could not record sponsor update on payment success:', err));
+
+        supabase
+          .from('products')
+          .update({
+            is_sponsored: true,
+            sponsor_tier: tier,
+            sponsor_started_at: Date.now(),
+            sponsor_expires_at: expiresAt,
+          })
+          .eq('id', pendingProductId)
+          .then(() => {});
+      } else {
+        setGlobalFeaturedProduct(pendingProductId, durationDays);
+        onActivateFeatured?.(pendingProductId);
+      }
+
       localStorage.removeItem('topsaas_featured_pending');
       localStorage.removeItem('topsaas_featured_pending_plan');
-      onActivateFeatured?.(pendingProductId);
     }
   }, []);
 

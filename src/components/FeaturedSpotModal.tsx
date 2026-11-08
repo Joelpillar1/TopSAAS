@@ -210,6 +210,7 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
 }) => {
   const [step, setStep] = useState<'product' | 'plan' | 'confirm'>('product');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isNewProduct, setIsNewProduct] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState<SponsorPlanId>(initialTier || '3mo');
   const [contactEmail, setContactEmail] = useState(user?.email || '');
   const [productSearch, setProductSearch] = useState('');
@@ -297,8 +298,8 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
       upvotes: 1,
       clicks: 0,
       verified: true,
-      isSponsored: mode === 'sponsor',
-      sponsorTier: mode === 'sponsor' ? (selectedPlanId === 'trial' ? 'trial' : 'paid') : undefined,
+      isSponsored: false,
+      sponsorTier: undefined,
       createdAt: Date.now(),
       updatedAt: Date.now(),
       submittedBy: user?.id,
@@ -307,21 +308,14 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
 
     playSound('click', soundEnabled);
     setSelectedProduct(newProd);
-
-    // Save to pending storage and Supabase
-    try {
-      localStorage.setItem('topsaas_featured_pending_new_product', JSON.stringify(newProd));
-      await insertProductDirect(newProd);
-    } catch (saveErr) {
-      console.warn('Could not insert new sponsor product immediately:', saveErr);
-    }
-
+    setIsNewProduct(true);
     setStep('plan');
   };
 
   const handleSelectProduct = (product: Product) => {
     playSound('click', soundEnabled);
     setSelectedProduct(product);
+    setIsNewProduct(false);
     if (!contactEmail && product.sponsorContactEmail) {
       setContactEmail(product.sponsorContactEmail);
     }
@@ -344,6 +338,7 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
     playSound('click', soundEnabled);
     setStep('product');
     setSelectedProduct(null);
+    setIsNewProduct(false);
     setSelectedPlanId('3mo');
     setPaymentError(null);
     setSuccessMessage(null);
@@ -368,19 +363,36 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
     setPaymentError(null);
 
     try {
+      const email = contactEmail.trim() || user?.email || undefined;
+      let targetProduct = selectedProduct;
+
+      // If it's a new product, save it to Supabase first upon activating trial
+      if (isNewProduct) {
+        const prodToInsert: Product = {
+          ...selectedProduct,
+          isSponsored: mode === 'sponsor',
+          sponsorTier: mode === 'sponsor' ? 'trial' : undefined,
+          sponsorStartedAt: mode === 'sponsor' ? Date.now() : undefined,
+          sponsorExpiresAt: mode === 'sponsor' ? Date.now() + 7 * 86400 * 1000 : undefined,
+          sponsorContactEmail: email,
+        };
+        await insertProductDirect(prodToInsert);
+        targetProduct = prodToInsert;
+      }
+
       if (mode === 'featured') {
         if (onActivateFeatured) {
-          await onActivateFeatured(selectedProduct, 7, contactEmail.trim());
+          await onActivateFeatured(targetProduct, 7, email);
         }
         setSuccessMessage(
-          `Congratulations! ${selectedProduct.name} is now in the Featured Spot above the product cards for 7 days!`
+          `Congratulations! ${targetProduct.name} is now in the Featured Spot above the product cards for 7 days!`
         );
       } else {
         if (onActivateSponsor) {
-          await onActivateSponsor(selectedProduct, 'trial', contactEmail.trim());
+          await onActivateSponsor(targetProduct, 'trial', email);
         }
         setSuccessMessage(
-          `Congratulations! ${selectedProduct.name} is now spotlighted as a sponsor for 7 days.`
+          `Congratulations! ${targetProduct.name} is now spotlighted as a sponsor for 7 days.`
         );
       }
       playSound('success', soundEnabled);
@@ -408,63 +420,37 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
           ? (selectedPlan.id === '1wk' ? 'featured_1wk' : 'featured_1mo')
           : (selectedPlan.id === '1wk' ? 'sponsor_1wk' : selectedPlan.id === '3mo' ? '3mo' : selectedPlan.id === '1yr' ? '1yr' : 'sponsor_1mo');
 
-      if (mode === 'featured') {
-        let durationDays = 7;
+      // If this is a new product that was entered via the form, stage it in local storage
+      // so PaymentSuccess.tsx can insert it into Supabase upon return from successful Whop checkout.
+      if (isNewProduct) {
+        let durationDays = 30;
         if (selectedPlan.id === '1wk') durationDays = 7;
-        else if (selectedPlan.id === '1mo') durationDays = 30;
         else if (selectedPlan.id === '3mo') durationDays = 90;
         else if (selectedPlan.id === '1yr') durationDays = 365;
 
-        try {
-          await redirectToCheckout({
-            planType,
-            productName: selectedProduct.name,
-            targetProductId: selectedProduct.id,
-            customerEmail: email,
-          });
-        } catch (checkoutErr) {
-          console.warn('Checkout note, activating featured placement directly:', checkoutErr);
-          if (onActivateFeatured) {
-            await onActivateFeatured(
-              selectedProduct,
-              durationDays,
-              contactEmail.trim()
-            );
-          }
-          setSuccessMessage(
-            `Congratulations! ${selectedProduct.name} is now in the Featured Spot above the product cards for ${selectedPlan.duration}!`
-          );
-          playSound('success', soundEnabled);
-          confetti({ particleCount: 80, spread: 80, origin: { y: 0.6 } });
-          setIsProcessing(false);
-        }
-      } else {
-        try {
-          await redirectToCheckout({
-            planType,
-            productName: selectedProduct.name,
-            targetProductId: selectedProduct.id,
-            customerEmail: email,
-          });
-        } catch (checkoutErr) {
-          console.warn('Checkout note, activating placement directly:', checkoutErr);
-          if (onActivateSponsor) {
-            await onActivateSponsor(
-              selectedProduct,
-              selectedPlan.id,
-              contactEmail.trim()
-            );
-          }
-          setSuccessMessage(
-            `Congratulations! ${selectedProduct.name} is now spotlighted as a ${selectedPlan.name} (${selectedPlan.duration}).`
-          );
-          playSound('success', soundEnabled);
-          confetti({ particleCount: 80, spread: 80, origin: { y: 0.6 } });
-          setIsProcessing(false);
-        }
+        const pendingProduct: Product = {
+          ...selectedProduct,
+          isSponsored: mode === 'sponsor',
+          sponsorTier: mode === 'sponsor' ? (selectedPlan.id === '3mo' ? '3mo' : selectedPlan.id === '1yr' ? '1yr' : 'paid') : undefined,
+          sponsorStartedAt: Date.now(),
+          sponsorExpiresAt: Date.now() + durationDays * 86400 * 1000,
+          sponsorContactEmail: email,
+        };
+        localStorage.setItem('topsaas_featured_pending_new_product', JSON.stringify(pendingProduct));
       }
+
+      await redirectToCheckout({
+        planType,
+        productName: selectedProduct.name,
+        targetProductId: selectedProduct.id,
+        customerEmail: email,
+      });
     } catch (err: unknown) {
       console.error('Payment checkout error:', err);
+      // Clean up staged product on error
+      localStorage.removeItem('topsaas_featured_pending_new_product');
+      localStorage.removeItem('topsaas_featured_pending');
+      localStorage.removeItem('topsaas_featured_pending_plan');
       setPaymentError(
         (err as Error)?.message ||
           'Could not start checkout. Please try again or contact support.'
