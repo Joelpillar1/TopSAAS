@@ -19,6 +19,9 @@ export const WHOP_LINKS = {
   // Featured Spot (Pinned top banner: $15/wk & $39/mo)
   featured1wk: 'https://whop.com/checkout/plan_YGXtgHZnspc77',
   featured1mo: 'https://whop.com/checkout/plan_GBN00B27YgYdx',
+
+  // Zero Plan ($0 testing & confirmation)
+  zero: 'https://whop.com/topsaas/zero-ce-84f1',
 } as const;
 
 export type PlanType =
