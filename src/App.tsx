@@ -286,15 +286,10 @@ export default function App() {
     async function loadSubs() {
       try {
         const dbSubs = await loadSubmissions();
-        if (dbSubs) {
+        if (dbSubs && dbSubs.length > 0) {
           setSubmissions(dbSubs);
-          // Persist to localStorage inline
           try {
-            if (dbSubs.length === 0) {
-              localStorage.removeItem(STORAGE_KEYS.SUBMISSIONS);
-            } else {
-              localStorage.setItem(STORAGE_KEYS.SUBMISSIONS, JSON.stringify(dbSubs));
-            }
+            localStorage.setItem(STORAGE_KEYS.SUBMISSIONS, JSON.stringify(dbSubs));
           } catch { }
         }
       } catch { }
@@ -803,9 +798,27 @@ export default function App() {
     } catch { }
   }, [products, soundEnabled, submissions]);
 
+  // Fetch fresh submissions whenever admin enters /accept or unlocks session
+  const refreshAdminSubmissions = async () => {
+    invalidateCache('submissions_queue');
+    try {
+      const fresh = await loadSubmissions(true);
+      if (fresh) {
+        setSubmissions(fresh);
+        saveSubmissionsToStorage(fresh);
+      }
+    } catch { }
+  };
+
+  useEffect(() => {
+    if ((currentRoute === '/accept' || currentRoute === 'accept') && adminSessionUnlocked) {
+      refreshAdminSubmissions();
+    }
+  }, [currentRoute, adminSessionUnlocked]);
+
   // Subscribe to realtime changes on submissions table only when on admin accept review page
   useEffect(() => {
-    if (!submissionsLoaded || !isAdmin || (currentRoute !== '/accept' && currentRoute !== 'accept')) return;
+    if (!submissionsLoaded || (!isAdmin && !adminSessionUnlocked) || (currentRoute !== '/accept' && currentRoute !== 'accept')) return;
     const channel = supabase
       .channel('admin-submissions-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'submissions' }, (payload) => {
@@ -2718,6 +2731,7 @@ export default function App() {
           onSuccess={() => {
             setAdminSessionUnlocked(true);
             setIsAdmin(true);
+            refreshAdminSubmissions();
           }}
           onBackToHome={handleBackToLeaderboard}
         />
@@ -2728,6 +2742,7 @@ export default function App() {
         <AdminAcceptPage
           submissions={submissions}
           products={products}
+          onRefreshSubmissions={refreshAdminSubmissions}
           onAcceptSubmission={handleAcceptSubmission}
           onRejectSubmission={handleRejectSubmission}
           onDeleteSubmission={handleDeleteSubmission}

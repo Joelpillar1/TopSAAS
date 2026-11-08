@@ -10,7 +10,7 @@ import { prepareRichText } from '../utils/richText';
 import { uploadScreenshotToStorage } from '../utils/storage';
 import { RichTextEditor } from './RichTextEditor';
 import { LaunchWeekSelector } from './LaunchWeekSelector';
-import { autofillWithOpenAI } from '../utils/autofill';
+import { autofillWithOpenAI, formatAutofillErrorMessage } from '../utils/autofill';
 import { redirectToCheckout, WHOP_LINKS } from '../utils/whop';
 import { appendTrackkitParams } from '../utils/trackkit';
 import { VerifiedBadge } from './VerifiedBadge';
@@ -183,6 +183,9 @@ function normalizeUrl(raw: string): { ok: boolean; value: string; error?: string
     const parsed = new URL(u);
     if (!parsed.hostname.includes('.')) {
       return { ok: false, value: u, error: 'That does not look like a website address' };
+    }
+    if (parsed.hostname.includes('..') || parsed.hostname.startsWith('.') || parsed.hostname.endsWith('.')) {
+      return { ok: false, value: u, error: 'Please enter a valid website domain without extra dots or spaces' };
     }
     return { ok: true, value: u };
   } catch {
@@ -455,6 +458,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
     const check = normalizeUrl(rawUrl);
     if (!check.ok) {
       setErrors((prev) => ({ ...prev, url: check.error || 'Enter a valid website URL.' }));
+      setBanner(check.error || 'Please enter a valid website URL before auto-filling.');
       playSound('click', soundEnabled);
       return;
     }
@@ -469,7 +473,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
 
       if (!res.ok || !res.data) {
         setIsAutofilling(false);
-        setBanner(res.error || 'Failed to auto-fill details from website.');
+        setBanner(formatAutofillErrorMessage(res.error, targetUrl) || 'Failed to auto-fill details from website.');
         return;
       }
 
@@ -515,7 +519,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
       setTimeout(() => setAutofillSuccess(false), 3000);
     } catch (err: any) {
       setIsAutofilling(false);
-      setBanner(err?.message || 'Something went wrong while auto-filling.');
+      setBanner(formatAutofillErrorMessage(err?.message, targetUrl) || 'Something went wrong while auto-filling.');
     }
   };
 

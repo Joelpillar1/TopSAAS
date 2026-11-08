@@ -154,6 +154,13 @@ Deno.serve(async (req) => {
     return jsonResponse({ ok: false, error: "Invalid URL format" }, 400);
   }
 
+  if (parsedUrl.hostname.includes("..") || parsedUrl.hostname.startsWith(".") || parsedUrl.hostname.endsWith(".")) {
+    return jsonResponse({
+      ok: false,
+      error: "The website address contains an invalid domain or extra dots. Please check the URL for typos and try again.",
+    }, 200);
+  }
+
   if (isBlockedHost(parsedUrl.hostname)) {
     return jsonResponse({ ok: false, error: "Target host not allowed" }, 400);
   }
@@ -175,8 +182,21 @@ Deno.serve(async (req) => {
     finalUrl = response.url || parsedUrl.href;
     html = await response.text();
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : "Connection timed out";
-    return jsonResponse({ ok: false, error: `Could not reach target website: ${msg}` }, 200);
+    const rawMsg = err instanceof Error ? err.message : "Connection timed out";
+    const lower = rawMsg.toLowerCase();
+    let cleanMsg = "Could not connect to the website server. The site may be unreachable.";
+    if (lower.includes("fqdn") || lower.includes("empty label") || lower.includes("invalid host")) {
+      cleanMsg = "The website address contains an invalid domain or extra dots. Please check the URL for typos and try again.";
+    } else if (lower.includes("dns") || lower.includes("name not resolved") || lower.includes("getaddrinfo") || lower.includes("not found")) {
+      cleanMsg = "Could not locate this domain. Please verify that the domain name is active and spelled correctly.";
+    } else if (lower.includes("timeout") || lower.includes("timed out") || lower.includes("aborterror")) {
+      cleanMsg = "The website took too long to respond. The server might be slow or temporarily down.";
+    } else if (lower.includes("refused") || lower.includes("reset") || lower.includes("failed to connect")) {
+      cleanMsg = "The website server refused the connection or is currently unreachable.";
+    } else if (lower.includes("ssl") || lower.includes("cert")) {
+      cleanMsg = "Could not establish a secure connection (SSL/TLS certificate error) to this website.";
+    }
+    return jsonResponse({ ok: false, error: cleanMsg }, 200);
   }
 
   // 2. Extract metadata
@@ -355,4 +375,3 @@ Output strict JSON with this exact structure:
     return jsonResponse({ ok: false, error: msg }, 500);
   }
 });
-

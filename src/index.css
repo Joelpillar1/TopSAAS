@@ -137,13 +137,34 @@
   }
 }
 
+@keyframes marquee-reverse {
+  0% {
+    transform: translateX(-50%);
+  }
+  100% {
+    transform: translateX(0%);
+  }
+}
+
 .animate-marquee-infinite {
   display: flex;
   width: max-content;
   animation: marquee 32s linear infinite;
 }
 
-.animate-marquee-infinite:hover {
+.animate-marquee-infinite:hover,
+.animate-marquee-infinite:active {
+  animation-play-state: paused;
+}
+
+.animate-marquee-reverse {
+  display: flex;
+  width: max-content;
+  animation: marquee-reverse 32s linear infinite;
+}
+
+.animate-marquee-reverse:hover,
+.animate-marquee-reverse:active {
   animation-play-state: paused;
 }
 

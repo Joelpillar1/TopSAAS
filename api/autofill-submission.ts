@@ -405,6 +405,13 @@ export default async function handler(req: any, res: any) {
     return res.json({ ok: false, error: 'Invalid URL format' });
   }
 
+  if (parsedUrl.hostname.includes('..') || parsedUrl.hostname.startsWith('.') || parsedUrl.hostname.endsWith('.')) {
+    return res.json({
+      ok: false,
+      error: 'The website address contains an invalid domain or extra dots. Please check the URL for typos and try again.',
+    });
+  }
+
   if (isBlockedHost(parsedUrl.hostname)) {
     res.statusCode = 400;
     return res.json({ ok: false, error: 'Private or local IP not allowed' });
@@ -480,9 +487,23 @@ export default async function handler(req: any, res: any) {
 
     html = await response.text();
   } catch (err: any) {
+    const rawMsg = err?.message || 'Connection timed out';
+    const lower = String(rawMsg).toLowerCase();
+    let cleanMsg = 'Could not connect to the website server. The site may be unreachable.';
+    if (lower.includes('fqdn') || lower.includes('empty label') || lower.includes('invalid host')) {
+      cleanMsg = 'The website address contains an invalid domain or extra dots. Please check the URL for typos and try again.';
+    } else if (lower.includes('dns') || lower.includes('name not resolved') || lower.includes('getaddrinfo') || lower.includes('not found')) {
+      cleanMsg = 'Could not locate this domain. Please verify that the domain name is active and spelled correctly.';
+    } else if (lower.includes('timeout') || lower.includes('timed out') || lower.includes('aborterror')) {
+      cleanMsg = 'The website took too long to respond. The server might be slow or temporarily down.';
+    } else if (lower.includes('refused') || lower.includes('reset') || lower.includes('failed to connect')) {
+      cleanMsg = 'The website server refused the connection or is currently unreachable.';
+    } else if (lower.includes('ssl') || lower.includes('cert')) {
+      cleanMsg = 'Could not establish a secure connection (SSL/TLS certificate error) to this website.';
+    }
     return res.json({
       ok: false,
-      error: `Could not reach target website: ${err?.message || 'Connection timed out'}`,
+      error: cleanMsg,
     });
   }
 

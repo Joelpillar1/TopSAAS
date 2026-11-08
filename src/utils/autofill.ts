@@ -30,6 +30,69 @@ export interface AutofillResponse {
 }
 
 /**
+ * Formats low-level backend, Deno, network, and DNS errors into professional,
+ * user-friendly messages for the submission form banner.
+ */
+export function formatAutofillErrorMessage(rawError?: string, _targetUrl?: string): string {
+  if (!rawError) return 'Unable to auto-fill details from this website. Please fill in the details manually.';
+
+  const err = rawError.toLowerCase();
+
+  // Invalid domain / FQDN syntax (e.g. topsaas..space or trailing dot)
+  if (err.includes('fqdn') || err.includes('empty label') || err.includes('invalid host') || err.includes('invalid url')) {
+    return 'The website address contains an invalid domain or extra dots. Please check the URL for typos and try again.';
+  }
+
+  // Blocked private / internal / localhost host
+  if (err.includes('target host not allowed') || err.includes('blocked host')) {
+    return 'Localhost and private network addresses cannot be auto-filled. Please enter a public website URL.';
+  }
+
+  // DNS resolution failure
+  if (err.includes('enotfound') || err.includes('getaddrinfo') || err.includes('name not resolved') || (err.includes('dns') && !err.includes('dnspython'))) {
+    return 'Could not find this website domain. Please verify that the domain name is active and spelled correctly.';
+  }
+
+  // Connection refused or reset
+  if (err.includes('econnrefused') || err.includes('connection refused') || err.includes('econnreset') || err.includes('failed to connect')) {
+    return 'The website server is currently unreachable or refusing connections.';
+  }
+
+  // Timeout
+  if (err.includes('timed out') || err.includes('timeout') || err.includes('aborterror')) {
+    return 'The website took too long to respond. The server might be slow or temporarily down.';
+  }
+
+  // SSL / TLS Certificate errors
+  if (err.includes('ssl') || err.includes('cert_') || err.includes('certificate')) {
+    return 'Could not establish a secure connection (SSL/TLS certificate error) to this website.';
+  }
+
+  // HTTP status codes or Cloudflare / Bot protection
+  if (err.includes('403') || err.includes('cloudflare') || err.includes('access denied') || err.includes('forbidden')) {
+    return 'This website has anti-bot or firewall protection blocking auto-fill. Please enter your details manually.';
+  }
+
+  if (err.includes('404') || err.includes('not found')) {
+    return 'The target page could not be found (404). Please verify that the URL is live in your browser.';
+  }
+
+  if (err.includes('500') || err.includes('server error') || err.includes('502') || err.includes('503')) {
+    return 'The target website server returned an error. Please try again in a few moments or enter details manually.';
+  }
+
+  // If prefixed with generic "Could not reach target website:", clean it up recursively
+  if (rawError.toLowerCase().startsWith('could not reach target website:')) {
+    const stripped = rawError.replace(/^could not reach target website:\s*/i, '').trim();
+    if (stripped) {
+      return formatAutofillErrorMessage(stripped, _targetUrl);
+    }
+  }
+
+  return rawError;
+}
+
+/**
  * Triggers OpenAI auto-fill for the given website URL.
  * Securely calls Supabase Edge Function (or local /api/autofill-submission in dev),
  * where the OpenAI API key is protected server-side in Supabase.
@@ -74,7 +137,7 @@ export async function autofillWithOpenAI(url: string): Promise<AutofillResponse>
     }
 
     if (data?.error) {
-      return { ok: false, error: data.error };
+      return { ok: false, error: formatAutofillErrorMessage(data.error, normalizedUrl) };
     }
   } catch (err) {
     console.warn('[Autofill] Edge function invocation threw:', err);
@@ -108,7 +171,7 @@ export async function autofillWithOpenAI(url: string): Promise<AutofillResponse>
     }
 
     if (body?.error && res.status !== 404) {
-      return { ok: false, error: body.error };
+      return { ok: false, error: formatAutofillErrorMessage(body.error, normalizedUrl) };
     }
   } catch {
     // Both endpoints failed

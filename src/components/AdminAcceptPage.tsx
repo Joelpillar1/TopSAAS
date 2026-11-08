@@ -77,6 +77,7 @@ interface AdminAcceptPageProps {
   featuredPositions?: Record<string, number>;
   onSetProductFeaturedPosition?: (productId: string, position: number) => void;
   onSignOutAdmin?: () => void;
+  onRefreshSubmissions?: () => Promise<void>;
 }
 
 export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
@@ -108,7 +109,23 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
   featuredPositions = {},
   onSetProductFeaturedPosition,
   onSignOutAdmin,
+  onRefreshSubmissions,
 }) => {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleManualRefresh = async () => {
+    if (isRefreshing || !onRefreshSubmissions) return;
+    setIsRefreshing(true);
+    playSound('click', soundEnabled);
+    try {
+      await onRefreshSubmissions();
+      playSound('success', soundEnabled);
+    } catch { }
+    finally {
+      setIsRefreshing(false);
+    }
+  };
+
   // Counts
   const pendingCount = submissions.filter((s) => (s.status || 'under_review') === 'under_review').length;
   const approvedCount = submissions.filter((s) => s.status === 'approved').length;
@@ -546,6 +563,20 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
               <span className={`h-2.5 w-2.5 rounded-full ${sponsorRailsEnabled ? 'bg-emerald-400 animate-pulse' : 'bg-neutral-500'}`} />
               <span>Side Sponsors: {sponsorRailsEnabled ? 'ON' : 'OFF'}</span>
             </button>
+
+            {/* Refresh Queue Button */}
+            {onRefreshSubmissions && (
+              <button
+                type="button"
+                disabled={isRefreshing}
+                onClick={handleManualRefresh}
+                title="Fetch latest pending and approved submissions from Supabase"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-800 bg-neutral-900/90 px-3 py-1.5 text-xs font-bold text-neutral-300 hover:text-white hover:bg-neutral-800 transition-all cursor-pointer shadow-2xs disabled:opacity-50"
+              >
+                <RotateCcw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin text-mint-400' : 'text-neutral-400'}`} />
+                <span>{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
+              </button>
+            )}
           </div>
         </div>
 
