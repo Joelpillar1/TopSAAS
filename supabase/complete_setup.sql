@@ -639,3 +639,4 @@ create policy "Authenticated users can delete screenshots"
 -- ──────────────────────────────────────────────────────────────────────────────
 -- ALL DONE! YOUR NEW SUPABASE PROJECT IS READY.
 -- ──────────────────────────────────────────────────────────────────────────────
+
