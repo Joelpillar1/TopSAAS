@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { CheckCircle, ArrowLeft, Crown, ExternalLink } from 'lucide-react';
 import { playSound } from '../utils/sound';
-import { setGlobalFeaturedProduct, insertProductDirect, recordSponsorUpdate } from '../utils/db';
+import { setGlobalFeaturedProduct, insertProductDirect, createSponsor, loadProductById } from '../utils/db';
+import { SponsorDraft } from '../types';
 import { supabase } from '../utils/supabase';
 
 interface PaymentSuccessProps {
@@ -61,20 +62,40 @@ export const PaymentSuccess: React.FC<PaymentSuccessProps> = ({
       console.warn('Error confirming verified launch status:', e);
     }
 
-    // Restore any newly created sponsor app from local storage
+    // Restore a paid sponsor from local storage. The webhook and this return
+    // page both upsert the same sponsor id, so one payment creates one row.
+    const pendingSponsorJson = localStorage.getItem('topsaas_pending_sponsor');
+    if (pendingSponsorJson) {
+      try {
+        const draft = JSON.parse(pendingSponsorJson) as SponsorDraft;
+        createSponsor({
+          ...draft,
+          whopPaymentId: paymentIdParam || draft.whopPaymentId,
+          planType: planParam || draft.planType,
+          source: 'whop',
+        });
+      } catch (err) {
+        console.warn('Error saving pending sponsor on payment success:', err);
+      }
+      localStorage.removeItem('topsaas_pending_sponsor');
+    }
+
+    // Restore a newly created featured listing from local storage.
     const pendingNewProdJson = localStorage.getItem('topsaas_featured_pending_new_product');
     if (pendingNewProdJson) {
       try {
         const parsed = JSON.parse(pendingNewProdJson);
-        parsed.isSponsorOnly = true;
+        parsed.isSponsorOnly = false;
+        parsed.isSponsored = false;
         insertProductDirect(parsed);
       } catch (err) {
         console.warn('Error saving pending new product on payment success:', err);
       }
       localStorage.removeItem('topsaas_featured_pending_new_product');
+      localStorage.removeItem('topsaas_featured_pending_new_product_days');
     }
 
-    // After successful payment, activate the pending featured or sponsor product globally in Supabase
+    // After successful payment, activate a pending featured product globally.
     const pendingProductId = targetProductId || localStorage.getItem('topsaas_featured_pending');
     const pendingPlan = planParam || localStorage.getItem('topsaas_featured_pending_plan');
     if (pendingProductId) {
@@ -84,29 +105,31 @@ export const PaymentSuccess: React.FC<PaymentSuccessProps> = ({
       else if (pendingPlan === '7days' || pendingPlan === 'sponsor_1wk' || pendingPlan === 'featured_1wk') durationDays = 7;
 
       const isSponsorPlan = pendingPlan?.startsWith('sponsor') || pendingPlan === '3mo' || pendingPlan === '1yr';
-      if (isSponsorPlan) {
-        const expiresAt = Date.now() + durationDays * 86400 * 1000;
-        const tier = (pendingPlan === '3mo' ? '3mo' : pendingPlan === '1yr' ? '1yr' : 'paid') as 'paid' | '3mo' | '1yr';
-        recordSponsorUpdate({
-          productId: pendingProductId,
-          tier,
-          startedAt: Date.now(),
-          expiresAt,
-          clicks: 0,
-          ended: false,
-        }).catch((err) => console.warn('Could not record sponsor update on payment success:', err));
-
-        supabase
-          .from('products')
-          .update({
-            is_sponsored: true,
-            sponsor_tier: tier,
-            sponsor_started_at: Date.now(),
-            sponsor_expires_at: expiresAt,
-          })
-          .eq('id', pendingProductId)
-          .then(() => {});
-      } else {
+      if (isSponsorPlan && !pendingSponsorJson) {
+        // Fallback for a direct checkout link with no staged sponsor. Build the
+        // sponsor from the linked product snapshot instead of writing products.
+        loadProductById(pendingProductId).then((product) => {
+          if (!product) return;
+          const tier = pendingPlan === '3mo' ? '3mo' : pendingPlan === '1yr' ? '1yr' : 'paid';
+          const expiresAt = Date.now() + durationDays * 86400 * 1000;
+          createSponsor({
+            productId: product.id,
+            name: product.name,
+            tagline: product.tagline,
+            url: product.url,
+            logoUrl: product.logoUrl,
+            category: product.category,
+            contactEmail: product.sponsorContactEmail,
+            tier,
+            status: 'active',
+            startedAt: Date.now(),
+            expiresAt,
+            source: 'whop',
+            whopPaymentId: paymentIdParam || undefined,
+            planType: pendingPlan || undefined,
+          });
+        }).catch((err) => console.warn('Could not create fallback sponsor:', err));
+      } else if (!isSponsorPlan) {
         setGlobalFeaturedProduct(pendingProductId, durationDays);
         onActivateFeatured?.(pendingProductId);
       }
@@ -208,7 +231,7 @@ export const PaymentSuccess: React.FC<PaymentSuccessProps> = ({
               </li>
               <li className="flex items-start gap-2 text-xs text-neutral-600">
                 <span className="font-bold text-neutral-950">2.</span>
-                <span>The verified sponsor badge is now active on your listing</span>
+                <span>The Golden Verified Sponsor badge is now active on your partner cards</span>
               </li>
               <li className="flex items-start gap-2 text-xs text-neutral-600">
                 <span className="font-bold text-neutral-950">3.</span>

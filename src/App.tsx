@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, Fragment } from 'react';
 import { User } from '@supabase/supabase-js';
 import { INITIAL_PRODUCTS } from './data/initialProducts';
 import { INITIAL_SUBMISSIONS } from './data/initialSubmissions';
-import { Category, Product, WebsiteSubmission, Comment, SubmitProductDetails } from './types';
+import { Category, Product, WebsiteSubmission, Comment, SubmitProductDetails, Sponsor, SponsorDraft } from './types';
 import { HeroClaimBanner } from './components/HeroClaimBanner';
 import { BorderBeam } from './components/BorderBeam';
 import { HomeHero } from './components/HomeHero';
@@ -27,7 +27,7 @@ import { LegalTab } from './components/LegalModal';
 import { playSound } from './utils/sound';
 import confetti from 'canvas-confetti';
 import { supabase } from './utils/supabase';
-import { loadProducts, loadProductById, loadSubmissions, invalidateCache, saveAllProducts, saveProductRanksDirect, debouncedSyncProducts, toggleUpvote, getUserUpvotes, getUpvoteStats, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, setGlobalFeaturedProducts, setProductFeaturedPosition, LOCAL_FEATURED_PRODUCTS_KEY, LOCAL_FEATURED_POSITIONS_MAP_KEY, insertProductDirect, fetchComments, addComment, getCachedCommentsSync, submissionToProduct, publishedProductId, isProductUpvoted, getGuestUpvotes, saveGuestUpvotes, incrementProductUpvotesDirect, incrementProductClicksDirect, getActiveSponsors, mergeSponsorsIntoProducts, recordSponsorUpdate, recordSponsorEnd, getSponsorRailsEnabled, setSponsorRailsEnabled, LOCAL_SPONSOR_RAILS_KEY, getFeaturedPosition, setFeaturedPosition, LOCAL_FEATURED_POSITION_KEY, SUBMISSION_QUEUE_COLUMNS, loadSubmissionById, isSponsorOnlyProduct } from './utils/db';
+import { loadProducts, loadProductById, loadSubmissions, invalidateCache, saveAllProducts, saveProductRanksDirect, debouncedSyncProducts, toggleUpvote, getUserUpvotes, getUpvoteStats, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, setGlobalFeaturedProducts, setProductFeaturedPosition, LOCAL_FEATURED_PRODUCTS_KEY, LOCAL_FEATURED_POSITIONS_MAP_KEY, insertProductDirect, fetchComments, addComment, getCachedCommentsSync, submissionToProduct, publishedProductId, isProductUpvoted, getGuestUpvotes, saveGuestUpvotes, incrementProductUpvotesDirect, incrementProductClicksDirect, loadSponsors, createSponsor, updateSponsor, endSponsor, endSponsorsForProduct, toggleSponsorPause, incrementSponsorClicks, sponsorToDisplayProduct, isLiveSponsor, getSponsorRailsEnabled, setSponsorRailsEnabled, LOCAL_SPONSOR_RAILS_KEY, getFeaturedPosition, setFeaturedPosition, LOCAL_FEATURED_POSITION_KEY, SUBMISSION_QUEUE_COLUMNS, loadSubmissionById, isSponsorOnlyProduct } from './utils/db';
 import { trackGoal } from './utils/trackkit';
 import { isInWeek, getWeekInfo, getWeekNumber, getWeekByNumber, getMonthKey, isInMonth, formatMonthLabel, formatWeekDateRange, WeekInfo } from './utils/weeks';
 import { getWebsiteFavicon } from './utils/logo';
@@ -306,6 +306,8 @@ export default function App() {
         const parsed: Product[] = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
           return parsed
+            // Legacy sponsor-only rows are migrated into the sponsors table.
+            .filter((p) => !isSponsorOnlyProduct(p) && !p.id.startsWith('spn_'))
             .sort((a, b) => (a.rank ?? 9999) - (b.rank ?? 9999))
             .map((p, idx) => {
               const initial = INITIAL_PRODUCTS.find((init) => init.id === p.id);
@@ -324,6 +326,10 @@ export default function App() {
     // Start with empty directory — no seed products
     return [];
   });
+
+  // Sponsors (paid + trial placements) live in their own table and are never
+  // mixed into the products directory.
+  const [sponsors, setSponsors] = useState<Sponsor[]>([]);
 
   // Auth state
   const [user, setUser] = useState<User | null>(null);
@@ -960,12 +966,13 @@ export default function App() {
     async function load() {
       if (productsLoadedRef.current) return;
       productsLoadedRef.current = true;
-      const [dbProducts, activeSponsors, upvoteStats, railsEnabled] = await Promise.all([
+      const [dbProducts, dbSponsors, upvoteStats, railsEnabled] = await Promise.all([
         loadProducts(),
-        getActiveSponsors(),
+        loadSponsors(),
         getUpvoteStats(),
         getSponsorRailsEnabled(),
       ]);
+      setSponsors(dbSponsors);
       setSponsorRailsEnabledState(railsEnabled);
       setWeeklyUpvotes(upvoteStats.byWeek);
       setMonthlyUpvotes(upvoteStats.byMonth);
@@ -1002,19 +1009,20 @@ export default function App() {
         // Products ARE the published listing and already carry every field from the
         // submission they were published from, so nothing is merged in here — the
         // submissions table is never consulted on this path.
-        const sorted = [...dbProducts].sort((a, b) => {
-          const rA = a.rank ?? 9999;
-          const rB = b.rank ?? 9999;
-          if (rA !== rB) return rA - rB;
-          const upvoteDiff = (b.upvotes ?? 0) - (a.upvotes ?? 0);
-          if (upvoteDiff !== 0) return upvoteDiff;
-          return (a.createdAt ?? 0) - (b.createdAt ?? 0);
-        });
+        const sorted = dbProducts
+          // Sponsors are not directory listings, even if a legacy row slipped in.
+          .filter((p) => !isSponsorOnlyProduct(p) && !p.id.startsWith('spn_'))
+          .sort((a, b) => {
+            const rA = a.rank ?? 9999;
+            const rB = b.rank ?? 9999;
+            if (rA !== rB) return rA - rB;
+            const upvoteDiff = (b.upvotes ?? 0) - (a.upvotes ?? 0);
+            if (upvoteDiff !== 0) return upvoteDiff;
+            return (a.createdAt ?? 0) - (b.createdAt ?? 0);
+          });
 
         const ranked = sorted.map((p, idx) => ({ ...p, rank: idx + 1 }));
-        // Merge active sponsors from site_settings so reloading never wipes them
-        const withSponsors = mergeSponsorsIntoProducts(ranked, activeSponsors);
-        const withCounts = applyRealUpvoteCounts(withSponsors);
+        const withCounts = applyRealUpvoteCounts(ranked);
         repairStoredUpvoteCounts(ranked); // heal DB rows whose stored counts lag reality
         setProducts(withCounts);
         try {
@@ -1626,59 +1634,40 @@ export default function App() {
   // Track click on a website (counts the visit + pushes a live traffic event + tracks sponsor performance + persists to Supabase)
   const handleTrackClick = (productId: string, _url: string) => {
     const now = Date.now();
-    // Persist click increment to database atomically
-    incrementProductClicksDirect(productId).catch(() => {});
     trackGoal('outbound_click', { product_id: productId });
 
-    setProducts((prev) =>
-      prev.map((p) => {
-        if (p.id !== productId) return p;
-        const updatedClicks = (p.clicks || 0) + 1;
-        const updatedSponsorClicks = p.isSponsored ? (p.sponsorClicks || 0) + 1 : p.sponsorClicks;
-        if (p.isSponsored) {
-          recordSponsorUpdate({
-            productId: p.id,
-            tier: p.sponsorTier || '1mo',
-            startedAt: p.sponsorStartedAt || now,
-            expiresAt: p.sponsorExpiresAt || now + 30 * 86400 * 1000,
-            contactEmail: p.sponsorContactEmail,
-            clicks: updatedSponsorClicks,
-          }).catch(() => { });
-        }
-        return {
-          ...p,
-          clicks: updatedClicks,
-          sponsorClicks: updatedSponsorClicks,
-          updatedAt: now,
-        };
-      })
-    );
+    // Sponsor cards use sponsor ids (spn_...). Their clicks are tracked on the
+    // sponsors table, never on a product row.
+    const sponsor = sponsors.find((s) => s.id === productId);
+    if (sponsor) {
+      incrementSponsorClicks(sponsor.id).catch(() => {});
+      setSponsors((prev) =>
+        prev.map((s) => (s.id === sponsor.id ? { ...s, clicks: (s.clicks || 0) + 1 } : s))
+      );
+    } else {
+      // Persist click increment to database atomically
+      incrementProductClicksDirect(productId).catch(() => {});
+      setProducts((prev) =>
+        prev.map((p) => {
+          if (p.id !== productId) return p;
+          return { ...p, clicks: (p.clicks || 0) + 1, updatedAt: now };
+        })
+      );
+    }
+
     const last = lastClickFeedRef.current[productId] || 0;
     if (now - last < 60_000) return;
     lastClickFeedRef.current[productId] = now;
-    const target = products.find((p) => p.id === productId);
-    if (!target) return;
+    const targetName = sponsor?.name || products.find((p) => p.id === productId)?.name;
+    if (!targetName) return;
     setLiveFeed((prev) =>
-      [{ id: `visit-${now}`, productId, name: target.name, kind: 'visit', time: now }, ...prev].slice(0, 14)
+      [{ id: `visit-${now}`, productId, name: targetName, kind: 'visit', time: now }, ...prev].slice(0, 14)
     );
   };
 
-  // Update a single product in state and database
+  // Update a single product in state and database. Sponsorship is separate and
+  // must never be written through a product update.
   const handleUpdateProduct = (updatedProduct: Product) => {
-    // If sponsor status is being updated or granted, sync to site_settings
-    if (updatedProduct.isSponsored) {
-      recordSponsorUpdate({
-        productId: updatedProduct.id,
-        tier: (updatedProduct.sponsorTier && updatedProduct.sponsorTier !== 'none' ? updatedProduct.sponsorTier : '1mo'),
-        startedAt: updatedProduct.sponsorStartedAt || Date.now(),
-        expiresAt: updatedProduct.sponsorExpiresAt || Date.now() + 30 * 86400 * 1000,
-        contactEmail: updatedProduct.sponsorContactEmail,
-        clicks: updatedProduct.sponsorClicks || 0,
-      }).catch(console.warn);
-    } else if (!updatedProduct.isSponsored) {
-      recordSponsorEnd(updatedProduct.id).catch(console.warn);
-    }
-
     setProducts((prev) => {
       const exists = prev.some((p) => p.id === updatedProduct.id);
       const next = exists
@@ -1694,9 +1683,10 @@ export default function App() {
     });
   };
 
-  // Activate sponsor placement (7-day free trial or 1mo / 3mo / 1yr paid)
+  // Activate a sponsor placement (7-day free trial or 1mo / 3mo / 1yr paid).
+  // The sponsor is stored in its own table and is never added to products.
   const handleActivateSponsorTrial = async (
-    product: Product,
+    draft: SponsorDraft,
     tier: 'trial' | 'paid' | '1mo' | '3mo' | '1yr',
     email?: string
   ) => {
@@ -1708,31 +1698,54 @@ export default function App() {
 
     const now = Date.now();
     const expiresAt = now + durationDays * 86400 * 1000;
-    const isPaid = tier !== 'trial';
+    const contactEmail = email || draft.contactEmail || (user ? user.email : undefined);
 
-    const updatedProduct: Product = {
-      ...product,
-      isSponsored: true,
-      sponsorTier: tier,
-      sponsorStartedAt: now,
-      sponsorExpiresAt: expiresAt,
-      sponsorClicks: product.sponsorClicks || 0,
-      sponsorContactEmail: email || product.sponsorContactEmail || (user ? user.email : undefined),
-      autoRelaunch: product.autoRelaunch,
-      lastRelaunchedAt: product.lastRelaunchedAt,
-    };
-
-    // Immediately persist to Supabase site_settings
-    await recordSponsorUpdate({
-      productId: updatedProduct.id,
+    const created = await createSponsor({
+      ...draft,
       tier,
+      status: 'active',
       startedAt: now,
       expiresAt,
-      contactEmail: updatedProduct.sponsorContactEmail,
-      clicks: updatedProduct.sponsorClicks || 0,
+      contactEmail,
+      source: draft.source || (tier === 'trial' ? 'trial' : 'whop'),
     });
 
-    handleUpdateProduct(updatedProduct);
+    if (created) {
+      setSponsors((prev) => {
+        const exists = prev.some((s) => s.id === created.id);
+        return exists ? prev.map((s) => (s.id === created.id ? created : s)) : [created, ...prev];
+      });
+    }
+  };
+
+  // ── Sponsor admin handlers (dedicated sponsors table) ──
+  const handleCreateSponsor = async (draft: SponsorDraft) => {
+    const created = await createSponsor(draft);
+    if (created) {
+      setSponsors((prev) => {
+        const exists = prev.some((s) => s.id === created.id);
+        return exists ? prev.map((s) => (s.id === created.id ? created : s)) : [created, ...prev];
+      });
+    }
+  };
+
+  const handleUpdateSponsor = async (sponsor: Sponsor) => {
+    setSponsors((prev) => prev.map((s) => (s.id === sponsor.id ? sponsor : s)));
+    await updateSponsor(sponsor);
+  };
+
+  const handleEndSponsor = async (sponsorId: string) => {
+    setSponsors((prev) =>
+      prev.map((s) => (s.id === sponsorId ? { ...s, status: 'ended' } : s))
+    );
+    await endSponsor(sponsorId);
+  };
+
+  const handlePauseSponsor = async (sponsorId: string) => {
+    const updated = await toggleSponsorPause(sponsorId);
+    if (updated) {
+      setSponsors((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
+    }
   };
 
   // Activate featured spot in directory listing (above the product cards)
@@ -1741,8 +1754,14 @@ export default function App() {
     durationDays: number = 7,
     email?: string
   ) => {
-    // 1. Remove from active sponsors so it never appears in the side rails
-    await recordSponsorEnd(product.id);
+    // 1. Remove any sponsor placement for this product so it never appears in
+    //    the side rails at the same time as the featured spot.
+    await endSponsorsForProduct(product.id);
+    setSponsors((prev) =>
+      prev.map((s) =>
+        s.productId === product.id || s.id === product.id ? { ...s, status: 'ended' } : s
+      )
+    );
 
     // 2. Add product to featuredProductIds (placed first in priority order)
     const nextFeaturedIds = [product.id, ...featuredProductIds.filter((id) => id !== product.id)];
@@ -1777,6 +1796,15 @@ export default function App() {
   // Delist a product — permanently removes it from live directory and DB
   const handleDelistProduct = async (productId: string) => {
     const targetProduct = products.find((p) => p.id === productId);
+
+    // Any sponsor placement linked to this listing ends with it.
+    await endSponsorsForProduct(productId);
+    setSponsors((prev) =>
+      prev.map((s) =>
+        s.productId === productId || s.id === productId ? { ...s, status: 'ended' } : s
+      )
+    );
+
     setProducts((prev) => {
       const updated = prev
         .filter((p) => p.id !== productId)
@@ -1960,16 +1988,27 @@ export default function App() {
 
   const isDefaultFeatured = featuredProductId === null || featuredProductId === 'default';
   const isEmptyFeatured = featuredProductId === '' || featuredProductId === 'empty';
+  const isFeaturedExpired = Boolean(featuredExpiresAt && Date.now() > featuredExpiresAt);
 
-  // Resolved list of all featured products in order
+  // Resolved list of all active (non-expired) featured products in order
   const featuredProducts: Product[] = (() => {
-    if (isEmptyFeatured) return [];
+    if (isEmptyFeatured || isFeaturedExpired) return [];
     const ids = featuredProductIds.length > 0
       ? featuredProductIds
       : (featuredProductId && !isDefaultFeatured ? [featuredProductId] : []);
     return ids
-      .map((id) => products.find((p) => p.id === id))
-      .filter((p): p is Product => !!p);
+      .map((id) => {
+        const p = products.find((prod) => prod.id === id);
+        if (p) return p;
+        const sub = submissions.find((s) => s.id === id);
+        if (sub) return submissionToProduct(sub, 1);
+        return undefined;
+      })
+      .filter((p): p is Product => {
+        if (!p) return false;
+        if (p.sponsorExpiresAt && Date.now() > p.sponsorExpiresAt) return false;
+        return true;
+      });
   })();
 
   const explicitFeaturedProduct = featuredProducts[0] || null;
@@ -2162,7 +2201,7 @@ export default function App() {
     .sort(weekComparator);
 
   // Promoted / featured product used in the rails and mid-board banner
-  const promotedProduct = featuredProductId
+  const promotedProduct = (!isFeaturedExpired && featuredProductId)
     ? products.find((p) => p.id === featuredProductId) || null
     : null;
 
@@ -2248,13 +2287,16 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Sponsors shown on the public rails are display-only adapters of sponsor
+  // rows. Featured products take priority, so linked sponsors are hidden.
   const activeRailSponsors = sponsorRailsEnabled
-    ? products.filter(
-      (p) =>
-        p.isSponsored &&
-        !featuredProductIds.includes(p.id) &&
-        p.id !== featuredProductId
-    )
+    ? sponsors
+      .filter((s) => isLiveSponsor(s))
+      .filter(
+        (s) =>
+          !(s.productId && (featuredProductIds.includes(s.productId) || s.productId === featuredProductId))
+      )
+      .map(sponsorToDisplayProduct)
     : [];
 
   const globalHeader = (
@@ -2498,8 +2540,13 @@ export default function App() {
           product={product}
           topProduct={topProduct || product}
           allProducts={sortedByRankProducts.map((p, idx) => ({ ...markOwnership(p), rank: idx + 1 }))}
-          sponsors={products.filter((p) => p.isSponsored && (p.sponsorExpiresAt ? p.sponsorExpiresAt > Date.now() : true))}
-          onOpenFeaturedSpotModal={() => setIsFeaturedSpotModalOpen(true)}
+          sponsors={sponsors
+            .filter((s) => isLiveSponsor(s) && s.productId !== product.id)
+            .map(sponsorToDisplayProduct)}
+          onOpenFeaturedSpotModal={() => {
+            setFeaturedModalMode('sponsor');
+            setIsFeaturedSpotModalOpen(true);
+          }}
           comments={comments.filter((c) => c.productId === product.id)}
           soundEnabled={soundEnabled}
           isSignedIn={!!user}
@@ -2617,7 +2664,15 @@ export default function App() {
           soundEnabled={soundEnabled}
           onBack={backToHome}
           onSelectRepo={handleOpenRepo}
+          sponsors={activeRailSponsors}
+          onSelectProduct={handleOpenProduct}
+          onTrackClick={handleTrackClick}
+          onOpenFeaturedSpotModal={() => {
+            setFeaturedModalMode('sponsor');
+            setIsFeaturedSpotModalOpen(true);
+          }}
           onOpenFeatured={() => {
+            setFeaturedModalMode('featured');
             if (!user) {
               setIsSignInModalOpen(true);
             } else {
@@ -2655,6 +2710,7 @@ export default function App() {
           user={user}
           mode={featuredModalMode}
           featuredProductIds={featuredProductIds}
+          initialTier={featuredInitialTier}
           soundEnabled={soundEnabled}
           onActivateSponsor={handleActivateSponsorTrial}
           onActivateFeatured={handleActivateFeatured}
@@ -2765,6 +2821,11 @@ export default function App() {
         <AdminAcceptPage
           submissions={submissions}
           products={products}
+          sponsors={sponsors}
+          onCreateSponsor={handleCreateSponsor}
+          onUpdateSponsor={handleUpdateSponsor}
+          onEndSponsor={handleEndSponsor}
+          onPauseSponsor={handlePauseSponsor}
           onRefreshSubmissions={refreshAdminSubmissions}
           onAcceptSubmission={handleAcceptSubmission}
           onRejectSubmission={handleRejectSubmission}
@@ -2829,7 +2890,7 @@ export default function App() {
 
   // Shared chrome (header + footer) for the standalone routes below.
   const routeChrome = (page: React.ReactNode) => (
-    <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between selection:bg-mint-500/20 selection:text-neutral-900 font-sans pb-14 lg:pb-0">
+    <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between selection:bg-mint-500/20 selection:text-neutral-900 font-sans pb-16 lg:pb-0">
       {globalHeader}
       {page}
       <RichFooter
@@ -2881,7 +2942,7 @@ export default function App() {
 
   // 2. MAIN DIRECTORY HOMEPAGE ROUTE
   return (
-    <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between selection:bg-mint-500/20 selection:text-neutral-900 font-sans pb-14 lg:pb-0">
+    <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between selection:bg-mint-500/20 selection:text-neutral-900 font-sans pb-16 lg:pb-0">
       {globalHeader}
       {/* Main Content Area */}
       <main className="mx-auto w-full max-w-7xl px-3.5 sm:px-6 space-y-4 sm:space-y-5 flex-1 pb-16 pt-4 sm:pt-6">
@@ -3057,123 +3118,171 @@ export default function App() {
 
                   {/* Leaderboard Rendering */}
                   {filteredProducts.length === 0 ? (
-                    <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center">
-                      {selectedWeek && weekScopedProducts.length === 0 ? (
-                        <>
-                          <Trophy className="mx-auto h-10 w-10 text-neutral-700 mb-3" />
-                          <h3 className="text-lg font-bold text-neutral-950">
-                            {selectedWeek.isCurrent
-                              ? 'No launches this week yet'
-                              : `No launches in ${selectedWeek.label} yet`}
-                          </h3>
-                          <p className="text-xs text-neutral-500 max-w-sm mx-auto mt-1 mb-5 font-medium">
-                            The round is fresh. Be the first to launch your SaaS this week and take the #1 spot.
-                          </p>
-                          <div className="flex items-center justify-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                playSound('click', soundEnabled);
-                                setSelectedWeek(null);
-                                setCurrentPage(1);
+                    <div className="space-y-3">
+                      {/* Active, not expired featured products OR default open spot keep showing even when there are no other products */}
+                      {currentPage === 1 && !isEmptyFeatured && (
+                        <div className="space-y-3">
+                          {featuredProducts.length > 0 ? (
+                            featuredProducts.map((fp) => (
+                              <SponsorTile
+                                key={fp.id}
+                                soundEnabled={soundEnabled}
+                                product={fp}
+                                onOpenProduct={handleOpenProduct}
+                                onTrackClick={handleTrackClick}
+                                onUpvote={handleUpvote}
+                                upvoted={isProductUpvoted(fp.id, userUpvotes)}
+                                onOpenFeaturedSpotModal={() => {
+                                  setFeaturedModalMode('featured');
+                                  if (!user) {
+                                    setIsSignInModalOpen(true);
+                                  } else {
+                                    setIsFeaturedSpotModalOpen(true);
+                                  }
+                                }}
+                              />
+                            ))
+                          ) : (
+                            <SponsorTile
+                              soundEnabled={soundEnabled}
+                              product={null}
+                              onOpenProduct={handleOpenProduct}
+                              onTrackClick={handleTrackClick}
+                              onUpvote={handleUpvote}
+                              upvoted={false}
+                              onOpenFeaturedSpotModal={() => {
+                                setFeaturedModalMode('featured');
+                                if (!user) {
+                                  setIsSignInModalOpen(true);
+                                } else {
+                                  setIsFeaturedSpotModalOpen(true);
+                                }
                               }}
-                              className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-transparent px-3.5 py-2 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-colors cursor-pointer"
-                            >
-                              <span>See all-time launches</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                playSound('click', soundEnabled);
-                                handleOpenSubmit();
-                              }}
-                              className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-xs font-bold text-black hover:bg-neutral-200 transition-colors cursor-pointer"
-                            >
-                              <Plus className="h-3.5 w-3.5" />
-                              <span>Launch your SaaS</span>
-                            </button>
-                          </div>
-                        </>
-                      ) : stealsOnly ? (
-                        <>
-                          <Flame className="mx-auto h-10 w-10 text-amber-400 mb-3 animate-pulse" />
-                          <h3 className="text-lg font-bold text-neutral-950">No exclusive deals found</h3>
-                          <p className="text-xs text-neutral-400 max-w-md mx-auto mt-1 mb-5 font-medium">
-                            {searchQuery.trim()
-                              ? `No tools with exclusive discounts match "${searchQuery}". Try searching for another term or turn off Steals Only.`
-                              : selectedCategory !== 'All'
-                                ? `No tools in "${selectedCategory}" have active promo codes or discounts right now. Check back soon or turn off Steals Only.`
-                                : 'No tools with active discounts match your current filters.'}
-                          </p>
-                          <div className="flex items-center justify-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                playSound('click', soundEnabled);
-                                setStealsOnly(false);
-                                setCurrentPage(1);
-                              }}
-                              className="inline-flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-xs font-bold text-amber-800 hover:bg-amber-100 transition-colors cursor-pointer"
-                            >
-                              <span>Turn off Steals Only</span>
-                            </button>
-                            {(searchQuery || selectedCategory !== 'All') && (
+                            />
+                          )}
+                        </div>
+                      )}
+
+                      <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center">
+                        {selectedWeek && weekScopedProducts.length === 0 ? (
+                          <>
+                            <Trophy className="mx-auto h-10 w-10 text-neutral-700 mb-3" />
+                            <h3 className="text-lg font-bold text-neutral-950">
+                              {selectedWeek.isCurrent
+                                ? (featuredProducts.length > 0 ? 'No other launches this week yet' : 'No launches this week yet')
+                                : (featuredProducts.length > 0 ? `No other launches in ${selectedWeek.label} yet` : `No launches in ${selectedWeek.label} yet`)}
+                            </h3>
+                            <p className="text-xs text-neutral-500 max-w-sm mx-auto mt-1 mb-5 font-medium">
+                              The round is fresh. Be the first to launch your SaaS this week and take the #1 spot.
+                            </p>
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  playSound('click', soundEnabled);
+                                  setSelectedWeek(null);
+                                  setCurrentPage(1);
+                                }}
+                                className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-transparent px-3.5 py-2 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-colors cursor-pointer"
+                              >
+                                <span>See all-time launches</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  playSound('click', soundEnabled);
+                                  handleOpenSubmit();
+                                }}
+                                className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-xs font-bold text-black hover:bg-neutral-200 transition-colors cursor-pointer"
+                              >
+                                <Plus className="h-3.5 w-3.5" />
+                                <span>Launch your SaaS</span>
+                              </button>
+                            </div>
+                          </>
+                        ) : stealsOnly ? (
+                          <>
+                            <Flame className="mx-auto h-10 w-10 text-amber-400 mb-3 animate-pulse" />
+                            <h3 className="text-lg font-bold text-neutral-950">No exclusive deals found</h3>
+                            <p className="text-xs text-neutral-400 max-w-md mx-auto mt-1 mb-5 font-medium">
+                              {searchQuery.trim()
+                                ? `No tools with exclusive discounts match "${searchQuery}". Try searching for another term or turn off Steals Only.`
+                                : selectedCategory !== 'All'
+                                  ? `No tools in "${selectedCategory}" have active promo codes or discounts right now. Check back soon or turn off Steals Only.`
+                                  : 'No tools with active discounts match your current filters.'}
+                            </p>
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  playSound('click', soundEnabled);
+                                  setStealsOnly(false);
+                                  setCurrentPage(1);
+                                }}
+                                className="inline-flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-xs font-bold text-amber-800 hover:bg-amber-100 transition-colors cursor-pointer"
+                              >
+                                <span>Turn off Steals Only</span>
+                              </button>
+                              {(searchQuery || selectedCategory !== 'All') && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    playSound('click', soundEnabled);
+                                    setSearchQuery('');
+                                    setSelectedCategory('All');
+                                    setCurrentPage(1);
+                                  }}
+                                  className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-transparent px-3.5 py-2 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-colors cursor-pointer"
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                  <span>Clear Filters</span>
+                                </button>
+                              )}
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <Trophy className="mx-auto h-10 w-10 text-neutral-700 mb-3" />
+                            <h3 className="text-lg font-bold text-neutral-950">
+                              {featuredProducts.length > 0 ? 'No other websites found' : 'No websites found'}
+                            </h3>
+                            <p className="text-xs text-neutral-500 max-w-sm mx-auto mt-1 mb-5 font-medium">
+                              {searchQuery.trim()
+                                ? (featuredProducts.length > 0 ? `No other tools match "${searchQuery}". Try searching for another term or clear filters.` : `No tools match "${searchQuery}". Try searching for another term or clear filters.`)
+                                : (featuredProducts.length > 0 ? 'No other websites in this category yet. Be the first to submit!' : 'No websites in this category yet. Be the first to submit!')}
+                            </p>
+                            <div className="flex items-center justify-center gap-2">
                               <button
                                 type="button"
                                 onClick={() => {
                                   playSound('click', soundEnabled);
                                   setSearchQuery('');
                                   setSelectedCategory('All');
-                                  setCurrentPage(1);
                                 }}
                                 className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-transparent px-3.5 py-2 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-colors cursor-pointer"
                               >
                                 <X className="h-3.5 w-3.5" />
                                 <span>Clear Filters</span>
                               </button>
-                            )}
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <Trophy className="mx-auto h-10 w-10 text-neutral-700 mb-3" />
-                          <h3 className="text-lg font-bold text-neutral-950">No websites found</h3>
-                          <p className="text-xs text-neutral-500 max-w-sm mx-auto mt-1 mb-5 font-medium">
-                            {searchQuery.trim()
-                              ? `No tools match "${searchQuery}". Try searching for another term or clear filters.`
-                              : 'No websites in this category yet. Be the first to submit!'}
-                          </p>
-                          <div className="flex items-center justify-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                playSound('click', soundEnabled);
-                                setSearchQuery('');
-                                setSelectedCategory('All');
-                              }}
-                              className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-transparent px-3.5 py-2 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-colors cursor-pointer"
-                            >
-                              <X className="h-3.5 w-3.5" />
-                              <span>Clear Filters</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                playSound('click', soundEnabled);
-                                handleOpenSubmit();
-                              }}
-                              className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-xs font-bold text-black hover:bg-neutral-200 transition-colors cursor-pointer"
-                            >
-                              <Plus className="h-3.5 w-3.5" />
-                              <span>New Launch</span>
-                            </button>
-                          </div>
-                        </>
-                      )}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  playSound('click', soundEnabled);
+                                  handleOpenSubmit();
+                                }}
+                                className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-xs font-bold text-black hover:bg-neutral-200 transition-colors cursor-pointer"
+                              >
+                                <Plus className="h-3.5 w-3.5" />
+                                <span>New Launch</span>
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {/* Featured sponsor(s) placed at Top (position 0) */}
+                      {/* Featured sponsor(s) placed at Top (position 0) or default reserve spot placeholder */}
                       {currentPage === 1 && !isEmptyFeatured && (
                         featuredProducts.length > 0 ? (
                           featuredProducts.filter((fp) => (featuredPositions[fp.id] !== undefined ? featuredPositions[fp.id] : featuredPosition) === 0).length > 0 && (
@@ -3202,24 +3311,22 @@ export default function App() {
                             </div>
                           )
                         ) : (
-                          featuredPosition === 0 && (
-                            <SponsorTile
-                              soundEnabled={soundEnabled}
-                              product={null}
-                              onOpenProduct={handleOpenProduct}
-                              onTrackClick={handleTrackClick}
-                              onUpvote={handleUpvote}
-                              upvoted={false}
-                              onOpenFeaturedSpotModal={() => {
-                                setFeaturedModalMode('featured');
-                                if (!user) {
-                                  setIsSignInModalOpen(true);
-                                } else {
-                                  setIsFeaturedSpotModalOpen(true);
-                                }
-                              }}
-                            />
-                          )
+                          <SponsorTile
+                            soundEnabled={soundEnabled}
+                            product={null}
+                            onOpenProduct={handleOpenProduct}
+                            onTrackClick={handleTrackClick}
+                            onUpvote={handleUpvote}
+                            upvoted={false}
+                            onOpenFeaturedSpotModal={() => {
+                              setFeaturedModalMode('featured');
+                              if (!user) {
+                                setIsSignInModalOpen(true);
+                              } else {
+                                setIsFeaturedSpotModalOpen(true);
+                              }
+                            }}
+                          />
                         )
                       )}
 
@@ -3236,12 +3343,6 @@ export default function App() {
                           return false;
                         });
 
-                        // Fallback default placeholder if no custom products and featuredPosition > 0
-                        const showDefaultAfterThis =
-                          featuredProducts.length === 0 &&
-                          featuredPosition > 0 &&
-                          (featuredPosition === currentRank || (isLastItem && featuredPosition > currentRank));
-
                         return (
                           <React.Fragment key={p.id}>
                             <ProductRow
@@ -3254,36 +3355,17 @@ export default function App() {
                               onUpvote={handleUpvote}
                               upvoted={isProductUpvoted(p.id, userUpvotes)}
                             />
-                            {currentPage === 1 && !isEmptyFeatured && (featuredAfterThis.length > 0 || showDefaultAfterThis) && (
+                            {currentPage === 1 && !isEmptyFeatured && featuredAfterThis.length > 0 && (
                               <div className="pt-0.5 space-y-3">
-                                {featuredAfterThis.length > 0 ? (
-                                  featuredAfterThis.map((fp) => (
-                                    <SponsorTile
-                                      key={fp.id}
-                                      soundEnabled={soundEnabled}
-                                      product={fp}
-                                      onOpenProduct={handleOpenProduct}
-                                      onTrackClick={handleTrackClick}
-                                      onUpvote={handleUpvote}
-                                      upvoted={isProductUpvoted(fp.id, userUpvotes)}
-                                      onOpenFeaturedSpotModal={() => {
-                                        setFeaturedModalMode('featured');
-                                        if (!user) {
-                                          setIsSignInModalOpen(true);
-                                        } else {
-                                          setIsFeaturedSpotModalOpen(true);
-                                        }
-                                      }}
-                                    />
-                                  ))
-                                ) : (
+                                {featuredAfterThis.map((fp) => (
                                   <SponsorTile
+                                    key={fp.id}
                                     soundEnabled={soundEnabled}
-                                    product={null}
+                                    product={fp}
                                     onOpenProduct={handleOpenProduct}
                                     onTrackClick={handleTrackClick}
                                     onUpvote={handleUpvote}
-                                    upvoted={false}
+                                    upvoted={isProductUpvoted(fp.id, userUpvotes)}
                                     onOpenFeaturedSpotModal={() => {
                                       setFeaturedModalMode('featured');
                                       if (!user) {
@@ -3293,7 +3375,7 @@ export default function App() {
                                       }
                                     }}
                                   />
-                                )}
+                                ))}
                               </div>
                             )}
                           </React.Fragment>

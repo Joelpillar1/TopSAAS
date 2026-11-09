@@ -12,6 +12,8 @@ import {
   MessageSquare,
   Send,
   Target,
+  Users,
+  CheckCircle2,
   LogIn,
   User as UserIcon,
   Video,
@@ -76,6 +78,19 @@ const AVATAR_GRADIENTS = [
   'bg-gradient-to-tr from-sky-500 to-blue-700',
   'bg-gradient-to-tr from-blue-700 to-slate-800',
 ];
+
+function parsePersonas(text?: string): string[] {
+  if (!text) return [];
+  const cleaned = text
+    .replace(/^(specially crafted for|crafted for|ideal for|built for|designed for|for)\s+/i, '')
+    .replace(/\.$/, '')
+    .trim();
+  const rawParts = cleaned.split(/,\s*(?:and\s+)?|;\s*|\s+and\s+/i);
+  return rawParts
+    .map((p) => p.trim())
+    .filter((p) => p.length > 1 && p.length < 60)
+    .map((p) => p.charAt(0).toUpperCase() + p.slice(1));
+}
 
 const CommentAvatar: React.FC<{
   avatarUrl?: string;
@@ -386,7 +401,8 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                         <VerifiedBadge className="h-5 w-5 sm:h-6 sm:w-6 shrink-0" title="Verified Startup" />
                       )}
                       {product.isSponsored && (
-                        <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-neutral-900 px-2 py-0.5 text-xs font-bold tracking-tight text-white shadow-xs select-none">
+                        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-neutral-900 px-2 py-0.5 text-xs font-bold tracking-tight text-white shadow-xs select-none">
+                          <VerifiedBadge variant="gold" className="h-3.5 w-3.5 shrink-0" />
                           <span>Sponsored</span>
                         </span>
                       )}
@@ -837,29 +853,90 @@ export const ProductPage: React.FC<ProductPageProps> = ({
 
             {/* Use Cases & Who Uses It */}
             {product.useCases && product.useCases.length > 0 && (
-              <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs space-y-4">
-                <div className="border-b border-neutral-200 pb-3">
-                  <h2 className="text-lg sm:text-xl font-bold text-neutral-950">
-                    Who uses it and real-world use cases
-                  </h2>
+              <div className="rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
+                {/* Section Header */}
+                <div className="flex items-center gap-2.5 border-b border-neutral-100 pb-3.5">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600 border border-blue-200/60 shrink-0">
+                    <Users className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h2 className="text-base sm:text-lg font-bold text-neutral-950">
+                      Who uses it and real-world use cases
+                    </h2>
+                    <p className="text-xs text-neutral-500 font-normal">
+                      Who {product.name} is designed for and how teams leverage it
+                    </p>
+                  </div>
                 </div>
 
+                {/* Cards Container */}
                 <div className="space-y-3">
-                  {product.useCases.map((uc, idx) => (
-                    <div key={idx} className="rounded-xl border border-neutral-200 bg-white p-4 space-y-1 transition-all duration-200 hover:border-neutral-200 hover:bg-neutral-100 hover:shadow-sm">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-xs font-bold text-neutral-950">
-                          {uc.title}
-                        </h3>
-                        <span className="text-[10px] font-semibold text-neutral-400 bg-neutral-100 px-2 py-0.5 rounded-md">
-                          {uc.audience}
-                        </span>
+                  {product.useCases.map((uc, idx) => {
+                    const isGenericAudience =
+                      !uc.title ||
+                      uc.title.toLowerCase().includes('target audience') ||
+                      uc.title.toLowerCase().includes('use case');
+                    const audienceText = uc.audience || product.targetAudience;
+                    const personas = parsePersonas(audienceText || uc.description);
+                    const isRedundantAudience =
+                      uc.audience &&
+                      (uc.audience.trim() === uc.description.trim() ||
+                        uc.description.includes(uc.audience));
+
+                    return (
+                      <div
+                        key={idx}
+                        className="rounded-xl border border-neutral-200/90 bg-neutral-50/50 p-4 sm:p-5 space-y-3 transition-all duration-200 hover:border-neutral-300 hover:bg-neutral-50/80"
+                      >
+                        {/* Card Header: Icon + Title + Non-redundant Badge */}
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white border border-neutral-200/80 text-blue-600 shadow-2xs shrink-0">
+                              {isGenericAudience ? (
+                                <Target className="h-3.5 w-3.5 text-blue-600" />
+                              ) : (
+                                <Sparkles className="h-3.5 w-3.5 text-amber-500 fill-amber-400" />
+                              )}
+                            </span>
+                            <h3 className="text-xs sm:text-sm font-bold text-neutral-950 truncate">
+                              {isGenericAudience ? 'Target Audience & Ideal Use Case' : uc.title}
+                            </h3>
+                          </div>
+
+                          {uc.audience && !isRedundantAudience && uc.audience.length < 40 && (
+                            <span className="text-[11px] font-semibold text-neutral-700 bg-white border border-neutral-200 px-2.5 py-0.5 rounded-full shadow-2xs shrink-0">
+                              {uc.audience}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Description in high-contrast readable text */}
+                        <p className="text-xs sm:text-sm text-neutral-700 leading-relaxed font-normal">
+                          {uc.description}
+                        </p>
+
+                        {/* Persona Chips */}
+                        {personas.length > 0 && (
+                          <div className="pt-2 space-y-1.5 border-t border-neutral-200/60">
+                            <span className="text-[10.5px] font-bold text-neutral-500 uppercase tracking-wider block">
+                              Best suited for:
+                            </span>
+                            <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                              {personas.map((persona) => (
+                                <span
+                                  key={persona}
+                                  className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-2.5 py-1 text-xs font-semibold text-neutral-800 shadow-2xs hover:border-blue-300 transition-colors"
+                                >
+                                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                                  <span>{persona}</span>
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      <p className="text-xs text-neutral-400 leading-relaxed">
-                        {uc.description}
-                      </p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}

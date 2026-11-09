@@ -15,6 +15,14 @@ interface CheckoutRequestBody {
   return_url?: string;
   ml_visitor_id?: string;
   ml_session_id?: string;
+  sponsor_id?: string;
+  sponsor_name?: string;
+  sponsor_url?: string;
+  sponsor_logo?: string;
+  sponsor_tagline?: string;
+  sponsor_category?: string;
+  sponsor_product_id?: string;
+  sponsor_email?: string;
 }
 
 serve(async (req: Request) => {
@@ -29,6 +37,16 @@ serve(async (req: Request) => {
 
     const body: CheckoutRequestBody = await req.json();
     const { plan_type, product_name, target_product_id, customer_email, return_url } = body;
+    const sponsorMetadata = {
+      sponsor_id: body.sponsor_id || '',
+      sponsor_name: body.sponsor_name || product_name || '',
+      sponsor_url: body.sponsor_url || '',
+      sponsor_logo: body.sponsor_logo || '',
+      sponsor_tagline: body.sponsor_tagline || '',
+      sponsor_category: body.sponsor_category || '',
+      sponsor_product_id: body.sponsor_product_id || target_product_id || '',
+      sponsor_email: body.sponsor_email || customer_email || '',
+    };
 
     // Read Trackkit attribution IDs from body or request cookies
     const cookieHeader = req.headers.get('cookie') || '';
@@ -90,12 +108,13 @@ serve(async (req: Request) => {
       '1wk': 'https://whop.com/checkout/plan_Ux5pdAxT3WN7D',
       featured_1wk: 'https://whop.com/checkout/plan_YGXtgHZnspc77',
       featured_1mo: 'https://whop.com/checkout/plan_GBN00B27YgYdx',
-      '1mo': 'https://whop.com/checkout/plan_VHCOSyqWd9l9Q',
+      sponsor_1mo: 'https://whop.com/checkout/plan_bUdLJ46TGXi2C',
+      '1mo': 'https://whop.com/checkout/plan_bUdLJ46TGXi2C',
       '3mo': 'https://whop.com/checkout/plan_SMad32AkVoMeu',
       '1yr': 'https://whop.com/checkout/plan_2uumEoGYQUKtb',
     };
 
-    const isDirectCheckout = (url?: string) => Boolean(url && typeof url === 'string' && url.includes('whop.com/checkout/'));
+    const isDirectCheckout = (url?: string) => Boolean(url && typeof url === 'string' && url.includes('whop.com/'));
 
     const customCheckoutUrl =
       (isDirectCheckout(config[`checkout_url_${planKey}`]) ? config[`checkout_url_${planKey}`] : null) ||
@@ -123,6 +142,9 @@ serve(async (req: Request) => {
       if (product_name) parsed.searchParams.set('metadata[product_name]', product_name);
       if (visitorId) parsed.searchParams.set('metadata[ml_visitor_id]', visitorId);
       if (sessionId) parsed.searchParams.set('metadata[ml_session_id]', sessionId);
+      for (const [key, value] of Object.entries(sponsorMetadata)) {
+        if (value) parsed.searchParams.set(`metadata[${key}]`, String(value));
+      }
 
       return new Response(
         JSON.stringify({ checkout_url: parsed.toString() }),
@@ -149,6 +171,7 @@ serve(async (req: Request) => {
               plan_type: plan_type,
               ml_visitor_id: visitorId || '',
               ml_session_id: sessionId || '',
+              ...sponsorMetadata,
             },
             ...(customer_email ? { email: customer_email } : {}),
           }),
@@ -178,6 +201,9 @@ serve(async (req: Request) => {
     if (customer_email) directUrl.searchParams.set('email', customer_email);
     if (visitorId) directUrl.searchParams.set('metadata[ml_visitor_id]', visitorId);
     if (sessionId) directUrl.searchParams.set('metadata[ml_session_id]', sessionId);
+    for (const [key, value] of Object.entries(sponsorMetadata)) {
+      if (value) directUrl.searchParams.set(`metadata[${key}]`, String(value));
+    }
 
     return new Response(
       JSON.stringify({ checkout_url: directUrl.toString() }),

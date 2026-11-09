@@ -100,7 +100,7 @@ export const SponsorShowcaseSection: React.FC<SponsorShowcaseSectionProps> = ({
                 <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
                   <Check className="h-2.5 w-2.5 stroke-[3]" />
                 </div>
-                <span>⭐️ Verified Sponsor partner badge</span>
+                <span>Golden Verified Sponsor partner badge</span>
               </li>
             </ul>
           </div>
@@ -161,7 +161,7 @@ export const SponsorShowcaseSection: React.FC<SponsorShowcaseSectionProps> = ({
                 <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
                   <Check className="h-2.5 w-2.5 stroke-[3]" />
                 </div>
-                <span><strong>Large sponsored banner</strong> in the weekly launch feed</span>
+                <span><strong>24/7 Sticky Rails:</strong> Continuous prominent sidebar exposure</span>
               </li>
               <li className="flex items-center gap-2.5">
                 <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">

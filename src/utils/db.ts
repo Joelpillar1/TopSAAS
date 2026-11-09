@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { Product, Category, Comment, WebsiteSubmission } from '../types';
+import { Product, Category, Comment, WebsiteSubmission, Sponsor, SponsorDraft } from '../types';
 import { getMonthKey, getWeekNumber } from './weeks';
 import { getCached, setCached, invalidateCache, CACHE_TTL } from './cache';
 
@@ -1136,13 +1136,22 @@ export async function getGlobalFeaturedProduct(forceFresh = false): Promise<Feat
     const { data, error } = await supabase
       .from('site_settings')
       .select('key, value')
-      .in('key', ['featured_product_id', 'featured_expires_at', FEATURED_POSITION_KEY, FEATURED_PRODUCTS_KEY, FEATURED_POSITIONS_MAP_KEY]);
+      .in('key', [
+        'featured_product_id',
+        'featured_product',
+        'featured_expires_at',
+        'featured_expiry',
+        FEATURED_POSITION_KEY,
+        FEATURED_PRODUCTS_KEY,
+        'featured_products',
+        FEATURED_POSITIONS_MAP_KEY,
+      ]);
 
     if (!error && data && data.length > 0) {
-      const idRow = data.find((r) => r.key === 'featured_product_id');
-      const expRow = data.find((r) => r.key === 'featured_expires_at');
+      const idRow = data.find((r) => r.key === 'featured_product_id') || data.find((r) => r.key === 'featured_product');
+      const expRow = data.find((r) => r.key === 'featured_expires_at') || data.find((r) => r.key === 'featured_expiry');
       const posRow = data.find((r) => r.key === FEATURED_POSITION_KEY);
-      const idsRow = data.find((r) => r.key === FEATURED_PRODUCTS_KEY);
+      const idsRow = data.find((r) => r.key === FEATURED_PRODUCTS_KEY) || data.find((r) => r.key === 'featured_products');
       const positionsRow = data.find((r) => r.key === FEATURED_POSITIONS_MAP_KEY);
 
       const rawVal = idRow?.value;
@@ -1670,5 +1679,305 @@ export async function setProductSponsorship(
     sponsorExpiresAt: isSponsored ? expiresAt : (now - 1000),
     sponsorContactEmail: email || product.sponsorContactEmail,
     autoRelaunch: product.autoRelaunch,
+  };
+}
+
+// ── Sponsors (dedicated table) ──
+
+const SPONSOR_COLUMNS = [
+  'id',
+  'product_id',
+  'name',
+  'tagline',
+  'url',
+  'logo_url',
+  'category',
+  'contact_email',
+  'tier',
+  'status',
+  'started_at',
+  'expires_at',
+  'paused_remaining_ms',
+  'clicks',
+  'source',
+  'whop_payment_id',
+  'plan_type',
+  'created_at',
+  'updated_at',
+].join(',');
+
+/** Map a Supabase sponsors row to our Sponsor type */
+export const mapDbSponsor = (row: Record<string, unknown>): Sponsor => ({
+  id: row.id as string,
+  productId: (row.product_id as string) || undefined,
+  name: (row.name as string) || 'Sponsor',
+  tagline: (row.tagline as string) || '',
+  url: (row.url as string) || '',
+  logoUrl: (row.logo_url as string) || undefined,
+  category: ((row.category as Category) || 'SaaS') as Category,
+  contactEmail: (row.contact_email as string) || undefined,
+  tier: ((row.tier as Sponsor['tier']) || 'paid') as Sponsor['tier'],
+  status: ((row.status as Sponsor['status']) || 'active') as Sponsor['status'],
+  startedAt: Number(row.started_at) || Date.now(),
+  expiresAt: Number(row.expires_at) || Date.now(),
+  pausedRemainingMs: row.paused_remaining_ms != null ? Number(row.paused_remaining_ms) : undefined,
+  clicks: Number(row.clicks) || 0,
+  source: ((row.source as Sponsor['source']) || 'admin_grant') as Sponsor['source'],
+  whopPaymentId: (row.whop_payment_id as string) || undefined,
+  planType: (row.plan_type as string) || undefined,
+  createdAt: Number(row.created_at) || Date.now(),
+  updatedAt: Number(row.updated_at) || Date.now(),
+});
+
+/** Map a Sponsor to Supabase insert/update format */
+export const toDbSponsor = (sponsor: Sponsor) => ({
+  id: sponsor.id,
+  product_id: sponsor.productId || null,
+  name: sponsor.name,
+  tagline: sponsor.tagline || '',
+  url: sponsor.url,
+  logo_url: sponsor.logoUrl || null,
+  category: sponsor.category || 'SaaS',
+  contact_email: sponsor.contactEmail || null,
+  tier: sponsor.tier || 'paid',
+  status: sponsor.status || 'active',
+  started_at: sponsor.startedAt || Date.now(),
+  expires_at: sponsor.expiresAt || Date.now(),
+  paused_remaining_ms: sponsor.pausedRemainingMs ?? null,
+  clicks: sponsor.clicks ?? 0,
+  source: sponsor.source || 'admin_grant',
+  whop_payment_id: sponsor.whopPaymentId || null,
+  plan_type: sponsor.planType || null,
+  created_at: sponsor.createdAt || Date.now(),
+  updated_at: sponsor.updatedAt || Date.now(),
+});
+
+/** True when a sponsor is currently visible on public rails. */
+export function isLiveSponsor(sponsor: Sponsor | null | undefined, now = Date.now()): boolean {
+  if (!sponsor) return false;
+  return sponsor.status === 'active' && sponsor.expiresAt > now;
+}
+
+/** Load every sponsor row, newest first. */
+export async function loadSponsors(forceFresh = false): Promise<Sponsor[]> {
+  if (!forceFresh) {
+    const cached = getCached<Sponsor[]>('sponsors_list', CACHE_TTL.SPONSORS);
+    if (cached) return cached;
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('sponsors')
+      .select(SPONSOR_COLUMNS)
+      .order('created_at', { ascending: false });
+    if (error || !data) {
+      return getCached<Sponsor[]>('sponsors_list', Infinity) || [];
+    }
+    const mapped = (data as unknown as Record<string, unknown>[]).map(mapDbSponsor);
+    setCached('sponsors_list', mapped);
+    return mapped;
+  } catch {
+    return getCached<Sponsor[]>('sponsors_list', Infinity) || [];
+  }
+}
+
+/** Load a single sponsor by id. */
+export async function loadSponsorById(id: string, forceFresh = false): Promise<Sponsor | null> {
+  const cacheKey = `sponsor_${id}`;
+  if (!forceFresh) {
+    const cached = getCached<Sponsor>(cacheKey, CACHE_TTL.SPONSORS);
+    if (cached) return cached;
+  }
+  try {
+    const { data, error } = await supabase
+      .from('sponsors')
+      .select(SPONSOR_COLUMNS)
+      .eq('id', id)
+      .maybeSingle();
+    if (error || !data) return getCached<Sponsor>(cacheKey, Infinity);
+    const mapped = mapDbSponsor(data as unknown as Record<string, unknown>);
+    setCached(cacheKey, mapped);
+    return mapped;
+  } catch {
+    return getCached<Sponsor>(cacheKey, Infinity);
+  }
+}
+
+/**
+ * Create or update a sponsor. Re-using the same id is intentional: the webhook
+ * and the /payment-success return page can both call this for one payment.
+ */
+export async function createSponsor(draft: SponsorDraft): Promise<Sponsor | null> {
+  const now = Date.now();
+  // Prefer the Whop payment id when no explicit id is supplied, so the webhook
+  // and the return page converge on the same row for direct checkouts.
+  const id =
+    draft.id ||
+    (draft.whopPaymentId ? `spn_${draft.whopPaymentId}` : `spn_${now}_${Math.random().toString(36).slice(2, 8)}`);
+  const existing = await loadSponsorById(id, true);
+
+  const sponsor: Sponsor = {
+    id,
+    productId: draft.productId || existing?.productId,
+    name: draft.name || existing?.name || 'Sponsor',
+    tagline: draft.tagline ?? existing?.tagline ?? '',
+    url: draft.url || existing?.url || '',
+    logoUrl: draft.logoUrl || existing?.logoUrl,
+    category: draft.category || existing?.category || 'SaaS',
+    contactEmail: draft.contactEmail || existing?.contactEmail,
+    tier: draft.tier || existing?.tier || 'paid',
+    status: draft.status || existing?.status || 'active',
+    startedAt: draft.startedAt || existing?.startedAt || now,
+    expiresAt: draft.expiresAt || existing?.expiresAt || now + 30 * 86400 * 1000,
+    pausedRemainingMs: draft.pausedRemainingMs ?? existing?.pausedRemainingMs,
+    clicks: Math.max(existing?.clicks ?? 0, draft.clicks ?? 0),
+    source: draft.source || existing?.source || 'admin_grant',
+    whopPaymentId: draft.whopPaymentId || existing?.whopPaymentId,
+    planType: draft.planType || existing?.planType,
+    createdAt: existing?.createdAt || now,
+    updatedAt: now,
+  };
+
+  invalidateCache('sponsors');
+  invalidateCache(`sponsor_${id}`);
+  try {
+    const { data, error } = await supabase
+      .from('sponsors')
+      .upsert(toDbSponsor(sponsor), { onConflict: 'id' })
+      .select(SPONSOR_COLUMNS)
+      .maybeSingle();
+    if (error) {
+      console.warn('createSponsor note:', error.message);
+      return null;
+    }
+    const mapped = data
+      ? mapDbSponsor(data as unknown as Record<string, unknown>)
+      : sponsor;
+    setCached(`sponsor_${id}`, mapped);
+    return mapped;
+  } catch (err) {
+    console.warn('createSponsor note:', err);
+    return null;
+  }
+}
+
+/** Persist changes to an existing sponsor row. */
+export async function updateSponsor(sponsor: Sponsor): Promise<boolean> {
+  invalidateCache('sponsors');
+  invalidateCache(`sponsor_${sponsor.id}`);
+  try {
+    const { error } = await supabase
+      .from('sponsors')
+      .update(toDbSponsor({ ...sponsor, updatedAt: Date.now() }))
+      .eq('id', sponsor.id);
+    if (error) {
+      console.warn('updateSponsor note:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('updateSponsor note:', err);
+    return false;
+  }
+}
+
+/** Mark a sponsor as ended without deleting its history. */
+export async function endSponsor(sponsorId: string): Promise<boolean> {
+  invalidateCache('sponsors');
+  invalidateCache(`sponsor_${sponsorId}`);
+  try {
+    const { error } = await supabase
+      .from('sponsors')
+      .update({ status: 'ended', updated_at: Date.now() })
+      .eq('id', sponsorId);
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+/** End every sponsor linked to a product (used when a product is delisted or featured). */
+export async function endSponsorsForProduct(productId: string): Promise<void> {
+  invalidateCache('sponsors');
+  try {
+    await supabase
+      .from('sponsors')
+      .update({ status: 'ended', updated_at: Date.now() })
+      .or(`product_id.eq.${productId},id.eq.${productId}`);
+  } catch { }
+}
+
+/** Pause a live sponsor or resume a paused one, freezing the remaining time. */
+export async function toggleSponsorPause(sponsorId: string): Promise<Sponsor | null> {
+  const current = await loadSponsorById(sponsorId, true);
+  if (!current) return null;
+
+  const now = Date.now();
+  const next: Sponsor = current.status === 'paused'
+    ? {
+      ...current,
+      status: 'active',
+      startedAt: now,
+      expiresAt: now + (current.pausedRemainingMs && current.pausedRemainingMs > 0
+        ? current.pausedRemainingMs
+        : 7 * 86400 * 1000),
+      pausedRemainingMs: undefined,
+      updatedAt: now,
+    }
+    : {
+      ...current,
+      status: 'paused',
+      pausedRemainingMs: Math.max(0, current.expiresAt - now),
+      updatedAt: now,
+    };
+
+  const ok = await updateSponsor(next);
+  return ok ? next : null;
+}
+
+/** Increment outbound clicks for a sponsor and return the new count. */
+export async function incrementSponsorClicks(sponsorId: string): Promise<number | null> {
+  const current = await loadSponsorById(sponsorId, true);
+  if (!current) return null;
+  const nextClicks = (current.clicks || 0) + 1;
+  invalidateCache('sponsors');
+  invalidateCache(`sponsor_${sponsorId}`);
+  try {
+    const { error } = await supabase
+      .from('sponsors')
+      .update({ clicks: nextClicks, updated_at: Date.now() })
+      .eq('id', sponsorId);
+    return error ? null : nextClicks;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Adapter for the existing sponsor rail UI, which renders Product cards.
+ * The returned object is display-only and is never written to `products`.
+ */
+export function sponsorToDisplayProduct(sponsor: Sponsor): Product {
+  return {
+    id: sponsor.id,
+    rank: 0,
+    name: sponsor.name,
+    tagline: sponsor.tagline,
+    url: sponsor.url,
+    logoUrl: sponsor.logoUrl,
+    category: sponsor.category,
+    upvotes: 0,
+    clicks: sponsor.clicks,
+    createdAt: sponsor.startedAt,
+    updatedAt: sponsor.updatedAt,
+    verified: true,
+    isSponsored: true,
+    sponsorTier: sponsor.tier,
+    sponsorStartedAt: sponsor.startedAt,
+    sponsorExpiresAt: sponsor.expiresAt,
+    sponsorClicks: sponsor.clicks,
+    sponsorContactEmail: sponsor.contactEmail,
+    isSponsorPaused: sponsor.status === 'paused',
+    sponsorPausedRemainingMs: sponsor.pausedRemainingMs,
   };
 }

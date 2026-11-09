@@ -9,6 +9,8 @@
 insert into public.whop_payments_config (key, value, description) values
   ('checkout_url_sponsor_1wk', 'https://whop.com/checkout/plan_Ux5pdAxT3WN7D', 'Whop 1-Week Sponsor ($10/wk) Direct Checkout'),
   ('checkout_url_1wk', 'https://whop.com/checkout/plan_Ux5pdAxT3WN7D', 'Whop 1-Week Sponsor ($10/wk) Direct Checkout'),
+  ('checkout_url_sponsor_1mo', 'https://whop.com/checkout/plan_bUdLJ46TGXi2C', 'Whop 1-Month Sponsor Direct Checkout'),
+  ('checkout_url_1mo', 'https://whop.com/checkout/plan_bUdLJ46TGXi2C', 'Whop 1-Month Sponsor Direct Checkout'),
   ('checkout_url_featured_1wk', 'https://whop.com/checkout/plan_YGXtgHZnspc77', 'Whop 1-Week Featured Spot ($15/wk) Direct Checkout'),
   ('checkout_url_featured_1mo', 'https://whop.com/checkout/plan_GBN00B27YgYdx', 'Whop 1-Month Featured Spot ($39/mo) Direct Checkout'),
   ('checkout_url_onetime', 'https://whop.com/checkout/plan_B4wY8ei9eab1S', 'Whop $19 Per Product Pass / Verified Launch Direct Checkout'),

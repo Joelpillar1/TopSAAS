@@ -16,10 +16,11 @@ import {
   Image as ImageIcon,
   FileText,
   Star,
+  Calendar,
 } from 'lucide-react';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import confetti from 'canvas-confetti';
-import { Product } from '../types';
+import { Product, SponsorDraft, SponsorTier } from '../types';
 import { playSound } from '../utils/sound';
 import { redirectToCheckout, PlanType } from '../utils/whop';
 import { ProductLogo } from './ProductLogo';
@@ -37,8 +38,8 @@ interface FeaturedSpotModalProps {
   mode?: 'featured' | 'sponsor';
   featuredProductIds?: string[];
   onActivateSponsor?: (
-    product: Product,
-    tier: 'trial' | 'paid' | '1wk' | '1mo' | '3mo' | '1yr',
+    sponsor: SponsorDraft,
+    tier: 'trial' | 'paid' | '1mo' | '3mo' | '1yr',
     email?: string
   ) => Promise<void> | void;
   onActivateFeatured?: (
@@ -60,6 +61,7 @@ export interface SponsorPlanItem {
   discountBadge?: string;
   badge: string;
   duration: string;
+  originalPrice?: string;
   rateNote?: string;
   popular?: boolean;
   bestValue?: boolean;
@@ -72,12 +74,14 @@ export const FEATURED_PLANS: SponsorPlanItem[] = [
   {
     id: '1wk',
     name: '1-Week Featured Spot',
-    cardTitle: '1 Week',
+    cardTitle: '7 days',
     price: 15,
     priceLabel: '$15',
     period: '/week',
+    discountBadge: 'Starter',
     badge: 'Popular',
-    duration: '7 Days',
+    duration: '7 days',
+    originalPrice: '$20',
     rateNote: '$15 / week',
     description: 'Pinned top position directly in the product feed above normal cards for 7 days',
     features: [
@@ -92,13 +96,14 @@ export const FEATURED_PLANS: SponsorPlanItem[] = [
   {
     id: '1mo',
     name: '1-Month Featured Spot',
-    cardTitle: '1 Month',
+    cardTitle: '30 days',
     price: 39,
     priceLabel: '$39',
     period: '/month',
-    discountBadge: 'Save 35% • $9.75/wk',
+    discountBadge: '-35%',
     badge: 'Best Value',
-    duration: '30 Days',
+    duration: '30 days',
+    originalPrice: '$60',
     rateNote: '$39 / month ($9.75/wk)',
     popular: true,
     description: 'Continuous 30-day top pinned spotlight in the main product cards feed',
@@ -110,44 +115,26 @@ export const FEATURED_PLANS: SponsorPlanItem[] = [
     ],
     cta: 'Get 1 Month — $39',
   },
-  {
-    id: 'trial',
-    name: '7-Day Free Featured Test Drive',
-    cardTitle: '7 Days',
-    price: 0,
-    priceLabel: 'FREE',
-    period: '7 days',
-    discountBadge: '100% Free',
-    badge: 'Free Test Drive',
-    duration: '7 Days',
-    rateNote: '100% Free',
-    description: 'Try the Featured Spot above product cards free for 7 days',
-    features: [
-      'Pinned placement above standard product cards',
-      '7 days exposure to thousands of active SaaS visitors',
-      'High-visibility launch exposure',
-      'No credit card required — 100% free',
-    ],
-    cta: 'Claim Free 7-Day Spot',
-  },
 ];
 
 export const SPONSOR_PLANS: SponsorPlanItem[] = [
   {
     id: '1wk',
     name: '1-Week Sidebar Sponsor',
-    cardTitle: '1 Week',
+    cardTitle: '7 days',
     price: 10,
     priceLabel: '$10',
     period: '/week',
+    discountBadge: 'Starter',
     badge: 'Starter',
-    duration: '7 Days',
+    duration: '7 days',
+    originalPrice: '$15',
     rateNote: '$10 / week',
     description: '24/7 Sticky sidebar rails on Homepage and Product pages for 7 days',
     features: [
       'Visible on every page in the right sidebar',
       '24/7 Sticky sidebar rails on Homepage and Product Details',
-      '⭐️ Verified Sponsor badge on partner cards',
+      'Golden Verified Sponsor badge on partner cards',
       'Direct DoFollow SEO backlink',
     ],
     cta: 'Get 1 Week — $10',
@@ -155,45 +142,67 @@ export const SPONSOR_PLANS: SponsorPlanItem[] = [
   {
     id: '1mo',
     name: '1-Month Sidebar Sponsor',
-    cardTitle: '1 Month',
+    cardTitle: '30 days',
     price: 29,
     priceLabel: '$29',
     period: '/month',
-    discountBadge: 'Save 28% • $7.25/wk',
+    discountBadge: '-28%',
     badge: 'Most Popular',
-    duration: '30 Days',
+    duration: '30 days',
+    originalPrice: '$40',
     rateNote: '$29 / month ($7.25/wk)',
     popular: true,
-    description: 'Persistent 30-day sticky sidebar rails + category top spotlight',
+    description: 'Persistent 30-day sticky sidebar rails across all pages',
     features: [
       'Visible on every page in the right sidebar (30 days)',
-      'Large sponsored banner in the weekly launch feed',
-      'Pinned top placement in your product category',
-      '⭐️ Verified Sponsor badge on partner cards',
+      '24/7 Sticky sidebar rails across Homepage and all Detail pages',
+      'Golden Verified Sponsor badge on partner cards',
+      'Direct DoFollow SEO backlink',
     ],
     cta: 'Get Monthly — $29',
   },
-  {
-    id: 'trial',
-    name: '7-Day Free Sponsor Test Drive',
-    cardTitle: '7 Days',
-    price: 0,
-    priceLabel: 'FREE',
-    period: '7 days',
-    discountBadge: '100% Free',
-    badge: 'Free Launch Spotlight',
-    duration: '7 Days',
-    rateNote: '100% Free',
-    description: 'Spotlight your product on sticky sidebar rails free for 7 days',
-    features: [
-      'Sticky sidebar rails placement on Homepage & Details',
-      'Free 7-day exposure to thousands of active SaaS builders',
-      'Direct outbound click & visitor tracking',
-      'No credit card required — 100% free',
-    ],
-    cta: 'Claim Free 7-Day Spot',
-  },
 ];
+
+function planDurationDays(planId: SponsorPlanId): number {
+  if (planId === '1wk' || planId === 'trial') return 7;
+  if (planId === '3mo') return 90;
+  if (planId === '1yr') return 365;
+  return 30;
+}
+
+function planSponsorTier(planId: SponsorPlanId): SponsorTier {
+  if (planId === 'trial') return 'trial';
+  if (planId === '3mo') return '3mo';
+  if (planId === '1yr') return '1yr';
+  if (planId === '1wk') return 'paid';
+  return '1mo';
+}
+
+function buildSponsorDraft(
+  product: Product,
+  email: string | undefined,
+  planId: SponsorPlanId,
+  source: 'trial' | 'whop'
+): SponsorDraft {
+  const now = Date.now();
+  const days = planDurationDays(planId);
+  return {
+    id: `spn_${now}_${Math.random().toString(36).slice(2, 8)}`,
+    productId: product.isSponsorOnly ? undefined : product.id,
+    name: product.name,
+    tagline: product.tagline,
+    url: product.url,
+    logoUrl: product.logoUrl,
+    category: product.category,
+    contactEmail: email || product.sponsorContactEmail,
+    tier: planSponsorTier(planId),
+    status: 'active',
+    startedAt: now,
+    expiresAt: now + days * 86400 * 1000,
+    clicks: 0,
+    source,
+  };
+}
 
 export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
   isOpen,
@@ -211,7 +220,7 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
   const [step, setStep] = useState<'product' | 'plan' | 'confirm'>('product');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isNewProduct, setIsNewProduct] = useState(false);
-  const [selectedPlanId, setSelectedPlanId] = useState<SponsorPlanId>(initialTier || '3mo');
+  const [selectedPlanId, setSelectedPlanId] = useState<SponsorPlanId>(initialTier || '1mo');
   const [contactEmail, setContactEmail] = useState(user?.email || '');
   const [productSearch, setProductSearch] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -341,7 +350,7 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
     setStep('product');
     setSelectedProduct(null);
     setIsNewProduct(false);
-    setSelectedPlanId('3mo');
+    setSelectedPlanId('1mo');
     setPaymentError(null);
     setSuccessMessage(null);
     setFormError(null);
@@ -368,15 +377,16 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
       const email = contactEmail.trim() || user?.email || undefined;
       let targetProduct = selectedProduct;
 
-      // If it's a new product, save it to Supabase first upon activating trial
-      if (isNewProduct) {
+      // Featured placements still reference a product listing. Sponsor
+      // placements never write a product row.
+      if (isNewProduct && mode === 'featured') {
         const prodToInsert: Product = {
           ...selectedProduct,
-          isSponsored: mode === 'sponsor',
-          isSponsorOnly: true,
-          sponsorTier: mode === 'sponsor' ? 'trial' : undefined,
-          sponsorStartedAt: mode === 'sponsor' ? Date.now() : undefined,
-          sponsorExpiresAt: mode === 'sponsor' ? Date.now() + 7 * 86400 * 1000 : undefined,
+          isSponsored: false,
+          isSponsorOnly: false,
+          sponsorTier: undefined,
+          sponsorStartedAt: undefined,
+          sponsorExpiresAt: undefined,
           sponsorContactEmail: email,
         };
         await insertProductDirect(prodToInsert);
@@ -392,7 +402,7 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
         );
       } else {
         if (onActivateSponsor) {
-          await onActivateSponsor(targetProduct, 'trial', email);
+          await onActivateSponsor(buildSponsorDraft(targetProduct, email, 'trial', 'trial'), 'trial', email);
         }
         setSuccessMessage(
           `Congratulations! ${targetProduct.name} is now spotlighted as a sponsor for 7 days.`
@@ -423,24 +433,44 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
           ? (selectedPlan.id === '1wk' ? 'featured_1wk' : 'featured_1mo')
           : (selectedPlan.id === '1wk' ? 'sponsor_1wk' : selectedPlan.id === '3mo' ? '3mo' : selectedPlan.id === '1yr' ? '1yr' : 'sponsor_1mo');
 
-      // If this is a new product that was entered via the form, stage it in local storage
-      // so PaymentSuccess.tsx can insert it into Supabase upon return from successful Whop checkout.
-      if (isNewProduct) {
-        let durationDays = 30;
-        if (selectedPlan.id === '1wk') durationDays = 7;
-        else if (selectedPlan.id === '3mo') durationDays = 90;
-        else if (selectedPlan.id === '1yr') durationDays = 365;
+      if (mode === 'sponsor') {
+        // Stage the sponsor record. PaymentSuccess and the webhook both upsert
+        // the same id, so the paid placement survives even if the tab closes.
+        const sponsorDraft = buildSponsorDraft(selectedProduct, email, selectedPlan.id, 'whop');
+        localStorage.setItem('topsaas_pending_sponsor', JSON.stringify(sponsorDraft));
 
+        await redirectToCheckout({
+          planType,
+          productName: selectedProduct.name,
+          targetProductId: sponsorDraft.productId,
+          customerEmail: email,
+          placement: 'sponsor',
+          sponsorId: sponsorDraft.id,
+          sponsorName: sponsorDraft.name,
+          sponsorUrl: sponsorDraft.url,
+          sponsorLogo: sponsorDraft.logoUrl,
+          sponsorTagline: sponsorDraft.tagline,
+          sponsorCategory: sponsorDraft.category,
+          sponsorProductId: sponsorDraft.productId,
+          sponsorEmail: sponsorDraft.contactEmail,
+        });
+        return;
+      }
+
+      // Featured placements reference a real product listing.
+      if (isNewProduct) {
+        const durationDays = planDurationDays(selectedPlan.id);
         const pendingProduct: Product = {
           ...selectedProduct,
-          isSponsored: mode === 'sponsor',
-          isSponsorOnly: true,
-          sponsorTier: mode === 'sponsor' ? (selectedPlan.id === '3mo' ? '3mo' : selectedPlan.id === '1yr' ? '1yr' : 'paid') : undefined,
-          sponsorStartedAt: Date.now(),
-          sponsorExpiresAt: Date.now() + durationDays * 86400 * 1000,
+          isSponsored: false,
+          isSponsorOnly: false,
+          sponsorTier: undefined,
+          sponsorStartedAt: undefined,
+          sponsorExpiresAt: undefined,
           sponsorContactEmail: email,
         };
         localStorage.setItem('topsaas_featured_pending_new_product', JSON.stringify(pendingProduct));
+        localStorage.setItem('topsaas_featured_pending_new_product_days', String(durationDays));
       }
 
       await redirectToCheckout({
@@ -448,6 +478,7 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
         productName: selectedProduct.name,
         targetProductId: selectedProduct.id,
         customerEmail: email,
+        placement: 'featured',
       });
     } catch (err: unknown) {
       console.error('Payment checkout error:', err);
@@ -457,15 +488,13 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
       localStorage.removeItem('topsaas_featured_pending_plan');
       setPaymentError(
         (err as Error)?.message ||
-          'Could not start checkout. Please try again or contact support.'
+        'Could not start checkout. Please try again or contact support.'
       );
       setIsProcessing(false);
     }
   };
 
   if (!isOpen) return null;
-
-  const paidPlans = availablePlans.filter((p) => p.id !== 'trial');
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md overflow-y-auto font-sans">
@@ -547,13 +576,12 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
                         setProductMode('new');
                         setFormError(null);
                       }}
-                      className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                        productMode === 'new'
+                      className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${productMode === 'new'
                           ? 'bg-white text-neutral-950 shadow-xs border border-neutral-200/60'
                           : 'text-neutral-500 hover:text-neutral-950'
-                      }`}
+                        }`}
                     >
-                      + Add New App to {mode === 'featured' ? 'Feature' : 'Sponsor'}
+                      + Add New App
                     </button>
                     <button
                       type="button"
@@ -562,11 +590,10 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
                         setProductMode('existing');
                         setFormError(null);
                       }}
-                      className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                        productMode === 'existing'
+                      className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${productMode === 'existing'
                           ? 'bg-white text-neutral-950 shadow-xs border border-neutral-200/60'
                           : 'text-neutral-500 hover:text-neutral-950'
-                      }`}
+                        }`}
                     >
                       Choose from Directory
                     </button>
@@ -724,11 +751,10 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
                                   if (isAlreadyActive) return;
                                   handleSelectProduct(p);
                                 }}
-                                className={`flex items-center justify-between p-3 rounded-xl border transition-all text-left ${
-                                  isAlreadyActive
+                                className={`flex items-center justify-between p-3 rounded-xl border transition-all text-left ${isAlreadyActive
                                     ? 'border-neutral-200 bg-neutral-50/70 opacity-60 cursor-not-allowed'
                                     : 'border-neutral-200 bg-white hover:border-blue-500/50 hover:bg-neutral-50 cursor-pointer group'
-                                }`}
+                                  }`}
                               >
                                 <div className="flex items-center gap-3 min-w-0">
                                   <ProductLogo
@@ -751,8 +777,8 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
                                     <p className="text-[11px] text-neutral-500 truncate max-w-sm">
                                       {isAlreadyActive
                                         ? (mode === 'featured'
-                                            ? 'This product is already active in the featured spot'
-                                            : 'This product is already live on the homepage sponsor rails')
+                                          ? 'This product is already active in the featured spot'
+                                          : 'This product is already live on the homepage sponsor rails')
                                         : p.tagline}
                                     </p>
                                   </div>
@@ -774,29 +800,29 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
                 </div>
               )}
 
-              {/* Step 2: Choose Plan (Exact layout of Image 2) */}
+              {/* Step 2: Choose Plan (Horizontal list matching attached reference) */}
               {step === 'plan' && selectedProduct && (
                 <div className="space-y-4">
-                  {/* Header */}
-                  <div className="space-y-1">
+                  {/* Step Header */}
+                  <div className="space-y-2">
                     <div className="flex items-center justify-between flex-wrap gap-2">
-                      <h2 className="text-xl sm:text-2xl font-black text-neutral-950 tracking-tight">
-                        {mode === 'featured' ? 'Featured Spotlight Plans' : 'Sponsorship Plans'}
-                      </h2>
+                      <div className="flex items-center gap-2.5">
+                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-white text-xs font-black shrink-0 shadow-2xs">
+                          1
+                        </span>
+                        <h2 className="text-base sm:text-lg font-black text-neutral-950 tracking-tight">
+                          How long
+                        </h2>
+                      </div>
                       <span className="text-[11px] text-blue-700 font-bold bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">
                         {selectedProduct.name}
                       </span>
                     </div>
-                    <p className="text-xs text-neutral-500 leading-relaxed">
-                      {mode === 'featured'
-                        ? 'Choose the plan that fits your budget. Your product will be pinned in the Featured Spot directly above the directory cards.'
-                        : 'Choose the plan that fits your budget. These are one-time payments, not a recurring subscription.'}
-                    </p>
                   </div>
 
-                  {/* Price Cards in a Row (2 side by side) */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg mx-auto w-full">
-                    {paidPlans.map((plan) => {
+                  {/* Horizontal List of Plan Cards (Weekly, Monthly) */}
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4 w-full pt-3">
+                    {availablePlans.map((plan) => {
                       const isSelected = selectedPlanId === plan.id;
                       return (
                         <div
@@ -807,145 +833,145 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
                             playSound('click', soundEnabled);
                             setSelectedPlanId(plan.id);
                           }}
-                          className={`rounded-2xl p-4 text-center flex flex-col justify-between transition-all cursor-pointer relative ${
-                            isSelected
-                              ? 'border-2 border-blue-600 bg-blue-50/20 shadow-xs ring-2 ring-blue-600/10'
-                              : 'border border-neutral-200 bg-white hover:border-neutral-300'
-                          }`}
+                          className={`rounded-2xl p-3 sm:p-4 text-left flex flex-col justify-between transition-all duration-200 cursor-pointer relative select-none ${isSelected
+                              ? plan.popular
+                                ? 'border-2 border-blue-600 bg-gradient-to-b from-blue-50/70 via-blue-50/40 to-white shadow-md ring-4 ring-blue-600/10'
+                                : 'border-2 border-blue-600 bg-blue-50/40 shadow-xs ring-2 ring-blue-600/10'
+                              : plan.popular
+                                ? 'border-2 border-blue-200/90 bg-gradient-to-b from-blue-50/30 via-white to-white hover:border-blue-400 hover:shadow-xs'
+                                : 'border border-neutral-200 bg-white hover:border-neutral-300 hover:bg-neutral-50/60'
+                            }`}
                         >
-                          <div className="space-y-2 mb-3">
-                            <h3 className="text-xs sm:text-sm font-bold text-neutral-900">
-                              {plan.cardTitle}
-                            </h3>
-                            <div className="flex items-baseline justify-center gap-0.5">
-                              <span className="text-2xl sm:text-3xl font-black text-neutral-950 font-mono-num">
-                                {plan.priceLabel}
-                              </span>
-                              <span className="text-xs font-semibold text-neutral-500">
-                                {plan.period}
+                          {/* Most Popular Floating Badge for 30-day plan */}
+                          {plan.popular && (
+                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10 whitespace-nowrap pointer-events-none">
+                              <span className="inline-flex items-center gap-1 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 text-white text-[9px] sm:text-[9.5px] font-black uppercase tracking-wider px-2 sm:px-2.5 py-0.5 rounded-full shadow-md ring-2 ring-white">
+                                <Sparkles className="h-2.5 w-2.5 text-amber-300 fill-amber-300" />
+                                <span>Most Popular</span>
                               </span>
                             </div>
+                          )}
+
+                          {/* Duration on left, Discount/Badge on right */}
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="text-xs sm:text-[13px] font-bold text-neutral-900 truncate">
+                              {plan.duration}
+                            </span>
                             {plan.discountBadge && (
-                              <p className="text-[11px] font-bold text-blue-600">
+                              <span
+                                className={`text-[9.5px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-md shrink-0 ${plan.popular
+                                    ? 'bg-blue-100 text-blue-700 font-extrabold'
+                                    : isSelected
+                                      ? 'bg-blue-100 text-blue-800'
+                                      : 'bg-neutral-100 text-neutral-700'
+                                  }`}
+                              >
                                 {plan.discountBadge}
-                              </p>
+                              </span>
                             )}
                           </div>
 
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              playSound('click', soundEnabled);
-                              setSelectedPlanId(plan.id);
-                            }}
-                            className={`w-full rounded-xl py-2 px-3 text-xs font-bold transition-all cursor-pointer ${
-                              isSelected
-                                ? 'bg-blue-600 text-white shadow-xs hover:bg-blue-500'
-                                : 'border border-neutral-200 bg-white text-neutral-800 hover:bg-neutral-50 hover:border-neutral-300'
-                            }`}
-                          >
-                            {plan.cta}
-                          </button>
+                          {/* Large Price in center */}
+                          <div className="my-1.5 sm:my-2">
+                            <span className="text-xl sm:text-2xl font-black text-neutral-950 font-mono-num tracking-tight">
+                              {plan.priceLabel}
+                            </span>
+                          </div>
+
+                          {/* Strikethrough comparison price at bottom */}
+                          <div className="flex items-center justify-between gap-1 min-h-[16px]">
+                            <div className="flex items-center gap-1.5">
+                              {plan.originalPrice ? (
+                                <span className="text-xs text-neutral-400 line-through font-mono-num font-medium">
+                                  {plan.originalPrice}
+                                </span>
+                              ) : (
+                                <span className="text-[10.5px] text-neutral-400 font-medium">
+                                  {plan.period}
+                                </span>
+                              )}
+                            </div>
+                            {plan.popular && (
+                              <span className="text-[9.5px] font-bold text-emerald-600 bg-emerald-50 px-1 py-0.2 rounded">
+                                Save 28%
+                              </span>
+                            )}
+                          </div>
                         </div>
                       );
                     })}
                   </div>
 
-                  {/* 7-Day Free Test Drive banner option */}
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => {
-                      playSound('click', soundEnabled);
-                      setSelectedPlanId('trial');
-                    }}
-                    className={`p-3 rounded-xl border flex items-center justify-between text-left transition-all cursor-pointer ${
-                      selectedPlanId === 'trial'
-                        ? 'border-2 border-emerald-600 bg-emerald-50/30 ring-2 ring-emerald-500/10'
-                        : 'border-neutral-200 bg-neutral-50/60 hover:bg-neutral-100/70 hover:border-neutral-300'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100 text-emerald-800 font-black text-[10px] shrink-0">
-                        FREE
-                      </span>
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold text-neutral-950 flex items-center gap-1.5">
-                          <span>{mode === 'featured' ? '7-Day Free Featured Spotlight' : '7-Day Free Sponsor Test Drive'}</span>
-                          <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded">
-                            No Card Required
-                          </span>
-                        </p>
-                        <p className="text-[11px] text-neutral-500 truncate">
-                          {mode === 'featured'
-                            ? 'Pin your product in the Featured Spot above directory cards free for 7 days'
-                            : 'Test sponsor rails free for 7 days before upgrading to a paid tier'}
-                        </p>
-                      </div>
-                    </div>
-                    <span
-                      className={`text-xs font-bold px-3 py-1 rounded-lg shrink-0 ${
-                        selectedPlanId === 'trial'
-                          ? 'bg-emerald-600 text-white'
-                          : 'border border-neutral-200 bg-white text-neutral-700'
-                      }`}
-                    >
-                      {selectedPlanId === 'trial' ? 'Selected' : 'Claim Free'}
+                  {/* Activation Info Banner */}
+                  <div className="flex items-center gap-2 text-xs text-neutral-600 bg-neutral-100/70 border border-neutral-200/80 rounded-xl px-3.5 py-2.5">
+                    <Calendar className="h-4 w-4 text-neutral-500 shrink-0" />
+                    <span className="font-medium">
+                      Goes live immediately upon successful checkout.
                     </span>
                   </div>
 
-                  {/* Dynamic Package Details Container (At the bottom of cards, just like Image 2) */}
-                  <div className="rounded-2xl border border-neutral-200 bg-neutral-50/70 p-4 sm:p-5 space-y-3.5">
+                  {/* Selected Plan Details & Inclusions Container */}
+                  <div className="rounded-2xl border border-neutral-200 bg-neutral-50/70 p-3.5 sm:p-4 space-y-2.5">
                     <div className="flex items-center justify-between flex-wrap gap-1">
-                      <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-900">
-                        {selectedPlan.name} Includes:
-                      </h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-900">
+                          {selectedPlan.name} Includes:
+                        </h3>
+                        {selectedPlan.popular && (
+                          <span className="inline-flex items-center gap-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[9.5px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full shadow-2xs">
+                            <Sparkles className="h-2.5 w-2.5 text-amber-300 fill-amber-300" />
+                            <span>Most Popular</span>
+                          </span>
+                        )}
+                      </div>
                       <span className="text-[11px] font-bold text-blue-700 bg-white px-2 py-0.5 rounded-full border border-neutral-200">
                         {selectedPlan.duration} Active Visibility
                       </span>
                     </div>
 
-                    {/* Features grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                      <div className="flex items-center gap-2 text-neutral-700">
-                        <CheckCircle2 className="h-4 w-4 text-blue-600 shrink-0" />
-                        <span>Homepage sidebar placement</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-neutral-700">
-                        <CheckCircle2 className="h-4 w-4 text-blue-600 shrink-0" />
-                        <span>Visible on top hero sponsor rails</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-neutral-700">
-                        <CheckCircle2 className="h-4 w-4 text-blue-600 shrink-0" />
-                        <span>Direct traffic to your website</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-neutral-700">
-                        <CheckCircle2 className="h-4 w-4 text-blue-600 shrink-0" />
-                        <span>Outbound visitor click tracker</span>
-                      </div>
+                    <div className="flex flex-col gap-2 text-xs">
                       {selectedPlan.features.map((feat) => (
-                        <div key={feat} className="flex items-center gap-2 text-neutral-900 font-medium">
-                          <CheckCircle2 className="h-4 w-4 text-blue-600 shrink-0" />
-                          <span>{feat}</span>
+                        <div key={feat} className="flex items-center gap-2 text-neutral-800 min-w-0">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+                          <span className="whitespace-nowrap truncate">{feat}</span>
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  {/* Main Continue Button */}
-                  <button
-                    type="button"
-                    onClick={handleProceedToConfirm}
-                    className="w-full btn-primary py-3 px-4 text-xs font-bold flex items-center justify-center gap-2 shadow-sm"
-                  >
-                    <span>
-                      {selectedPlan.price === 0
-                        ? 'Continue with 7-Day Free Test Drive'
-                        : `Continue with ${selectedPlan.name} ($${selectedPlan.price})`}
-                    </span>
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
+                  {/* Bottom Bar: Duration • Discount | Price Strikethrough | Continue button */}
+                  <div className="pt-3 border-t border-neutral-200 flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 text-xs text-neutral-500 font-medium">
+                        <span>{selectedPlan.duration}</span>
+                        {selectedPlan.discountBadge && (
+                          <>
+                            <span>•</span>
+                            <span className="text-blue-600 font-bold">{selectedPlan.discountBadge}</span>
+                          </>
+                        )}
+                      </div>
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="text-xl sm:text-2xl font-black text-neutral-950 font-mono-num">
+                          {selectedPlan.priceLabel}
+                        </span>
+                        {selectedPlan.originalPrice && (
+                          <span className="text-xs sm:text-sm text-neutral-400 line-through font-mono-num">
+                            {selectedPlan.originalPrice}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleProceedToConfirm}
+                      className="btn-primary py-2.5 px-5 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-xs shrink-0 rounded-xl cursor-pointer"
+                    >
+                      <span>Continue to payment</span>
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -957,11 +983,7 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
                       Confirm Placement
                     </h2>
                     <p className="text-xs text-neutral-500 mt-1">
-                      {selectedPlanId === 'trial'
-                        ? (mode === 'featured'
-                            ? 'Activate your complimentary 7-day featured spot above the directory cards'
-                            : 'Activate your complimentary 7-day sponsor placement')
-                        : 'Review order summary and proceed to checkout'}
+                      Review order summary and proceed to checkout
                     </p>
                   </div>
 
@@ -1004,7 +1026,7 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
                       <div className="border-t border-neutral-100 pt-2 flex items-center justify-between">
                         <span className="text-xs font-bold text-neutral-950">Total Due Today</span>
                         <span className="text-xl font-black text-neutral-950 font-mono-num">
-                          {selectedPlan.price === 0 ? 'FREE ($0)' : `$${selectedPlan.price}`}
+                          ${selectedPlan.price}
                         </span>
                       </div>
                     </div>
@@ -1036,53 +1058,29 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
                   )}
 
                   {/* Action button */}
-                  {selectedPlanId === 'trial' ? (
-                    <button
-                      type="button"
-                      data-ml-goal="start_trial"
-                      onClick={handleActivateTrial}
-                      disabled={isProcessing}
-                      className="w-full btn-primary py-3 px-4 text-xs font-bold disabled:opacity-60 disabled:cursor-not-allowed justify-center"
-                    >
-                      {isProcessing ? (
-                        <>
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          <span>Activating placement…</span>
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="h-3.5 w-3.5 text-amber-400" />
-                          <span>Activate 7-Day Free Sponsor Spot</span>
-                        </>
-                      )}
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      data-ml-goal="checkout_click"
-                      data-ml-goal-plan={selectedPlan.id}
-                      onClick={handleProceedPayment}
-                      disabled={isProcessing}
-                      className="w-full btn-primary py-3 px-4 text-xs font-bold disabled:opacity-60 disabled:cursor-not-allowed justify-center"
-                    >
-                      {isProcessing ? (
-                        <>
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          <span>Redirecting to checkout…</span>
-                        </>
-                      ) : (
-                        <>
-                          <CreditCard className="h-3.5 w-3.5" />
-                          <span>Proceed to Payment — ${selectedPlan.price}</span>
-                        </>
-                      )}
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    data-ml-goal="checkout_click"
+                    data-ml-goal-plan={selectedPlan.id}
+                    onClick={handleProceedPayment}
+                    disabled={isProcessing}
+                    className="w-full btn-primary py-3 px-4 text-xs font-bold disabled:opacity-60 disabled:cursor-not-allowed justify-center"
+                  >
+                    {isProcessing ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        <span>Redirecting to checkout…</span>
+                      </>
+                    ) : (
+                      <>
+                        <CreditCard className="h-3.5 w-3.5" />
+                        <span>Proceed to Payment — ${selectedPlan.price}</span>
+                      </>
+                    )}
+                  </button>
 
                   <p className="text-center text-[10px] text-neutral-500">
-                    {selectedPlanId === 'trial'
-                      ? 'Instant activation • Cancel or extend anytime'
-                      : 'Secure checkout powered by Whop (Cards, Apple Pay, Google Pay, Crypto)'}
+                    Secure checkout powered by Whop (Cards, Apple Pay, Google Pay, Crypto)
                   </p>
                 </div>
               )}

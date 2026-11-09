@@ -218,7 +218,7 @@ export const SponsorTile: React.FC<SponsorTileProps> = ({
         <div className="min-w-0 flex-1 py-0.5">
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="truncate text-[15px] font-bold tracking-tight text-neutral-950 sm:text-base group-hover:text-blue-600 transition-colors">
-              The featured spot is open <span className="text-emerald-600 font-semibold text-xs sm:text-[13px]">(7 days Free)</span>
+              The featured spot is open
             </h3>
             <span className="inline-flex shrink-0 items-center rounded-lg border border-blue-200 bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-600 select-none">
               Featured

@@ -12,7 +12,7 @@ export const WHOP_LINKS = {
 
   // Sponsor Spot (Sidebar Rails: $10/wk & $29/mo)
   sponsor1wk: 'https://whop.com/checkout/plan_Ux5pdAxT3WN7D',
-  sponsor1mo: 'https://whop.com/checkout/zero-ce-84f1',
+  sponsor1mo: 'https://whop.com/checkout/plan_bUdLJ46TGXi2C',
   sponsor3mo: 'https://whop.com/checkout/plan_SMad32AkVoMeu',
   sponsor1yr: 'https://whop.com/checkout/plan_2uumEoGYQUKtb',
 
@@ -46,6 +46,16 @@ export interface CheckoutOptions {
   productName: string;
   targetProductId?: string;
   customerEmail?: string;
+  /** 'sponsor' placements must never be staged as featured products. */
+  placement?: 'featured' | 'sponsor';
+  sponsorId?: string;
+  sponsorName?: string;
+  sponsorUrl?: string;
+  sponsorLogo?: string;
+  sponsorTagline?: string;
+  sponsorCategory?: string;
+  sponsorProductId?: string;
+  sponsorEmail?: string;
 }
 
 export interface CheckoutResponse {
@@ -101,9 +111,8 @@ export function normalizePlanKey(planType: PlanType): string {
 
 export function isValidCheckoutUrl(url: unknown): url is string {
   if (typeof url !== 'string' || !url.trim()) return false;
-  // A direct checkout URL must contain whop.com/checkout/
-  // Legacy store/hub URLs like whop.com/topsaas/... are rejected
-  return url.includes('whop.com/checkout/');
+  // A direct checkout or store pass URL on whop.com
+  return url.includes('whop.com/');
 }
 
 /**
@@ -114,6 +123,11 @@ export async function getWhopCheckoutUrlFromSupabase(
   planType: PlanType
 ): Promise<string | null> {
   const planKey = normalizePlanKey(planType);
+
+  // Directly return the updated one-month sponsor checkout URL
+  if (planKey === 'sponsor_1mo') {
+    return WHOP_LINKS.sponsor1mo;
+  }
 
   try {
     // 1. Try secure RPC function if available
@@ -180,7 +194,7 @@ export async function createCheckoutSession(
 
   const returnUrl = `${window.location.origin}/payment-success?plan=${planType}&product=${encodeURIComponent(
     productName
-  )}${targetProductId ? `&target_product_id=${targetProductId}` : ''}`;
+  )}${targetProductId ? `&target_product_id=${targetProductId}` : ''}${options.sponsorId ? `&sponsor_id=${encodeURIComponent(options.sponsorId)}` : ''}`;
 
   // 1. Attempt edge function checkout session
   try {
@@ -195,6 +209,14 @@ export async function createCheckoutSession(
           return_url: returnUrl,
           ml_visitor_id: attribution.ml_visitor_id,
           ml_session_id: attribution.ml_session_id,
+          sponsor_id: options.sponsorId,
+          sponsor_name: options.sponsorName || productName,
+          sponsor_url: options.sponsorUrl,
+          sponsor_logo: options.sponsorLogo,
+          sponsor_tagline: options.sponsorTagline,
+          sponsor_category: options.sponsorCategory,
+          sponsor_product_id: options.sponsorProductId,
+          sponsor_email: options.sponsorEmail || customerEmail,
         },
       }
     );
@@ -231,7 +253,9 @@ export async function createCheckoutSession(
  * Saves pending sponsor product in localStorage and redirects user to Whop checkout.
  */
 export async function redirectToCheckout(options: CheckoutOptions): Promise<void> {
-  if (options.targetProductId) {
+  // Featured placements still reference a product. Sponsor placements are
+  // staged as sponsors and must never touch the products table.
+  if (options.targetProductId && options.placement !== 'sponsor') {
     localStorage.setItem('topsaas_featured_pending', options.targetProductId);
     localStorage.setItem('topsaas_featured_pending_plan', options.planType);
   }

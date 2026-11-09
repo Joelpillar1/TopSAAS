@@ -21,6 +21,8 @@ import {
   Tag,
 } from 'lucide-react';
 import { CURATED_REPOS, CuratedRepo, RepoCategory } from '../data/curatedRepos';
+import { Product } from '../types';
+import { SponsoredPartnersSidebar } from './SponsoredPartnersSidebar';
 import { formatStars } from '../utils/github';
 import { plainCopy } from '../utils/plainCopy';
 import { computeHealth } from '../utils/repoHealth';
@@ -29,7 +31,6 @@ import { getGuideForRepo } from '../data/buildGuides';
 import { navigateTo } from '../utils/nav';
 import { HealthScore, healthExplain } from './HealthScore';
 import { timeAgo } from './ProductRow';
-import { BorderBeam } from './BorderBeam';
 import { playSound } from '../utils/sound';
 
 /** Metadata pulled live from the GitHub API (rate-limited, cached, optional). */
@@ -59,6 +60,10 @@ interface RepoDetailPageProps {
   onSelectRepo: (repo: CuratedRepo) => void;
   /** Opens the featured-spot flow (sign-in or reserve modal), like the homepage promo. */
   onOpenFeatured?: () => void;
+  sponsors?: Product[];
+  onSelectProduct?: (product: Product) => void;
+  onTrackClick?: (productId: string, url: string) => void;
+  onOpenFeaturedSpotModal?: () => void;
 }
 
 /* ───────────────────────── live-data cache ───────────────────────── */
@@ -480,6 +485,10 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
   onBack,
   onSelectRepo,
   onOpenFeatured,
+  sponsors = [],
+  onSelectProduct = () => {},
+  onTrackClick,
+  onOpenFeaturedSpotModal,
 }) => {
   const [live, setLive] = useState<RepoLiveMeta | null>(() => getCachedMeta(repo.full_name));
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -1130,6 +1139,15 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
 
         {/* ─────────── right: sticky stats sidebar ─────────── */}
         <aside className="lg:sticky lg:top-[68px] space-y-5 min-w-0">
+          {/* 1. Sponsored Partners Sidebar (⚡ Sponsors placed at the very top, exactly like ProductPage) */}
+          <SponsoredPartnersSidebar
+            sponsors={sponsors}
+            soundEnabled={soundEnabled}
+            onSelectProduct={onSelectProduct}
+            onTrackClick={onTrackClick}
+            onOpenFeaturedSpotModal={onOpenFeaturedSpotModal}
+          />
+
           {/* Key stats card: the reference's top-right panel */}
           <div className="rounded-lg border border-neutral-200/60 bg-white p-5 shadow-xs">
             <div className="flex items-end justify-between gap-3 pb-3 border-b border-neutral-200">
@@ -1188,53 +1206,6 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
               </details>
             )}
           </div>
-
-          {/* Featured/promo card: BorderBeam in the repo card's shape, sized for the rail */}
-          {onOpenFeatured && (
-            <BorderBeam
-              size="md"
-              colorVariant="colorful"
-              strength={0.7}
-              borderRadius={4}
-              className="w-full rounded-lg"
-            >
-              <button
-                type="button"
-                onClick={() => {
-                  playSound('click', soundEnabled);
-                  onOpenFeatured();
-                }}
-                className="group flex w-full flex-col rounded-lg border border-neutral-200 bg-white p-5 text-left transition-all duration-300 ease-out cursor-pointer hover:bg-neutral-100 hover:shadow-[0_4px_20px_-4px_rgba(25,25,24,0.08)]"
-              >
-                <span className="flex items-start justify-between gap-2.5">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-neutral-200 bg-white text-neutral-600 transition-all duration-200 group-hover:border-neutral-500 group-hover:bg-mint-500 group-hover:text-white">
-                    <Star className="h-4 w-4" />
-                  </span>
-                  <span className="inline-flex items-center gap-1 rounded bg-mint-500/15 px-1.5 py-0.5 text-[9px] font-bold text-mint-600 ring-1 ring-inset ring-mint-500/40">
-                    Featured
-                  </span>
-                </span>
-                <span className="mt-4 block text-[15px] font-bold tracking-tight text-neutral-950 group-hover:text-mint-600 transition-colors">
-                  The featured spot is open
-                </span>
-                <span className="mt-0.5 block text-[11px] font-medium text-neutral-500 group-hover:text-neutral-700 transition-colors">
-                  Put your product at the top of TopSAAS
-                </span>
-                <span className="mt-1.5 block text-[12.5px] font-medium leading-relaxed text-neutral-600 group-hover:text-neutral-800 transition-colors">
-                  Claim the featured spot for 30 days, seen by every builder who visits.
-                </span>
-                <span className="mt-4 flex items-center justify-between gap-2 border-t border-neutral-200 group-hover:border-neutral-200 pt-3 transition-colors">
-                  <span className="inline-flex items-center gap-1 text-[11px] text-neutral-400">
-                    <Star className="h-3 w-3 text-amber-500 fill-amber-400" />
-                    <span className="font-bold text-neutral-900 font-mono-num">30 days</span>
-                  </span>
-                  <span className="shrink-0 btn-primary px-3 py-1.5 text-[11px] font-bold">
-                    Reserve spot
-                  </span>
-                </span>
-              </button>
-            </BorderBeam>
-          )}
         </aside>
         </div>
 

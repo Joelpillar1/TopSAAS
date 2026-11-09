@@ -2,6 +2,7 @@ import React from 'react';
 import { Zap, ExternalLink, Megaphone, ArrowUpRight } from 'lucide-react';
 import { Product } from '../types';
 import { ProductLogo } from './ProductLogo';
+import { VerifiedBadge } from './VerifiedBadge';
 import { playSound } from '../utils/sound';
 import { openOutboundUrl } from '../utils/referral';
 
@@ -103,11 +104,12 @@ export const SponsoredPartnersSidebar: React.FC<SponsoredPartnersSidebarProps> =
               </div>
 
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 min-w-0">
                   <h3 className="truncate text-xs font-bold text-neutral-950 group-hover:text-blue-600 transition-colors">
                     {sponsor.name}
                   </h3>
-                  <ExternalLink className="h-2.5 w-2.5 text-neutral-400 opacity-60 group-hover:opacity-100 group-hover:text-blue-600 transition-all shrink-0" />
+                  <VerifiedBadge variant="gold" className="h-3.5 w-3.5 shrink-0" title="Golden Verified Sponsor" />
+                  <ExternalLink className="h-2.5 w-2.5 text-neutral-400 opacity-60 group-hover:opacity-100 group-hover:text-blue-600 transition-all shrink-0 ml-auto" />
                 </div>
                 <p className="mt-0.5 text-[11px] text-neutral-500 line-clamp-2 leading-relaxed">
                   {sponsor.tagline}
@@ -145,7 +147,7 @@ export const SponsoredPartnersSidebar: React.FC<SponsoredPartnersSidebarProps> =
                 Become a Sponsor
               </h4>
               <p className="text-[10.5px] text-neutral-500 truncate">
-                Prime sidebar placement · <span className="text-emerald-600 font-semibold">Free 7 days</span>
+                Prime sidebar placement · <span className="text-blue-600 font-semibold">Open Spot</span>
               </p>
             </div>
           </div>

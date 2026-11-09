@@ -145,7 +145,7 @@ export const SponsoredCard: React.FC<SponsoredCardProps> = ({ product, soundEnab
         </div>
         <div>
           <p className="text-xs font-bold text-black">Your ad here</p>
-          <p className="mt-0.5 text-[10px] font-medium text-emerald-600 font-semibold">Free 7 days</p>
+          <p className="mt-0.5 text-[10px] font-medium text-neutral-500 font-semibold">Claim spot</p>
         </div>
         <span className="text-[10px] font-bold text-neutral-500 underline underline-offset-2 group-hover:text-black transition-colors">
           Book this spot

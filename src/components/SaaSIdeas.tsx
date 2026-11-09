@@ -307,7 +307,7 @@ export const SaaSIdeas: React.FC<SaaSIdeasProps> = ({
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs font-bold text-neutral-900 transition-colors">
-                    The featured spot is open <span className="text-emerald-600 font-semibold text-[11px]">(7 days Free)</span>
+                    The featured spot is open
                   </p>
                   <p className="text-[11px] text-neutral-500 font-medium truncate">
                     Put your product at the top of TopSAAS · Seen by every builder who visits

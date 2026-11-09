@@ -139,6 +139,15 @@ export const ProductRow: React.FC<ProductRowProps> = ({
           {showVerified && product.verified && (
             <VerifiedBadge className="h-4 w-4 shrink-0" title="Verified Startup" />
           )}
+          {product.isSponsored && (
+            <span
+              className="inline-flex shrink-0 items-center gap-1 text-[11px] font-medium text-neutral-400 select-none"
+              title="Golden Verified Sponsor"
+            >
+              <VerifiedBadge variant="gold" className="h-3.5 w-3.5 shrink-0" />
+              <span>Sponsored</span>
+            </span>
+          )}
           {(product.autoRelaunch || product.isRelaunched) && !product.isSponsored && (
             <span
               className="inline-flex shrink-0 items-center gap-1 rounded-md bg-blue-50 border border-blue-200/80 px-1.5 py-0.5 text-[10px] font-bold text-blue-700 shadow-2xs select-none"

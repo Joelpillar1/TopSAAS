@@ -111,12 +111,12 @@ serve(async (req: Request) => {
         console.log(`Successfully scheduled weekly relaunch for product: ${productName || targetProductId}`);
       }
 
-      // 1. Locate product record
+      // 1. Locate product record for product-based placements.
       let productRecord = null;
       if (targetProductId) {
         const { data: p } = await supabase
           .from('products')
-          .select('id, name')
+          .select('id, name, tagline, url, logo_url, category')
           .eq('id', targetProductId)
           .maybeSingle();
         productRecord = p;
@@ -125,7 +125,7 @@ serve(async (req: Request) => {
       if (!productRecord && productName) {
         const { data: p } = await supabase
           .from('products')
-          .select('id, name')
+          .select('id, name, tagline, url, logo_url, category')
           .ilike('name', productName)
           .maybeSingle();
         productRecord = p;
@@ -136,11 +136,12 @@ serve(async (req: Request) => {
       // Handle Featured Spot (Pinned top banner)
       if (isFeatured && finalProductId) {
         try {
-          const { data: settingRow } = await supabase
+          const { data: settingRows } = await supabase
             .from('site_settings')
-            .select('value')
-            .eq('key', 'featured_products')
-            .maybeSingle();
+            .select('key, value')
+            .in('key', ['featured_products', 'featured_product_ids']);
+
+          const settingRow = settingRows?.find((r: any) => r.key === 'featured_product_ids') || settingRows?.find((r: any) => r.key === 'featured_products');
 
           let currentFeatured: string[] = [];
           if (settingRow?.value) {
@@ -153,9 +154,16 @@ serve(async (req: Request) => {
             currentFeatured.unshift(finalProductId);
           }
 
+          const expiryTimestamp = expiresAt.getTime().toString();
           await supabase.from('site_settings').upsert([
             {
               key: 'featured_products',
+              value: JSON.stringify(currentFeatured),
+              description: 'Active pinned featured products list',
+              updated_at: now.toISOString(),
+            },
+            {
+              key: 'featured_product_ids',
               value: JSON.stringify(currentFeatured),
               description: 'Active pinned featured products list',
               updated_at: now.toISOString(),
@@ -167,8 +175,20 @@ serve(async (req: Request) => {
               updated_at: now.toISOString(),
             },
             {
+              key: 'featured_product_id',
+              value: finalProductId,
+              description: 'Primary pinned featured product',
+              updated_at: now.toISOString(),
+            },
+            {
               key: 'featured_expiry',
-              value: expiresAt.getTime().toString(),
+              value: expiryTimestamp,
+              description: 'Expiry timestamp for pinned featured spot',
+              updated_at: now.toISOString(),
+            },
+            {
+              key: 'featured_expires_at',
+              value: expiryTimestamp,
               description: 'Expiry timestamp for pinned featured spot',
               updated_at: now.toISOString(),
             },
@@ -179,65 +199,99 @@ serve(async (req: Request) => {
         }
       }
 
-      // Handle Sponsor Spot (Sidebar rails)
-      if (!isVerifiedLaunch && !isWeeklyRelaunch && !isFeatured && productRecord) {
-        const { error: updateErr } = await supabase
-          .from('products')
-          .update({
-            is_sponsored: true,
-            sponsor_tier: 'paid',
-            sponsor_started_at: now.toISOString(),
-            sponsor_expires_at: expiresAt.toISOString(),
-            sponsor_email: email,
-          })
-          .eq('id', productRecord.id);
+      // Handle Sponsor Spot (sidebar rails). Sponsors live in their own table;
+      // they are never written into the products directory.
+      const isSponsorPlan = !isVerifiedLaunch && !isWeeklyRelaunch && !isFeatured;
+      if (isSponsorPlan) {
+        const nowMs = now.getTime();
+        const expiresMs = expiresAt.getTime();
+        const sponsorId =
+          metadata.sponsor_id ||
+          customFields.sponsor_id ||
+          `spn_${data.id || nowMs}`;
+        const sponsorName =
+          metadata.sponsor_name ||
+          customFields.sponsor_name ||
+          productRecord?.name ||
+          productName ||
+          'Sponsor';
+        const sponsorUrl =
+          metadata.sponsor_url ||
+          customFields.sponsor_url ||
+          productRecord?.url ||
+          '';
+        const sponsorLogo =
+          metadata.sponsor_logo ||
+          customFields.sponsor_logo ||
+          productRecord?.logo_url ||
+          null;
+        const sponsorTagline =
+          metadata.sponsor_tagline ||
+          customFields.sponsor_tagline ||
+          productRecord?.tagline ||
+          '';
+        const sponsorCategory =
+          metadata.sponsor_category ||
+          customFields.sponsor_category ||
+          productRecord?.category ||
+          'SaaS';
+        const sponsorProductId =
+          metadata.sponsor_product_id ||
+          customFields.sponsor_product_id ||
+          finalProductId ||
+          null;
+        const sponsorEmail =
+          metadata.sponsor_email ||
+          customFields.sponsor_email ||
+          email ||
+          null;
+        const tier = rawPlanType.includes('trial')
+          ? 'trial'
+          : durationDays >= 365
+            ? '1yr'
+            : durationDays >= 90
+              ? '3mo'
+              : durationDays === 7
+                ? 'paid'
+                : '1mo';
 
-        if (updateErr) {
-          console.error(`Error updating product sponsorship:`, updateErr);
+        const { data: existingSponsor } = await supabase
+          .from('sponsors')
+          .select('clicks, created_at')
+          .eq('id', sponsorId)
+          .maybeSingle();
+
+        const { error: sponsorErr } = await supabase
+          .from('sponsors')
+          .upsert(
+            {
+              id: sponsorId,
+              product_id: sponsorProductId,
+              name: sponsorName,
+              tagline: sponsorTagline,
+              url: sponsorUrl,
+              logo_url: sponsorLogo,
+              category: sponsorCategory,
+              contact_email: sponsorEmail,
+              tier,
+              status: 'active',
+              started_at: nowMs,
+              expires_at: expiresMs,
+              paused_remaining_ms: null,
+              clicks: existingSponsor?.clicks ?? 0,
+              source: 'whop',
+              whop_payment_id: data.id || null,
+              plan_type: rawPlanType || null,
+              created_at: existingSponsor?.created_at ?? nowMs,
+              updated_at: nowMs,
+            },
+            { onConflict: 'id' }
+          );
+
+        if (sponsorErr) {
+          console.error('Error writing sponsor:', sponsorErr);
         } else {
-          console.log(`Successfully activated sponsorship for product ${productRecord.name} (${productRecord.id}) for ${durationDays} days`);
-        }
-
-        // Also add to site_settings 'active_sponsors'
-        try {
-          const { data: sponsorsRow } = await supabase
-            .from('site_settings')
-            .select('value')
-            .eq('key', 'active_sponsors')
-            .maybeSingle();
-
-          let sponsorsList: any[] = [];
-          if (sponsorsRow?.value) {
-            try {
-              sponsorsList = JSON.parse(sponsorsRow.value);
-            } catch {}
-          }
-          if (!Array.isArray(sponsorsList)) sponsorsList = [];
-
-          const existingIdx = sponsorsList.findIndex((s) => s.productId === productRecord.id);
-          const sponsorEntry = {
-            productId: productRecord.id,
-            productName: productRecord.name,
-            tier: durationDays >= 365 ? '1yr' : durationDays >= 90 ? '3mo' : durationDays === 7 ? 'trial' : '1mo',
-            startedAt: now.getTime(),
-            expiresAt: expiresAt.getTime(),
-            customerEmail: email || undefined,
-          };
-
-          if (existingIdx >= 0) {
-            sponsorsList[existingIdx] = sponsorEntry;
-          } else {
-            sponsorsList.push(sponsorEntry);
-          }
-
-          await supabase.from('site_settings').upsert({
-            key: 'active_sponsors',
-            value: JSON.stringify(sponsorsList),
-            description: 'List of currently active sponsors',
-            updated_at: now.toISOString(),
-          });
-        } catch (sponErr) {
-          console.warn('Could not update active_sponsors in site_settings:', sponErr);
+          console.log(`Successfully activated sponsor ${sponsorId} for ${durationDays} days`);
         }
       }
 
@@ -248,7 +302,7 @@ serve(async (req: Request) => {
           event_action: action,
           whop_payment_id: data.id || null,
           customer_email: email,
-          plan_type: planType,
+          plan_type: rawPlanType,
           duration_days: durationDays,
           product_id: productRecord?.id || targetProductId || null,
           payload: body,

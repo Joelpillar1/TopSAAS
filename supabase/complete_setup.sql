@@ -184,6 +184,57 @@ create policy "Authenticated users can delete products"
   on public.products for delete to authenticated using (true);
 
 -- ──────────────────────────────────────────────────────────────────────────────
+-- 3b. SPONSORS TABLE (paid + trial placements, separate from products)
+-- ──────────────────────────────────────────────────────────────────────────────
+create table if not exists public.sponsors (
+  id text primary key,
+  product_id text references public.products(id) on delete set null,
+  name text not null,
+  tagline text not null default '',
+  url text not null default '',
+  logo_url text,
+  category text not null default 'SaaS',
+  contact_email text,
+  tier text not null default 'paid',
+  status text not null default 'active',
+  started_at bigint not null,
+  expires_at bigint not null,
+  paused_remaining_ms bigint,
+  clicks integer not null default 0,
+  source text not null default 'admin_grant',
+  whop_payment_id text,
+  plan_type text,
+  created_at bigint not null,
+  updated_at bigint not null
+);
+
+create index if not exists sponsors_status_expires_idx
+  on public.sponsors (status, expires_at);
+create index if not exists sponsors_product_id_idx
+  on public.sponsors (product_id);
+create unique index if not exists sponsors_whop_payment_id_key
+  on public.sponsors (whop_payment_id)
+  where whop_payment_id is not null;
+
+alter table public.sponsors enable row level security;
+
+drop policy if exists "Sponsors are viewable by everyone" on public.sponsors;
+create policy "Sponsors are viewable by everyone"
+  on public.sponsors for select to anon, authenticated using (true);
+
+drop policy if exists "Anyone can create sponsors" on public.sponsors;
+create policy "Anyone can create sponsors"
+  on public.sponsors for insert to anon, authenticated with check (true);
+
+drop policy if exists "Anyone can update sponsors" on public.sponsors;
+create policy "Anyone can update sponsors"
+  on public.sponsors for update to anon, authenticated using (true);
+
+drop policy if exists "Admins can delete sponsors" on public.sponsors;
+create policy "Admins can delete sponsors"
+  on public.sponsors for delete to authenticated using (public.is_admin());
+
+-- ──────────────────────────────────────────────────────────────────────────────
 -- 4. SUBMISSIONS QUEUE TABLE
 -- ──────────────────────────────────────────────────────────────────────────────
 create table if not exists public.submissions (
@@ -411,8 +462,8 @@ create table if not exists public.whop_payments_config (
 insert into public.whop_payments_config (key, value, description) values
   ('checkout_url_sponsor_1wk', 'https://whop.com/checkout/plan_Ux5pdAxT3WN7D', 'Whop 1-Week Sponsor ($10/wk) Direct Checkout'),
   ('checkout_url_1wk', 'https://whop.com/checkout/plan_Ux5pdAxT3WN7D', 'Whop 1-Week Sponsor ($10/wk) Direct Checkout'),
-  ('checkout_url_sponsor_1mo', 'https://whop.com/checkout/zero-ce-84f1', 'Whop 1-Month Sponsor Direct Checkout'),
-  ('checkout_url_1mo', 'https://whop.com/checkout/zero-ce-84f1', 'Whop 1-Month Sponsor Direct Checkout'),
+  ('checkout_url_sponsor_1mo', 'https://whop.com/checkout/plan_bUdLJ46TGXi2C', 'Whop 1-Month Sponsor Direct Checkout'),
+  ('checkout_url_1mo', 'https://whop.com/checkout/plan_bUdLJ46TGXi2C', 'Whop 1-Month Sponsor Direct Checkout'),
   ('checkout_url_3mo', 'https://whop.com/checkout/plan_SMad32AkVoMeu', 'Whop 3-Month Sponsor Direct Checkout'),
   ('checkout_url_1yr', 'https://whop.com/checkout/plan_2uumEoGYQUKtb', 'Whop 1-Year Sponsor Direct Checkout'),
   ('checkout_url_featured_1wk', 'https://whop.com/checkout/plan_YGXtgHZnspc77', 'Whop 1-Week Featured Spot ($15/wk) Direct Checkout'),

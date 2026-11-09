@@ -78,6 +78,57 @@ export interface ProductHighlight {
   value: string;
 }
 
+export type SponsorTier = 'trial' | 'paid' | '1mo' | '3mo' | '1yr' | 'none';
+export type SponsorStatus = 'active' | 'paused' | 'expired' | 'ended';
+export type SponsorSource = 'admin_grant' | 'trial' | 'whop' | 'legacy';
+
+/**
+ * A paid or trial placement. Sponsors are stored in their own table and are
+ * never written into the products directory.
+ */
+export interface Sponsor {
+  id: string;
+  productId?: string;
+  name: string;
+  tagline: string;
+  url: string;
+  logoUrl?: string;
+  category: Category;
+  contactEmail?: string;
+  tier: SponsorTier;
+  status: SponsorStatus;
+  startedAt: number;
+  expiresAt: number;
+  pausedRemainingMs?: number;
+  clicks: number;
+  source: SponsorSource;
+  whopPaymentId?: string;
+  planType?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+/** Fields accepted when creating a sponsor. */
+export interface SponsorDraft {
+  id?: string;
+  productId?: string;
+  name: string;
+  tagline: string;
+  url: string;
+  logoUrl?: string;
+  category: Category;
+  contactEmail?: string;
+  tier: SponsorTier;
+  status?: SponsorStatus;
+  startedAt?: number;
+  expiresAt?: number;
+  pausedRemainingMs?: number;
+  clicks?: number;
+  source?: SponsorSource;
+  whopPaymentId?: string;
+  planType?: string;
+}
+
 export interface Product {
   id: string;
   rank: number;

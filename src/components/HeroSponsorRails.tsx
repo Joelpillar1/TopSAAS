@@ -4,6 +4,7 @@ import { Product } from '../types';
 import { playSound } from '../utils/sound';
 import { BorderBeam } from './BorderBeam';
 import { ProductLogo } from './ProductLogo';
+import { VerifiedBadge } from './VerifiedBadge';
 import { openOutboundUrl } from '../utils/referral';
 
 interface HeroSponsorRailsProps {
@@ -23,21 +24,21 @@ interface OpenAdCardProps {
 }
 
 const LEFT_SLOTS = [
-  { id: 'left-1', title: 'Ad spot open', subtitle: 'Put your product at top of TopSAAS', duration: 'Free 7 days' },
-  { id: 'left-2', title: 'Side rail ad spot', subtitle: 'Prime sidebar placement for founders', duration: 'Free 7 days' },
-  { id: 'left-3', title: 'Promote your SaaS', subtitle: 'Reach 50k+ active SaaS builders', duration: 'Free 7 days' },
-  { id: 'left-4', title: 'Advertise your startup', subtitle: 'Get targeted founder & creator visits', duration: 'Free 7 days' },
-  { id: 'left-5', title: 'Verified sponsor slot', subtitle: 'Claim this verified sponsor slot', duration: 'Free 7 days' },
-  { id: 'left-6', title: 'Partner sponsor spot', subtitle: 'Boost your launch & signups', duration: 'Free 7 days' },
+  { id: 'left-1', title: 'Ad spot open', subtitle: 'Put your product at top of TopSAAS', duration: 'Claim spot' },
+  { id: 'left-2', title: 'Side rail ad spot', subtitle: 'Prime sidebar placement for founders', duration: 'Claim spot' },
+  { id: 'left-3', title: 'Promote your SaaS', subtitle: 'Reach 50k+ active SaaS builders', duration: 'Claim spot' },
+  { id: 'left-4', title: 'Advertise your startup', subtitle: 'Get targeted founder & creator visits', duration: 'Claim spot' },
+  { id: 'left-5', title: 'Verified sponsor slot', subtitle: 'Claim this verified sponsor slot', duration: 'Claim spot' },
+  { id: 'left-6', title: 'Partner sponsor spot', subtitle: 'Boost your launch & signups', duration: 'Claim spot' },
 ];
 
 const RIGHT_SLOTS = [
-  { id: 'right-1', title: 'Ad spot open', subtitle: 'Put your product at top of TopSAAS', duration: 'Free 7 days' },
-  { id: 'right-2', title: 'Place your startup ad', subtitle: 'Discovered by thousands of builders', duration: 'Free 7 days' },
-  { id: 'right-3', title: 'Promote your product', subtitle: 'Guaranteed directory visibility', duration: 'Free 7 days' },
-  { id: 'right-4', title: 'Sponsored ad slot', subtitle: 'Permanent placement beside trending', duration: 'Free 7 days' },
-  { id: 'right-5', title: 'Early founder spotlight', subtitle: 'Early-stage founder visibility', duration: 'Free 7 days' },
-  { id: 'right-6', title: 'Boost your SaaS visibility', subtitle: 'Drive high-intent traffic to your tool', duration: 'Free 7 days' },
+  { id: 'right-1', title: 'Ad spot open', subtitle: 'Put your product at top of TopSAAS', duration: 'Claim spot' },
+  { id: 'right-2', title: 'Place your startup ad', subtitle: 'Discovered by thousands of builders', duration: 'Claim spot' },
+  { id: 'right-3', title: 'Promote your product', subtitle: 'Guaranteed directory visibility', duration: 'Claim spot' },
+  { id: 'right-4', title: 'Sponsored ad slot', subtitle: 'Permanent placement beside trending', duration: 'Claim spot' },
+  { id: 'right-5', title: 'Early founder spotlight', subtitle: 'Early-stage founder visibility', duration: 'Claim spot' },
+  { id: 'right-6', title: 'Boost your SaaS visibility', subtitle: 'Drive high-intent traffic to your tool', duration: 'Claim spot' },
 ];
 
 /** Skeleton loader for ad cards matching the exact dimensions and spacing */
@@ -141,8 +142,9 @@ const ActiveSponsorCard: React.FC<{
       </p>
 
       <div className="relative mt-2 flex items-center justify-between text-[10.5px] xl:text-[11px] font-bold">
-        <span className="text-[10.5px] xl:text-[11px] font-medium text-neutral-400">
-          Sponsored
+        <span className="inline-flex items-center gap-1.5 text-[10.5px] xl:text-[11px] font-medium text-neutral-400">
+          <VerifiedBadge variant="gold" className="h-3.5 w-3.5 shrink-0" />
+          <span>Sponsored</span>
         </span>
         <span className="text-[10.5px] font-semibold text-neutral-600 opacity-80 group-hover:opacity-100 group-hover:underline transition-opacity">
           Visit →
@@ -180,7 +182,7 @@ const OpenAdCard: React.FC<OpenAdCardProps> = ({
           Advertise
         </h4>
         <p className="text-[11px] font-medium text-neutral-400 group-hover:text-neutral-600 leading-tight">
-          Open Spot <span className="text-emerald-600 font-semibold">(7 days Free)</span>
+          Open Spot
         </p>
       </div>
     </div>
@@ -223,13 +225,13 @@ const TickerItemPill: React.FC<{
       <button
         type="button"
         onClick={handleClick}
-        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs sm:text-[13px] font-semibold text-neutral-800 hover:text-black transition-colors shrink-0 group cursor-pointer"
+        className="inline-flex items-center gap-2 px-3.5 sm:px-4 h-9 sm:h-10 text-xs sm:text-[13px] font-semibold text-neutral-800 hover:text-black bg-white rounded-xl border border-neutral-200/90 hover:border-blue-300 shadow-2xs hover:shadow-xs transition-all shrink-0 group cursor-pointer"
       >
         {p.logoUrl ? (
           <img
             src={p.logoUrl}
             alt={p.name}
-            className="h-4 w-4 rounded-md object-contain shrink-0 border border-neutral-200/80 bg-white shadow-2xs"
+            className="h-4.5 w-4.5 rounded-lg object-contain shrink-0 border border-neutral-200/80 bg-white"
             onError={(e) => {
               (e.currentTarget as HTMLImageElement).style.display = 'none';
             }}
@@ -249,7 +251,7 @@ const TickerItemPill: React.FC<{
     );
   }
 
-  // CTA item
+  // CTA item - Dashed barricade frame matching the ad card border radius (rounded-xl)
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     playSound('click', soundEnabled);
@@ -260,13 +262,10 @@ const TickerItemPill: React.FC<{
     <button
       type="button"
       onClick={handleClick}
-      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs sm:text-[13px] font-semibold text-neutral-700 hover:text-neutral-950 transition-colors shrink-0 cursor-pointer group"
+      className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 h-9 sm:h-10 text-xs sm:text-[13px] font-bold text-neutral-800 hover:text-blue-600 bg-white/90 hover:bg-blue-50/50 rounded-xl border border-dashed border-neutral-300 hover:border-blue-400 transition-all shrink-0 cursor-pointer group shadow-2xs"
     >
-      <span className="text-neutral-600 group-hover:text-neutral-950 font-bold transition-colors">
-        + your product
-      </span>
-      <span className="text-[11px] font-mono text-emerald-600 font-semibold">
-        · {item.badge || 'Free 7 days'}
+      <span className="text-neutral-700 group-hover:text-blue-600 font-bold transition-colors">
+        {item.badge || 'Claim spot'}
       </span>
     </button>
   );
@@ -283,12 +282,12 @@ function buildTickerItems(sponsors: Product[]): TickerItem[] {
     active.forEach((sp, i) => {
       base.push({ id: `sp-${sp.id}-${i}`, type: 'sponsor', product: sp });
     });
-    base.push({ id: 'cta-1', type: 'cta', badge: 'Free 7 days' });
-    base.push({ id: 'cta-2', type: 'cta', badge: 'Free trial' });
+    base.push({ id: 'cta-1', type: 'cta', badge: 'Claim spot' });
+    base.push({ id: 'cta-2', type: 'cta', badge: 'Claim spot' });
   } else {
-    base.push({ id: 'cta-open-1', type: 'cta', badge: 'Free 7 days' });
-    base.push({ id: 'cta-open-2', type: 'cta', badge: 'Boost visits' });
-    base.push({ id: 'cta-open-3', type: 'cta', badge: 'Free 7 days' });
+    base.push({ id: 'cta-open-1', type: 'cta', badge: 'Claim spot' });
+    base.push({ id: 'cta-open-2', type: 'cta', badge: 'Claim spot' });
+    base.push({ id: 'cta-open-3', type: 'cta', badge: 'Claim spot' });
     base.push({ id: 'cta-open-4', type: 'cta', badge: 'Claim spot' });
   }
 
@@ -319,23 +318,21 @@ export const MobileTopSponsorTicker: React.FC<{
   const items = React.useMemo(() => buildTickerItems(sponsors), [sponsors]);
 
   return (
-    <div className="block lg:hidden w-full bg-white/95 backdrop-blur-md border-b border-neutral-200/80 overflow-hidden relative select-none h-11 sm:h-12">
+    <div className="block lg:hidden w-full bg-white/95 backdrop-blur-md border-b border-neutral-200/80 overflow-hidden relative select-none h-13 sm:h-14">
       {/* Edge gradient fade masks */}
       <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white via-white/80 to-transparent z-10" />
       <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white via-white/80 to-transparent z-10" />
 
-      <div className="animate-marquee-infinite flex items-center h-full w-max">
+      <div className="animate-marquee-infinite flex items-center h-full w-max gap-2.5 px-2">
         {items.map((item, idx) => (
-          <React.Fragment key={`top-${item.id}-${idx}`}>
-            <TickerItemPill
-              item={item}
-              soundEnabled={soundEnabled}
-              onTrackClick={onTrackClick}
-              onOpenProduct={onOpenProduct}
-              onOpenFeaturedSpotModal={onOpenFeaturedSpotModal}
-            />
-            <span className="text-neutral-300 text-xs select-none">·</span>
-          </React.Fragment>
+          <TickerItemPill
+            key={`top-${item.id}-${idx}`}
+            item={item}
+            soundEnabled={soundEnabled}
+            onTrackClick={onTrackClick}
+            onOpenProduct={onOpenProduct}
+            onOpenFeaturedSpotModal={onOpenFeaturedSpotModal}
+          />
         ))}
       </div>
     </div>
@@ -364,23 +361,21 @@ export const MobileBottomStickySponsorTicker: React.FC<{
   const items = React.useMemo(() => buildTickerItems(sponsors), [sponsors]);
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 block lg:hidden w-full bg-white/95 backdrop-blur-md border-t border-neutral-200/90 shadow-xs overflow-hidden select-none h-11 sm:h-12">
+    <div className="fixed bottom-0 left-0 right-0 z-40 block lg:hidden w-full bg-white/95 backdrop-blur-md border-t border-neutral-200/90 shadow-xs overflow-hidden select-none h-13 sm:h-14">
       {/* Edge gradient fade masks */}
       <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white via-white/80 to-transparent z-10" />
       <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white via-white/80 to-transparent z-10" />
 
-      <div className="animate-marquee-reverse flex items-center h-full w-max">
+      <div className="animate-marquee-reverse flex items-center h-full w-max gap-2.5 px-2">
         {items.map((item, idx) => (
-          <React.Fragment key={`bot-${item.id}-${idx}`}>
-            <TickerItemPill
-              item={item}
-              soundEnabled={soundEnabled}
-              onTrackClick={onTrackClick}
-              onOpenProduct={onOpenProduct}
-              onOpenFeaturedSpotModal={onOpenFeaturedSpotModal}
-            />
-            <span className="text-neutral-300 text-xs select-none">·</span>
-          </React.Fragment>
+          <TickerItemPill
+            key={`bot-${item.id}-${idx}`}
+            item={item}
+            soundEnabled={soundEnabled}
+            onTrackClick={onTrackClick}
+            onOpenProduct={onOpenProduct}
+            onOpenFeaturedSpotModal={onOpenFeaturedSpotModal}
+          />
         ))}
       </div>
     </div>

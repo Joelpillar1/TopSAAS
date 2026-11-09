@@ -3,7 +3,7 @@ import {
   ArrowLeft, ArrowUpDown, Check, X, Clock, ExternalLink, ShieldCheck, Search, Trash2, Eye, RotateCcw, Globe, Twitter, User, Calendar, CheckCircle2, XCircle, AlertCircle, Edit3, Plus, Trophy, Crown, ChevronUp, ChevronDown, Star, LayoutList, Mail, Flame, Tag, Play, Pause, Video, Copy, Image as ImageIcon, MessageSquareQuote, Target, Layers, Info, Sparkles, BadgeCheck, Megaphone, Award, LogOut, Rocket
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { WebsiteSubmission, Category, Product } from '../types';
+import { WebsiteSubmission, Category, Product, Sponsor, SponsorDraft } from '../types';
 import { playSound } from '../utils/sound';
 import { getWebsiteFavicon } from '../utils/logo';
 import { publishedProductId, loadSubmissionById, isSponsorOnlyProduct } from '../utils/db';
@@ -49,6 +49,11 @@ function getVideoEmbedUrl(url?: string): { type: 'iframe' | 'video' | 'link'; em
 interface AdminAcceptPageProps {
   submissions: WebsiteSubmission[];
   products: Product[];
+  sponsors: Sponsor[];
+  onCreateSponsor: (draft: SponsorDraft) => Promise<void> | void;
+  onUpdateSponsor: (sponsor: Sponsor) => Promise<void> | void;
+  onEndSponsor: (sponsorId: string) => Promise<void> | void;
+  onPauseSponsor: (sponsorId: string) => Promise<void> | void;
   onAcceptSubmission: (submission: WebsiteSubmission) => void;
   onRejectSubmission: (submissionId: string, reason?: string) => void;
   onDeleteSubmission: (submissionId: string) => void;
@@ -83,6 +88,11 @@ interface AdminAcceptPageProps {
 export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
   submissions,
   products,
+  sponsors,
+  onCreateSponsor,
+  onUpdateSponsor,
+  onEndSponsor,
+  onPauseSponsor,
   onAcceptSubmission,
   onRejectSubmission,
   onDeleteSubmission,
@@ -133,8 +143,11 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
 
   // Active view tab: submissions queue vs products management vs featured vs sponsors
   const [activeView, setActiveView] = useState<'submissions' | 'products' | 'featured' | 'sponsors'>('submissions');
-  const activeSponsorsCount = products.filter(
-    (p) => Boolean(p.isSponsored) && (!p.sponsorExpiresAt || p.sponsorExpiresAt > Date.now())
+
+  // Sponsors live in their own table, so the Live Products list stays clean.
+  const directoryProducts = products.filter((p) => !isSponsorOnlyProduct(p));
+  const activeSponsorsCount = sponsors.filter(
+    (s) => s.status === 'active' && s.expiresAt > Date.now()
   ).length;
 
   // If new pending submissions come in, make sure we show the queue
@@ -214,8 +227,17 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
     })
     .sort((a, b) => (b.submittedAt ?? 0) - (a.submittedAt ?? 0));
 
-  // Sorted products for management (excluding sponsor-only ads)
-  const sortedProducts = [...products].filter((p) => !isSponsorOnlyProduct(p)).sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0));
+  // Sorted products for management (sponsors are not products)
+  const sortedProducts = [...directoryProducts].sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0));
+
+  // Read-only lookup: which live sponsor placement is linked to each product.
+  // Sponsor grants and revokes only happen in the Sponsors tab.
+  const sponsorByProductId = new Map<string, Sponsor>();
+  sponsors.forEach((s) => {
+    if (s.productId && s.status !== 'ended' && s.status !== 'expired') {
+      sponsorByProductId.set(s.productId, s);
+    }
+  });
 
   // Filtered products
   const filteredProducts = sortedProducts.filter((p) => {
@@ -260,16 +282,11 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
     } else {
       onSetFeatured(nextIds[0]);
     }
-    const target = products.find((p) => p.id === productId);
-    if (target && target.isSponsored && onUpdateProduct) {
-      onUpdateProduct({
-        ...target,
-        isSponsored: false,
-        sponsorTier: undefined,
-        sponsorStartedAt: undefined,
-        sponsorExpiresAt: undefined,
-      });
-    }
+    // A featured placement takes priority over sponsor rails. End any sponsor
+    // records linked to this product instead of mutating the product row.
+    sponsors
+      .filter((s) => s.productId === productId && s.status !== 'ended')
+      .forEach((s) => onEndSponsor(s.id));
     playSound('success', soundEnabled);
     try {
       confetti({
@@ -503,7 +520,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
               <LayoutList className="h-3.5 w-3.5" />
               <span>Live Products</span>
               <span className="ml-1 rounded-full bg-mint-500 text-white px-1.5 py-0.2 text-[9px] font-bold">
-                {products.length}
+                {directoryProducts.length}
               </span>
             </button>
             <button
@@ -1329,58 +1346,40 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
 
                           {/* Actions */}
                           <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
-                            {onUpdateProduct && (
-                              product.isSponsorPaused ? (
-                                <span
-                                  className="inline-flex items-center gap-1 rounded-lg border border-amber-300 bg-amber-50 px-2 py-1 text-xs font-bold text-amber-800 shadow-2xs"
-                                  title={`Sponsor is paused — ${formatRemainingMs(product.sponsorPausedRemainingMs)} preserved. Resume in Sponsors tab.`}
-                                >
-                                  <Pause className="h-3 w-3 text-amber-600" />
-                                  <span>Paused ({formatRemainingMs(product.sponsorPausedRemainingMs)} left)</span>
-                                </span>
-                              ) : product.isSponsored ? (
+                            {(() => {
+                              const linkedSponsor = sponsorByProductId.get(product.id);
+                              if (!linkedSponsor) return null;
+                              const isPaused = linkedSponsor.status === 'paused';
+                              const remainingMs = isPaused
+                                ? linkedSponsor.pausedRemainingMs ?? Math.max(0, linkedSponsor.expiresAt - Date.now())
+                                : Math.max(0, linkedSponsor.expiresAt - Date.now());
+                              return (
                                 <button
                                   type="button"
                                   onClick={() => {
                                     playSound('click', soundEnabled);
-                                    onUpdateProduct({
-                                      ...product,
-                                      isSponsored: false,
-                                      isSponsorPaused: false,
-                                      sponsorPausedRemainingMs: undefined,
-                                      sponsorTier: undefined,
-                                      sponsorStartedAt: undefined,
-                                      sponsorExpiresAt: undefined,
-                                    });
+                                    setActiveView('sponsors');
                                   }}
-                                  className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700 hover:bg-blue-100 transition-all cursor-pointer shadow-2xs"
-                                  title={`Sponsored (${product.sponsorTier || 'Active'}) — click to revoke sponsor status`}
+                                  className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-xs font-bold transition-all cursor-pointer shadow-2xs ${
+                                    isPaused
+                                      ? 'border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100'
+                                      : 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100'
+                                  }`}
+                                  title={`Sponsor placements are managed in the Sponsors tab. This product has a ${linkedSponsor.status} ${linkedSponsor.tier} placement.`}
                                 >
-                                  <Award className="h-3 w-3" />
-                                  <span>Sponsored {product.sponsorTier ? `(${product.sponsorTier})` : ''} · {getCountdown(product.sponsorExpiresAt).formatted} left</span>
+                                  {isPaused ? (
+                                    <Pause className="h-3 w-3 text-amber-600" />
+                                  ) : (
+                                    <Award className="h-3 w-3" />
+                                  )}
+                                  <span>
+                                    {isPaused ? 'Sponsor paused' : `Sponsored (${linkedSponsor.tier})`}
+                                    {' · '}
+                                    {formatRemainingMs(remainingMs)} left
+                                  </span>
                                 </button>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    playSound('success', soundEnabled);
-                                    onUpdateProduct({
-                                      ...product,
-                                      isSponsored: true,
-                                      sponsorTier: '1mo',
-                                      sponsorStartedAt: Date.now(),
-                                      sponsorExpiresAt: Date.now() + 30 * 86400 * 1000,
-                                      autoRelaunch: product.autoRelaunch,
-                                    });
-                                  }}
-                                  className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 bg-white px-2 py-1 text-xs font-bold text-neutral-600 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 transition-all cursor-pointer"
-                                  title={`Grant 1-Month Sponsor placement to "${product.name}"`}
-                                >
-                                  <Sparkles className="h-3 w-3 text-amber-500" />
-                                  <span>Sponsor</span>
-                                </button>
-                              )
-                            )}
+                              );
+                            })()}
 
                             {/* Featured Spotlight Toggle */}
                             {(() => {
@@ -2043,9 +2042,13 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
         {/* ============================================================ */}
         {activeView === 'sponsors' && (
           <SponsorTrackerTab
-            products={products}
+            sponsors={sponsors}
+            products={directoryProducts}
             soundEnabled={soundEnabled}
-            onUpdateProduct={onUpdateProduct || (() => {})}
+            onCreateSponsor={onCreateSponsor}
+            onUpdateSponsor={onUpdateSponsor}
+            onEndSponsor={onEndSponsor}
+            onPauseSponsor={onPauseSponsor}
             sponsorRailsEnabled={sponsorRailsEnabled}
             onToggleSponsorRails={onToggleSponsorRails}
           />
