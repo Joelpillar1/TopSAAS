@@ -1543,6 +1543,10 @@ export default function App() {
         if (payload.twitter_handle) minimal.twitter_handle = payload.twitter_handle;
         if (payload.target_audience) minimal.target_audience = payload.target_audience;
         if (payload.pricing_model) minimal.pricing_model = payload.pricing_model;
+        if (payload.description) minimal.description = payload.description;
+        if (payload.problem_it_solves) minimal.problem_it_solves = payload.problem_it_solves;
+        if (payload.solution) minimal.solution = payload.solution;
+        if (payload.unique_selling_point) minimal.unique_selling_point = payload.unique_selling_point;
         await supabase.from('submissions').insert(minimal);
       }
     } catch (err) {
@@ -2625,10 +2629,26 @@ export default function App() {
       : null;
 
     // A submission with no published listing yet (for example an owner previewing
-    // their own pending entry) renders straight from the submission.
-    if (!rawProduct && routeId) {
-      const matchingSub = submissions.find((s) => s.id === bareRouteId);
-      if (matchingSub) rawProduct = submissionToProduct(matchingSub, products.length + 1);
+    // their own pending entry) renders straight from the submission, or enriches product details.
+    const matchingSub = routeId ? submissions.find((s) => s.id === bareRouteId || s.id === routeId || s.id === canonicalId) : null;
+    if (!rawProduct && matchingSub) {
+      rawProduct = submissionToProduct(matchingSub, products.length + 1);
+    } else if (rawProduct && matchingSub) {
+      const isBoilerplate = (d?: string | null) => !d || /is a high-quality product in the/i.test(d);
+      const chosenDescription =
+        (matchingSub.description && !isBoilerplate(matchingSub.description) ? matchingSub.description : undefined) ||
+        (rawProduct.description && !isBoilerplate(rawProduct.description) ? rawProduct.description : undefined) ||
+        matchingSub.description ||
+        rawProduct.description;
+
+      rawProduct = {
+        ...rawProduct,
+        description: chosenDescription,
+        problemItSolves: matchingSub.problemItSolves || rawProduct.problemItSolves,
+        solution: matchingSub.solution || rawProduct.solution,
+        uniqueSellingPoint: matchingSub.uniqueSellingPoint || rawProduct.uniqueSellingPoint,
+        targetAudience: matchingSub.targetAudience || rawProduct.targetAudience,
+      };
     }
 
     const rankIndex = rawProduct
@@ -3320,7 +3340,7 @@ export default function App() {
                         </div>
                       )}
 
-                      <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center">
+                      <div className="rounded-2xl border border-neutral-200 bg-white p-6 sm:p-12 text-center">
                         {selectedWeek && weekScopedProducts.length === 0 ? (
                           <>
                             <Trophy className="mx-auto h-10 w-10 text-neutral-700 mb-3" />
@@ -3332,7 +3352,7 @@ export default function App() {
                             <p className="text-xs text-neutral-500 max-w-sm mx-auto mt-1 mb-5 font-medium">
                               The round is fresh. Be the first to launch your SaaS this week and take the #1 spot.
                             </p>
-                            <div className="flex items-center justify-center gap-2">
+                            <div className="flex flex-wrap items-center justify-center gap-2">
                               <button
                                 type="button"
                                 onClick={() => {
@@ -3340,9 +3360,10 @@ export default function App() {
                                   setSelectedWeek(null);
                                   setCurrentPage(1);
                                 }}
-                                className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-transparent px-3.5 py-2 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-colors cursor-pointer"
+                                className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl border border-neutral-200 bg-transparent px-3.5 py-2 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-colors cursor-pointer"
                               >
-                                <span>See all-time launches</span>
+                                <span className="sm:hidden">All launches</span>
+                                <span className="hidden sm:inline">All-time launches</span>
                               </button>
                               <button
                                 type="button"
@@ -3350,10 +3371,11 @@ export default function App() {
                                   playSound('click', soundEnabled);
                                   handleOpenSubmit();
                                 }}
-                                className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-xs font-bold text-black hover:bg-neutral-200 transition-colors cursor-pointer"
+                                className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl bg-white px-4 py-2 text-xs font-bold text-black hover:bg-neutral-200 transition-colors cursor-pointer"
                               >
-                                <Plus className="h-3.5 w-3.5" />
-                                <span>Launch your SaaS</span>
+                                <Plus className="h-3.5 w-3.5 shrink-0" />
+                                <span className="sm:hidden">Launch</span>
+                                <span className="hidden sm:inline">Launch your SaaS</span>
                               </button>
                             </div>
                           </>

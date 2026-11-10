@@ -29,6 +29,9 @@ import {
   CornerDownRight,
   Heart,
   Share2,
+  AlertCircle,
+  Zap,
+  ShieldCheck,
 } from 'lucide-react';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
@@ -773,116 +776,202 @@ export const ProductPage: React.FC<ProductPageProps> = ({
               </section>
             )}
 
-            {/* About & Executive Overview (from Step 0 of /submit: Description) */}
-            <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs space-y-4">
-              <div className="border-b border-neutral-200 pb-3">
-                <h2 className="text-lg sm:text-xl font-bold text-neutral-950">
-                  About {product.name}
-                </h2>
-              </div>
+            {/* 1. About Section (from Step 0 of /submit: Description) */}
+            {(() => {
+              const isBoilerplateDesc = (desc?: string | null): boolean => {
+                if (!desc) return true;
+                const trimmed = desc.trim();
+                if (!trimmed) return true;
+                if (/is a high-quality product in the .* ecosystem/i.test(trimmed)) return true;
+                return false;
+              };
 
-              {product.description ? (
-                <RichText
-                  html={product.description}
-                  className="text-sm sm:text-base leading-relaxed text-neutral-700 font-normal"
-                />
-              ) : (
-                <p className="text-sm sm:text-base leading-relaxed text-neutral-700 font-normal">
-                  {`${product.name} is a premier platform in the ${product.category} space. Engineered to deliver exceptional speed, polish, and reliable performance, it helps builders and teams streamline their workflows.`}
-                </p>
-              )}
+              const cleanTagline = (product.tagline || '').trim().replace(/\.+$/, '');
+              const cleanAudience = (product.targetAudience || '').trim().replace(/\.+$/, '');
+              const displayDescription = isBoilerplateDesc(product.description) ? null : product.description;
 
-              {product.featuredQuote && (
-                <div className="rounded-xl border border-neutral-200 bg-white p-4 flex items-start gap-3">
-                  <MessageSquareQuote className="h-5 w-5 text-mint-600 shrink-0 mt-0.5" />
-                  <div className="text-xs font-semibold text-neutral-600 italic">
-                    "{product.featuredQuote}"
+              const richAboutFallback = (
+                <div className="space-y-3.5 text-sm sm:text-base leading-relaxed text-neutral-700 font-normal">
+                  <p>
+                    <strong className="font-bold text-neutral-950">{product.name}</strong>
+                    {cleanTagline ? ` — ${cleanTagline}.` : ` is a specialized SaaS platform designed for the ${product.category} ecosystem.`}
+                  </p>
+                  <p>
+                    {cleanAudience
+                      ? `Specially crafted for ${cleanAudience}, ${product.name} streamlines day-to-day operations, removes repetitive manual overhead, and accelerates team velocity with intuitive modern tooling.`
+                      : `Engineered for modern builders, teams, and creators, ${product.name} simplifies complex workflows in the ${product.category} domain by providing high-reliability features and a polished user experience.`}
+                  </p>
+                  <p>
+                    From initial setup to continuous daily usage, {product.name} focuses on delivering measurable performance, reliability, and immediate value right out of the box.
+                  </p>
+                </div>
+              );
+
+              return (
+                <div className="rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
+                  <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600 border border-blue-200/60 shrink-0">
+                        <Sparkles className="h-4 w-4 text-blue-600" />
+                      </div>
+                      <div>
+                        <h2 className="text-base sm:text-lg font-bold text-neutral-950">
+                          About {product.name}
+                        </h2>
+                        <p className="text-xs text-neutral-500 font-normal">
+                          Overview and background of the product
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-1">
+                    <RichText
+                      html={displayDescription}
+                      className="text-sm sm:text-base leading-relaxed text-neutral-700 font-normal"
+                      fallback={richAboutFallback}
+                    />
+                  </div>
+
+                  {product.featuredQuote && (
+                    <div className="rounded-xl border border-neutral-200 bg-neutral-50/70 p-4 flex items-start gap-3">
+                      <MessageSquareQuote className="h-5 w-5 text-mint-600 shrink-0 mt-0.5" />
+                      <div className="text-xs font-semibold text-neutral-700 italic">
+                        "{product.featuredQuote}"
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* 2. Problem Section (from Step 2 of /submit: Problem it solves) */}
+            <div className="rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-50 text-rose-600 border border-rose-200/60 shrink-0">
+                    <AlertCircle className="h-4 w-4 text-rose-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-base sm:text-lg font-bold text-neutral-950">
+                      Problem It Solves
+                    </h2>
+                    <p className="text-xs text-neutral-500 font-normal">
+                      The core challenges and pain points {product.name} addresses
+                    </p>
                   </div>
                 </div>
-              )}
+              </div>
+
+              <div className="pt-1">
+                <RichText
+                  html={product.problemItSolves}
+                  className="text-sm sm:text-base leading-relaxed text-neutral-700 font-normal"
+                  fallback={
+                    <p className="text-sm sm:text-base leading-relaxed text-neutral-700 font-normal">
+                      {`${product.name} addresses friction, fragmentation, and repetitive operational overhead encountered by teams and builders in the ${product.category} space.`}
+                    </p>
+                  }
+                />
+              </div>
             </div>
 
-            {/* Who it's for & What it does (from Step 2 of /submit: Target audience, Problem it solves, Solution, What makes it different) */}
-            {Boolean(product.targetAudience || product.problemItSolves || product.solution || product.uniqueSellingPoint) && (
-              <div className="rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-xs space-y-5">
-                <div className="border-b border-neutral-200 pb-3 flex items-center justify-between">
+            {/* 3. Solution Section (from Step 2 of /submit: Your solution) */}
+            <div className="rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200/60 shrink-0">
+                    <Zap className="h-4 w-4 text-emerald-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-base sm:text-lg font-bold text-neutral-950">
+                      The Solution
+                    </h2>
+                    <p className="text-xs text-neutral-500 font-normal">
+                      How {product.name} solves this problem
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-1">
+                <RichText
+                  html={product.solution}
+                  className="text-sm sm:text-base leading-relaxed text-neutral-700 font-normal"
+                  fallback={
+                    <p className="text-sm sm:text-base leading-relaxed text-neutral-700 font-normal">
+                      {`By unifying intuitive tooling with seamless performance, ${product.name} enables users to execute faster, automate tedious steps, and deliver superior results.`}
+                    </p>
+                  }
+                />
+              </div>
+            </div>
+
+            {/* 4. Why Different Section (from Step 2 of /submit: What makes it different) */}
+            <div className="rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-violet-50 text-violet-600 border border-violet-200/60 shrink-0">
+                    <ShieldCheck className="h-4 w-4 text-violet-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-base sm:text-lg font-bold text-neutral-950">
+                      Why {product.name} is Different
+                    </h2>
+                    <p className="text-xs text-neutral-500 font-normal">
+                      Key differentiators and competitive advantage
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-1">
+                <RichText
+                  html={product.uniqueSellingPoint}
+                  className="text-sm sm:text-base leading-relaxed text-neutral-700 font-normal"
+                  fallback={
+                    <p className="text-sm sm:text-base leading-relaxed text-neutral-700 font-normal">
+                      {`Built with a focus on simplicity, modern architecture, and speed, ${product.name} provides a distinctive edge over conventional and fragmented alternatives.`}
+                    </p>
+                  }
+                />
+              </div>
+            </div>
+
+            {/* 5. Target Audience Section (if provided in Step 2) */}
+            {product.targetAudience && (
+              <div className="rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
+                <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
                   <div className="flex items-center gap-2.5">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600 border border-blue-200/60 shrink-0">
-                      <Target className="h-4 w-4 text-blue-600" />
+                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-neutral-100 text-neutral-700 border border-neutral-200 shrink-0">
+                      <Target className="h-4 w-4 text-neutral-700" />
                     </div>
                     <div>
                       <h2 className="text-base sm:text-lg font-bold text-neutral-950">
-                        Who it's for & What {product.name} does
+                        Target Audience
                       </h2>
                       <p className="text-xs text-neutral-500 font-normal">
-                        Target audience, problem solved, and key differentiators
+                        Who {product.name} is designed for
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div className="divide-y divide-neutral-200">
-                  {/* Target Audience */}
-                  {product.targetAudience && (
-                    <div className="pb-4 space-y-2">
-                      <h3 className="text-sm sm:text-base font-bold text-neutral-950">
-                        Target Audience
-                      </h3>
-                      <p className="text-xs sm:text-sm text-neutral-700 leading-relaxed font-normal">
-                        {product.targetAudience}
-                      </p>
-                      {parsePersonas(product.targetAudience).length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 pt-1">
-                          {parsePersonas(product.targetAudience).map((persona) => (
-                            <span
-                              key={persona}
-                              className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 py-1 text-xs font-semibold text-neutral-800 shadow-2xs"
-                            >
-                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                              <span>{persona}</span>
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Problem it solves */}
-                  {product.problemItSolves && (
-                    <div className={`${product.targetAudience ? 'pt-4' : ''} pb-4 space-y-1.5`}>
-                      <h3 className="text-sm sm:text-base font-bold text-neutral-950">
-                        Problem it solves
-                      </h3>
-                      <RichText
-                        html={product.problemItSolves}
-                        className="text-sm sm:text-base leading-relaxed text-neutral-700 font-normal"
-                      />
-                    </div>
-                  )}
-
-                  {/* Solution */}
-                  {product.solution && (
-                    <div className={`${product.targetAudience || product.problemItSolves ? 'pt-4' : ''} pb-4 space-y-1.5`}>
-                      <h3 className="text-sm sm:text-base font-bold text-neutral-950">
-                        Solution
-                      </h3>
-                      <RichText
-                        html={product.solution}
-                        className="text-sm sm:text-base leading-relaxed text-neutral-700 font-normal"
-                      />
-                    </div>
-                  )}
-
-                  {/* What makes it different */}
-                  {product.uniqueSellingPoint && (
-                    <div className={`${product.targetAudience || product.problemItSolves || product.solution ? 'pt-4' : ''} space-y-1.5`}>
-                      <h3 className="text-sm sm:text-base font-bold text-neutral-950">
-                        What makes it different
-                      </h3>
-                      <RichText
-                        html={product.uniqueSellingPoint}
-                        className="text-sm sm:text-base leading-relaxed text-neutral-700 font-normal"
-                      />
+                <div className="space-y-2 pt-1">
+                  <p className="text-xs sm:text-sm text-neutral-700 leading-relaxed font-normal">
+                    {product.targetAudience}
+                  </p>
+                  {parsePersonas(product.targetAudience).length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {parsePersonas(product.targetAudience).map((persona) => (
+                        <span
+                          key={persona}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 py-1 text-xs font-semibold text-neutral-800 shadow-2xs"
+                        >
+                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                          <span>{persona}</span>
+                        </span>
+                      ))}
                     </div>
                   )}
                 </div>

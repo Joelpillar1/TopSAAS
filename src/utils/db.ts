@@ -2,6 +2,7 @@ import { supabase } from './supabase';
 import { Product, Category, Comment, WebsiteSubmission, Sponsor, SponsorDraft } from '../types';
 import { getMonthKey, getWeekNumber } from './weeks';
 import { getCached, setCached, invalidateCache, CACHE_TTL } from './cache';
+import { richTextToPlain } from './richText';
 
 export { invalidateCache, CACHE_TTL };
 
@@ -299,20 +300,24 @@ export function submissionToProduct(sub: WebsiteSubmission, rank: number = 1): P
   const favicon = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
   const prodId = publishedProductId(sub.id);
 
+  const plainProblem = richTextToPlain(sub.problemItSolves).trim();
+  const plainSolution = richTextToPlain(sub.solution).trim();
+  const plainUsp = richTextToPlain(sub.uniqueSellingPoint).trim();
+
   const whatItDoesList: string[] = [];
-  if (sub.problemItSolves) whatItDoesList.push(`Problem: ${sub.problemItSolves}`);
-  if (sub.solution) whatItDoesList.push(`Solution: ${sub.solution}`);
-  if (sub.uniqueSellingPoint) whatItDoesList.push(`Difference: ${sub.uniqueSellingPoint}`);
+  if (plainProblem) whatItDoesList.push(`Problem: ${plainProblem}`);
+  if (plainSolution) whatItDoesList.push(`Solution: ${plainSolution}`);
+  if (plainUsp) whatItDoesList.push(`Difference: ${plainUsp}`);
 
   const featuresList = [];
   if (sub.solution) {
-    featuresList.push({ title: 'Core Solution', description: sub.solution, tag: 'Superpower' });
+    featuresList.push({ title: 'Core Solution', description: plainSolution || sub.solution, tag: 'Superpower' });
   }
   if (sub.uniqueSellingPoint) {
-    featuresList.push({ title: 'Key Advantage', description: sub.uniqueSellingPoint, tag: 'Differentiator' });
+    featuresList.push({ title: 'Key Advantage', description: plainUsp || sub.uniqueSellingPoint, tag: 'Differentiator' });
   }
   if (sub.problemItSolves) {
-    featuresList.push({ title: 'Problem Solved', description: sub.problemItSolves, tag: 'Value' });
+    featuresList.push({ title: 'Problem Solved', description: plainProblem || sub.problemItSolves, tag: 'Value' });
   }
 
   return {
@@ -346,7 +351,7 @@ export function submissionToProduct(sub: WebsiteSubmission, rank: number = 1): P
     submittedBy: sub.submittedBy,
     scheduledLaunchWeek: sub.scheduledLaunchWeek,
     scheduledLaunchDate: sub.scheduledLaunchDate,
-    description: sub.description || `${sub.name} is a high-quality product in the ${sub.category} ecosystem. ${sub.tagline}.`,
+    description: sub.description || undefined,
     problemItSolves: sub.problemItSolves || undefined,
     solution: sub.solution || undefined,
     uniqueSellingPoint: sub.uniqueSellingPoint || undefined,
@@ -413,6 +418,10 @@ export const PRODUCT_DIRECTORY_COLUMNS = [
   'sponsor_clicks',
   'pricing_model',
   'target_audience',
+  'description',
+  'problem_it_solves',
+  'solution',
+  'unique_selling_point',
   'offer_discount',
   'offer_code',
   'offer_url',
@@ -461,8 +470,33 @@ export async function loadProductById(id: string, forceFresh = false): Promise<P
       .or(`id.eq.${id},id.eq.${canonical},id.eq.${bare}`)
       .limit(1)
       .maybeSingle();
-    if (error || !data) return getCached<Product>(cacheKey, Infinity);
+    if (error || !data) {
+      // Fallback: Check submissions table if not found in products
+      const sub = await loadSubmissionById(bare, forceFresh) || (bare !== id ? await loadSubmissionById(id, forceFresh) : null);
+      if (sub) {
+        const prodFromSub = submissionToProduct(sub);
+        setCached(cacheKey, prodFromSub);
+        return prodFromSub;
+      }
+      return getCached<Product>(cacheKey, Infinity);
+    }
     const mapped = mapDbProduct(data);
+    const isBoilerplate = (d?: string | null) => !d || /is a high-quality product in the/i.test(d);
+    // If rich fields were missing from products table row, try to hydrate from submissions
+    if (!mapped.problemItSolves || !mapped.solution || !mapped.uniqueSellingPoint || isBoilerplate(mapped.description)) {
+      try {
+        const sub = await loadSubmissionById(bare, forceFresh);
+        if (sub) {
+          if (sub.description && (isBoilerplate(mapped.description) || !mapped.description)) {
+            mapped.description = sub.description;
+          }
+          if (!mapped.problemItSolves && sub.problemItSolves) mapped.problemItSolves = sub.problemItSolves;
+          if (!mapped.solution && sub.solution) mapped.solution = sub.solution;
+          if (!mapped.uniqueSellingPoint && sub.uniqueSellingPoint) mapped.uniqueSellingPoint = sub.uniqueSellingPoint;
+          if (!mapped.targetAudience && sub.targetAudience) mapped.targetAudience = sub.targetAudience;
+        }
+      } catch { }
+    }
     setCached(cacheKey, mapped);
     return mapped;
   } catch {

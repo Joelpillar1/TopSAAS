@@ -344,7 +344,9 @@
 
 /* -- Rich text: shared between the editor and the published product page -- */
 .rich-content {
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  width: 100%;
 }
 
 .rich-content > :first-child {
@@ -388,19 +390,22 @@
 }
 
 .rich-content ul {
-  margin: 0.4em 0 0.7em;
-  padding-left: 1.25em;
-  list-style: disc;
+  margin: 0.5em 0 0.8em;
+  padding-left: 1.5em;
+  list-style-type: disc !important;
+  list-style-position: outside;
 }
 
 .rich-content ol {
-  margin: 0.4em 0 0.7em;
-  padding-left: 1.35em;
-  list-style: decimal;
+  margin: 0.5em 0 0.8em;
+  padding-left: 1.5em;
+  list-style-type: decimal !important;
+  list-style-position: outside;
 }
 
 .rich-content li {
-  margin: 0.2em 0;
+  margin: 0.25em 0;
+  display: list-item !important;
 }
 
 .rich-content li > p {

@@ -4,6 +4,7 @@ import { VerifiedBadge } from './VerifiedBadge';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
+import { RichText } from './RichText';
 import { formatOutboundUrl, trackOutboundClick } from '../utils/referral';
 
 interface ProductDetailDrawerProps {
@@ -129,13 +130,52 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
             </div>
           </div>
 
-          {/* Description */}
-          {product.description && (
-            <div className="mt-5 rounded-xl border border-neutral-200 bg-neutral-50 p-3.5">
-              <h4 className="text-xs font-bold text-neutral-800  mb-1">About</h4>
-              <p className="text-xs text-neutral-600 leading-relaxed font-normal">
-                {product.description}
-              </p>
+          {/* About */}
+          {(() => {
+            const isBoilerplate = !product.description || /is a high-quality product in the .* ecosystem/i.test(product.description);
+            const cleanTagline = (product.tagline || '').trim().replace(/\.+$/, '');
+            const cleanAudience = (product.targetAudience || '').trim().replace(/\.+$/, '');
+            if (!isBoilerplate && product.description) {
+              return (
+                <div className="mt-4 rounded-xl border border-neutral-200 bg-neutral-50 p-3.5 space-y-1">
+                  <h4 className="text-xs font-bold text-neutral-800">About</h4>
+                  <RichText html={product.description} className="text-xs text-neutral-600 leading-relaxed font-normal" />
+                </div>
+              );
+            }
+            return (
+              <div className="mt-4 rounded-xl border border-neutral-200 bg-neutral-50 p-3.5 space-y-1">
+                <h4 className="text-xs font-bold text-neutral-800">About</h4>
+                <p className="text-xs text-neutral-600 leading-relaxed font-normal">
+                  <strong className="font-semibold text-neutral-900">{product.name}</strong>
+                  {cleanTagline ? ` — ${cleanTagline}.` : ` is a specialized SaaS platform in the ${product.category} ecosystem.`}{' '}
+                  {cleanAudience ? `Specially crafted for ${cleanAudience}.` : `Designed to streamline team workflows and boost productivity.`}
+                </p>
+              </div>
+            );
+          })()}
+
+          {/* Problem */}
+          {product.problemItSolves && (
+            <div className="mt-3 rounded-xl border border-neutral-200 bg-neutral-50 p-3.5 space-y-1">
+              <h4 className="text-xs font-bold text-neutral-800">Problem It Solves</h4>
+              <RichText html={product.problemItSolves} className="text-xs text-neutral-600 leading-relaxed font-normal" />
+            </div>
+          )}
+
+          {/* Solution */}
+          {product.solution && (
+            <div className="mt-3 rounded-xl border border-neutral-200 bg-neutral-50 p-3.5 space-y-1">
+              <h4 className="text-xs font-bold text-neutral-800">The Solution</h4>
+              <RichText html={product.solution} className="text-xs text-neutral-600 leading-relaxed font-normal" />
+            </div>
+          )}
+
+          {/* Why Different */}
+          {product.uniqueSellingPoint && (
+            <div className="mt-3 rounded-xl border border-neutral-200 bg-neutral-50 p-3.5 space-y-1">
+              <h4 className="text-xs font-bold text-neutral-800">Why It's Different</h4>
+              <RichText html={product.uniqueSellingPoint} className="text-xs text-neutral-600 leading-relaxed font-normal" />
             </div>
           )}
         </div>
