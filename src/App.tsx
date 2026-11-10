@@ -857,14 +857,18 @@ export default function App() {
     const targetId = productRouteId;
     loadProductById(targetId).then((fullProd) => {
       if (!fullProd) return;
-      setProducts((prev) =>
-        prev.map((p) => {
-          if (p.id === fullProd.id || p.id === targetId || p.id === publishedProductId(targetId)) {
-            return { ...p, ...fullProd };
-          }
-          return p;
-        })
-      );
+      setProducts((prev) => {
+        const found = prev.some((p) => p.id === fullProd.id || p.id === targetId || p.id === publishedProductId(targetId));
+        if (found) {
+          return prev.map((p) => {
+            if (p.id === fullProd.id || p.id === targetId || p.id === publishedProductId(targetId)) {
+              return { ...p, ...fullProd };
+            }
+            return p;
+          });
+        }
+        return [...prev, fullProd];
+      });
     });
   }, [currentRoute, productRouteId]);
 
