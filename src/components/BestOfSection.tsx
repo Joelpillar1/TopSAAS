@@ -17,7 +17,7 @@ interface BestOfSectionProps {
 
 /**
  * Homepage ranking list for a completed period, using the same row design as
- * the main directory. The top 3 rows get the featured gradient frame.
+ * the main directory. The top 3 rows get a light blue gradient background.
  */
 export const BestOfSection: React.FC<BestOfSectionProps> = ({
   id,
@@ -54,6 +54,7 @@ export const BestOfSection: React.FC<BestOfSectionProps> = ({
               key={product.id}
               product={product}
               rank={index + 1}
+              blueGradient={index < 3}
               soundEnabled={soundEnabled}
               showVerified
               commentCount={commentCounts[product.id] ?? 0}

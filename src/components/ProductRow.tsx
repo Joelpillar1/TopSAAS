@@ -17,6 +17,10 @@ interface ProductRowProps {
   commentCount?: number;
   /** Highlights the row with the featured gradient frame (used for top 3) */
   featuredFrame?: boolean;
+  /** Applies a light blue gradient background (used for Best Of top 3) */
+  blueGradient?: boolean;
+  /** Gradient color variant for highlighting top ranks ('blue' | 'amber' | 'purple') */
+  gradientVariant?: 'none' | 'blue' | 'amber' | 'purple';
   /** Wraps the row with a border beam effect (default: false) */
   borderBeam?: boolean;
   onOpen: (product: Product) => void;
@@ -45,6 +49,8 @@ export const ProductRow: React.FC<ProductRowProps> = ({
   showVerified = false,
   commentCount,
   featuredFrame = false,
+  blueGradient = false,
+  gradientVariant = 'none',
   borderBeam = false,
   onOpen,
   onUpvote,
@@ -93,6 +99,19 @@ export const ProductRow: React.FC<ProductRowProps> = ({
     }
   };
 
+  const effectiveGradient: 'none' | 'blue' | 'amber' | 'purple' =
+    gradientVariant !== 'none'
+      ? gradientVariant
+      : blueGradient
+      ? 'blue'
+      : 'none';
+
+  const gradientStyles: Record<'blue' | 'amber' | 'purple', string> = {
+    blue: 'border-blue-200/90 bg-gradient-to-r from-blue-100/70 via-sky-50/50 to-white/95 shadow-[0_2px_12px_rgba(59,130,246,0.06)] hover:border-blue-300 hover:shadow-[0_4px_18px_rgba(59,130,246,0.12)]',
+    amber: 'border-amber-200/90 bg-gradient-to-r from-amber-100/70 via-yellow-50/50 to-white/95 shadow-[0_2px_12px_rgba(245,158,11,0.06)] hover:border-amber-300 hover:shadow-[0_4px_18px_rgba(245,158,11,0.12)]',
+    purple: 'border-purple-200/90 bg-gradient-to-r from-purple-100/70 via-violet-50/50 to-white/95 shadow-[0_2px_12px_rgba(168,85,247,0.06)] hover:border-purple-300 hover:shadow-[0_4px_18px_rgba(168,85,247,0.12)]',
+  };
+
   const row = (
     <div
       role="button"
@@ -105,7 +124,9 @@ export const ProductRow: React.FC<ProductRowProps> = ({
         }
       }}
       className={`group relative flex w-full items-center gap-3.5 rounded-2xl border p-4 text-left transition-all duration-200 ease-out cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 sm:gap-4 ${
-        featuredFrame
+        effectiveGradient !== 'none'
+          ? gradientStyles[effectiveGradient]
+          : featuredFrame
           ? 'border-neutral-300/80 bg-gradient-to-r from-neutral-200/65 via-neutral-100/35 to-white/95 shadow-[0_2px_12px_rgba(0,0,0,0.05)] hover:border-neutral-400 hover:shadow-[0_4px_18px_rgba(0,0,0,0.08)]'
           : 'border-neutral-200/80 bg-white shadow-2xs hover:border-neutral-300 hover:bg-neutral-50/70'
       }`}

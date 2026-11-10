@@ -3568,6 +3568,15 @@ export default function App() {
                             <ProductRow
                               product={p}
                               rank={currentRank}
+                              gradientVariant={
+                                currentRank <= 3
+                                  ? selectedWeek?.isCurrent
+                                    ? 'amber'
+                                    : selectedWeek
+                                    ? 'blue'
+                                    : 'none'
+                                  : 'none'
+                              }
                               soundEnabled={soundEnabled}
                               showVerified
                               commentCount={commentCounts[p.id] ?? 0}
