@@ -6,7 +6,7 @@ import { getWebsiteFavicon } from '../utils/logo';
 import { playSound } from '../utils/sound';
 import { BadgeStyle, BadgeTheme, BadgeFormat, generateBadgeSvg, generateBadgeSnippet } from '../utils/badgeSvg';
 import { verifyBadgeViaEdge, fetchHtmlBestEffort, containsBadge } from '../utils/badgeVerify';
-import { prepareRichText } from '../utils/richText';
+import { prepareRichText, richTextToPlain } from '../utils/richText';
 import { uploadScreenshotToStorage } from '../utils/storage';
 import { RichTextEditor } from './RichTextEditor';
 import { LaunchWeekSelector } from './LaunchWeekSelector';
@@ -69,7 +69,17 @@ interface FormState {
   scheduledLaunchDate?: number;
 }
 
-type FieldKey = 'name' | 'tagline' | 'url' | 'category' | 'demoVideoUrl' | 'badge';
+type FieldKey =
+  | 'name'
+  | 'tagline'
+  | 'url'
+  | 'category'
+  | 'demoVideoUrl'
+  | 'badge'
+  | 'description'
+  | 'problemItSolves'
+  | 'solution'
+  | 'uniqueSellingPoint';
 
 const EMPTY_FORM: FormState = {
   url: '',
@@ -534,8 +544,27 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
       setBadgeVerificationSuccess(null);
       setBadgeVerificationError(null);
     }
-    if ((key === 'name' || key === 'tagline' || key === 'url' || key === 'category') && value) {
-      setErrors((prev) => ({ ...prev, [key]: undefined }));
+    if (
+      (key === 'name' ||
+        key === 'tagline' ||
+        key === 'url' ||
+        key === 'category' ||
+        key === 'description' ||
+        key === 'problemItSolves' ||
+        key === 'solution' ||
+        key === 'uniqueSellingPoint') &&
+      value
+    ) {
+      const plain = typeof value === 'string' ? richTextToPlain(value).trim() : '';
+      if (
+        plain.length >= 10 ||
+        (key !== 'description' &&
+          key !== 'problemItSolves' &&
+          key !== 'solution' &&
+          key !== 'uniqueSellingPoint')
+      ) {
+        setErrors((prev) => ({ ...prev, [key]: undefined }));
+      }
     }
   };
 
@@ -588,6 +617,13 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
       } else if (form.tagline.trim().length > 80) {
         out.tagline = 'Taglines are capped at 80 characters.';
       }
+
+      const plainDesc = richTextToPlain(form.description).trim();
+      if (!plainDesc) {
+        out.description = 'Please provide an About description for your product.';
+      } else if (plainDesc.length < 10) {
+        out.description = 'Description must be at least 10 characters.';
+      }
     } else if (i === 1) {
       if (form.demoVideoUrl.trim()) {
         const check = normalizeUrl(form.demoVideoUrl);
@@ -596,6 +632,27 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
     } else if (i === 2) {
       if (form.categories.length === 0 && !form.category.trim()) {
         out.category = 'Choose at least one category for your listing.';
+      }
+
+      const plainProblem = richTextToPlain(form.problemItSolves).trim();
+      if (!plainProblem) {
+        out.problemItSolves = 'Please describe the problem your product solves.';
+      } else if (plainProblem.length < 10) {
+        out.problemItSolves = 'Problem description must be at least 10 characters.';
+      }
+
+      const plainSolution = richTextToPlain(form.solution).trim();
+      if (!plainSolution) {
+        out.solution = 'Please describe your solution.';
+      } else if (plainSolution.length < 10) {
+        out.solution = 'Solution description must be at least 10 characters.';
+      }
+
+      const plainDiff = richTextToPlain(form.uniqueSellingPoint).trim();
+      if (!plainDiff) {
+        out.uniqueSellingPoint = 'Please describe what makes your product different.';
+      } else if (plainDiff.length < 10) {
+        out.uniqueSellingPoint = 'Differentiator must be at least 10 characters.';
       }
     }
     return out;
@@ -608,6 +665,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
       return (
         form.name.trim().length >= 2 &&
         form.tagline.trim().length >= 3 &&
+        richTextToPlain(form.description).trim().length >= 10 &&
         normalizeUrl(form.url).ok
       );
     }
@@ -615,7 +673,13 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
       return isStepComplete(0);
     }
     if (i === 2) {
-      return isStepComplete(0) && (form.categories.length > 0 || !!form.category.trim());
+      return (
+        isStepComplete(0) &&
+        (form.categories.length > 0 || !!form.category.trim()) &&
+        richTextToPlain(form.problemItSolves).trim().length >= 10 &&
+        richTextToPlain(form.solution).trim().length >= 10 &&
+        richTextToPlain(form.uniqueSellingPoint).trim().length >= 10
+      );
     }
     if (i === 3) {
       return isStepComplete(0) && isStepComplete(2);
@@ -1120,7 +1184,11 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
   const showNameError = step === 0 && !!errors.name;
   const showTaglineError = step === 0 && !!errors.tagline;
   const showUrlError = step === 0 && !!errors.url;
+  const showDescriptionError = step === 0 && !!errors.description;
   const showCategoryError = step === 2 && !!errors.category;
+  const showProblemError = step === 2 && !!errors.problemItSolves;
+  const showSolutionError = step === 2 && !!errors.solution;
+  const showDiffError = step === 2 && !!errors.uniqueSellingPoint;
 
   const autoLogoPreview = !form.logoDataUrl && normalizeUrl(form.url).ok ? getWebsiteFavicon(form.url, 128) : '';
 
@@ -1292,7 +1360,9 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
               </div>
 
               <div>
-                <label className={labelClass}>Description</label>
+                <label className={labelClass}>
+                  About / Description <span className="text-red-400">*</span>
+                </label>
                 <RichTextEditor
                   value={form.description}
                   onChange={(html) => {
@@ -1302,8 +1372,10 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                   placeholder="What does it do, and who is it for? Use the toolbar to add bold, lists, links and more."
                   maxLength={2000}
                   minHeightClass="min-h-[150px]"
-                  ariaLabel="Description"
+                  ariaLabel="About / Description"
+                  className={showDescriptionError ? 'border-red-400 ring-1 ring-red-400' : ''}
                 />
+                <FieldError message={showDescriptionError ? errors.description : undefined} />
               </div>
             </section>
           )}
@@ -1879,7 +1951,9 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                     />
                   </div>
                   <div>
-                    <label className={labelClass}>Problem it solves</label>
+                    <label className={labelClass}>
+                      Problem it solves <span className="text-red-400">*</span>
+                    </label>
                     <RichTextEditor
                       value={form.problemItSolves}
                       onChange={(html) => set('problemItSolves', html)}
@@ -1887,10 +1961,14 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                       maxLength={600}
                       minHeightClass="min-h-[96px]"
                       ariaLabel="Problem it solves"
+                      className={showProblemError ? 'border-red-400 ring-1 ring-red-400' : ''}
                     />
+                    <FieldError message={showProblemError ? errors.problemItSolves : undefined} />
                   </div>
                   <div>
-                    <label className={labelClass}>Your solution</label>
+                    <label className={labelClass}>
+                      Your solution <span className="text-red-400">*</span>
+                    </label>
                     <RichTextEditor
                       value={form.solution}
                       onChange={(html) => set('solution', html)}
@@ -1898,10 +1976,14 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                       maxLength={600}
                       minHeightClass="min-h-[96px]"
                       ariaLabel="Your solution"
+                      className={showSolutionError ? 'border-red-400 ring-1 ring-red-400' : ''}
                     />
+                    <FieldError message={showSolutionError ? errors.solution : undefined} />
                   </div>
                   <div>
-                    <label className={labelClass}>What makes it different</label>
+                    <label className={labelClass}>
+                      What makes it different <span className="text-red-400">*</span>
+                    </label>
                     <RichTextEditor
                       value={form.uniqueSellingPoint}
                       onChange={(html) => set('uniqueSellingPoint', html)}
@@ -1909,7 +1991,9 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                       maxLength={600}
                       minHeightClass="min-h-[96px]"
                       ariaLabel="What makes it different"
+                      className={showDiffError ? 'border-red-400 ring-1 ring-red-400' : ''}
                     />
+                    <FieldError message={showDiffError ? errors.uniqueSellingPoint : undefined} />
                   </div>
                 </div>
               </div>

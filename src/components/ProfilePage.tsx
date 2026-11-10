@@ -35,7 +35,7 @@ import { ProductLogo } from './ProductLogo';
 import { playSound } from '../utils/sound';
 import { EmbedBadgeModal } from './EmbedBadgeModal';
 import { RichTextEditor } from './RichTextEditor';
-import { prepareRichText } from '../utils/richText';
+import { prepareRichText, richTextToPlain } from '../utils/richText';
 import { uploadScreenshotToStorage } from '../utils/storage';
 import {
   getUserDrafts,
@@ -769,6 +769,22 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
     }
     if (!editForm.url.trim()) {
       setEditError('Website URL is required');
+      return;
+    }
+    if (!richTextToPlain(editForm.description).trim()) {
+      setEditError('About / Description is required');
+      return;
+    }
+    if (!richTextToPlain(editForm.problemItSolves).trim()) {
+      setEditError('Problem it solves is required');
+      return;
+    }
+    if (!richTextToPlain(editForm.solution).trim()) {
+      setEditError('Your solution is required');
+      return;
+    }
+    if (!richTextToPlain(editForm.uniqueSellingPoint).trim()) {
+      setEditError('What makes it different is required');
       return;
     }
 
@@ -1900,19 +1916,23 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                   </div>
 
                   <div>
-                    <label className={labelClass}>Description / Overview</label>
+                    <label className={labelClass}>
+                      About / Description <span className="text-red-400">*</span>
+                    </label>
                     <RichTextEditor
                       value={editForm.description}
                       onChange={(html) => setEditForm((p) => ({ ...p, description: html }))}
                       placeholder="Tell visitors what your product does and how it helps them."
                       maxLength={2000}
                       minHeightClass="min-h-[110px]"
-                      ariaLabel="Description / Overview"
+                      ariaLabel="About / Description"
                     />
                   </div>
 
                   <div>
-                    <label className={labelClass}>Problem It Solves</label>
+                    <label className={labelClass}>
+                      Problem It Solves <span className="text-red-400">*</span>
+                    </label>
                     <RichTextEditor
                       value={editForm.problemItSolves}
                       onChange={(html) => setEditForm((p) => ({ ...p, problemItSolves: html }))}
@@ -1924,7 +1944,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                   </div>
 
                   <div>
-                    <label className={labelClass}>Your Solution</label>
+                    <label className={labelClass}>
+                      Your Solution <span className="text-red-400">*</span>
+                    </label>
                     <RichTextEditor
                       value={editForm.solution}
                       onChange={(html) => setEditForm((p) => ({ ...p, solution: html }))}
@@ -1936,7 +1958,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                   </div>
 
                   <div>
-                    <label className={labelClass}>What Makes It Different</label>
+                    <label className={labelClass}>
+                      What Makes It Different <span className="text-red-400">*</span>
+                    </label>
                     <RichTextEditor
                       value={editForm.uniqueSellingPoint}
                       onChange={(html) => setEditForm((p) => ({ ...p, uniqueSellingPoint: html }))}
