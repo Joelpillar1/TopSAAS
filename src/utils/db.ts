@@ -482,8 +482,8 @@ export async function loadProductById(id: string, forceFresh = false): Promise<P
     }
     const mapped = mapDbProduct(data);
     const isBoilerplate = (d?: string | null) => !d || /is a high-quality product in the/i.test(d);
-    // If rich fields were missing from products table row, try to hydrate from submissions
-    if (!mapped.problemItSolves || !mapped.solution || !mapped.uniqueSellingPoint || isBoilerplate(mapped.description)) {
+    // If rich fields or screenshots were missing from products table row, try to hydrate from submissions
+    if (!mapped.problemItSolves || !mapped.solution || !mapped.uniqueSellingPoint || isBoilerplate(mapped.description) || !mapped.screenshots || mapped.screenshots.length === 0) {
       try {
         const sub = await loadSubmissionById(bare, forceFresh);
         if (sub) {
@@ -494,6 +494,10 @@ export async function loadProductById(id: string, forceFresh = false): Promise<P
           if (!mapped.solution && sub.solution) mapped.solution = sub.solution;
           if (!mapped.uniqueSellingPoint && sub.uniqueSellingPoint) mapped.uniqueSellingPoint = sub.uniqueSellingPoint;
           if (!mapped.targetAudience && sub.targetAudience) mapped.targetAudience = sub.targetAudience;
+          if ((!mapped.screenshots || mapped.screenshots.length === 0) && sub.screenshots && sub.screenshots.length > 0) {
+            mapped.screenshots = sub.screenshots;
+          }
+          if (!mapped.demoVideoUrl && sub.demoVideoUrl) mapped.demoVideoUrl = sub.demoVideoUrl;
         }
       } catch { }
     }
@@ -540,7 +544,12 @@ export async function saveAllProducts(products: Product[]): Promise<void> {
     const rows = products.map((p) => toDbProduct(p));
     // Preserve existing engagement counters so stale client state can't wipe them
     await preserveExistingCounters(rows);
-    const { error } = await supabase.from('products').upsert(rows, { onConflict: 'id' });
+    let { error } = await supabase.from('products').upsert(rows, { onConflict: 'id' });
+    if (error && (error.code === '23503' || String(error.message).includes('submitted_by'))) {
+      const rowsNoFk = rows.map((r) => ({ ...r, submitted_by: null }));
+      const retry = await supabase.from('products').upsert(rowsNoFk, { onConflict: 'id' });
+      error = retry.error;
+    }
     if (error) {
       await saveProductRanksDirect(products);
     }
@@ -558,8 +567,16 @@ export async function insertProductDirect(p: Product): Promise<boolean> {
     const row = toDbProduct(p);
     // Never clobber existing engagement counters (upvotes, clicks)
     await preserveExistingCounters([row]);
-    const { error } = await supabase.from('products').upsert(row, { onConflict: 'id' });
+    let { error } = await supabase.from('products').upsert(row, { onConflict: 'id' });
     if (!error) return true;
+
+    // If error was foreign key on submitted_by, try upserting row with submitted_by: null
+    if (error && (error.code === '23503' || String(error.message).includes('submitted_by'))) {
+      const rowNoFk = { ...row, submitted_by: null };
+      const retry = await supabase.from('products').upsert(rowNoFk, { onConflict: 'id' });
+      if (!retry.error) return true;
+      error = retry.error;
+    }
 
     // Fallback: insert with all possible rich fields (skip columns that don't exist yet)
     console.warn('insertProductDirect primary insert failed, retrying minimal:', error.message);
@@ -579,6 +596,9 @@ export async function insertProductDirect(p: Product): Promise<boolean> {
       is_user_owned: false,
     };
     if (p.logoUrl && !p.logoUrl.startsWith('data:image')) minimal.logo_url = p.logoUrl;
+    if (p.screenshots && Array.isArray(p.screenshots) && p.screenshots.length > 0) {
+      minimal.screenshots = p.screenshots;
+    }
     if (p.twitterHandle) minimal.twitter_handle = p.twitterHandle;
     if (p.description) minimal.description = p.description;
     if (p.problemItSolves) minimal.problem_it_solves = p.problemItSolves;
@@ -595,9 +615,6 @@ export async function insertProductDirect(p: Product): Promise<boolean> {
     if (p.creatorAvatar) minimal.creator_avatar = p.creatorAvatar;
     if (p.creatorRole) minimal.creator_role = p.creatorRole;
     if (p.demoVideoUrl) minimal.demo_video_url = p.demoVideoUrl;
-    if (p.submittedBy && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(p.submittedBy)) {
-      minimal.submitted_by = p.submittedBy;
-    }
 
     await preserveExistingCounters([minimal]);
     const { error: fallbackError } = await supabase.from('products').upsert(minimal, { onConflict: 'id' });
@@ -614,7 +631,12 @@ export async function updateProductDirect(p: Product): Promise<boolean> {
     invalidateCache('products_list');
     invalidateCache(`product_${p.id}`);
     const row = toDbProduct(p);
-    const { error } = await supabase.from('products').update(row).eq('id', p.id);
+    let { error } = await supabase.from('products').update(row).eq('id', p.id);
+    if (error && (error.code === '23503' || String(error.message).includes('submitted_by'))) {
+      const rowNoFk = { ...row, submitted_by: null };
+      const retry = await supabase.from('products').update(rowNoFk).eq('id', p.id);
+      error = retry.error;
+    }
     return !error;
   } catch {
     return false;

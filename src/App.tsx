@@ -27,7 +27,7 @@ import { LegalTab } from './components/LegalModal';
 import { playSound } from './utils/sound';
 import confetti from 'canvas-confetti';
 import { supabase } from './utils/supabase';
-import { loadProducts, loadProductById, loadSubmissions, invalidateCache, saveAllProducts, saveProductRanksDirect, debouncedSyncProducts, toggleUpvote, getUserUpvotes, getUpvoteStats, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, setGlobalFeaturedProducts, setProductFeaturedPosition, LOCAL_FEATURED_PRODUCTS_KEY, LOCAL_FEATURED_POSITIONS_MAP_KEY, insertProductDirect, fetchComments, addComment, getCachedCommentsSync, submissionToProduct, publishedProductId, isProductUpvoted, getGuestUpvotes, saveGuestUpvotes, incrementProductUpvotesDirect, incrementProductClicksDirect, loadSponsors, createSponsor, updateSponsor, endSponsor, endSponsorsForProduct, toggleSponsorPause, incrementSponsorClicks, sponsorToDisplayProduct, isLiveSponsor, getSponsorRailsEnabled, setSponsorRailsEnabled, LOCAL_SPONSOR_RAILS_KEY, getFeaturedPosition, setFeaturedPosition, LOCAL_FEATURED_POSITION_KEY, SUBMISSION_QUEUE_COLUMNS, loadSubmissionById, isSponsorOnlyProduct } from './utils/db';
+import { loadProducts, loadProductById, loadSubmissions, invalidateCache, saveAllProducts, saveProductRanksDirect, debouncedSyncProducts, toggleUpvote, getUserUpvotes, getUpvoteStats, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, setGlobalFeaturedProducts, setProductFeaturedPosition, LOCAL_FEATURED_PRODUCTS_KEY, LOCAL_FEATURED_POSITIONS_MAP_KEY, insertProductDirect, updateProductDirect, fetchComments, addComment, getCachedCommentsSync, submissionToProduct, publishedProductId, isProductUpvoted, getGuestUpvotes, saveGuestUpvotes, incrementProductUpvotesDirect, incrementProductClicksDirect, loadSponsors, createSponsor, updateSponsor, endSponsor, endSponsorsForProduct, toggleSponsorPause, incrementSponsorClicks, sponsorToDisplayProduct, isLiveSponsor, getSponsorRailsEnabled, setSponsorRailsEnabled, LOCAL_SPONSOR_RAILS_KEY, getFeaturedPosition, setFeaturedPosition, LOCAL_FEATURED_POSITION_KEY, SUBMISSION_QUEUE_COLUMNS, loadSubmissionById, isSponsorOnlyProduct } from './utils/db';
 import { trackGoal } from './utils/trackkit';
 import { isInWeek, getWeekInfo, getWeekNumber, getWeekByNumber, getMonthKey, isInMonth, formatMonthLabel, formatWeekDateRange, WeekInfo } from './utils/weeks';
 import { getWebsiteFavicon } from './utils/logo';
@@ -1523,7 +1523,12 @@ export default function App() {
 
     try {
       const payload = toDbSubmission(newSubmission);
-      const { error } = await supabase.from('submissions').insert(payload);
+      let { error } = await supabase.from('submissions').insert(payload);
+      if (error && (error.code === '23503' || String(error.message).includes('submitted_by'))) {
+        const payloadNoFk = { ...payload, submitted_by: null };
+        const res = await supabase.from('submissions').insert(payloadNoFk);
+        error = res.error;
+      }
       if (error) {
         console.warn('Initial Supabase insert note, trying fallback insert:', error.message || error);
         // Fallback with minimal standard columns in case custom columns do not exist in remote DB table
@@ -1537,16 +1542,32 @@ export default function App() {
           status: payload.status,
           submitted_at: payload.submitted_at,
         };
+        if (payload.backer_email) minimal.backer_email = payload.backer_email;
+        if (payload.submitted_by) minimal.submitted_by = payload.submitted_by;
         if (payload.logo_url && !String(payload.logo_url).startsWith('data:image')) {
           minimal.logo_url = payload.logo_url;
         }
+        if (payload.screenshots && Array.isArray(payload.screenshots) && payload.screenshots.length > 0) {
+          minimal.screenshots = payload.screenshots;
+        }
         if (payload.twitter_handle) minimal.twitter_handle = payload.twitter_handle;
+        if (payload.creator_name) minimal.creator_name = payload.creator_name;
+        if (payload.creator_username) minimal.creator_username = payload.creator_username;
+        if (payload.creator_x_handle) minimal.creator_x_handle = payload.creator_x_handle;
+        if (payload.creator_avatar) minimal.creator_avatar = payload.creator_avatar;
+        if (payload.creator_role) minimal.creator_role = payload.creator_role;
+        if (payload.demo_video_url) minimal.demo_video_url = payload.demo_video_url;
+        if (payload.socials) minimal.socials = payload.socials;
         if (payload.target_audience) minimal.target_audience = payload.target_audience;
         if (payload.pricing_model) minimal.pricing_model = payload.pricing_model;
         if (payload.description) minimal.description = payload.description;
         if (payload.problem_it_solves) minimal.problem_it_solves = payload.problem_it_solves;
         if (payload.solution) minimal.solution = payload.solution;
         if (payload.unique_selling_point) minimal.unique_selling_point = payload.unique_selling_point;
+        if (payload.offer_discount) minimal.offer_discount = payload.offer_discount;
+        if (payload.offer_code) minimal.offer_code = payload.offer_code;
+        if (payload.offer_url) minimal.offer_url = payload.offer_url;
+        if (payload.offer_details) minimal.offer_details = payload.offer_details;
         await supabase.from('submissions').insert(minimal);
       }
     } catch (err) {
@@ -1562,9 +1583,20 @@ export default function App() {
 
   // Admin Acceptance Pipeline: publishes a submission as its live listing, exactly once.
   const handleAcceptSubmission = async (sub: WebsiteSubmission) => {
+    // Ensure full submission details (including screenshots) are available if missing from memory
+    let fullSub = sub;
+    if (!fullSub.screenshots || fullSub.screenshots.length === 0) {
+      try {
+        const loaded = await loadSubmissionById(sub.id, true);
+        if (loaded?.screenshots && loaded.screenshots.length > 0) {
+          fullSub = { ...fullSub, screenshots: loaded.screenshots };
+        }
+      } catch {}
+    }
+
     // 1. Mark the submission approved (queue + Supabase)
     const reviewedAt = Date.now();
-    const approvedSub: WebsiteSubmission = { ...sub, status: 'approved', reviewedAt };
+    const approvedSub: WebsiteSubmission = { ...fullSub, status: 'approved', reviewedAt };
 
     setSubmissions((prev) => {
       const updated = prev.map((s) => (s.id === sub.id ? approvedSub : s));
@@ -1592,6 +1624,10 @@ export default function App() {
           p.id === listingId
             ? {
               ...fresh,
+              submittedBy: fresh.submittedBy || p.submittedBy || approvedSub.submittedBy,
+              screenshots: (fresh.screenshots && fresh.screenshots.length > 0)
+                ? fresh.screenshots
+                : (p.screenshots && p.screenshots.length > 0 ? p.screenshots : undefined),
               // A republish must never reset engagement or the creation date.
               rank: p.rank,
               previousRank: p.previousRank ?? p.rank,
@@ -1743,6 +1779,7 @@ export default function App() {
   // Update a single product in state and database. Sponsorship is separate and
   // must never be written through a product update.
   const handleUpdateProduct = (updatedProduct: Product) => {
+    updateProductDirect(updatedProduct).catch(() => {});
     setProducts((prev) => {
       const exists = prev.some((p) => p.id === updatedProduct.id);
       const next = exists
@@ -2648,6 +2685,10 @@ export default function App() {
         solution: matchingSub.solution || rawProduct.solution,
         uniqueSellingPoint: matchingSub.uniqueSellingPoint || rawProduct.uniqueSellingPoint,
         targetAudience: matchingSub.targetAudience || rawProduct.targetAudience,
+        screenshots: (rawProduct.screenshots && rawProduct.screenshots.length > 0)
+          ? rawProduct.screenshots
+          : (matchingSub.screenshots && matchingSub.screenshots.length > 0 ? matchingSub.screenshots : rawProduct.screenshots),
+        demoVideoUrl: rawProduct.demoVideoUrl || matchingSub.demoVideoUrl,
       };
     }
 

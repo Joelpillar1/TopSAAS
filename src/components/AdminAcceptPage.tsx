@@ -408,7 +408,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
       tagline: editTagline.trim() || editingSubmission.tagline,
       url: editUrl.trim() || editingSubmission.url,
       category: editCategory,
-      logoUrl: getWebsiteFavicon(editUrl.trim() || editingSubmission.url),
+      logoUrl: editingSubmission.logoUrl || getWebsiteFavicon(editUrl.trim() || editingSubmission.url),
       offerDiscount: editOfferDiscount.trim() || undefined,
       offerCode: editOfferCode.trim().toUpperCase() || undefined,
       offerUrl: editOfferUrl.trim() || undefined,

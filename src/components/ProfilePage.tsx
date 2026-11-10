@@ -579,39 +579,61 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
     let isMounted = true;
     async function fetchData() {
       const userEmail = user.email?.trim().toLowerCase();
+      const userFullName = (user.user_metadata?.full_name || profile.fullName || '').trim().toLowerCase();
 
-      // Filter matching submissions and products strictly belonging to THIS user
-      const isUserMatch = (submittedBy?: string, backerEmail?: string) => {
-        if (submittedBy && submittedBy === user.id) return true;
-        if (backerEmail && userEmail && backerEmail.trim().toLowerCase() === userEmail) return true;
+      // Check if a submission belongs to this user
+      const isSubMatch = (s: WebsiteSubmission) => {
+        if (s.submittedBy && s.submittedBy === user.id) return true;
+        if (s.backerEmail && userEmail && s.backerEmail.trim().toLowerCase() === userEmail) return true;
+        if (s.submittedBy && userEmail && s.submittedBy.trim().toLowerCase() === userEmail) return true;
+        if (s.backerName && userFullName && s.backerName.trim().toLowerCase() === userFullName) return true;
+        if (s.creatorName && userFullName && s.creatorName.trim().toLowerCase() === userFullName) return true;
         return false;
       };
 
-      const matchedLocalSubs = allSubmissions.filter((s) =>
-        isUserMatch(s.submittedBy, s.backerEmail)
+      // Check if a product belongs to this user
+      const isProductMatch = (p: Product, ownedSubIds: Set<string>, ownedUrls: Set<string>) => {
+        if (p.submittedBy && p.submittedBy === user.id) return true;
+        if (p.submittedBy && userEmail && p.submittedBy.trim().toLowerCase() === userEmail) return true;
+        const bareId = p.id.replace(/^prod-/, '');
+        if (ownedSubIds.has(p.id) || ownedSubIds.has(bareId)) return true;
+        if (p.url) {
+          const cleanUrl = p.url.trim().toLowerCase().replace(/\/$/, '');
+          if (ownedUrls.has(cleanUrl)) return true;
+        }
+        if (p.creatorName && userFullName && p.creatorName.trim().toLowerCase() === userFullName) return true;
+        return false;
+      };
+
+      const initialSubs = allSubmissions.filter(isSubMatch);
+      const initialSubIds = new Set(initialSubs.map((s) => s.id));
+      const initialUrls = new Set(
+        initialSubs.map((s) => (s.url ? s.url.trim().toLowerCase().replace(/\/$/, '') : '')).filter(Boolean)
       );
-      const matchedLocalProds = allProducts.filter((p) =>
-        isUserMatch(p.submittedBy)
-      );
+      const initialProds = allProducts.filter((p) => isProductMatch(p, initialSubIds, initialUrls));
 
       // Immediately render local matching data to avoid blank loading screen
-      if (matchedLocalProds.length > 0 || matchedLocalSubs.length > 0) {
-        setProducts(matchedLocalProds);
-        setSubmissions(matchedLocalSubs);
+      if (initialProds.length > 0 || initialSubs.length > 0) {
+        setProducts(initialProds);
+        setSubmissions(initialSubs);
         setLoading(false);
       }
 
       try {
-        // Single consolidated submissions query with .or() to halve network request count
-        const subFilter = user.email
-          ? `submitted_by.eq.${user.id},backer_email.eq.${user.email.trim().toLowerCase()}`
-          : `submitted_by.eq.${user.id}`;
+        const subFilterClauses = [`submitted_by.eq.${user.id}`];
+        if (userEmail) subFilterClauses.push(`backer_email.eq.${userEmail}`);
+        if (user.user_metadata?.full_name) subFilterClauses.push(`backer_name.eq.${user.user_metadata.full_name}`);
+        const subFilter = subFilterClauses.join(',');
+
+        const prodFilterClauses = [`submitted_by.eq.${user.id}`];
+        if (user.user_metadata?.full_name) prodFilterClauses.push(`creator_name.eq.${user.user_metadata.full_name}`);
+        const prodFilter = prodFilterClauses.join(',');
 
         const [prodRes, subRes] = await Promise.all([
           supabase
             .from('products')
             .select('*')
-            .eq('submitted_by', user.id)
+            .or(prodFilter)
             .order('created_at', { ascending: false }),
           supabase
             .from('submissions')
@@ -624,38 +646,64 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         const dbSubs = !subRes.error && subRes.data ? subRes.data.map(mapDbSubmission) : [];
 
         if (isMounted) {
-          const isDbAvailable = !prodRes.error && !subRes.error;
-          if (isDbAvailable) {
-            // Supabase Database is authoritative: only display user's records that actually exist in DB
-            const combinedSubsMap = new Map<string, WebsiteSubmission>();
-            dbSubs.forEach((s) => combinedSubsMap.set(s.id, s));
+          // Combine submissions from local cache + DB, deduplicated by ID
+          const combinedSubsMap = new Map<string, WebsiteSubmission>();
+          allSubmissions.forEach((s) => {
+            if (isSubMatch(s)) combinedSubsMap.set(s.id, s);
+          });
+          dbSubs.forEach((s) => {
+            if (isSubMatch(s)) combinedSubsMap.set(s.id, s);
+          });
 
-            const finalSubs = Array.from(combinedSubsMap.values())
-              .filter((s) => isUserMatch(s.submittedBy, s.backerEmail))
-              .sort((a, b) => (b.submittedAt ?? 0) - (a.submittedAt ?? 0));
+          const finalSubs = Array.from(combinedSubsMap.values()).sort(
+            (a, b) => (b.submittedAt ?? 0) - (a.submittedAt ?? 0)
+          );
 
-            // A listing is owned when its own submitted_by matches, or when it is the
-            // published listing (`prod-<id>`) of one of this user's submissions
-            const ownedSubmissionIds = new Set(finalSubs.map((s) => s.id));
-            const finalProds = dbProds.filter(
-              (p) =>
-                isUserMatch(p.submittedBy) ||
-                ownedSubmissionIds.has(p.id) ||
-                ownedSubmissionIds.has(p.id.replace(/^prod-/, ''))
-            );
+          const ownedSubmissionIds = new Set(finalSubs.map((s) => s.id));
+          const ownedUrls = new Set(
+            finalSubs.map((s) => (s.url ? s.url.trim().toLowerCase().replace(/\/$/, '') : '')).filter(Boolean)
+          );
 
-            setProducts(finalProds);
-            setSubmissions(finalSubs);
-          } else {
-            // Offline / error fallback only
-            setProducts(matchedLocalProds);
-            setSubmissions(matchedLocalSubs);
-          }
+          // Combine products from allProducts + dbProds so all live directory products are found
+          const candidateProdsMap = new Map<string, Product>();
+          allProducts.forEach((p) => {
+            if (isProductMatch(p, ownedSubmissionIds, ownedUrls)) {
+              candidateProdsMap.set(p.id, p);
+            }
+          });
+          dbProds.forEach((p) => {
+            if (isProductMatch(p, ownedSubmissionIds, ownedUrls)) {
+              candidateProdsMap.set(p.id, p);
+            }
+          });
+
+          const finalProds = Array.from(candidateProdsMap.values()).sort(
+            (a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0)
+          );
+
+          // Automatically link unassigned products and submissions to user.id in background
+          finalProds.forEach((p) => {
+            if (!p.submittedBy || p.submittedBy !== user.id) {
+              updateProductDirect({ ...p, submittedBy: user.id }).catch(() => {});
+            }
+          });
+          finalSubs.forEach((s) => {
+            if (!s.submittedBy || s.submittedBy !== user.id || !s.backerEmail) {
+              supabase
+                .from('submissions')
+                .update({ submitted_by: user.id, backer_email: user.email })
+                .eq('id', s.id)
+                .then(() => {});
+            }
+          });
+
+          setProducts(finalProds);
+          setSubmissions(finalSubs);
         }
       } catch {
         if (isMounted) {
-          setProducts(matchedLocalProds);
-          setSubmissions(matchedLocalSubs);
+          setProducts(initialProds);
+          setSubmissions(initialSubs);
         }
       } finally {
         if (isMounted) setLoading(false);

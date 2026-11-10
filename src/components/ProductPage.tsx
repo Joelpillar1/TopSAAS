@@ -615,8 +615,8 @@ export const ProductPage: React.FC<ProductPageProps> = ({
             {totalMediaCount > 0 && (
               <section className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-6 shadow-xs space-y-4">
                 <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
-                  <div className="flex items-center gap-2">
-                    <Layers className="h-4 w-4 text-blue-600" />
+                  <div className="flex items-center gap-2.5">
+                    <Layers className="h-5 w-5 text-neutral-900 shrink-0" />
                     <h2 className="text-lg sm:text-xl font-bold text-neutral-950">
                       Product Preview & Demo
                     </h2>
@@ -810,18 +810,13 @@ export const ProductPage: React.FC<ProductPageProps> = ({
               return (
                 <div className="rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
                   <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600 border border-blue-200/60 shrink-0">
-                        <Sparkles className="h-4 w-4 text-blue-600" />
-                      </div>
-                      <div>
-                        <h2 className="text-base sm:text-lg font-bold text-neutral-950">
-                          About {product.name}
-                        </h2>
-                        <p className="text-xs text-neutral-500 font-normal">
-                          Overview and background of the product
-                        </p>
-                      </div>
+                    <div>
+                      <h2 className="text-base sm:text-lg font-bold text-neutral-950">
+                        About {product.name}
+                      </h2>
+                      <p className="text-xs text-neutral-500 font-normal">
+                        Overview and background of the product
+                      </p>
                     </div>
                   </div>
 
@@ -848,18 +843,13 @@ export const ProductPage: React.FC<ProductPageProps> = ({
             {/* 2. Problem Section (from Step 2 of /submit: Problem it solves) */}
             <div className="rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
               <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-50 text-rose-600 border border-rose-200/60 shrink-0">
-                    <AlertCircle className="h-4 w-4 text-rose-600" />
-                  </div>
-                  <div>
-                    <h2 className="text-base sm:text-lg font-bold text-neutral-950">
-                      Problem It Solves
-                    </h2>
-                    <p className="text-xs text-neutral-500 font-normal">
-                      The core challenges and pain points {product.name} addresses
-                    </p>
-                  </div>
+                <div>
+                  <h2 className="text-base sm:text-lg font-bold text-neutral-950">
+                    Problem It Solves
+                  </h2>
+                  <p className="text-xs text-neutral-500 font-normal">
+                    The core challenges and pain points {product.name} addresses
+                  </p>
                 </div>
               </div>
 
@@ -879,18 +869,13 @@ export const ProductPage: React.FC<ProductPageProps> = ({
             {/* 3. Solution Section (from Step 2 of /submit: Your solution) */}
             <div className="rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
               <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200/60 shrink-0">
-                    <Zap className="h-4 w-4 text-emerald-600" />
-                  </div>
-                  <div>
-                    <h2 className="text-base sm:text-lg font-bold text-neutral-950">
-                      The Solution
-                    </h2>
-                    <p className="text-xs text-neutral-500 font-normal">
-                      How {product.name} solves this problem
-                    </p>
-                  </div>
+                <div>
+                  <h2 className="text-base sm:text-lg font-bold text-neutral-950">
+                    The Solution
+                  </h2>
+                  <p className="text-xs text-neutral-500 font-normal">
+                    How {product.name} solves this problem
+                  </p>
                 </div>
               </div>
 
@@ -910,18 +895,13 @@ export const ProductPage: React.FC<ProductPageProps> = ({
             {/* 4. Why Different Section (from Step 2 of /submit: What makes it different) */}
             <div className="rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
               <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-violet-50 text-violet-600 border border-violet-200/60 shrink-0">
-                    <ShieldCheck className="h-4 w-4 text-violet-600" />
-                  </div>
-                  <div>
-                    <h2 className="text-base sm:text-lg font-bold text-neutral-950">
-                      Why {product.name} is Different
-                    </h2>
-                    <p className="text-xs text-neutral-500 font-normal">
-                      Key differentiators and competitive advantage
-                    </p>
-                  </div>
+                <div>
+                  <h2 className="text-base sm:text-lg font-bold text-neutral-950">
+                    Why {product.name} is Different
+                  </h2>
+                  <p className="text-xs text-neutral-500 font-normal">
+                    Key differentiators and competitive advantage
+                  </p>
                 </div>
               </div>
 
@@ -942,18 +922,13 @@ export const ProductPage: React.FC<ProductPageProps> = ({
             {product.targetAudience && (
               <div className="rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
                 <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-neutral-100 text-neutral-700 border border-neutral-200 shrink-0">
-                      <Target className="h-4 w-4 text-neutral-700" />
-                    </div>
-                    <div>
-                      <h2 className="text-base sm:text-lg font-bold text-neutral-950">
-                        Target Audience
-                      </h2>
-                      <p className="text-xs text-neutral-500 font-normal">
-                        Who {product.name} is designed for
-                      </p>
-                    </div>
+                  <div>
+                    <h2 className="text-base sm:text-lg font-bold text-neutral-950">
+                      Target Audience
+                    </h2>
+                    <p className="text-xs text-neutral-500 font-normal">
+                      Who {product.name} is designed for
+                    </p>
                   </div>
                 </div>
 
@@ -981,18 +956,13 @@ export const ProductPage: React.FC<ProductPageProps> = ({
             {/* Real-World Use Cases (if custom use cases were provided) */}
             {product.useCases && product.useCases.length > 0 && product.useCases.some((uc) => uc.description && uc.description !== product.targetAudience && !uc.description.includes(product.targetAudience || '___')) && (
               <div className="rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
-                <div className="flex items-center gap-2.5 border-b border-neutral-100 pb-3.5">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600 border border-blue-200/60 shrink-0">
-                    <Users className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <h2 className="text-base sm:text-lg font-bold text-neutral-950">
-                      Who uses it and real-world use cases
-                    </h2>
-                    <p className="text-xs text-neutral-500 font-normal">
-                      Who {product.name} is designed for and how teams leverage it
-                    </p>
-                  </div>
+                <div className="border-b border-neutral-100 pb-3.5">
+                  <h2 className="text-base sm:text-lg font-bold text-neutral-950">
+                    Who uses it and real-world use cases
+                  </h2>
+                  <p className="text-xs text-neutral-500 font-normal">
+                    Who {product.name} is designed for and how teams leverage it
+                  </p>
                 </div>
 
                 <div className="space-y-3">
