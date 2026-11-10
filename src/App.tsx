@@ -2416,6 +2416,40 @@ export default function App() {
     </div>
   );
 
+  // Shared modals for every route. The sponsor ticker lives in the header, so
+  // every route that renders the header needs the modal mounted too. Without
+  // this, "Claim spot" on routes like /profile or /trending flipped the state
+  // but rendered nothing until the user navigated to a route that mounted it.
+  const globalModals = (
+    <>
+      <SignInModal
+        isOpen={isSignInModalOpen}
+        onClose={() => setIsSignInModalOpen(false)}
+        onSignIn={handleSignIn}
+      />
+      <FeaturedSpotModal
+        isOpen={isFeaturedSpotModalOpen}
+        onClose={() => setIsFeaturedSpotModalOpen(false)}
+        products={products}
+        user={user}
+        mode={featuredModalMode}
+        featuredProductIds={featuredProductIds}
+        initialTier={featuredInitialTier}
+        soundEnabled={soundEnabled}
+        onActivateSponsor={handleActivateSponsorTrial}
+        onActivateFeatured={handleActivateFeatured}
+        onOpenSignInModal={() => {
+          setIsFeaturedSpotModalOpen(false);
+          setIsSignInModalOpen(true);
+        }}
+        onOpenSubmitModal={() => {
+          setIsFeaturedSpotModalOpen(false);
+          handleOpenSubmit();
+        }}
+      />
+    </>
+  );
+
   // 0. PAYMENT SUCCESS ROUTE (/payment-success)
   if (currentRoute === '/payment-success') {
     return (
@@ -2428,6 +2462,7 @@ export default function App() {
             setFeaturedProductId(productId);
           }}
         />
+        {globalModals}
       </>
     );
   }
@@ -2493,6 +2528,10 @@ export default function App() {
           soundEnabled={soundEnabled}
           onActivateSponsor={handleActivateSponsorTrial}
           onActivateFeatured={handleActivateFeatured}
+          onOpenSignInModal={() => {
+            setIsFeaturedSpotModalOpen(false);
+            setIsSignInModalOpen(true);
+          }}
           onOpenSubmitModal={() => {
             setIsFeaturedSpotModalOpen(false);
             handleOpenSubmit();
@@ -2520,6 +2559,7 @@ export default function App() {
           <div className="min-h-screen bg-white text-neutral-900 flex items-center justify-center font-sans">
             <Loader2 className="h-6 w-6 text-neutral-400 animate-spin" />
           </div>
+          {globalModals}
         </>
       );
     }
@@ -2547,6 +2587,7 @@ export default function App() {
           onSelectProduct={handleOpenProduct}
           soundEnabled={soundEnabled}
         />
+        {globalModals}
       </>
     );
   }
@@ -2605,6 +2646,7 @@ export default function App() {
             <div className="min-h-screen bg-white text-neutral-900 flex items-center justify-center font-sans">
               <Loader2 className="h-6 w-6 text-neutral-400 animate-spin" />
             </div>
+            {globalModals}
           </>
         );
       }
@@ -2626,6 +2668,7 @@ export default function App() {
               </button>
             </div>
           </div>
+          {globalModals}
         </>
       );
     }
@@ -2707,6 +2750,10 @@ export default function App() {
           soundEnabled={soundEnabled}
           onActivateSponsor={handleActivateSponsorTrial}
           onActivateFeatured={handleActivateFeatured}
+          onOpenSignInModal={() => {
+            setIsFeaturedSpotModalOpen(false);
+            setIsSignInModalOpen(true);
+          }}
           onOpenSubmitModal={() => {
             setIsFeaturedSpotModalOpen(false);
             handleOpenSubmit();
@@ -2748,6 +2795,7 @@ export default function App() {
               </button>
             </div>
           </div>
+          {globalModals}
         </>
       );
     }
@@ -2810,6 +2858,10 @@ export default function App() {
           soundEnabled={soundEnabled}
           onActivateSponsor={handleActivateSponsorTrial}
           onActivateFeatured={handleActivateFeatured}
+          onOpenSignInModal={() => {
+            setIsFeaturedSpotModalOpen(false);
+            setIsSignInModalOpen(true);
+          }}
           onOpenSubmitModal={() => {
             setIsFeaturedSpotModalOpen(false);
             handleOpenSubmit();
@@ -2828,6 +2880,7 @@ export default function App() {
           <div className="min-h-screen bg-white text-neutral-900 flex items-center justify-center font-sans">
             <Loader2 className="h-6 w-6 text-neutral-400 animate-spin" />
           </div>
+          {globalModals}
         </>
       );
     }
@@ -2887,6 +2940,10 @@ export default function App() {
           soundEnabled={soundEnabled}
           onActivateSponsor={handleActivateSponsorTrial}
           onActivateFeatured={handleActivateFeatured}
+          onOpenSignInModal={() => {
+            setIsFeaturedSpotModalOpen(false);
+            setIsSignInModalOpen(true);
+          }}
           onOpenSubmitModal={() => {
             setIsFeaturedSpotModalOpen(false);
             handleOpenSubmit();
@@ -2980,6 +3037,7 @@ export default function App() {
           onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
           onOpenPricing={handleOpenPricing}
         />
+        {globalModals}
       </>
     );
   }
@@ -3013,6 +3071,7 @@ export default function App() {
           }}
         />
       )}
+      {globalModals}
     </div>
   );
 
@@ -3604,6 +3663,10 @@ export default function App() {
         soundEnabled={soundEnabled}
         onActivateSponsor={handleActivateSponsorTrial}
         onActivateFeatured={handleActivateFeatured}
+        onOpenSignInModal={() => {
+          setIsFeaturedSpotModalOpen(false);
+          setIsSignInModalOpen(true);
+        }}
         onOpenSubmitModal={() => {
           setIsFeaturedSpotModalOpen(false);
           handleOpenSubmit();
