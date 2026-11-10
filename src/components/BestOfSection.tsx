@@ -57,7 +57,6 @@ export const BestOfSection: React.FC<BestOfSectionProps> = ({
               soundEnabled={soundEnabled}
               showVerified
               commentCount={commentCounts[product.id] ?? 0}
-              featuredFrame={index < 3}
               onOpen={onOpenProduct}
               onUpvote={onUpvote}
               upvoted={isUpvoted(product.id)}

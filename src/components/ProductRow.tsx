@@ -17,6 +17,8 @@ interface ProductRowProps {
   commentCount?: number;
   /** Highlights the row with the featured gradient frame (used for top 3) */
   featuredFrame?: boolean;
+  /** Wraps the row with a border beam effect (default: false) */
+  borderBeam?: boolean;
   onOpen: (product: Product) => void;
   /** When provided the row shows an upvote control */
   onUpvote?: (product: Product) => void;
@@ -43,6 +45,7 @@ export const ProductRow: React.FC<ProductRowProps> = ({
   showVerified = false,
   commentCount,
   featuredFrame = false,
+  borderBeam = false,
   onOpen,
   onUpvote,
   upvoted = false,
@@ -228,7 +231,7 @@ export const ProductRow: React.FC<ProductRowProps> = ({
     </div>
   );
 
-  if (!featuredFrame) return row;
+  if (!borderBeam) return row;
 
   return (
     <BorderBeam size="md" colorVariant="colorful" strength={0.8} className="w-full rounded-2xl">
