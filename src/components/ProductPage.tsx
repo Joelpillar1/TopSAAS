@@ -29,7 +29,6 @@ import {
   CornerDownRight,
   Heart,
   Share2,
-  Globe,
 } from 'lucide-react';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
@@ -180,35 +179,6 @@ export const ProductPage: React.FC<ProductPageProps> = ({
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [copiedOffer, setCopiedOffer] = useState(false);
-
-  // Synthesize or prepare features so the Key Features section is always complete
-  const displayFeatures = useMemo(() => {
-    if (product.features && product.features.length > 0) {
-      return product.features;
-    }
-    return [
-      {
-        title: 'Core Workflow Automation',
-        description: `Tailored specifically to ${product.tagline ? product.tagline.toLowerCase() : 'accelerate day-to-day productivity'}, minimizing repetitive friction and delivering results fast.`,
-        tag: 'Superpower',
-      },
-      {
-        title: `${product.category} Precision`,
-        description: `Purpose-built for the ${product.category} ecosystem with a clean, focused user experience designed to solve domain challenges without bloat.`,
-        tag: 'Differentiator',
-      },
-      {
-        title: 'Built for Scale & Efficiency',
-        description: `Optimized for ${product.targetAudience || 'builders, teams, and ambitious creators'} requiring fast responsiveness, solid uptime, and dependable execution.`,
-        tag: 'Value',
-      },
-      {
-        title: 'Zero Friction Onboarding',
-        description: `Instant access with a lightweight, intuitive interface that gets you up and running within minutes with no steep learning curves.`,
-        tag: 'Speed',
-      },
-    ];
-  }, [product.features, product.tagline, product.category, product.targetAudience]);
 
   // Dynamic SEO & SoftwareApplication JSON-LD schema for AEO / GEO
   useEffect(() => {
@@ -454,22 +424,26 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                       {product.tagline}
                     </p>
 
-                    {/* Built By Founder / Team Hero Badge */}
-                    <div className="flex items-center gap-2 pt-0.5">
-                      <div className="inline-flex items-center gap-1.5 rounded-lg bg-white border border-neutral-200 pl-1 pr-2 py-1 text-xs shadow-2xs">
-                        <CommentAvatar
-                          avatarUrl={product.creatorAvatar || product.logoUrl}
-                          name={product.creatorName || product.name}
-                          className="h-5 w-5 shrink-0 rounded-full object-cover border border-neutral-200"
-                          fallbackClassName="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-600 text-[9px] font-black text-white"
-                        />
-                        <span className="text-neutral-500 font-medium text-[11px]">Built by</span>
-                        <span className="font-bold text-neutral-900 text-[11px]">{product.creatorName || `${product.name} Team`}</span>
-                        <span className="text-[9px] font-semibold text-blue-600 bg-blue-50 border border-blue-200/80 px-1.5 py-0.5 rounded-md">
-                          {product.creatorRole || (product.creatorName ? 'Founder' : 'Maker Team')}
-                        </span>
+                    {/* Built By Founder Hero Badge (from Step 3: Founder) */}
+                    {(product.creatorName || product.creatorAvatar) && (
+                      <div className="flex items-center gap-2 pt-0.5">
+                        <div className="inline-flex items-center gap-1.5 rounded-lg bg-white border border-neutral-200 pl-1 pr-2 py-1 text-xs shadow-2xs">
+                          <CommentAvatar
+                            avatarUrl={product.creatorAvatar}
+                            name={product.creatorName || 'Founder'}
+                            className="h-5 w-5 shrink-0 rounded-full object-cover border border-neutral-200"
+                            fallbackClassName="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-mint-500 text-[9px] font-black text-white"
+                          />
+                          <span className="text-neutral-500 font-medium text-[11px]">Built by</span>
+                          <span className="font-bold text-neutral-900 text-[11px]">{product.creatorName}</span>
+                          {product.creatorRole && (
+                            <span className="text-[9px] font-semibold text-mint-600 bg-mint-500/10 border border-mint-500/25 px-1.5 py-0.5 rounded-md">
+                              {product.creatorRole}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     {/* Social Links */}
                     {(product.twitterHandle || (product.socials && product.socials.length > 0)) && (
@@ -634,8 +608,8 @@ export const ProductPage: React.FC<ProductPageProps> = ({
               )}
             </div>
 
-            {/* Product Media Gallery / Live Preview Showcase */}
-            {totalMediaCount > 0 ? (
+            {/* Product Media Gallery: Demo Video and Screenshots (from Step 1 of /submit) */}
+            {totalMediaCount > 0 && (
               <section className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-6 shadow-xs space-y-4">
                 <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
                   <div className="flex items-center gap-2">
@@ -797,103 +771,9 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                   </div>
                 )}
               </section>
-            ) : (
-              /* High-Fidelity Interactive Live Website Showcase Mockup when no screenshots uploaded */
-              <section className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-6 shadow-xs space-y-4">
-                <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
-                  <div className="flex items-center gap-2">
-                    <Layers className="h-4 w-4 text-blue-600" />
-                    <h2 className="text-lg sm:text-xl font-bold text-neutral-950">
-                      Product Preview & Overview
-                    </h2>
-                  </div>
-                  <a
-                    href={formatOutboundUrl(product.url, { campaign: 'product_preview_header' })}
-                    target="_blank"
-                    rel="noopener"
-                    onClick={() => {
-                      playSound('click', soundEnabled);
-                      trackOutboundClick(product.id, product.url, product.name, onTrackClick);
-                    }}
-                    className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer"
-                  >
-                    <span>Open live site</span>
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
-                </div>
-
-                {/* Browser Frame Window */}
-                <div className="rounded-2xl border border-neutral-200/90 bg-neutral-900 overflow-hidden shadow-sm">
-                  {/* Browser Chrome Header */}
-                  <div className="bg-neutral-800/90 border-b border-neutral-700/60 px-4 py-2.5 flex items-center gap-3">
-                    <div className="flex items-center gap-1.5">
-                      <div className="h-2.5 w-2.5 rounded-full bg-rose-500/80" />
-                      <div className="h-2.5 w-2.5 rounded-full bg-amber-500/80" />
-                      <div className="h-2.5 w-2.5 rounded-full bg-emerald-500/80" />
-                    </div>
-                    <div className="flex-1 max-w-sm mx-auto bg-neutral-900/90 border border-neutral-700/70 rounded-lg px-3 py-1 flex items-center gap-2 text-[11px] text-neutral-300">
-                      <Globe className="h-3 w-3 text-emerald-400 shrink-0" />
-                      <span className="truncate font-mono">{product.url.replace(/^https?:\/\//i, '').replace(/\/$/, '')}</span>
-                      <span className="ml-auto text-[9px] font-bold text-emerald-400 uppercase tracking-wide bg-emerald-950/80 border border-emerald-800/60 px-1.5 py-0.2 rounded">SSL</span>
-                    </div>
-                  </div>
-
-                  {/* Browser Canvas */}
-                  <div className="relative bg-gradient-to-b from-neutral-900 via-neutral-900/95 to-neutral-950 p-6 sm:p-10 text-white flex flex-col items-center justify-center text-center min-h-[260px] sm:min-h-[300px]">
-                    <div className="relative z-10 max-w-lg space-y-4 flex flex-col items-center">
-                      <ProductLogo
-                        src={product.logoUrl}
-                        alt={product.name}
-                        containerClassName="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl border border-white/20 bg-white/10 backdrop-blur-md shadow-xl flex items-center justify-center overflow-hidden"
-                        iconClassName="h-8 w-8 text-white"
-                      />
-
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-center gap-2 flex-wrap">
-                          <h3 className="text-xl sm:text-2xl font-black tracking-tight text-white">
-                            {product.name}
-                          </h3>
-                          {product.verified && <VerifiedBadge className="h-5 w-5" />}
-                        </div>
-                        <p className="text-xs sm:text-sm text-neutral-300 font-medium leading-relaxed max-w-md">
-                          {product.tagline}
-                        </p>
-                      </div>
-
-                      <div className="flex flex-wrap items-center justify-center gap-2 pt-1 text-xs">
-                        <span className="rounded-lg bg-white/10 border border-white/15 px-2.5 py-1 text-neutral-200 font-semibold">
-                          {product.category}
-                        </span>
-                        <span className="rounded-lg bg-white/10 border border-white/15 px-2.5 py-1 text-neutral-200 font-semibold">
-                          {product.pricingModel || 'Free / Freemium'}
-                        </span>
-                        <span className="rounded-lg bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 px-2.5 py-1 font-semibold">
-                          Active Listing
-                        </span>
-                      </div>
-
-                      <div className="pt-2 flex flex-wrap items-center justify-center gap-3 w-full sm:w-auto">
-                        <a
-                          href={formatOutboundUrl(product.url, { campaign: 'product_preview_cta' })}
-                          target="_blank"
-                          rel="noopener"
-                          onClick={() => {
-                            playSound('click', soundEnabled);
-                            trackOutboundClick(product.id, product.url, product.name, onTrackClick);
-                          }}
-                          className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer w-full sm:w-auto"
-                        >
-                          <span>Visit Official Website</span>
-                          <ExternalLink className="h-3.5 w-3.5" />
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </section>
             )}
 
-            {/* About & Executive Overview */}
+            {/* About & Executive Overview (from Step 0 of /submit: Description) */}
             <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs space-y-4">
               <div className="border-b border-neutral-200 pb-3">
                 <h2 className="text-lg sm:text-xl font-bold text-neutral-950">
@@ -922,244 +802,134 @@ export const ProductPage: React.FC<ProductPageProps> = ({
               )}
             </div>
 
-            {/* Key Features & Core Capabilities */}
-            <section className="rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
-              <div className="border-b border-neutral-100 pb-3.5 flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600 border border-blue-200/60 shrink-0">
-                    <Sparkles className="h-4 w-4 text-blue-600" />
-                  </div>
-                  <div>
-                    <h2 className="text-base sm:text-lg font-bold text-neutral-950">
-                      Key Features & Core Capabilities
-                    </h2>
-                    <p className="text-xs text-neutral-500 font-normal">
-                      What makes {product.name} stand out in the {product.category} category
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
-                {displayFeatures.map((feat, idx) => (
-                  <div
-                    key={idx}
-                    className="rounded-xl border border-neutral-200/90 bg-neutral-50/50 p-4 sm:p-5 space-y-2.5 hover:border-neutral-300 hover:bg-neutral-50/80 transition-all shadow-2xs"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white border border-neutral-200/80 text-blue-600 shadow-2xs shrink-0">
-                          <CheckCircle2 className="h-3.5 w-3.5 text-blue-600" />
-                        </span>
-                        <h3 className="text-xs sm:text-sm font-bold text-neutral-950 truncate">
-                          {feat.title}
-                        </h3>
-                      </div>
-                      {feat.tag && (
-                        <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200/80 px-2 py-0.5 rounded-full shrink-0">
-                          {feat.tag}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed font-normal">
-                      {feat.description}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            {/* Problem / Solution / What Makes It Different */}
-            {(() => {
-              const sections = [
-                {
-                  title: 'The Problem It Solves',
-                  content: product.problemItSolves || `Navigating modern ${product.category} requirements often leads to fragmented workflows, high cognitive overhead, and wasted hours. ${product.targetAudience ? `${product.targetAudience} frequently struggle` : 'Teams and individuals frequently struggle'} with complex setups and disconnected tools that slow momentum.`,
-                  icon: 'problem',
-                },
-                {
-                  title: 'The Solution',
-                  content: product.solution || `${product.name} delivers a unified, purpose-built platform that streamlines these friction points. By focusing on speed, clarity, and dependable execution, it empowers users to ${product.tagline ? product.tagline.toLowerCase() : 'reach their goals with ease'}.`,
-                  icon: 'solution',
-                },
-                {
-                  title: 'What Makes It Different',
-                  content: product.uniqueSellingPoint || `Unlike cluttered legacy alternatives or generic software, ${product.name} prioritizes modern design, zero-friction workflows, and dedicated tools specifically tuned for ${product.targetAudience || 'ambitious builders and digital teams'}.`,
-                  icon: 'differentiator',
-                },
-              ];
-
-              return (
-                <div className="rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-xs space-y-5">
-                  <div className="border-b border-neutral-100 pb-3 flex items-center gap-2.5">
+            {/* Who it's for & What it does (from Step 2 of /submit: Target audience, Problem it solves, Solution, What makes it different) */}
+            {Boolean(product.targetAudience || product.problemItSolves || product.solution || product.uniqueSellingPoint) && (
+              <div className="rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-xs space-y-5">
+                <div className="border-b border-neutral-200 pb-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
                     <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600 border border-blue-200/60 shrink-0">
                       <Target className="h-4 w-4 text-blue-600" />
                     </div>
                     <div>
                       <h2 className="text-base sm:text-lg font-bold text-neutral-950">
-                        What {product.name} does
+                        Who it's for & What {product.name} does
                       </h2>
                       <p className="text-xs text-neutral-500 font-normal">
-                        The problem, the solution, and the core differentiator
+                        Target audience, problem solved, and key differentiators
                       </p>
                     </div>
                   </div>
+                </div>
 
-                  <div className="divide-y divide-neutral-200">
-                    {sections.map((section, idx) => (
-                      <div
-                        key={section.title}
-                        className={`${idx > 0 ? 'pt-5' : ''} ${idx < sections.length - 1 ? 'pb-5' : ''} space-y-1.5`}
-                      >
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <span className={`h-2 w-2 rounded-full ${
-                            section.icon === 'problem' ? 'bg-amber-500' :
-                            section.icon === 'solution' ? 'bg-emerald-500' : 'bg-blue-500'
-                          }`} />
-                          <h3 className="text-base sm:text-lg font-bold text-neutral-950">
-                            {section.title}
-                          </h3>
+                <div className="divide-y divide-neutral-200">
+                  {/* Target Audience */}
+                  {product.targetAudience && (
+                    <div className="pb-4 space-y-2">
+                      <h3 className="text-sm sm:text-base font-bold text-neutral-950">
+                        Target Audience
+                      </h3>
+                      <p className="text-xs sm:text-sm text-neutral-700 leading-relaxed font-normal">
+                        {product.targetAudience}
+                      </p>
+                      {parsePersonas(product.targetAudience).length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {parsePersonas(product.targetAudience).map((persona) => (
+                            <span
+                              key={persona}
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 py-1 text-xs font-semibold text-neutral-800 shadow-2xs"
+                            >
+                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                              <span>{persona}</span>
+                            </span>
+                          ))}
                         </div>
-                        <RichText
-                          html={section.content}
-                          className="text-sm sm:text-base leading-relaxed text-neutral-700 font-normal"
-                        />
+                      )}
+                    </div>
+                  )}
+
+                  {/* Problem it solves */}
+                  {product.problemItSolves && (
+                    <div className={`${product.targetAudience ? 'pt-4' : ''} pb-4 space-y-1.5`}>
+                      <h3 className="text-sm sm:text-base font-bold text-neutral-950">
+                        Problem it solves
+                      </h3>
+                      <RichText
+                        html={product.problemItSolves}
+                        className="text-sm sm:text-base leading-relaxed text-neutral-700 font-normal"
+                      />
+                    </div>
+                  )}
+
+                  {/* Solution */}
+                  {product.solution && (
+                    <div className={`${product.targetAudience || product.problemItSolves ? 'pt-4' : ''} pb-4 space-y-1.5`}>
+                      <h3 className="text-sm sm:text-base font-bold text-neutral-950">
+                        Solution
+                      </h3>
+                      <RichText
+                        html={product.solution}
+                        className="text-sm sm:text-base leading-relaxed text-neutral-700 font-normal"
+                      />
+                    </div>
+                  )}
+
+                  {/* What makes it different */}
+                  {product.uniqueSellingPoint && (
+                    <div className={`${product.targetAudience || product.problemItSolves || product.solution ? 'pt-4' : ''} space-y-1.5`}>
+                      <h3 className="text-sm sm:text-base font-bold text-neutral-950">
+                        What makes it different
+                      </h3>
+                      <RichText
+                        html={product.uniqueSellingPoint}
+                        className="text-sm sm:text-base leading-relaxed text-neutral-700 font-normal"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Real-World Use Cases (if custom use cases were provided) */}
+            {product.useCases && product.useCases.length > 0 && product.useCases.some((uc) => uc.description && uc.description !== product.targetAudience && !uc.description.includes(product.targetAudience || '___')) && (
+              <div className="rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
+                <div className="flex items-center gap-2.5 border-b border-neutral-100 pb-3.5">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600 border border-blue-200/60 shrink-0">
+                    <Users className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h2 className="text-base sm:text-lg font-bold text-neutral-950">
+                      Who uses it and real-world use cases
+                    </h2>
+                    <p className="text-xs text-neutral-500 font-normal">
+                      Who {product.name} is designed for and how teams leverage it
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  {product.useCases.map((uc, idx) => (
+                    <div
+                      key={idx}
+                      className="rounded-xl border border-neutral-200/90 bg-neutral-50/50 p-4 sm:p-5 space-y-2"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <h3 className="text-xs sm:text-sm font-bold text-neutral-950">
+                          {uc.title}
+                        </h3>
+                        {uc.audience && (
+                          <span className="text-[11px] font-semibold text-neutral-700 bg-white border border-neutral-200 px-2.5 py-0.5 rounded-full shadow-2xs">
+                            {uc.audience}
+                          </span>
+                        )}
                       </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* Use Cases & Who Uses It */}
-            {(() => {
-              const defaultUseCases = [
-                {
-                  title: 'Target Audience & Core Users',
-                  audience: product.targetAudience || `${product.category} Practitioners`,
-                  description: `Specially crafted for ${product.targetAudience || `teams and creators operating in the ${product.category} space`}, delivering high precision and tailored utility.`,
-                },
-                {
-                  title: 'Fast-Moving Startups & Founders',
-                  audience: 'Startups & Scaleups',
-                  description: `Early-stage and agile teams that need to ship fast, keep overhead minimal, and automate complex workflows effortlessly.`,
-                },
-                {
-                  title: 'Indie Hackers & Independent Creators',
-                  audience: 'Solo Builders & Operators',
-                  description: `Solo operators and freelancers who require maximum leverage from every tool in their daily tech stack.`,
-                },
-              ];
-
-              const rawUseCases = (product.useCases && product.useCases.length > 0)
-                ? product.useCases
-                : defaultUseCases;
-
-              const finalUseCases = rawUseCases.length === 1
-                ? [
-                    rawUseCases[0],
-                    {
-                      title: 'Fast-Moving Teams & Companies',
-                      audience: 'Agile Teams',
-                      description: `Modern teams aiming to eliminate manual bottlenecks and accelerate product delivery using ${product.name}.`,
-                    },
-                    {
-                      title: 'Indie Builders & Solo Creators',
-                      audience: 'Solo Operators',
-                      description: `Independent creators who need reliable, scalable software that saves hours every week.`,
-                    },
-                  ]
-                : rawUseCases;
-
-              return (
-                <div className="rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
-                  {/* Section Header */}
-                  <div className="flex items-center gap-2.5 border-b border-neutral-100 pb-3.5">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600 border border-blue-200/60 shrink-0">
-                      <Users className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <h2 className="text-base sm:text-lg font-bold text-neutral-950">
-                        Who uses it and real-world use cases
-                      </h2>
-                      <p className="text-xs text-neutral-500 font-normal">
-                        Who {product.name} is designed for and how teams leverage it
+                      <p className="text-xs sm:text-sm text-neutral-700 leading-relaxed font-normal">
+                        {uc.description}
                       </p>
                     </div>
-                  </div>
-
-                  {/* Cards Container */}
-                  <div className="space-y-3">
-                    {finalUseCases.map((uc, idx) => {
-                      const isGenericAudience =
-                        !uc.title ||
-                        uc.title.toLowerCase().includes('target audience') ||
-                        uc.title.toLowerCase().includes('use case');
-                      const audienceText = uc.audience || product.targetAudience;
-                      const personas = parsePersonas(audienceText || uc.description);
-                      const isRedundantAudience =
-                        uc.audience &&
-                        (uc.audience.trim() === uc.description.trim() ||
-                          uc.description.includes(uc.audience));
-
-                      return (
-                        <div
-                          key={idx}
-                          className="rounded-xl border border-neutral-200/90 bg-neutral-50/50 p-4 sm:p-5 space-y-3 transition-all duration-200 hover:border-neutral-300 hover:bg-neutral-50/80"
-                        >
-                          {/* Card Header: Icon + Title + Non-redundant Badge */}
-                          <div className="flex items-center justify-between flex-wrap gap-2">
-                            <div className="flex items-center gap-2.5 min-w-0">
-                              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white border border-neutral-200/80 text-blue-600 shadow-2xs shrink-0">
-                                {isGenericAudience ? (
-                                  <Target className="h-3.5 w-3.5 text-blue-600" />
-                                ) : (
-                                  <Sparkles className="h-3.5 w-3.5 text-amber-500 fill-amber-400" />
-                                )}
-                              </span>
-                              <h3 className="text-xs sm:text-sm font-bold text-neutral-950 truncate">
-                                {isGenericAudience ? 'Target Audience & Ideal Use Case' : uc.title}
-                              </h3>
-                            </div>
-
-                            {uc.audience && !isRedundantAudience && uc.audience.length < 40 && (
-                              <span className="text-[11px] font-semibold text-neutral-700 bg-white border border-neutral-200 px-2.5 py-0.5 rounded-full shadow-2xs shrink-0">
-                                {uc.audience}
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Description in high-contrast readable text */}
-                          <p className="text-xs sm:text-sm text-neutral-700 leading-relaxed font-normal">
-                            {uc.description}
-                          </p>
-
-                          {/* Persona Chips */}
-                          {personas.length > 0 && (
-                            <div className="pt-2 space-y-1.5 border-t border-neutral-200/60">
-                              <span className="text-[10.5px] font-bold text-neutral-500 uppercase tracking-wider block">
-                                Best suited for:
-                              </span>
-                              <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                                {personas.map((persona) => (
-                                  <span
-                                    key={persona}
-                                    className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-2.5 py-1 text-xs font-semibold text-neutral-800 shadow-2xs hover:border-blue-300 transition-colors"
-                                  >
-                                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                                    <span>{persona}</span>
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
+                  ))}
                 </div>
-              );
-            })()}
+              </div>
+            )}
 
             {/* Discussion & Comments (Modern Card-Based Discussion matching reference) */}
             <div id="product-discussion-section" className="rounded-2xl border border-neutral-200/90 bg-white p-5 sm:p-7 shadow-xs space-y-4">
@@ -1413,42 +1183,19 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                   <span className="font-bold text-neutral-900">{product.category}</span>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <span className="text-neutral-500 font-medium">Pricing Model</span>
-                  <span className="font-bold text-neutral-900 text-right truncate max-w-[180px]">
-                    {product.pricingModel || 'Free / Freemium'}
-                  </span>
-                </div>
+                {product.pricingModel && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-neutral-500 font-medium">Pricing Model</span>
+                    <span className="font-bold text-neutral-900 text-right truncate max-w-[180px]">{product.pricingModel}</span>
+                  </div>
+                )}
 
-                <div className="flex items-center justify-between">
-                  <span className="text-neutral-500 font-medium">Target Audience</span>
-                  <span className="font-bold text-neutral-900 text-right truncate max-w-[180px]">
-                    {product.targetAudience || 'Builders & Teams'}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-neutral-500 font-medium">Platform</span>
-                  <span className="font-bold text-neutral-900">Web / Cloud</span>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-neutral-500 font-medium">Status</span>
-                  <span className="inline-flex items-center gap-1 font-bold text-emerald-700">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                    <span>{product.verified ? 'Verified Startup' : 'Live Listing'}</span>
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-neutral-500 font-medium">Directory Rank</span>
-                  <span className="font-mono-num font-black text-neutral-950">#{product.rank}</span>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-neutral-500 font-medium">Community Upvotes</span>
-                  <span className="font-mono-num font-bold text-blue-600">{(product.upvotes ?? 0).toLocaleString()}</span>
-                </div>
+                {product.targetAudience && (
+                  <div className="pt-1 border-t border-neutral-200/60">
+                    <span className="text-neutral-500 font-medium block mb-0.5">Target Audience</span>
+                    <span className="font-semibold text-neutral-800 text-[11px] block">{product.targetAudience}</span>
+                  </div>
+                )}
 
                 {product.keyHighlights && product.keyHighlights.map((kh, idx) => (
                   <div key={idx} className="flex items-center justify-between pt-1 border-t border-neutral-200/60">
@@ -1466,16 +1213,27 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                     onClick={() => trackOutboundClick(product.id, product.url, product.name, onTrackClick)}
                     className="font-bold text-blue-600 underline flex items-center gap-1 hover:text-blue-700 transition-colors"
                   >
-                    <span>Visit Website</span>
+                    <span>Visit</span>
                     <ExternalLink className="h-2.5 w-2.5" />
                   </a>
                 </div>
 
-                {product.socials && product.socials.length > 0 && (
+                {(product.twitterHandle || (product.socials && product.socials.length > 0)) && (
                   <div className="pt-2.5 border-t border-neutral-200/60 space-y-2">
                     <span className="text-neutral-500 font-medium block text-[11px]">Social & Distribution</span>
                     <div className="flex flex-wrap gap-1.5">
-                      {product.socials.map((s, idx) => {
+                      {product.twitterHandle && !product.socials?.some((s) => s.platform === 'x') && (
+                        <a
+                          href={`https://x.com/${product.twitterHandle.replace('@', '')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-100 px-2 py-1 text-[10px] font-bold text-gray-700 hover:border-gray-300 hover:bg-gray-200 hover:text-gray-900 transition-colors"
+                        >
+                          <span>X</span>
+                          <ExternalLink className="h-2.5 w-2.5" />
+                        </a>
+                      )}
+                      {product.socials?.map((s, idx) => {
                         const name = (() => {
                           switch (s.platform) {
                             case 'x': return 'X';
@@ -1510,63 +1268,50 @@ export const ProductPage: React.FC<ProductPageProps> = ({
               </div>
             </div>
 
-            {/* 3. Founder / Maker Spotlight Card */}
-            <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-xs space-y-3.5">
-              <div className="flex items-center justify-between border-b border-neutral-100 pb-2.5">
-                <div>
-                  <h2 className="text-sm sm:text-base font-bold text-neutral-950">
-                    {product.creatorName ? 'Meet the founder' : 'Maker spotlight'}
-                  </h2>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3.5">
-                <CommentAvatar
-                  avatarUrl={product.creatorAvatar || product.logoUrl}
-                  name={product.creatorName || product.name}
-                  className="h-12 w-12 shrink-0 rounded-full object-cover border border-neutral-200 bg-neutral-100 shadow-2xs"
-                  fallbackClassName="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-600 text-sm font-black text-white shadow-2xs select-none"
-                />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5">
-                    <h3 className="text-sm font-black text-neutral-950 truncate">
-                      {product.creatorName || `${product.name} Team`}
-                    </h3>
+            {/* 3. Founder / Maker Spotlight Card (from Step 3 of /submit) */}
+            {(product.creatorName || product.creatorAvatar || product.creatorXHandle) && (
+              <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-xs space-y-3.5">
+                <div className="flex items-center justify-between border-b border-neutral-100 pb-2.5">
+                  <div>
+                    <h2 className="text-sm sm:text-base font-bold text-neutral-950">
+                      Meet the founder
+                    </h2>
                   </div>
-                  <p className="text-[11px] font-medium text-neutral-400 mt-0.5">
-                    {product.creatorRole || (product.creatorName ? 'Founder & Creator' : 'Product Maker & Maintainer')}
-                  </p>
                 </div>
-              </div>
 
-              {product.creatorXHandle ? (
-                <div className="pt-2 border-t border-neutral-100">
-                  <a
-                    href={`https://x.com/${product.creatorXHandle.replace('@', '')}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-gray-100 py-2 px-3 text-xs font-bold text-gray-700 hover:border-gray-300 hover:bg-gray-200 hover:text-gray-900 transition-all cursor-pointer"
-                  >
-                    <span>Follow {product.creatorXHandle.startsWith('@') ? product.creatorXHandle : `@${product.creatorXHandle}`} on X</span>
-                    <ExternalLink className="h-3 w-3 opacity-60" />
-                  </a>
+                <div className="flex items-center gap-3.5">
+                  <CommentAvatar
+                    avatarUrl={product.creatorAvatar}
+                    name={product.creatorName || 'Founder'}
+                    className="h-12 w-12 shrink-0 rounded-full object-cover border border-neutral-200 bg-neutral-100 shadow-2xs"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <h3 className="text-sm font-black text-neutral-950 truncate">
+                        {product.creatorName || 'Product Maker'}
+                      </h3>
+                    </div>
+                    <p className="text-[11px] font-medium text-neutral-400 mt-0.5">
+                      {product.creatorRole || 'Founder & Creator'}
+                    </p>
+                  </div>
                 </div>
-              ) : (
-                <div className="pt-2 border-t border-neutral-100">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const el = document.getElementById('product-discussion-section');
-                      if (el) el.scrollIntoView({ behavior: 'smooth' });
-                    }}
-                    className="w-full flex items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 py-2 px-3 text-xs font-bold text-neutral-700 hover:text-neutral-900 transition-all cursor-pointer"
-                  >
-                    <MessageCircle className="h-3.5 w-3.5 text-blue-600" />
-                    <span>Ask the team a question</span>
-                  </button>
-                </div>
-              )}
-            </div>
+
+                {product.creatorXHandle && (
+                  <div className="pt-2 border-t border-neutral-100">
+                    <a
+                      href={`https://x.com/${product.creatorXHandle.replace('@', '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-gray-100 py-2 px-3 text-xs font-bold text-gray-700 hover:border-gray-300 hover:bg-gray-200 hover:text-gray-900 transition-all cursor-pointer"
+                    >
+                      <span>Follow {product.creatorXHandle.startsWith('@') ? product.creatorXHandle : `@${product.creatorXHandle}`} on X</span>
+                      <ExternalLink className="h-3 w-3 opacity-60" />
+                    </a>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* 4. Quick Access Shortcuts */}
             <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-xs space-y-3">

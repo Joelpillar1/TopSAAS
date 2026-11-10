@@ -788,25 +788,31 @@ create policy "Users can insert their own profile"
 create or replace function public.delete_user_account()
 returns void as $$
 declare
-  uid uuid := auth.uid();
-  uid_text text := auth.uid()::text;
+  v_uid uuid := auth.uid();
+  v_email text := lower(coalesce(auth.jwt() ->> 'email', ''));
 begin
-  if uid is null then
+  if v_uid is null then
     raise exception 'Not authenticated';
   end if;
 
-  delete from public.products where submitted_by = uid_text;
-  delete from public.submissions where submitted_by = uid_text;
-  delete from public.upvotes where user_id = uid_text;
-  delete from public.comments where user_id = uid_text;
-  delete from public.user_drafts where user_id = uid_text;
-  delete from public.sponsors where created_by = uid_text;
-  delete from public.profiles where id = uid;
-  delete from auth.users where id = uid;
+  delete from public.sponsors s
+  where (v_email <> '' and s.contact_email is not null and lower(s.contact_email) = v_email)
+     or s.product_id in (select p.id from public.products p where p.submitted_by = v_uid);
+
+  delete from public.products where submitted_by = v_uid;
+  delete from public.submissions where submitted_by = v_uid;
+  delete from public.upvotes where user_id = v_uid;
+  delete from public.user_drafts where user_id = v_uid;
+  delete from public.comments
+  where v_email <> '' and user_email is not null and lower(user_email) = v_email;
+  delete from public.profiles where id = v_uid;
+  delete from auth.users where id = v_uid;
 end;
 $$ language plpgsql security definer;
 
 grant execute on function public.delete_user_account() to authenticated;
+
+notify pgrst, 'reload schema';
 
 -- ──────────────────────────────────────────────────────────────────────────────
 -- ALL DONE! YOUR NEW SUPABASE PROJECT IS READY.

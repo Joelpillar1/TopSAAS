@@ -47,32 +47,42 @@ create policy "Users can insert their own profile"
   on public.profiles for insert
   with check (auth.uid() = id);
 
--- Function to allow authenticated users to delete their own account completely
+-- Function to allow authenticated users to delete their own account completely.
+-- Columns are uuid/text exactly as deployed, and comments are keyed by email
+-- (the comments table has no user_id column).
 create or replace function public.delete_user_account()
 returns void as $$
 declare
-  uid uuid := auth.uid();
-  uid_text text := auth.uid()::text;
+  v_uid uuid := auth.uid();
+  v_email text := lower(coalesce(auth.jwt() ->> 'email', ''));
 begin
-  if uid is null then
+  if v_uid is null then
     raise exception 'Not authenticated';
   end if;
 
-  -- 1. Delete associated products, submissions, and relations
-  delete from public.products where submitted_by = uid_text;
-  delete from public.submissions where submitted_by = uid_text;
-  delete from public.upvotes where user_id = uid_text;
-  delete from public.comments where user_id = uid_text;
-  delete from public.user_drafts where user_id = uid_text;
-  delete from public.sponsors where created_by = uid_text;
-  
-  -- 2. Delete public profile
-  delete from public.profiles where id = uid;
+  -- 1. Remove sponsor records owned by this user or attached to their listings.
+  delete from public.sponsors s
+  where (v_email <> '' and s.contact_email is not null and lower(s.contact_email) = v_email)
+     or s.product_id in (select p.id from public.products p where p.submitted_by = v_uid);
 
-  -- 3. Delete from auth.users (requires security definer)
-  delete from auth.users where id = uid;
+  -- 2. Delete associated products, submissions, and relations
+  delete from public.products where submitted_by = v_uid;
+  delete from public.submissions where submitted_by = v_uid;
+  delete from public.upvotes where user_id = v_uid;
+  delete from public.user_drafts where user_id = v_uid;
+  delete from public.comments
+  where v_email <> '' and user_email is not null and lower(user_email) = v_email;
+
+  -- 3. Delete public profile
+  delete from public.profiles where id = v_uid;
+
+  -- 4. Delete from auth.users (requires security definer)
+  delete from auth.users where id = v_uid;
 end;
 $$ language plpgsql security definer;
 
 -- Grant execution to authenticated users
 grant execute on function public.delete_user_account() to authenticated;
+
+-- Refresh PostgREST's schema cache so new profile columns are visible immediately.
+notify pgrst, 'reload schema';

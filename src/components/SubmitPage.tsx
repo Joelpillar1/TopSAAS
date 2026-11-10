@@ -739,7 +739,10 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
   const applyFounderPhoto = async (file: File) => {
     try {
       const dataUrl = await processImageFile(file, { maxSide: 256, format: 'image/png' });
-      set('creatorAvatar', dataUrl);
+      // Upload a public copy so the same photo can be reused on the founder's
+      // profile without bloating auth metadata with a base64 data URL.
+      const cdnUrl = await uploadScreenshotToStorage(file, `founder-avatar-${userId || 'user'}`);
+      set('creatorAvatar', cdnUrl || dataUrl);
       playSound('click', soundEnabled);
     } catch (err) {
       setBanner(err instanceof Error ? err.message : 'Could not process photo.');
@@ -1170,16 +1173,16 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                   aria-selected={active}
                   onClick={() => handleTabClick(i)}
                   className={`flex items-center justify-center gap-1.5 sm:gap-2 rounded-xl px-1.5 sm:px-2 py-2.5 text-xs font-bold transition-all cursor-pointer ${active
-                      ? 'bg-neutral-950 text-white shadow-2xs'
-                      : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-950'
+                    ? 'bg-neutral-950 text-white shadow-2xs'
+                    : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-950'
                     }`}
                 >
                   <span
                     className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-black shrink-0 ${active
-                        ? 'bg-mint-500 text-white'
-                        : isCompleted
-                          ? 'bg-mint-500/20 text-mint-700 border border-mint-500/40'
-                          : 'bg-neutral-100 text-neutral-600 border border-neutral-200'
+                      ? 'bg-mint-500 text-white'
+                      : isCompleted
+                        ? 'bg-mint-500/20 text-mint-700 border border-mint-500/40'
+                        : 'bg-neutral-100 text-neutral-600 border border-neutral-200'
                       }`}
                   >
                     {isCompleted ? <Check className="h-3 w-3" strokeWidth={3.5} /> : i + 1}
@@ -1337,8 +1340,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                     onDragLeave={() => setIsDraggingLogo(false)}
                     onDrop={handleDrop}
                     className={`flex min-h-[120px] cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-4 text-center transition-colors outline-none ${isDraggingLogo
-                        ? 'border-neutral-900 bg-neutral-50'
-                        : 'border-neutral-300 bg-white hover:border-neutral-500 hover:bg-neutral-50/50'
+                      ? 'border-neutral-900 bg-neutral-50'
+                      : 'border-neutral-300 bg-white hover:border-neutral-500 hover:bg-neutral-50/50'
                       }`}
                   >
                     {form.logoDataUrl ? (
@@ -1433,12 +1436,12 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                           setDragOverScreenshotIndex(null);
                         }}
                         className={`group relative aspect-video overflow-hidden rounded-xl border bg-[#1f1f1f] shadow-sm transition-all duration-150 cursor-grab active:cursor-grabbing ${isDragOver
-                            ? 'border-mint-500 ring-2 ring-mint-500/50 scale-[1.03] z-10'
-                            : isDragging
-                              ? 'opacity-40 border-neutral-600'
-                              : isFirst
-                                ? 'border-mint-500/50 hover:border-mint-500/80'
-                                : 'border-neutral-200 hover:border-neutral-500'
+                          ? 'border-mint-500 ring-2 ring-mint-500/50 scale-[1.03] z-10'
+                          : isDragging
+                            ? 'opacity-40 border-neutral-600'
+                            : isFirst
+                              ? 'border-mint-500/50 hover:border-mint-500/80'
+                              : 'border-neutral-200 hover:border-neutral-500'
                           }`}
                       >
                         <img
@@ -1651,10 +1654,10 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                       setCategorySearch('');
                     }}
                     className={`w-full flex items-center justify-between rounded-xl border bg-white px-3.5 py-2.5 text-sm font-semibold text-neutral-900 transition-all cursor-pointer text-left ${showCategoryError
-                        ? 'border-red-500/70'
-                        : isCategoryOpen
-                          ? 'border-neutral-900 ring-2 ring-neutral-900/10'
-                          : 'border-neutral-300 hover:border-neutral-400'
+                      ? 'border-red-500/70'
+                      : isCategoryOpen
+                        ? 'border-neutral-900 ring-2 ring-neutral-900/10'
+                        : 'border-neutral-300 hover:border-neutral-400'
                       }`}
                   >
                     <span className="text-neutral-700 font-medium">
@@ -1693,8 +1696,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                                 type="button"
                                 onClick={() => toggleCategory(cat)}
                                 className={`w-full flex items-center justify-between rounded-lg px-2.5 py-2 text-left text-xs transition-colors cursor-pointer ${selected
-                                    ? 'bg-mint-500/20 font-bold text-mint-700'
-                                    : 'font-medium text-neutral-700 hover:bg-neutral-100 hover:text-neutral-950'
+                                  ? 'bg-mint-500/20 font-bold text-mint-700'
+                                  : 'font-medium text-neutral-700 hover:bg-neutral-100 hover:text-neutral-950'
                                   }`}
                               >
                                 <span className="truncate">{cat}</span>
@@ -1726,8 +1729,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                           set('pricingModel', selected ? '' : opt.value);
                         }}
                         className={`rounded-xl border px-3 py-2.5 text-left transition-all cursor-pointer ${selected
-                            ? 'border-neutral-950 bg-neutral-950 text-white'
-                            : 'border-neutral-200 bg-white hover:border-neutral-400 text-neutral-900'
+                          ? 'border-neutral-950 bg-neutral-950 text-white'
+                          : 'border-neutral-200 bg-white hover:border-neutral-400 text-neutral-900'
                           }`}
                       >
                         <span className={`block text-xs font-bold ${selected ? 'text-white' : 'text-neutral-900'}`}>
@@ -1783,8 +1786,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                             }
                           }}
                           className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all cursor-pointer ${form.offerDiscount === preset
-                              ? 'bg-mint-500 text-white border border-mint-400 shadow-2xs'
-                              : 'bg-white text-neutral-700 border border-neutral-200 hover:border-neutral-400 hover:bg-neutral-50 hover:text-neutral-950'
+                            ? 'bg-mint-500 text-white border border-mint-400 shadow-2xs'
+                            : 'bg-white text-neutral-700 border border-neutral-200 hover:border-neutral-400 hover:bg-neutral-50 hover:text-neutral-950'
                             }`}
                         >
                           {preset}
@@ -2172,8 +2175,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                       type="button"
                       onClick={() => set('creatorRole', role)}
                       className={`rounded-lg px-2 py-1 text-[10px] font-bold transition-colors cursor-pointer ${form.creatorRole === role
-                          ? 'bg-mint-500/15 text-mint-700 border border-mint-500/40'
-                          : 'bg-white text-neutral-700 border border-neutral-200 hover:text-neutral-950 hover:border-neutral-400 hover:bg-neutral-50'
+                        ? 'bg-mint-500/15 text-mint-700 border border-mint-500/40'
+                        : 'bg-white text-neutral-700 border border-neutral-200 hover:text-neutral-950 hover:border-neutral-400 hover:bg-neutral-50'
                         }`}
                     >
                       {role}
@@ -2202,16 +2205,16 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                       setSubmissionPlan('free');
                     }}
                     className={`relative rounded-3xl border transition-all cursor-pointer flex flex-col justify-between p-5 sm:p-6 ${submissionPlan === 'free'
-                        ? 'border-neutral-900 bg-white shadow-xl shadow-neutral-900/5 ring-2 ring-neutral-950'
-                        : 'border-neutral-200/90 bg-white hover:border-neutral-300 hover:shadow-md'
+                      ? 'border-neutral-900 bg-white shadow-xl shadow-neutral-900/5 ring-2 ring-neutral-950'
+                      : 'border-neutral-200/90 bg-white hover:border-neutral-300 hover:shadow-md'
                       }`}
                   >
                     <div>
                       <div className="flex items-center justify-between gap-2">
                         <h4 className="text-xl sm:text-2xl font-black text-neutral-950 tracking-tight">Starter</h4>
                         <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${submissionPlan === 'free'
-                            ? 'border border-emerald-300 bg-emerald-50 text-emerald-700'
-                            : 'border border-neutral-200 bg-neutral-100 text-neutral-600'
+                          ? 'border border-emerald-300 bg-emerald-50 text-emerald-700'
+                          : 'border border-neutral-200 bg-neutral-100 text-neutral-600'
                           }`}>
                           {submissionPlan === 'free' ? 'Selected' : 'Free Forever'}
                         </span>
@@ -2303,8 +2306,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                         setSubmissionPlan('free');
                       }}
                       className={`w-full rounded-2xl py-3 px-4 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${submissionPlan === 'free'
-                          ? 'border border-neutral-900 bg-neutral-950 text-white shadow-xs'
-                          : 'border border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-800 shadow-2xs'
+                        ? 'border border-neutral-900 bg-neutral-950 text-white shadow-xs'
+                        : 'border border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-800 shadow-2xs'
                         }`}
                     >
                       <span>{submissionPlan === 'free' ? 'Selected ✓' : 'Select Starter →'}</span>
@@ -2319,8 +2322,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                       setAutoRelaunch(false);
                     }}
                     className={`relative rounded-3xl border transition-all cursor-pointer flex flex-col justify-between p-5 sm:p-6 bg-gradient-to-b from-blue-50/60 via-slate-50/40 to-white ${submissionPlan === 'paid_19'
-                        ? 'border-blue-600 shadow-xl shadow-blue-500/10 ring-2 ring-blue-600'
-                        : 'border-slate-200/90 hover:border-blue-300 hover:shadow-md'
+                      ? 'border-blue-600 shadow-xl shadow-blue-500/10 ring-2 ring-blue-600'
+                      : 'border-slate-200/90 hover:border-blue-300 hover:shadow-md'
                       }`}
                   >
                     {/* Overlapping Most Popular Tag */}
@@ -2492,8 +2495,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                               type="button"
                               onClick={() => { playSound('click', soundEnabled); setBadgeVariant(id); }}
                               className={`relative flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 p-2 sm:p-2.5 transition-all cursor-pointer ${badgeVariant === id
-                                  ? 'border-mint-500 shadow-sm shadow-mint-500/20'
-                                  : 'border-neutral-200 hover:border-neutral-400'
+                                ? 'border-mint-500 shadow-sm shadow-mint-500/20'
+                                : 'border-neutral-200 hover:border-neutral-400'
                                 } ${bg}`}
                             >
                               {badgeVariant === id && (
@@ -2542,8 +2545,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                           type="button"
                           onClick={() => { playSound('click', soundEnabled); setBadgeVariant(id); }}
                           className={`relative flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 p-2 sm:p-2.5 transition-all cursor-pointer ${badgeVariant === id
-                              ? 'border-mint-500 shadow-sm shadow-mint-500/20'
-                              : 'border-neutral-200 hover:border-neutral-400'
+                            ? 'border-mint-500 shadow-sm shadow-mint-500/20'
+                            : 'border-neutral-200 hover:border-neutral-400'
                             } ${bg}`}
                         >
                           {badgeVariant === id && (
@@ -2763,8 +2766,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                     setAutoRelaunch((prev) => !prev);
                   }}
                   className={`rounded-2xl border p-4 sm:p-5 transition-all cursor-pointer select-none ${autoRelaunch
-                      ? 'border-blue-500 bg-blue-50/70 ring-1 ring-blue-500/30 shadow-xs'
-                      : 'border-neutral-200 bg-white hover:border-neutral-300'
+                    ? 'border-blue-500 bg-blue-50/70 ring-1 ring-blue-500/30 shadow-xs'
+                    : 'border-neutral-200 bg-white hover:border-neutral-300'
                     }`}
                 >
                   <div className="flex items-center justify-between gap-3">
@@ -2854,7 +2857,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                   ) : (
                     <>
                       <span>⚡</span>
-                      <span>Pay $19 on Whop & Launch</span>
+                      <span>Launch Now - $19</span>
                     </>
                   )}
                 </button>
@@ -2885,10 +2888,10 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                   onClick={handleLaunch}
                   disabled={isSubmitting}
                   className={`px-5 py-2.5 text-xs font-black transition-all rounded-xl select-none ${isSubmitting
-                      ? 'btn-primary opacity-80 cursor-wait'
-                      : autoRelaunch
-                        ? 'btn-primary bg-blue-600 hover:bg-blue-500 shadow-blue-500/25 cursor-pointer'
-                        : 'btn-primary cursor-pointer'
+                    ? 'btn-primary opacity-80 cursor-wait'
+                    : autoRelaunch
+                      ? 'btn-primary bg-blue-600 hover:bg-blue-500 shadow-blue-500/25 cursor-pointer'
+                      : 'btn-primary cursor-pointer'
                     }`}
                   title={
                     autoRelaunch
@@ -3071,12 +3074,12 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                     {isPayingRelaunch ? (
                       <>
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        <span>Redirecting to Whop…</span>
+                        <span>Redirecting…</span>
                       </>
                     ) : (
                       <>
                         <span>🚀</span>
-                        <span>Pay $5 on Whop & Launch</span>
+                        <span>Launch Now - $5</span>
                       </>
                     )}
                   </button>

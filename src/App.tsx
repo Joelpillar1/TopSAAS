@@ -31,6 +31,7 @@ import { loadProducts, loadProductById, loadSubmissions, invalidateCache, saveAl
 import { trackGoal } from './utils/trackkit';
 import { isInWeek, getWeekInfo, getWeekNumber, getWeekByNumber, getMonthKey, isInMonth, formatMonthLabel, formatWeekDateRange, WeekInfo } from './utils/weeks';
 import { getWebsiteFavicon } from './utils/logo';
+import { uploadScreenshotToStorage } from './utils/storage';
 import { Trophy, X, Plus, ShieldCheck, Loader2, Star, MessageCircle, Flame, Search } from 'lucide-react';
 import { FeaturedSpotModal } from './components/FeaturedSpotModal';
 import { ProductPage } from './components/ProductPage';
@@ -1405,6 +1406,57 @@ export default function App() {
     });
   };
 
+  // Keep the public founder profile in sync with the name/photo used on a
+  // submission. The Submit page edits a per-launch copy, so without this the
+  // profile page would keep showing the old values.
+  const syncCreatorProfile = async (creatorName?: string, creatorAvatar?: string) => {
+    if (!user) return;
+    const meta = user.user_metadata || {};
+    const currentName = (meta.full_name || meta.name || '').trim();
+    const currentAvatar = meta.avatar_url || meta.picture || '';
+    const nextName = (creatorName || '').trim() || currentName || user.email?.split('@')[0] || '';
+    let nextAvatar = creatorAvatar || currentAvatar;
+
+    // Drafts created before the storage upload change may still hold a base64
+    // data URL. Move it to public storage so auth metadata stays small.
+    if (nextAvatar.startsWith('data:')) {
+      try {
+        const blob = await (await fetch(nextAvatar)).blob();
+        const file = new File([blob], 'founder-avatar.png', { type: blob.type || 'image/png' });
+        nextAvatar = (await uploadScreenshotToStorage(file, `avatar-${user.id}`)) || nextAvatar;
+      } catch { }
+    }
+
+    const nameChanged = Boolean(nextName && nextName !== currentName);
+    const avatarChanged = Boolean(nextAvatar && nextAvatar !== currentAvatar);
+    if (!nameChanged && !avatarChanged) return;
+
+    try {
+      await supabase.auth.updateUser({
+        data: {
+          ...(nameChanged ? { full_name: nextName } : {}),
+          ...(avatarChanged ? { avatar_url: nextAvatar } : {}),
+        },
+      });
+    } catch (err) {
+      console.warn('Could not update auth profile metadata:', err);
+    }
+
+    try {
+      const payload: Record<string, unknown> = {
+        id: user.id,
+        email: user.email,
+        updated_at: new Date().toISOString(),
+      };
+      if (nextName) payload.full_name = nextName;
+      if (nextAvatar) payload.avatar_url = nextAvatar;
+      const { error } = await supabase.from('profiles').upsert(payload, { onConflict: 'id' });
+      if (error) console.warn('Could not update profiles table:', error.message);
+    } catch (err) {
+      console.warn('Could not update profiles table:', err);
+    }
+  };
+
   // Handle User Submission — queued under review for admin approval
   const handleConfirmSubmit = async (details: SubmitProductDetails): Promise<string | undefined> => {
     const now = Date.now();
@@ -1496,6 +1548,10 @@ export default function App() {
     } catch (err) {
       console.warn('Error syncing submission to remote DB (stored locally):', err);
     }
+
+    // The founder name/photo edited on the Submit page should become the
+    // account's public profile values too.
+    await syncCreatorProfile(details.creatorName, details.creatorAvatar);
 
     return subId;
   };
@@ -2214,6 +2270,17 @@ export default function App() {
     })
     .map(markOwnership)
     .sort(weekComparator);
+
+  // Featured placements shown inside the ranked feed. When a visitor filters to
+  // a category, only featured products in that category stay pinned. This is
+  // what "top spot when visitors filter your category" means, and it keeps
+  // off-category ads out of a filtered feed.
+  const feedFeaturedProducts = selectedCategory === 'All'
+    ? featuredProducts
+    : featuredProducts.filter((p) => {
+      const productCats = p.category ? p.category.split(',').map((c) => c.trim().toLowerCase()) : [];
+      return p.category === selectedCategory || productCats.includes(selectedCategory.toLowerCase());
+    });
 
   // Promoted / featured product used in the rails and mid-board banner
   const promotedProduct = (!isFeaturedExpired && featuredProductId)
@@ -3153,8 +3220,8 @@ export default function App() {
                       {/* Active, not expired featured products OR default open spot keep showing even when there are no other products */}
                       {currentPage === 1 && !isEmptyFeatured && (
                         <div className="space-y-3">
-                          {featuredProducts.length > 0 ? (
-                            featuredProducts.map((fp) => (
+                          {feedFeaturedProducts.length > 0 ? (
+                            feedFeaturedProducts.map((fp) => (
                               <SponsorTile
                                 key={fp.id}
                                 soundEnabled={soundEnabled}
@@ -3200,8 +3267,8 @@ export default function App() {
                             <Trophy className="mx-auto h-10 w-10 text-neutral-700 mb-3" />
                             <h3 className="text-lg font-bold text-neutral-950">
                               {selectedWeek.isCurrent
-                                ? (featuredProducts.length > 0 ? 'No other launches this week yet' : 'No launches this week yet')
-                                : (featuredProducts.length > 0 ? `No other launches in ${selectedWeek.label} yet` : `No launches in ${selectedWeek.label} yet`)}
+                                ? (feedFeaturedProducts.length > 0 ? 'No other launches this week yet' : 'No launches this week yet')
+                                : (feedFeaturedProducts.length > 0 ? `No other launches in ${selectedWeek.label} yet` : `No launches in ${selectedWeek.label} yet`)}
                             </h3>
                             <p className="text-xs text-neutral-500 max-w-sm mx-auto mt-1 mb-5 font-medium">
                               The round is fresh. Be the first to launch your SaaS this week and take the #1 spot.
@@ -3275,12 +3342,12 @@ export default function App() {
                           <>
                             <Trophy className="mx-auto h-10 w-10 text-neutral-700 mb-3" />
                             <h3 className="text-lg font-bold text-neutral-950">
-                              {featuredProducts.length > 0 ? 'No other websites found' : 'No websites found'}
+                              {feedFeaturedProducts.length > 0 ? 'No other websites found' : 'No websites found'}
                             </h3>
                             <p className="text-xs text-neutral-500 max-w-sm mx-auto mt-1 mb-5 font-medium">
                               {searchQuery.trim()
-                                ? (featuredProducts.length > 0 ? `No other tools match "${searchQuery}". Try searching for another term or clear filters.` : `No tools match "${searchQuery}". Try searching for another term or clear filters.`)
-                                : (featuredProducts.length > 0 ? 'No other websites in this category yet. Be the first to submit!' : 'No websites in this category yet. Be the first to submit!')}
+                                ? (feedFeaturedProducts.length > 0 ? `No other tools match "${searchQuery}". Try searching for another term or clear filters.` : `No tools match "${searchQuery}". Try searching for another term or clear filters.`)
+                                : (feedFeaturedProducts.length > 0 ? 'No other websites in this category yet. Be the first to submit!' : 'No websites in this category yet. Be the first to submit!')}
                             </p>
                             <div className="flex items-center justify-center gap-2">
                               <button
@@ -3315,10 +3382,10 @@ export default function App() {
                     <div className="space-y-3">
                       {/* Featured sponsor(s) placed at Top (position 0) or default reserve spot placeholder */}
                       {currentPage === 1 && !isEmptyFeatured && (
-                        featuredProducts.length > 0 ? (
-                          featuredProducts.filter((fp) => (featuredPositions[fp.id] !== undefined ? featuredPositions[fp.id] : featuredPosition) === 0).length > 0 && (
+                        feedFeaturedProducts.length > 0 ? (
+                          feedFeaturedProducts.filter((fp) => (featuredPositions[fp.id] !== undefined ? featuredPositions[fp.id] : featuredPosition) === 0).length > 0 && (
                             <div className="space-y-3">
-                              {featuredProducts
+                              {feedFeaturedProducts
                                 .filter((fp) => (featuredPositions[fp.id] !== undefined ? featuredPositions[fp.id] : featuredPosition) === 0)
                                 .map((fp) => (
                                   <SponsorTile
@@ -3367,7 +3434,7 @@ export default function App() {
                         const isLastItem = index === paginatedProducts.length - 1;
 
                         // Per-product featured items placed after this rank
-                        const featuredAfterThis = featuredProducts.filter((fp) => {
+                        const featuredAfterThis = feedFeaturedProducts.filter((fp) => {
                           const pos = featuredPositions[fp.id] !== undefined ? featuredPositions[fp.id] : featuredPosition;
                           if (pos === currentRank) return true;
                           if (isLastItem && pos > currentRank) return true;

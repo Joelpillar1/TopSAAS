@@ -435,8 +435,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           supabase.from('submissions').delete().eq('submitted_by', user.id),
           supabase.from('user_drafts').delete().eq('user_id', user.id),
           supabase.from('upvotes').delete().eq('user_id', user.id),
-          supabase.from('comments').delete().eq('user_id', user.id),
-          supabase.from('sponsors').delete().eq('created_by', user.id),
+          supabase.from('comments').delete().eq('user_email', user.email),
           supabase.from('profiles').delete().eq('id', user.id),
         ]).catch(() => { });
       }
@@ -947,23 +946,23 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   const pendingSubmissions = submissions.filter((s) => s.status === 'under_review');
 
   return (
-    <div className="min-h-screen bg-white text-neutral-900 font-sans">
+    <div className="min-h-screen bg-white text-neutral-900 font-sans w-full max-w-full overflow-x-hidden">
       {/* Header */}
-      <div className="sticky top-0 z-40 border-b border-neutral-200 bg-white/95 backdrop-blur-md">
+      <div className="border-b border-neutral-200 bg-white">
         <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3 sm:px-6">
           <button
             type="button"
             onClick={onBack}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-all cursor-pointer"
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-all cursor-pointer shrink-0"
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
-          <h1 className="text-sm font-black text-neutral-950 flex-1">My Products</h1>
+          <h1 className="text-sm font-black text-neutral-950 flex-1 truncate">My Products</h1>
           {onSignOut && (
             <button
               type="button"
               onClick={onSignOut}
-              className="flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-bold text-neutral-600 hover:border-red-300 hover:text-red-600 hover:bg-red-50 transition-all cursor-pointer"
+              className="flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-bold text-neutral-600 hover:border-red-300 hover:text-red-600 hover:bg-red-50 transition-all cursor-pointer shrink-0"
             >
               <LogOut className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Sign out</span>
@@ -972,31 +971,31 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         </div>
       </div>
 
-      <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6 space-y-6">
+      <div className="mx-auto max-w-3xl px-3.5 sm:px-6 py-5 sm:py-6 space-y-5 sm:space-y-6">
         {/* User Info Card (the way it was before) */}
-        <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-xs">
-          <div className="flex items-center gap-4">
+        <div className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-5 shadow-xs">
+          <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
             {avatarUrl || user.user_metadata?.avatar_url ? (
               <img
                 src={avatarUrl || user.user_metadata?.avatar_url}
                 alt={displayName || user.user_metadata?.full_name || 'User'}
-                className="h-14 w-14 rounded-full object-cover ring-2 ring-neutral-200 shadow-2xs"
+                className="h-12 w-12 sm:h-14 sm:w-14 rounded-full object-cover ring-2 ring-neutral-200 shadow-2xs shrink-0"
               />
             ) : (
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-mint-500 text-white text-lg font-black shadow-xs">
+              <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full bg-mint-500 text-white text-base sm:text-lg font-black shadow-xs shrink-0">
                 {(displayName?.[0] || user.email?.[0] || 'U').toUpperCase()}
               </div>
             )}
-            <div className="space-y-0.5">
-              <h2 className="text-base font-black text-neutral-950">
+            <div className="space-y-0.5 min-w-0 flex-1">
+              <h2 className="text-sm sm:text-base font-black text-neutral-950 truncate">
                 {displayName || user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
               </h2>
-              <div className="flex items-center gap-1.5 text-xs text-neutral-400">
-                <Mail className="h-3 w-3" />
-                <span>{user.email || 'No email'}</span>
+              <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-neutral-400 min-w-0 truncate">
+                <Mail className="h-3 w-3 shrink-0" />
+                <span className="truncate">{user.email || 'No email'}</span>
               </div>
-              <div className="flex items-center gap-1.5 text-xs text-neutral-500">
-                <Calendar className="h-3 w-3" />
+              <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-neutral-500">
+                <Calendar className="h-3 w-3 shrink-0" />
                 <span>Joined {new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
               </div>
             </div>
@@ -1004,22 +1003,22 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         </div>
 
         {/* Stats & Quick Filter */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
           <button
             type="button"
             onClick={() => {
               playSound('click', soundEnabled);
               setActiveProfileTab('live');
             }}
-            className={`rounded-xl border p-3.5 text-center transition-all cursor-pointer ${activeProfileTab === 'live'
+            className={`rounded-xl border p-2.5 sm:p-3.5 text-center transition-all cursor-pointer min-w-0 ${activeProfileTab === 'live'
               ? 'border-neutral-900 bg-neutral-900 text-white shadow-xs'
               : 'border-neutral-200 bg-white text-neutral-950 hover:border-neutral-300'
               }`}
           >
-            <div className={`text-xl font-black ${activeProfileTab === 'live' ? 'text-white' : 'text-neutral-950'}`}>
+            <div className={`text-lg sm:text-xl font-black ${activeProfileTab === 'live' ? 'text-white' : 'text-neutral-950'}`}>
               {liveCount}
             </div>
-            <div className={`text-[11px] font-bold ${activeProfileTab === 'live' ? 'text-neutral-300' : 'text-neutral-500'}`}>
+            <div className={`text-[10px] sm:text-[11px] font-bold truncate ${activeProfileTab === 'live' ? 'text-neutral-300' : 'text-neutral-500'}`}>
               Live Products
             </div>
           </button>
@@ -1030,15 +1029,15 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
               playSound('click', soundEnabled);
               setActiveProfileTab('drafts');
             }}
-            className={`rounded-xl border p-3.5 text-center transition-all cursor-pointer ${activeProfileTab === 'drafts'
+            className={`rounded-xl border p-2.5 sm:p-3.5 text-center transition-all cursor-pointer min-w-0 ${activeProfileTab === 'drafts'
               ? 'border-blue-600 bg-blue-600 text-white shadow-xs'
               : 'border-neutral-200 bg-white text-blue-600 hover:border-blue-300'
               }`}
           >
-            <div className={`text-xl font-black ${activeProfileTab === 'drafts' ? 'text-white' : 'text-blue-600'}`}>
+            <div className={`text-lg sm:text-xl font-black ${activeProfileTab === 'drafts' ? 'text-white' : 'text-blue-600'}`}>
               {drafts.length}
             </div>
-            <div className={`text-[11px] font-bold ${activeProfileTab === 'drafts' ? 'text-blue-100' : 'text-neutral-500'}`}>
+            <div className={`text-[10px] sm:text-[11px] font-bold truncate ${activeProfileTab === 'drafts' ? 'text-blue-100' : 'text-neutral-500'}`}>
               Saved Drafts
             </div>
           </button>
@@ -1049,122 +1048,124 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
               playSound('click', soundEnabled);
               setActiveProfileTab('pending');
             }}
-            className={`rounded-xl border p-3.5 text-center transition-all cursor-pointer ${activeProfileTab === 'pending'
+            className={`rounded-xl border p-2.5 sm:p-3.5 text-center transition-all cursor-pointer min-w-0 ${activeProfileTab === 'pending'
               ? 'border-amber-600 bg-amber-600 text-white shadow-xs'
               : 'border-neutral-200 bg-white text-amber-600 hover:border-amber-300'
               }`}
           >
-            <div className={`text-xl font-black ${activeProfileTab === 'pending' ? 'text-white' : 'text-amber-600'}`}>
+            <div className={`text-lg sm:text-xl font-black ${activeProfileTab === 'pending' ? 'text-white' : 'text-amber-600'}`}>
               {pendingSubmissions.length}
             </div>
-            <div className={`text-[11px] font-bold ${activeProfileTab === 'pending' ? 'text-amber-100' : 'text-neutral-500'}`}>
+            <div className={`text-[10px] sm:text-[11px] font-bold truncate ${activeProfileTab === 'pending' ? 'text-amber-100' : 'text-neutral-500'}`}>
               Pending Approval
             </div>
           </button>
         </div>
 
         {/* Profile Tabs Navigation */}
-        <div className="flex items-center justify-between border-b border-neutral-200 gap-2">
-          <div className="flex items-center gap-1 sm:gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                playSound('click', soundEnabled);
-                setActiveProfileTab('live');
-              }}
-              className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 text-xs font-bold transition-all border-b-2 cursor-pointer ${activeProfileTab === 'live'
-                ? 'border-neutral-950 text-neutral-950 font-black'
-                : 'border-transparent text-neutral-500 hover:text-neutral-950'
-                }`}
-            >
-              <Globe className="h-3.5 w-3.5" />
-              <span>Live Products</span>
-              <span
-                className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${activeProfileTab === 'live'
-                  ? 'bg-neutral-950 text-white'
-                  : 'bg-neutral-100 text-neutral-600'
+        <div className="border-b border-neutral-200 -mx-3.5 px-3.5 sm:mx-0 sm:px-0">
+          <div className="flex items-center justify-between gap-2 overflow-x-auto no-scrollbar py-0.5">
+            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  playSound('click', soundEnabled);
+                  setActiveProfileTab('live');
+                }}
+                className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 text-xs font-bold transition-all border-b-2 cursor-pointer whitespace-nowrap shrink-0 ${activeProfileTab === 'live'
+                  ? 'border-neutral-950 text-neutral-950 font-black'
+                  : 'border-transparent text-neutral-500 hover:text-neutral-950'
                   }`}
               >
-                {products.length}
-              </span>
-            </button>
+                <Globe className="h-3.5 w-3.5 shrink-0" />
+                <span>Live Products</span>
+                <span
+                  className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${activeProfileTab === 'live'
+                    ? 'bg-neutral-950 text-white'
+                    : 'bg-neutral-100 text-neutral-600'
+                    }`}
+                >
+                  {products.length}
+                </span>
+              </button>
 
-            <button
-              type="button"
-              onClick={() => {
-                playSound('click', soundEnabled);
-                setActiveProfileTab('drafts');
-              }}
-              className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 text-xs font-bold transition-all border-b-2 cursor-pointer ${activeProfileTab === 'drafts'
-                ? 'border-blue-600 text-blue-600 font-black'
-                : 'border-transparent text-neutral-500 hover:text-neutral-950'
-                }`}
-            >
-              <FileText className="h-3.5 w-3.5" />
-              <span>Drafts</span>
-              <span
-                className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${activeProfileTab === 'drafts'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-neutral-100 text-neutral-600'
+              <button
+                type="button"
+                onClick={() => {
+                  playSound('click', soundEnabled);
+                  setActiveProfileTab('drafts');
+                }}
+                className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 text-xs font-bold transition-all border-b-2 cursor-pointer whitespace-nowrap shrink-0 ${activeProfileTab === 'drafts'
+                  ? 'border-blue-600 text-blue-600 font-black'
+                  : 'border-transparent text-neutral-500 hover:text-neutral-950'
                   }`}
               >
-                {drafts.length}
-              </span>
-            </button>
+                <FileText className="h-3.5 w-3.5 shrink-0" />
+                <span>Drafts</span>
+                <span
+                  className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${activeProfileTab === 'drafts'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-neutral-100 text-neutral-600'
+                    }`}
+                >
+                  {drafts.length}
+                </span>
+              </button>
 
-            <button
-              type="button"
-              onClick={() => {
-                playSound('click', soundEnabled);
-                setActiveProfileTab('pending');
-              }}
-              className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 text-xs font-bold transition-all border-b-2 cursor-pointer ${activeProfileTab === 'pending'
-                ? 'border-amber-600 text-amber-600 font-black'
-                : 'border-transparent text-neutral-500 hover:text-neutral-950'
-                }`}
-            >
-              <Clock className="h-3.5 w-3.5" />
-              <span>Pending</span>
-              <span
-                className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${activeProfileTab === 'pending'
-                  ? 'bg-amber-600 text-white'
-                  : 'bg-neutral-100 text-neutral-600'
+              <button
+                type="button"
+                onClick={() => {
+                  playSound('click', soundEnabled);
+                  setActiveProfileTab('pending');
+                }}
+                className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 text-xs font-bold transition-all border-b-2 cursor-pointer whitespace-nowrap shrink-0 ${activeProfileTab === 'pending'
+                  ? 'border-amber-600 text-amber-600 font-black'
+                  : 'border-transparent text-neutral-500 hover:text-neutral-950'
                   }`}
               >
-                {pendingSubmissions.length}
-              </span>
-            </button>
+                <Clock className="h-3.5 w-3.5 shrink-0" />
+                <span>Pending</span>
+                <span
+                  className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${activeProfileTab === 'pending'
+                    ? 'bg-amber-600 text-white'
+                    : 'bg-neutral-100 text-neutral-600'
+                    }`}
+                >
+                  {pendingSubmissions.length}
+                </span>
+              </button>
 
-            <button
-              type="button"
-              onClick={() => {
-                playSound('click', soundEnabled);
-                setActiveProfileTab('profile');
-              }}
-              className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 text-xs font-bold transition-all border-b-2 cursor-pointer ${activeProfileTab === 'profile'
-                ? 'border-neutral-950 text-neutral-950 font-black'
-                : 'border-transparent text-neutral-500 hover:text-neutral-950'
-                }`}
-            >
-              <UserIcon className="h-3.5 w-3.5" />
-              <span>Profile</span>
-            </button>
+              <button
+                type="button"
+                onClick={() => {
+                  playSound('click', soundEnabled);
+                  setActiveProfileTab('profile');
+                }}
+                className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 text-xs font-bold transition-all border-b-2 cursor-pointer whitespace-nowrap shrink-0 ${activeProfileTab === 'profile'
+                  ? 'border-neutral-950 text-neutral-950 font-black'
+                  : 'border-transparent text-neutral-500 hover:text-neutral-950'
+                  }`}
+              >
+                <UserIcon className="h-3.5 w-3.5 shrink-0" />
+                <span>Profile</span>
+              </button>
+            </div>
+
+            {onOpenSubmit && (
+              <button
+                type="button"
+                onClick={() => {
+                  playSound('click', soundEnabled);
+                  onOpenSubmit();
+                }}
+                className="flex items-center gap-1.5 rounded-lg bg-neutral-950 px-3 py-1.5 text-xs font-bold text-white hover:bg-neutral-800 transition-all cursor-pointer shadow-2xs mb-1 shrink-0 whitespace-nowrap ml-2"
+              >
+                <Plus className="h-3.5 w-3.5 shrink-0" />
+                <span className="hidden sm:inline">Launch New SaaS</span>
+                <span className="sm:hidden">Launch</span>
+              </button>
+            )}
           </div>
-
-          {onOpenSubmit && (
-            <button
-              type="button"
-              onClick={() => {
-                playSound('click', soundEnabled);
-                onOpenSubmit();
-              }}
-              className="flex items-center gap-1.5 rounded-lg bg-neutral-950 px-3 py-1.5 text-xs font-bold text-white hover:bg-neutral-800 transition-all cursor-pointer shadow-2xs mb-1"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Launch New SaaS</span>
-              <span className="sm:hidden">Launch</span>
-            </button>
-          )}
         </div>
 
         {/* Tab Content: Live Products */}
@@ -1175,7 +1176,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                 <Loader2 className="h-6 w-6 text-neutral-400 animate-spin" />
               </div>
             ) : products.length === 0 ? (
-              <div className="rounded-2xl border border-neutral-200 bg-white p-10 text-center">
+              <div className="rounded-2xl border border-neutral-200 bg-white p-6 sm:p-10 text-center">
                 <Globe className="mx-auto h-8 w-8 text-neutral-400 mb-3" />
                 <p className="text-sm font-bold text-neutral-800">No live products yet</p>
                 <p className="text-xs text-neutral-500 mt-1 max-w-sm mx-auto">
@@ -1201,62 +1202,64 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
               products.map((product) => (
                 <div
                   key={product.id}
-                  className="rounded-xl border border-neutral-200 bg-white p-4 shadow-xs hover:border-neutral-200 transition-all"
+                  className="rounded-xl border border-neutral-200 bg-white p-3.5 sm:p-4 shadow-xs hover:border-neutral-200 transition-all"
                 >
-                  <div className="flex items-start gap-3">
-                    <ProductLogo
-                      src={product.logoUrl || getWebsiteFavicon(product.url)}
-                      alt={product.name}
-                      containerClassName="relative h-11 w-11 rounded-lg overflow-hidden border border-neutral-200 bg-neutral-100 shrink-0 flex items-center justify-center shadow-2xs"
-                      iconClassName="h-5 w-5 text-neutral-500 shrink-0"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <h4
-                          onClick={() => {
-                            playSound('click', soundEnabled);
-                            if (onSelectProduct) onSelectProduct(product);
-                          }}
-                          className="text-sm font-black text-neutral-950 truncate hover:text-mint-600 hover:underline cursor-pointer transition-colors"
-                          title="Click to view details"
-                        >
-                          {product.name}
-                        </h4>
-                        <span className="text-[9px] font-bold text-mint-600 bg-mint-500/15 border border-mint-500/30 px-1.5 py-0.5 rounded">
-                          Live
-                        </span>
-                        {product.autoRelaunch && !product.isSponsored && (
-                          <span className="inline-flex items-center gap-1 text-[9px] font-bold text-blue-700 bg-blue-50 border border-blue-200/80 px-1.5 py-0.5 rounded shadow-2xs">
-                            <span>🚀</span>
-                            <span>Weekly Relaunch Active</span>
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                    <div className="flex items-start gap-3 min-w-0 flex-1">
+                      <ProductLogo
+                        src={product.logoUrl || getWebsiteFavicon(product.url)}
+                        alt={product.name}
+                        containerClassName="relative h-11 w-11 rounded-lg overflow-hidden border border-neutral-200 bg-neutral-100 shrink-0 flex items-center justify-center shadow-2xs"
+                        iconClassName="h-5 w-5 text-neutral-500 shrink-0"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                          <h4
+                            onClick={() => {
+                              playSound('click', soundEnabled);
+                              if (onSelectProduct) onSelectProduct(product);
+                            }}
+                            className="text-sm font-black text-neutral-950 truncate hover:text-mint-600 hover:underline cursor-pointer transition-colors"
+                            title="Click to view details"
+                          >
+                            {product.name}
+                          </h4>
+                          <span className="text-[9px] font-bold text-mint-600 bg-mint-500/15 border border-mint-500/30 px-1.5 py-0.5 rounded shrink-0">
+                            Live
                           </span>
-                        )}
-                        {product.isSponsored && (
-                          <span className="inline-flex items-center gap-1 text-[9px] font-bold text-neutral-800 bg-neutral-100 border border-neutral-300 px-1.5 py-0.5 rounded shadow-2xs">
-                            <span>Sponsor Rails</span>
+                          {product.autoRelaunch && !product.isSponsored && (
+                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-blue-700 bg-blue-50 border border-blue-200/80 px-1.5 py-0.5 rounded shadow-2xs shrink-0">
+                              <span>🚀</span>
+                              <span>Weekly Relaunch Active</span>
+                            </span>
+                          )}
+                          {product.isSponsored && (
+                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-neutral-800 bg-neutral-100 border border-neutral-300 px-1.5 py-0.5 rounded shadow-2xs shrink-0">
+                              <span>Sponsor Rails</span>
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-neutral-500 truncate mt-0.5">{product.tagline}</p>
+                        <div className="flex flex-wrap items-center gap-2 mt-2">
+                          <span className="inline-flex items-center gap-1 rounded-md bg-neutral-100 border border-neutral-200 px-2 py-0.5 text-[10px] font-bold text-neutral-600">
+                            <Globe className="h-2.5 w-2.5" />
+                            {product.category}
                           </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-neutral-500 truncate mt-0.5">{product.tagline}</p>
-                      <div className="flex flex-wrap items-center gap-2 mt-2">
-                        <span className="inline-flex items-center gap-1 rounded-md bg-neutral-100 border border-neutral-200 px-2 py-0.5 text-[10px] font-bold text-neutral-600">
-                          <Globe className="h-2.5 w-2.5" />
-                          {product.category}
-                        </span>
-                        <a
-                          href={product.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-[10px] font-bold text-neutral-500 hover:text-neutral-950 transition-colors"
-                        >
-                          Visit
-                          <ExternalLink className="h-2.5 w-2.5" />
-                        </a>
+                          <a
+                            href={product.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[10px] font-bold text-neutral-500 hover:text-neutral-950 transition-colors"
+                          >
+                            Visit
+                            <ExternalLink className="h-2.5 w-2.5" />
+                          </a>
+                        </div>
                       </div>
                     </div>
 
                     {/* Actions: Relaunch, Embed Badge, Edit & Delete */}
-                    <div className="flex items-center gap-1.5 shrink-0">
+                    <div className="flex items-center gap-1.5 shrink-0 flex-wrap sm:flex-nowrap pt-2 sm:pt-0 border-t border-neutral-100 sm:border-t-0 justify-end">
                       {!product.autoRelaunch && (
                         <button
                           type="button"
@@ -1268,7 +1271,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                           title="Relaunch into active weekly round ($5)"
                         >
                           <span>🚀</span>
-                          <span className="hidden sm:inline">Relaunch ($5)</span>
+                          <span>Relaunch ($5)</span>
                         </button>
                       )}
                       <button
@@ -1281,7 +1284,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                         title="Get Embeddable Badge"
                       >
                         <Code2 className="h-3 w-3 text-mint-600" />
-                        <span className="hidden sm:inline">Badge</span>
+                        <span>Badge</span>
                       </button>
                       <button
                         type="button"
@@ -1290,7 +1293,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                         title="Edit project"
                       >
                         <Pencil className="h-3 w-3" />
-                        <span className="hidden sm:inline">Edit</span>
+                        <span>Edit</span>
                       </button>
                       <button
                         type="button"
@@ -1317,7 +1320,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         {activeProfileTab === 'drafts' && (
           <div className="space-y-3">
             {drafts.length === 0 ? (
-              <div className="rounded-2xl border border-neutral-200 bg-white p-10 text-center">
+              <div className="rounded-2xl border border-neutral-200 bg-white p-6 sm:p-10 text-center">
                 <FileText className="mx-auto h-8 w-8 text-neutral-400 mb-3" />
                 <p className="text-sm font-bold text-neutral-800">No saved drafts</p>
                 <p className="text-xs text-neutral-500 mt-1 max-w-sm mx-auto">
@@ -1426,7 +1429,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         {activeProfileTab === 'pending' && (
           <div className="space-y-3">
             {pendingSubmissions.length === 0 ? (
-              <div className="rounded-2xl border border-neutral-200 bg-white p-10 text-center">
+              <div className="rounded-2xl border border-neutral-200 bg-white p-6 sm:p-10 text-center">
                 <Clock className="mx-auto h-8 w-8 text-neutral-400 mb-3" />
                 <p className="text-sm font-bold text-neutral-800">No pending submissions</p>
                 <p className="text-xs text-neutral-500 mt-1 max-w-sm mx-auto">
@@ -1437,9 +1440,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
               pendingSubmissions.map((sub) => (
                 <div
                   key={sub.id}
-                  className="rounded-xl border border-amber-500/30 bg-white p-4 shadow-xs"
+                  className="rounded-xl border border-amber-500/30 bg-white p-3.5 sm:p-4 shadow-xs"
                 >
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-start gap-3 min-w-0">
                     <ProductLogo
                       src={sub.logoUrl || getWebsiteFavicon(sub.url)}
                       alt={sub.name}
@@ -1447,7 +1450,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                       iconClassName="h-5 w-5 text-neutral-500 shrink-0"
                     />
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                         <h4
                           onClick={() => {
                             playSound('click', soundEnabled);
