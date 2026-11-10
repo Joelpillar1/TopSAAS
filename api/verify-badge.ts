@@ -3,20 +3,23 @@
 // Verifies presence of TopSAAS badge on any submitted domain.
 // Supports:
 // 1. Static HTML & SSR (Next.js, Webflow, WordPress, Astro, Shopify, HTML/CSS)
-// 2. Client-side SPAs (Vite, CRA React, Vue) by inspecting linked JS app bundles
+// 2. Client-side SPAs (Vite, CRA React, Vue) by inspecting linked JS app bundles & preloads
 // 3. Follows redirects and sends realistic browser headers to prevent bot blocks
+// 4. Multi-variant URL testing (apex domain, www, alternate landing paths)
 // ---------------------------------------------------------------------------
 
 const BADGE_MARKERS: RegExp[] = [
-  /topsaas/i,
+  /topsaas/i, // Any mention of topsaas (URL, alt, class, id, text, href)
   /top-saas/i,
   /top_saas/i,
   /top\s+saas/i,
-  /\/badge/i,
+  /top[^\w<]{0,10}saas/i, // handles SVG markup like Top</tspan><tspan>SAAS
+  /\/badge/i, // /badge/, /badges/, /badge?style=
   /badge\.(svg|png|webp|jpg|jpeg)/i,
   /featured\s*(on|at|by)?\s*topsaas/i,
   /Share(?:%20|\s+)Badge/i,
   /TopSAAS\s*Type/i,
+  /topsaas\.space/i,
 ];
 
 function containsBadge(text: string): boolean {
@@ -51,6 +54,24 @@ const BROWSER_HEADERS: Record<string, string> = {
   'Pragma': 'no-cache',
 };
 
+async function fetchWithTimeout(url: string, timeoutMs = 9000): Promise<{ response?: Response; error?: Error }> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: BROWSER_HEADERS,
+      redirect: 'follow',
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    return { response };
+  } catch (err: any) {
+    clearTimeout(timer);
+    return { error: err };
+  }
+}
+
 export default async function handler(req: any, res: any) {
   // CORS configuration
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -65,8 +86,15 @@ export default async function handler(req: any, res: any) {
   // Parse target URL from POST body or GET query
   let rawUrl = '';
   if (req.method === 'POST') {
-    const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body || {};
-    rawUrl = (body.url || '').trim();
+    let body = req.body;
+    if (typeof body === 'string') {
+      try {
+        body = JSON.parse(body || '{}');
+      } catch {
+        body = {};
+      }
+    }
+    rawUrl = (body?.url || '').trim();
   } else if (req.method === 'GET') {
     rawUrl = ((req.query?.url as string) || '').trim();
   }
@@ -94,129 +122,144 @@ export default async function handler(req: any, res: any) {
     return res.json({ verified: false, fetched: false, reason: 'Private or local IP not allowed' });
   }
 
-  // 1. Fetch HTML of the site
-  let html = '';
-  let finalUrl = parsedUrl.href;
+  // Build candidate URLs to check (handles subdomains like app.foo.com, missing www, and subpaths)
+  const candidateUrls: string[] = [parsedUrl.href];
 
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 12000);
+  // If URL has a path (e.g. https://myproduct.com/app or /login), also check the root landing page
+  if (parsedUrl.pathname && parsedUrl.pathname !== '/') {
+    candidateUrls.push(parsedUrl.origin + '/');
+  }
 
-    const response = await fetch(parsedUrl.href, {
-      method: 'GET',
-      headers: BROWSER_HEADERS,
-      redirect: 'follow',
-      signal: controller.signal,
-    });
+  // www <-> non-www variant
+  const parts = parsedUrl.hostname.split('.');
+  if (parsedUrl.hostname.startsWith('www.')) {
+    const noWwwHost = parsedUrl.hostname.slice(4);
+    candidateUrls.push(`https://${noWwwHost}${parsedUrl.pathname || '/'}`);
+  } else if (parts.length === 2) {
+    // apex domain like myproduct.com -> www.myproduct.com
+    candidateUrls.push(`https://www.${parsedUrl.hostname}${parsedUrl.pathname || '/'}`);
+  } else if (parts.length > 2 && parts[0] === 'app') {
+    // app.myproduct.com -> myproduct.com
+    const apexHost = parts.slice(1).join('.');
+    candidateUrls.push(`https://${apexHost}/`);
+    candidateUrls.push(`https://www.${apexHost}/`);
+  }
 
-    clearTimeout(timeout);
-    finalUrl = response.url || parsedUrl.href;
+  // Deduplicate candidates
+  const uniqueUrls = Array.from(new Set(candidateUrls));
+
+  let lastStatus = 0;
+  let lastBlocked = false;
+  let reachedAny = false;
+
+  for (const targetUrl of uniqueUrls) {
+    // 1. Fetch HTML of candidate URL
+    let fetchRes = await fetchWithTimeout(targetUrl, 9000);
+
+    // If HTTPS fails with network/SSL error, try HTTP fallback
+    if (fetchRes.error && targetUrl.startsWith('https://')) {
+      const httpFallback = targetUrl.replace(/^https:/, 'http:');
+      const httpRes = await fetchWithTimeout(httpFallback, 6000);
+      if (httpRes.response) {
+        fetchRes = httpRes;
+      }
+    }
+
+    if (!fetchRes.response) {
+      continue;
+    }
+
+    const response = fetchRes.response;
+    lastStatus = response.status;
+    const finalUrl = response.url || targetUrl;
+
+    // Check for bot protection / WAF blocks
+    if (response.status === 401 || response.status === 403) {
+      lastBlocked = true;
+      continue;
+    }
 
     if (!response.ok && response.status >= 500) {
+      continue;
+    }
+
+    reachedAny = true;
+    let html = '';
+    try {
+      html = await response.text();
+    } catch {
+      continue;
+    }
+
+    if (!html) continue;
+
+    // 2. Direct Check: inspect HTML
+    if (containsBadge(html)) {
       return res.json({
-        verified: false,
-        fetched: false,
-        reason: `Target site returned server error: HTTP ${response.status}`,
+        verified: true,
+        fetched: true,
+        reason: 'TopSAAS badge detected in page HTML',
       });
     }
 
-    html = await response.text();
-  } catch (err: any) {
-    // If https failed, attempt http fallback once
-    if (parsedUrl.protocol === 'https:') {
-      try {
-        const httpUrl = parsedUrl.href.replace(/^https:/, 'http:');
-        const fallbackCtrl = new AbortController();
-        const fallbackTimeout = setTimeout(() => fallbackCtrl.abort(), 8000);
+    // 3. Deep Scan: Client-rendered SPAs (Vite, React, Vue, Next.js client components)
+    // Extract <script src="..."> and <link rel="modulepreload|preload" href="...">
+    const scriptSrcs: string[] = [];
+    const scriptRegex = /<(?:script\b[^>]*\bsrc|link\b[^>]*\b(?:rel=["'](?:modulepreload|preload)["'][^>]*\bhref|href=["'][^"']+\brel=["'](?:modulepreload|preload)["']))=["']([^"']+\.(?:js|mjs)(?:\?[^"']*)?)["'][^>]*>/gi;
+    let match: RegExpExecArray | null;
 
-        const httpResp = await fetch(httpUrl, {
-          method: 'GET',
-          headers: BROWSER_HEADERS,
-          redirect: 'follow',
-          signal: fallbackCtrl.signal,
-        });
-        clearTimeout(fallbackTimeout);
-        html = await httpResp.text();
-        finalUrl = httpResp.url || httpUrl;
-      } catch {
-        return res.json({
-          verified: false,
-          fetched: false,
-          reason: `Could not reach ${parsedUrl.hostname}: ${err?.message || 'Network connection failed'}`,
-        });
+    while ((match = scriptRegex.exec(html)) !== null && scriptSrcs.length < 25) {
+      const src = match[1];
+      // Skip common third-party trackers, analytics, fonts, CDNs
+      if (
+        /googletagmanager|google-analytics|clarity|hotjar|intercom|segment|amplitude|stripe|sentry|facebook|twitter|tiktok|crisp|hubspot|adsbygoogle|posthog|datadog|mixpanel/i.test(
+          src
+        )
+      ) {
+        continue;
       }
-    } else {
-      return res.json({
-        verified: false,
-        fetched: false,
-        reason: `Could not reach ${parsedUrl.hostname}: ${err?.message || 'Network connection failed'}`,
-      });
+      scriptSrcs.push(src);
+    }
+
+    // Check bundle scripts in parallel batches
+    for (const src of scriptSrcs) {
+      try {
+        const scriptUrl = new URL(src, finalUrl).href;
+        const scriptRes = await fetchWithTimeout(scriptUrl, 5000);
+        if (scriptRes.response && scriptRes.response.ok) {
+          const scriptCode = await scriptRes.response.text();
+          if (containsBadge(scriptCode)) {
+            return res.json({
+              verified: true,
+              fetched: true,
+              reason: 'TopSAAS badge detected in client application bundle',
+            });
+          }
+        }
+      } catch {
+        // Continue checking
+      }
     }
   }
 
-  if (!html) {
+  if (lastBlocked) {
     return res.json({
       verified: false,
       fetched: false,
-      reason: 'Empty response received from target website',
+      blocked: true,
+      reason: `Automated scanner was blocked by target site (HTTP ${lastStatus}). Cloudflare or bot protection may be enabled. You can confirm badge placement manually below.`,
     });
   }
 
-  // 2. Direct Check: inspect HTML
-  if (containsBadge(html)) {
+  if (!reachedAny) {
     return res.json({
-      verified: true,
-      fetched: true,
-      reason: 'TopSAAS badge detected in page HTML',
+      verified: false,
+      fetched: false,
+      reason: `Could not reach ${parsedUrl.hostname}. Please ensure your website is online and publicly accessible.`,
     });
   }
 
-  // 3. Deep Scan: Client-rendered SPAs (Vite, React, Vue, Next.js client components)
-  // Extract <script src="..."> references to check application bundles
-  const scriptSrcs: string[] = [];
-  const scriptRegex = /<script\b[^>]*\bsrc=["']([^"']+\.(?:js|mjs)(?:\?[^"']*)?)["'][^>]*>/gi;
-  let match: RegExpExecArray | null;
-
-  while ((match = scriptRegex.exec(html)) !== null && scriptSrcs.length < 12) {
-    const src = match[1];
-    // Skip third-party trackers / CDNs that won't hold the app badge
-    if (/googletagmanager|google-analytics|clarity|hotjar|intercom|segment|amplitude|stripe|sentry|facebook|twitter|adsbygoogle/i.test(src)) {
-      continue;
-    }
-    scriptSrcs.push(src);
-  }
-
-  // Check the scripts
-  for (const src of scriptSrcs) {
-    try {
-      const scriptUrl = new URL(src, finalUrl).href;
-      const scriptCtrl = new AbortController();
-      const scriptTimeout = setTimeout(() => scriptCtrl.abort(), 6000);
-
-      const scriptResp = await fetch(scriptUrl, {
-        method: 'GET',
-        headers: BROWSER_HEADERS,
-        signal: scriptCtrl.signal,
-      });
-
-      clearTimeout(scriptTimeout);
-
-      if (scriptResp.ok) {
-        const scriptCode = await scriptResp.text();
-        if (containsBadge(scriptCode)) {
-          return res.json({
-            verified: true,
-            fetched: true,
-            reason: 'TopSAAS badge detected in client application bundle',
-          });
-        }
-      }
-    } catch {
-      // Continue checking remaining scripts
-    }
-  }
-
-  // Loaded the page, but no badge found in HTML or bundles
+  // Loaded the page successfully, but no badge found in HTML or bundles
   return res.json({
     verified: false,
     fetched: true,

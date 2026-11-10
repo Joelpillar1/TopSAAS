@@ -15,9 +15,13 @@ import { redirectToCheckout, WHOP_LINKS } from '../utils/whop';
 import { appendTrackkitParams } from '../utils/trackkit';
 import { VerifiedBadge } from './VerifiedBadge';
 import { applyPageSeo } from '../utils/pageSeo';
-
-const DRAFT_KEY = 'topsaas_launch_draft_v1';
-const STEP_KEY = 'topsaas_launch_step_v1';
+import {
+  DRAFT_KEY,
+  STEP_KEY,
+  saveLaunchDraft,
+  clearActiveDraft,
+  deleteLaunchDraft,
+} from '../utils/drafts';
 
 const PRICING_OPTIONS: { value: PricingModel; hint: string }[] = [
   { value: 'Free', hint: 'No cost to use' },
@@ -29,6 +33,7 @@ const PRICING_OPTIONS: { value: PricingModel; hint: string }[] = [
 const STEPS = ['Website', 'Media', 'Details', 'Founder', 'Launch'] as const;
 
 interface FormState {
+  id?: string;
   url: string;
   name: string;
   tagline: string;
@@ -139,29 +144,18 @@ function loadSavedStep(): number {
   }
 }
 
-function saveDraft(state: FormState, currentStep?: number) {
+function saveDraft(state: FormState, currentStep?: number, userId?: string) {
   try {
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(state));
-    if (typeof currentStep === 'number') {
-      localStorage.setItem(STEP_KEY, String(currentStep));
-    }
+    saveLaunchDraft(state, typeof currentStep === 'number' ? currentStep : 0, userId);
   } catch {
-    // Quota exceeded: retry saving without large image data URLs
-    try {
-      const lightweight = { ...state, screenshots: [], logoDataUrl: '' };
-      localStorage.setItem(DRAFT_KEY, JSON.stringify(lightweight));
-    } catch {
-      /* storage completely unavailable */
-    }
+    /* ignore storage errors */
   }
 }
 
-function clearDraft() {
-  try {
-    localStorage.removeItem(DRAFT_KEY);
-    localStorage.removeItem(STEP_KEY);
-  } catch {
-    /* ignore */
+function clearDraft(draftId?: string, userId?: string) {
+  clearActiveDraft();
+  if (draftId && userId) {
+    deleteLaunchDraft(draftId, userId);
   }
 }
 
@@ -233,6 +227,7 @@ function processImageFile(
 
 interface SubmitPageProps {
   isSignedIn: boolean;
+  userId?: string;
   defaultCreatorName?: string;
   defaultCreatorAvatar?: string;
   onBack: () => void;
@@ -264,6 +259,7 @@ function FieldError({ message }: { message?: string }) {
 
 export const SubmitPage: React.FC<SubmitPageProps> = ({
   isSignedIn,
+  userId,
   defaultCreatorName = '',
   defaultCreatorAvatar = '',
   onBack,
@@ -298,10 +294,14 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
     }
     const initial: FormState = {
       ...EMPTY_FORM,
+      id: draft?.id || (userId ? `draft_${userId}_launch` : 'draft_active'),
       creatorName: isSignedIn ? (defaultCreatorName || '') : '',
       creatorAvatar: isSignedIn ? (defaultCreatorAvatar || '') : '',
       ...(draft || {}),
     };
+    if (!initial.id) {
+      initial.id = userId ? `draft_${userId}_launch` : 'draft_active';
+    }
     if (draft?.categories && draft.categories.length > 0 && !draft.category) {
       initial.category = draft.categories.join(', ');
     } else if (draft?.category && (!draft.categories || draft.categories.length === 0)) {
@@ -343,8 +343,10 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
       clearDraft();
       return;
     }
-    saveDraft(form, step);
-  }, [form, step, isSignedIn]);
+    if (form.name || form.url || form.tagline) {
+      saveDraft(form, step, userId);
+    }
+  }, [form, step, isSignedIn, userId]);
 
   // When authentication status changes: if logged out, wipe any cached drafts and reset form
   useEffect(() => {
@@ -425,6 +427,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
   // PNG badge variant selected by the user in Step 5
   type BadgeVariant = 'type1-blue' | 'type1-light' | 'type2-blue' | 'type2-light';
   const [badgeVariant, setBadgeVariant] = useState<BadgeVariant>('type1-blue');
+  const [customBadgeUrl, setCustomBadgeUrl] = useState('');
+  const [showCustomUrlInput, setShowCustomUrlInput] = useState(false);
 
   // ── OpenAI Auto-fill States ──
   const [isAutofilling, setIsAutofilling] = useState(false);
@@ -794,15 +798,25 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
     setTimeout(() => setCopiedBadge(false), 2000);
   };
 
-  const handleVerifyBadge = async () => {
+  const handleManualConfirmBadge = () => {
+    setIsBadgeVerified(true);
+    setBadgeVerificationError(null);
+    setBadgeVerificationSuccess('Badge placement confirmed. Our team will verify your badge prior to launch approval.');
+    playSound('success', soundEnabled);
+    confetti({ particleCount: 50, spread: 70, origin: { y: 0.7 } });
+  };
+
+  const handleVerifyBadge = async (specificUrl?: string) => {
     setIsVerifyingBadge(true);
     setBadgeVerificationError(null);
     setBadgeVerificationSuccess(null);
     playSound('click', soundEnabled);
 
-    const check = normalizeUrl(form.url);
+    const safeUrl = typeof specificUrl === 'string' ? specificUrl : undefined;
+    const rawToVerify = (safeUrl || customBadgeUrl || form.url).trim();
+    const check = normalizeUrl(rawToVerify);
     if (!check.ok || !check.value) {
-      setBadgeVerificationError('Please provide a valid website URL in Step 1 first.');
+      setBadgeVerificationError('Please provide a valid website URL in Step 1 or enter a specific badge URL.');
       setIsVerifyingBadge(false);
       return;
     }
@@ -812,6 +826,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
     const markVerified = (message: string) => {
       setIsBadgeVerified(true);
       setBadgeVerificationSuccess(message);
+      setBadgeVerificationError(null);
       playSound('success', soundEnabled);
       confetti({ particleCount: 50, spread: 70, origin: { y: 0.7 } });
     };
@@ -823,35 +838,41 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
         return;
       }
 
-      // 1. Server-side check — no CORS, real user agent, no third-party proxies.
+      // 1. Server-side check — no CORS, real user agent, deep scans bundles.
       const edge = await verifyBadgeViaEdge(targetUrl);
       let fetched = edge.fetched;
       let verified = edge.verified;
 
-      // 2. Browser fetch, only when the server could not reach the page (for
-      //    example the verify-badge function has not been deployed yet).
-      if (!fetched) {
+      // 2. Browser fallback check if server was blocked or didn't find it
+      if (!verified) {
         const client = await fetchHtmlBestEffort(targetUrl);
-        fetched = client.fetched;
-        verified = fetched && containsBadge(client.html);
+        if (client.fetched && containsBadge(client.html)) {
+          verified = true;
+          fetched = true;
+        }
       }
 
       if (verified) {
         markVerified(`TopSAAS badge detected on ${targetUrl}! Verification complete.`);
+      } else if (edge.blocked) {
+        setBadgeVerificationError(
+          edge.reason || `Automated verification was blocked by your site's bot protection or Cloudflare. You can confirm badge placement manually below to proceed.`
+        );
+        playSound('error', soundEnabled);
       } else if (fetched) {
         setBadgeVerificationError(
-          `We reached ${targetUrl}, but could not find the TopSAAS badge snippet in your page. Make sure the snippet is embedded in your HTML or footer, then publish and try again.`
+          `We reached ${targetUrl}, but could not find the TopSAAS badge snippet in your page or bundles. Make sure the snippet is embedded in your HTML or footer, then publish and try again.`
         );
         playSound('error', soundEnabled);
       } else {
         setBadgeVerificationError(
-          `We could not reach ${targetUrl} to verify the badge automatically. Please ensure your website is publicly accessible, or confirm badge placement below to proceed.`
+          edge.reason || `We could not reach ${targetUrl} to verify the badge automatically. Please ensure your website is publicly accessible, or confirm badge placement below to proceed.`
         );
         playSound('error', soundEnabled);
       }
     } catch (err) {
       setBadgeVerificationError(
-        `Verification check failed: ${err instanceof Error ? err.message : 'Network error'}. Please ensure your website is online and try again.`
+        `Verification check failed: ${err instanceof Error ? err.message : 'Network error'}. Please ensure your website is online and try again, or confirm badge placement below.`
       );
       playSound('error', soundEnabled);
     } finally {
@@ -999,7 +1020,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
       try {
         confetti({ particleCount: 90, spread: 70, origin: { y: 0.55 }, colors: ['#ffffff', '#66cc88', '#9aa5b1'] });
       } catch { }
-      clearDraft();
+      clearDraft((form as any).id, userId);
       setLaunched({ id: newId, name: form.name.trim() });
       return newId;
     } catch {
@@ -1015,16 +1036,17 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
       onSignInRequest();
       return;
     }
-    saveDraft(form, step);
+    saveDraft(form, step, userId);
     setDraftSaved(true);
     playSound('click', soundEnabled);
     setTimeout(() => setDraftSaved(false), 2600);
   };
 
   const handleStartOver = () => {
-    clearDraft();
+    clearDraft(form.id, userId);
     setForm({
       ...EMPTY_FORM,
+      id: userId ? `draft_${userId}_launch` : 'draft_active',
       creatorName: isSignedIn ? (defaultCreatorName || '') : '',
       creatorAvatar: isSignedIn ? (defaultCreatorAvatar || '') : '',
     });
@@ -2581,43 +2603,138 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                     </p>
                   </div>
 
-                  {/* Badge Verification Status Cards */}
-                  {isBadgeVerified ? (
-                    <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 text-xs text-emerald-900 flex items-center justify-between gap-3 shadow-2xs">
-                      <div className="flex items-center gap-2.5">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-emerald-500 text-white shrink-0">
-                          <Check className="h-4 w-4 stroke-[3]" />
-                        </div>
-                        <div>
-                          <p className="font-bold text-emerald-950 text-xs">TopSAAS Badge Verified!</p>
-                          <p className="text-[11px] text-emerald-700">Badge confirmed on your website. The submit button is now unlocked below.</p>
-                        </div>
-                      </div>
-                      <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-full">
-                        Verified
-                      </span>
+                  {/* 4. Badge Verification */}
+                  <div className="space-y-3 pt-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-neutral-900">4. Verify Placement</span>
+                      <span className="text-[11px] text-neutral-500">Target: <code className="font-mono text-neutral-700 bg-neutral-100 px-1.5 py-0.5 rounded">{customBadgeUrl || form.url || 'your website'}</code></span>
                     </div>
-                  ) : badgeVerificationError ? (
-                    <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 text-xs text-neutral-800 flex items-start gap-3 shadow-2xs">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-amber-100 text-amber-700 shrink-0 mt-0.5">
-                        <AlertCircle className="h-4 w-4" />
+
+                    {isBadgeVerified ? (
+                      <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 text-xs text-emerald-900 flex items-center justify-between gap-3 shadow-2xs">
+                        <div className="flex items-center gap-2.5">
+                          <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-emerald-500 text-white shrink-0">
+                            <Check className="h-4 w-4 stroke-[3]" />
+                          </div>
+                          <div>
+                            <p className="font-bold text-emerald-950 text-xs">TopSAAS Badge Verified!</p>
+                            <p className="text-[11px] text-emerald-700">
+                              {badgeVerificationSuccess || 'Badge confirmed on your website. The submit button is now unlocked below.'}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsBadgeVerified(false);
+                            setBadgeVerificationSuccess(null);
+                          }}
+                          className="text-[11px] font-bold text-emerald-700 hover:text-emerald-950 underline cursor-pointer"
+                        >
+                          Re-check
+                        </button>
                       </div>
-                      <div className="space-y-1.5 flex-1">
-                        <p className="font-bold text-neutral-900 text-xs">Badge Not Detected Yet</p>
-                        <p className="text-[11px] text-neutral-600 leading-relaxed">{badgeVerificationError}</p>
-                        <div className="pt-2 flex items-center gap-2 flex-wrap">
+                    ) : badgeVerificationError ? (
+                      <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 text-xs text-neutral-800 space-y-3 shadow-2xs">
+                        <div className="flex items-start gap-3">
+                          <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-amber-100 text-amber-700 shrink-0 mt-0.5">
+                            <AlertCircle className="h-4 w-4" />
+                          </div>
+                          <div className="space-y-1.5 flex-1">
+                            <p className="font-bold text-neutral-900 text-xs">Badge Not Detected Yet</p>
+                            <p className="text-[11px] text-neutral-600 leading-relaxed">{badgeVerificationError}</p>
+                            <div className="pt-2 flex items-center gap-2 flex-wrap">
+                              <button
+                                type="button"
+                                onClick={() => handleVerifyBadge()}
+                                disabled={isVerifyingBadge}
+                                className="inline-flex items-center gap-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white px-3.5 py-1.5 text-[11px] font-bold transition-colors cursor-pointer"
+                              >
+                                {isVerifyingBadge ? <Loader2 className="h-3 w-3 animate-spin" /> : <ShieldCheck className="h-3 w-3" />}
+                                <span>Try verifying again</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setShowCustomUrlInput(!showCustomUrlInput)}
+                                className="rounded-lg border border-neutral-300 bg-white hover:bg-neutral-100 text-neutral-800 px-3 py-1.5 text-[11px] font-bold transition-colors cursor-pointer"
+                              >
+                                {showCustomUrlInput ? 'Hide alternate URL' : 'Badge on another page?'}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Alternate Page URL input */}
+                        {showCustomUrlInput && (
+                          <div className="rounded-xl border border-neutral-200 bg-white p-3 space-y-2">
+                            <label className="text-[11px] font-bold text-neutral-700 block">
+                              Enter the specific page where the badge is embedded:
+                            </label>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="url"
+                                value={customBadgeUrl}
+                                onChange={(e) => setCustomBadgeUrl(e.target.value)}
+                                placeholder="https://yourproduct.com/footer or https://docs.yourproduct.com"
+                                className="flex-1 rounded-lg border border-neutral-300 px-3 py-1.5 text-xs text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-950 focus:outline-none"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleVerifyBadge(customBadgeUrl)}
+                                disabled={isVerifyingBadge || !customBadgeUrl.trim()}
+                                className="rounded-lg bg-neutral-900 hover:bg-neutral-800 disabled:opacity-50 text-white px-3 py-1.5 text-xs font-bold transition-colors cursor-pointer shrink-0"
+                              >
+                                Verify URL
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Manual Confirmation Fallback */}
+                        <div className="border-t border-neutral-200 pt-3 flex items-center justify-between gap-3">
+                          <p className="text-[11px] text-neutral-500">
+                            Behind Cloudflare, SPA, or private environment?
+                          </p>
+                          <button
+                            type="button"
+                            onClick={handleManualConfirmBadge}
+                            className="text-[11px] font-bold text-neutral-900 hover:text-mint-600 underline cursor-pointer shrink-0"
+                          >
+                            Confirm badge placement manually →
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="rounded-2xl border border-neutral-200 bg-neutral-50/70 p-4 text-xs text-neutral-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                        <div className="space-y-0.5">
+                          <p className="font-bold text-neutral-900 text-xs">Ready to verify badge?</p>
+                          <p className="text-[11px] text-neutral-500">
+                            Paste the snippet into your website footer or homepage, then click verify.
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
                           <button
                             type="button"
                             onClick={() => handleVerifyBadge()}
                             disabled={isVerifyingBadge}
-                            className="rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white px-3 py-1.5 text-[11px] font-bold transition-colors cursor-pointer"
+                            className="inline-flex items-center gap-1.5 rounded-xl bg-neutral-950 hover:bg-neutral-800 text-white px-4 py-2 text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95 disabled:opacity-60"
                           >
-                            Try again
+                            {isVerifyingBadge ? (
+                              <>
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                <span>Verifying…</span>
+                              </>
+                            ) : (
+                              <>
+                                <ShieldCheck className="h-3.5 w-3.5 text-mint-400" />
+                                <span>Verify Badge Now</span>
+                              </>
+                            )}
                           </button>
                         </div>
                       </div>
-                    </div>
-                  ) : null}
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -2744,7 +2861,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
               ) : !isBadgeVerified ? (
                 <button
                   type="button"
-                  onClick={handleVerifyBadge}
+                  onClick={() => handleVerifyBadge()}
                   disabled={isVerifyingBadge}
                   className="btn-primary inline-flex items-center gap-1.5 px-5 py-2.5 text-xs font-black cursor-pointer shadow-sm active:scale-95"
                 >
@@ -2756,7 +2873,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                   ) : (
                     <>
                       <ShieldCheck className="h-3.5 w-3.5" />
-                      <span>Verify badge to submit</span>
+                      <span>Verify badge</span>
                     </>
                   )}
                 </button>

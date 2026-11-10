@@ -28,11 +28,13 @@ const BADGE_MARKERS = [
   /top-saas/i,
   /top_saas/i,
   /top\s+saas/i,
+  /top[^\w<]{0,10}saas/i,
   /\/badge/i, // /badge/, /badges/, /badge?style=
   /badge\.(svg|png|webp|jpg|jpeg)/i,
   /featured\s*(on|at|by)?\s*topsaas/i,
   /Share(?:%20|\s+)Badge/i,
   /TopSAAS\s*Type/i,
+  /topsaas\.space/i,
 ];
 
 const FETCH_TIMEOUT_MS = 12_000;
@@ -131,8 +133,8 @@ Deno.serve(async (req: Request) => {
       err instanceof Error && err.name === "AbortError"
         ? "Website took too long to respond"
         : err instanceof Error
-        ? err.message
-        : "Unknown error";
+          ? err.message
+          : "Unknown error";
     return jsonResponse({ verified: false, fetched: false, reason });
   }
 });

@@ -36,6 +36,12 @@ function apiDevServerPlugin(): Plugin {
             } catch {
               (req as any).body = {};
             }
+            try {
+              const parsedUrl = new URL(req.url || '', 'http://localhost:3000');
+              (req as any).query = Object.fromEntries(parsedUrl.searchParams.entries());
+            } catch {
+              (req as any).query = {};
+            }
 
             const wrappedRes = {
               statusCode: 200,

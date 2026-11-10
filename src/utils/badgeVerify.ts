@@ -8,11 +8,13 @@ const BADGE_MARKERS: RegExp[] = [
   /top-saas/i,
   /top_saas/i,
   /top\s+saas/i,
+  /top[^\w<]{0,10}saas/i, // handles SVG markup like Top</tspan><tspan>SAAS
   /\/badge/i, // /badge/, /badges/, /badge?style=
   /badge\.(svg|png|webp|jpg|jpeg)/i,
   /featured\s*(on|at|by)?\s*topsaas/i,
   /Share(?:%20|\s+)Badge/i,
   /TopSAAS\s*Type/i,
+  /topsaas\.space/i,
 ];
 
 export function containsBadge(html: string): boolean {
@@ -24,6 +26,7 @@ export interface BadgeCheckResult {
   verified: boolean;
   /** Whether the page was actually retrieved — separates "no badge" from "unreachable". */
   fetched: boolean;
+  blocked?: boolean;
   reason?: string;
 }
 
@@ -31,24 +34,34 @@ export interface BadgeCheckResult {
  * Primary check: call the Vercel serverless endpoint `/api/verify-badge`.
  * This runs on the server (no CORS, realistic Chrome browser headers, redirect following,
  * and deep-scans both raw HTML and client-rendered SPA bundles).
- * Falls back to live topsaas.space endpoint or Supabase Edge Function if needed.
+ * Falls back to live www.topsaas.space endpoint or Supabase Edge Function if needed.
  */
 export async function verifyBadgeViaEdge(url: string): Promise<BadgeCheckResult> {
-  // 1. Try local or same-origin /api/verify-badge
+  // Always include same-origin /api/verify-badge first, and www.topsaas.space as high-reliability fallback
   const endpoints = ['/api/verify-badge'];
 
-  // If in local dev (localhost/127.0.0.1), also add the live production endpoint as fallback
-  if (typeof window !== 'undefined' && /localhost|127\.0\.0\.1/i.test(window.location.hostname)) {
-    endpoints.push('https://topsaas.space/api/verify-badge');
+  // If in local dev or preview deploy, add the production canonical endpoint (www.topsaas.space)
+  if (
+    typeof window !== 'undefined' &&
+    (!window.location.origin.includes('www.topsaas.space') ||
+      /localhost|127\.0\.0\.1/i.test(window.location.hostname))
+  ) {
+    endpoints.push('https://www.topsaas.space/api/verify-badge');
   }
 
   for (const endpoint of endpoints) {
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 12000);
+
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url }),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeout);
 
       if (res.ok) {
         const data = await res.json().catch(() => null);
@@ -56,6 +69,7 @@ export async function verifyBadgeViaEdge(url: string): Promise<BadgeCheckResult>
           return {
             verified: data.verified,
             fetched: Boolean(data.fetched),
+            blocked: Boolean(data.blocked),
             reason: typeof data.reason === 'string' ? data.reason : undefined,
           };
         }
@@ -75,6 +89,7 @@ export async function verifyBadgeViaEdge(url: string): Promise<BadgeCheckResult>
       return {
         verified: data.verified,
         fetched: Boolean(data.fetched),
+        blocked: Boolean(data.blocked),
         reason: typeof data.reason === 'string' ? data.reason : undefined,
       };
     }
@@ -96,7 +111,10 @@ export async function fetchHtmlBestEffort(
   url: string
 ): Promise<{ html: string; fetched: boolean }> {
   try {
-    const direct = await fetch(url, { method: 'GET', mode: 'cors', redirect: 'follow' });
+    const directCtrl = new AbortController();
+    const directTimer = setTimeout(() => directCtrl.abort(), 6000);
+    const direct = await fetch(url, { method: 'GET', mode: 'cors', redirect: 'follow', signal: directCtrl.signal });
+    clearTimeout(directTimer);
     if (direct.ok) {
       const html = await direct.text();
       if (html) return { html, fetched: true };
@@ -108,14 +126,16 @@ export async function fetchHtmlBestEffort(
   const encoded = encodeURIComponent(url);
   const proxies: { url: string; parse: 'json' | 'text' }[] = [
     { url: `https://api.allorigins.win/get?url=${encoded}`, parse: 'json' },
-    { url: `https://api.allorigins.win/raw?url=${encoded}`, parse: 'text' },
     { url: `https://corsproxy.io/?url=${encoded}`, parse: 'text' },
     { url: `https://api.codetabs.com/v1/proxy?quest=${encoded}`, parse: 'text' },
   ];
 
   for (const proxy of proxies) {
     try {
-      const res = await fetch(proxy.url);
+      const proxyCtrl = new AbortController();
+      const proxyTimer = setTimeout(() => proxyCtrl.abort(), 5000);
+      const res = await fetch(proxy.url, { signal: proxyCtrl.signal });
+      clearTimeout(proxyTimer);
       if (!res.ok) continue;
 
       let html = '';

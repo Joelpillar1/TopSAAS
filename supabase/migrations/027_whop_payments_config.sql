@@ -9,8 +9,8 @@ create table if not exists public.whop_payments_config (
 
 -- Insert default rows with your Whop integration details
 insert into public.whop_payments_config (key, value, description) values
-  ('api_key', 'apik_I0SHKeNksyxpe_C7949435_C_4e1a18ce7851a4c0c3a97be2501c9f41e311d861e5ab4c281b6de5da2ce8b3', 'Whop API key from dashboard'),
-  ('webhook_secret', 'ws_3671638d9ae16e32a6377824e00b0fd1f9763702d13198f6f30adc36956f0c16', 'Whop Webhook signing secret'),
+  ('api_key', '', 'Whop API key from dashboard (configure securely in Supabase / Edge Secrets)'),
+  ('webhook_secret', '', 'Whop Webhook signing secret (configure securely in Supabase / Edge Secrets)'),
   ('company_id', 'topsaas', 'Whop Company route / ID'),
   ('plan_1mo_id', 'plan_VHCOSyqWd9l9Q', 'Whop Plan ID for 1-Month Sponsor ($29)'),
   ('plan_3mo_id', 'plan_SMad32AkVoMeu', 'Whop Plan ID for 3-Month Sponsor ($69)'),

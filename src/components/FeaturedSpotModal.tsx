@@ -17,23 +17,34 @@ import {
   FileText,
   Star,
   Calendar,
+  LogIn,
+  FolderPlus,
 } from 'lucide-react';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import confetti from 'canvas-confetti';
-import { Product, SponsorDraft, SponsorTier } from '../types';
+import { Product, SponsorDraft, SponsorTier, WebsiteSubmission } from '../types';
 import { playSound } from '../utils/sound';
 import { redirectToCheckout, PlanType } from '../utils/whop';
 import { ProductLogo } from './ProductLogo';
 import { getWebsiteFavicon } from '../utils/logo';
-import { insertProductDirect, isSponsorOnlyProduct } from '../utils/db';
+import { supabase } from '../utils/supabase';
+import {
+  insertProductDirect,
+  isSponsorOnlyProduct,
+  mapDbProduct,
+  mapDbSubmission,
+  submissionToProduct,
+} from '../utils/db';
 
 interface FeaturedSpotModalProps {
   isOpen: boolean;
   onClose: () => void;
   products: Product[];
+  submissions?: WebsiteSubmission[];
   user: SupabaseUser | null;
   soundEnabled: boolean;
   onOpenSubmitModal: () => void;
+  onOpenSignInModal?: () => void;
   initialTier?: SponsorPlanId;
   mode?: 'featured' | 'sponsor';
   featuredProductIds?: string[];
@@ -208,9 +219,11 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
   isOpen,
   onClose,
   products,
+  submissions = [],
   user,
   soundEnabled,
   onOpenSubmitModal,
+  onOpenSignInModal,
   initialTier,
   mode = 'featured',
   featuredProductIds = [],
@@ -235,30 +248,156 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
   const [newTagline, setNewTagline] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
 
+  // Authoritative user-owned products fetched directly from Supabase
+  const [dbUserProducts, setDbUserProducts] = useState<Product[]>([]);
+  const [isLoadingUserProducts, setIsLoadingUserProducts] = useState(false);
+
   useEffect(() => {
     if (initialTier) {
       setSelectedPlanId(initialTier);
     }
   }, [initialTier, isOpen]);
 
-  // If user has existing owned products, default to existing mode so they see their apps
   useEffect(() => {
-    if (user && products.some((p) => p.submittedBy === user.id)) {
-      setProductMode('existing');
+    if (!isOpen || !user) {
+      setDbUserProducts([]);
+      setIsLoadingUserProducts(false);
+      return;
     }
-  }, [user, products]);
+
+    let isMounted = true;
+    setIsLoadingUserProducts(true);
+
+    (async () => {
+      try {
+        const [prodsRes, subsResById, subsResByEmail] = await Promise.all([
+          supabase
+            .from('products')
+            .select('*')
+            .eq('submitted_by', user.id)
+            .order('created_at', { ascending: false }),
+          supabase
+            .from('submissions')
+            .select('*')
+            .eq('submitted_by', user.id)
+            .order('submitted_at', { ascending: false }),
+          user.email
+            ? supabase
+                .from('submissions')
+                .select('*')
+                .eq('backer_email', user.email)
+                .order('submitted_at', { ascending: false })
+            : Promise.resolve({ data: null, error: null }),
+        ]);
+
+        if (!isMounted) return;
+
+        const collected: Product[] = [];
+        if (!prodsRes.error && prodsRes.data) {
+          collected.push(
+            ...(prodsRes.data as unknown as Record<string, unknown>[]).map(mapDbProduct)
+          );
+        }
+
+        const combinedSubs = new Map<string, WebsiteSubmission>();
+        if (!subsResById.error && subsResById.data) {
+          (subsResById.data as unknown as Record<string, unknown>[])
+            .map(mapDbSubmission)
+            .forEach((s) => combinedSubs.set(s.id, s));
+        }
+        if (!subsResByEmail.error && subsResByEmail.data) {
+          (subsResByEmail.data as unknown as Record<string, unknown>[])
+            .map(mapDbSubmission)
+            .forEach((s) => combinedSubs.set(s.id, s));
+        }
+
+        combinedSubs.forEach((sub) => {
+          const prod = submissionToProduct(sub);
+          if (!collected.some((p) => p.id === prod.id || p.id === sub.id)) {
+            collected.push(prod);
+          }
+        });
+
+        if (isMounted) {
+          setDbUserProducts(collected);
+        }
+      } catch (err) {
+        console.warn('Error fetching user products for sponsor modal:', err);
+      } finally {
+        if (isMounted) {
+          setIsLoadingUserProducts(false);
+        }
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen, user]);
 
   const userId = user?.id;
+  const userEmail = user?.email?.toLowerCase();
 
-  // Show user's products first, or all directory products if searching (exclude sponsor-only ads)
+  // Helper: check if a product is owned by the current user
+  const isProductOwnedByUser = (p: Product) => {
+    if (!user) return false;
+    if (userId && p.submittedBy === userId) return true;
+    if (userEmail && p.submittedBy && p.submittedBy.toLowerCase() === userEmail) return true;
+    if (userEmail && p.sponsorContactEmail && p.sponsorContactEmail.toLowerCase() === userEmail) return true;
+    if (p.isUserOwned) return true;
+    if (typeof window !== 'undefined' && localStorage.getItem('topsaas_my_product_id') === p.id) return true;
+    return false;
+  };
+
+  // Exclude sponsor-only ads
   const directoryProducts = products.filter((p) => !isSponsorOnlyProduct(p));
-  const userOwnedItems = user
-    ? directoryProducts.filter((p) => userId && p.submittedBy === userId)
-    : [];
 
-  const displayList = userOwnedItems.length > 0 ? userOwnedItems : directoryProducts;
+  // Collect strictly this user's apps (no directory fallback!)
+  const userOwnedMap = new Map<string, Product>();
 
-  const filteredProducts = displayList.filter((p) => {
+  // 1. From products prop
+  directoryProducts.filter(isProductOwnedByUser).forEach((p) => userOwnedMap.set(p.id, p));
+
+  // 2. From submissions prop
+  if (user && submissions && submissions.length > 0) {
+    submissions
+      .filter((s) => {
+        if (userId && s.submittedBy === userId) return true;
+        if (userEmail && s.submittedBy && s.submittedBy.toLowerCase() === userEmail) return true;
+        if (userEmail && s.backerEmail && s.backerEmail.toLowerCase() === userEmail) return true;
+        return false;
+      })
+      .forEach((sub) => {
+        const prod = submissionToProduct(sub);
+        if (!userOwnedMap.has(prod.id) && !userOwnedMap.has(sub.id)) {
+          userOwnedMap.set(prod.id, prod);
+        }
+      });
+  }
+
+  // 3. From direct Supabase fetch
+  dbUserProducts.forEach((p) => {
+    if (!isSponsorOnlyProduct(p) && !userOwnedMap.has(p.id)) {
+      userOwnedMap.set(p.id, p);
+    }
+  });
+
+  const userOwnedItems = user ? Array.from(userOwnedMap.values()) : [];
+
+  // When modal opens: if user has existing owned products, default to existing mode so they see their apps.
+  // Otherwise, default to 'new' so guests and makers without listings start at "+ Add New App".
+  useEffect(() => {
+    if (isOpen) {
+      if (user && userOwnedItems.length > 0) {
+        setProductMode('existing');
+      } else {
+        setProductMode('new');
+      }
+    }
+  }, [isOpen, user, userOwnedItems.length]);
+
+  // NEVER fall back to all directory products: only filter user's own items
+  const filteredProducts = userOwnedItems.filter((p) => {
     const q = productSearch.toLowerCase();
     return (
       p.name.toLowerCase().includes(q) ||
@@ -590,12 +729,17 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
                         setProductMode('existing');
                         setFormError(null);
                       }}
-                      className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${productMode === 'existing'
+                      className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${productMode === 'existing'
                           ? 'bg-white text-neutral-950 shadow-xs border border-neutral-200/60'
                           : 'text-neutral-500 hover:text-neutral-950'
                         }`}
                     >
-                      Choose from Directory
+                      <span>Choose from Directory</span>
+                      {user && userOwnedItems.length > 0 && (
+                        <span className="rounded-full bg-blue-100 text-blue-700 px-1.5 py-0.2 text-[10px] font-black">
+                          {userOwnedItems.length}
+                        </span>
+                      )}
                     </button>
                   </div>
 
@@ -706,38 +850,119 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
                       </div>
                     </form>
                   ) : (
-                    /* Mode B: Choose from Directory */
+                    /* Mode B: Choose from Directory (User's Listed Apps Only) */
                     <div className="space-y-3">
-                      {/* Search */}
-                      <div className="relative">
-                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
-                        <input
-                          type="text"
-                          value={productSearch}
-                          onChange={(e) => setProductSearch(e.target.value)}
-                          placeholder="Search directory products by name or category…"
-                          className="w-full rounded-xl border border-neutral-200 bg-neutral-50 pl-10 pr-4 py-2.5 text-xs text-neutral-900 placeholder:text-neutral-400 focus:bg-white focus:border-neutral-900 focus:outline-none transition-all"
-                        />
-                      </div>
-
-                      {/* Product List */}
-                      <div className="max-h-72 overflow-y-auto space-y-1.5 pr-1">
-                        {filteredProducts.length === 0 ? (
-                          <div className="text-center py-8 text-neutral-500 space-y-2">
-                            <p className="text-xs">No matching products found.</p>
+                      {!user ? (
+                        <div className="text-center py-8 px-4 rounded-xl border border-dashed border-neutral-200 bg-neutral-50/70 space-y-3">
+                          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-neutral-200/80 text-neutral-700">
+                            <LogIn className="h-5 w-5" />
+                          </div>
+                          <div className="space-y-1">
+                            <h3 className="text-xs font-bold text-neutral-900">Sign in to view your listed apps</h3>
+                            <p className="text-[11px] text-neutral-500 max-w-xs mx-auto">
+                              Sign in to choose and sponsor products you have already submitted to TopSAAS.
+                            </p>
+                          </div>
+                          <div className="flex flex-col sm:flex-row items-center justify-center gap-2 pt-1">
+                            {onOpenSignInModal && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  playSound('click', soundEnabled);
+                                  onOpenSignInModal();
+                                }}
+                                className="btn-primary py-2 px-4 text-xs font-bold rounded-lg cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
+                              >
+                                <LogIn className="h-3.5 w-3.5" />
+                                <span>Sign In to TopSAAS</span>
+                              </button>
+                            )}
                             <button
                               type="button"
                               onClick={() => {
                                 playSound('click', soundEnabled);
                                 setProductMode('new');
                               }}
-                              className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:underline cursor-pointer"
+                              className="rounded-lg border border-neutral-300 bg-white py-2 px-3 text-xs font-bold text-neutral-700 hover:bg-neutral-100 cursor-pointer"
                             >
-                              <Plus className="h-3.5 w-3.5" />
-                              <span>Add it as a new product above</span>
+                              Sponsor unlisted app (+ Add New)
                             </button>
                           </div>
-                        ) : (
+                        </div>
+                      ) : isLoadingUserProducts && userOwnedItems.length === 0 ? (
+                        <div className="text-center py-8 text-neutral-500 space-y-2">
+                          <Loader2 className="mx-auto h-5 w-5 animate-spin text-neutral-400" />
+                          <p className="text-xs font-medium">Checking your listed apps…</p>
+                        </div>
+                      ) : userOwnedItems.length === 0 ? (
+                        <div className="text-center py-8 px-4 rounded-xl border border-dashed border-neutral-200 bg-neutral-50/70 space-y-3">
+                          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-neutral-200/80 text-neutral-700">
+                            <FolderPlus className="h-5 w-5" />
+                          </div>
+                          <div className="space-y-1">
+                            <h3 className="text-xs font-bold text-neutral-900">No listed apps found</h3>
+                            <p className="text-[11px] text-neutral-500 max-w-xs mx-auto">
+                              You haven&apos;t listed any apps in the directory yet under this account ({user.email}).
+                            </p>
+                          </div>
+                          <div className="flex flex-col sm:flex-row items-center justify-center gap-2 pt-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                playSound('click', soundEnabled);
+                                setProductMode('new');
+                              }}
+                              className="btn-primary py-2 px-4 text-xs font-bold rounded-lg cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
+                            >
+                              <Plus className="h-3.5 w-3.5" />
+                              <span>Add New App to Sponsor</span>
+                            </button>
+                            {onOpenSubmitModal && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  playSound('click', soundEnabled);
+                                  onOpenSubmitModal();
+                                }}
+                                className="rounded-lg border border-neutral-300 bg-white py-2 px-3 text-xs font-bold text-neutral-700 hover:bg-neutral-100 cursor-pointer"
+                              >
+                                Submit app to directory
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          {/* Search */}
+                          <div className="relative">
+                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+                            <input
+                              type="text"
+                              value={productSearch}
+                              onChange={(e) => setProductSearch(e.target.value)}
+                              placeholder="Search your listed apps by name or category…"
+                              className="w-full rounded-xl border border-neutral-200 bg-neutral-50 pl-10 pr-4 py-2.5 text-xs text-neutral-900 placeholder:text-neutral-400 focus:bg-white focus:border-neutral-900 focus:outline-none transition-all"
+                            />
+                          </div>
+
+                          {/* Product List */}
+                          <div className="max-h-72 overflow-y-auto space-y-1.5 pr-1">
+                            {filteredProducts.length === 0 ? (
+                              <div className="text-center py-8 text-neutral-500 space-y-2">
+                                <p className="text-xs">No matching apps found in your listings.</p>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    playSound('click', soundEnabled);
+                                    setProductMode('new');
+                                  }}
+                                  className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:underline cursor-pointer"
+                                >
+                                  <Plus className="h-3.5 w-3.5" />
+                                  <span>Add a new app to sponsor above</span>
+                                </button>
+                              </div>
+                            ) : (
                           filteredProducts.map((p) => {
                             const isAlreadyActive = mode === 'featured'
                               ? Boolean(featuredProductIds.includes(p.id))
@@ -795,8 +1020,10 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
                           })
                         )}
                       </div>
-                    </div>
+                    </>
                   )}
+                </div>
+              )}
                 </div>
               )}
 

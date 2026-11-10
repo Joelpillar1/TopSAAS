@@ -1093,13 +1093,24 @@ export default function App() {
   // Save user profile to Supabase profiles table
   const saveUserProfile = async (u: User) => {
     try {
-      const { error } = await supabase.from('profiles').upsert({
+      const meta = u.user_metadata || {};
+      const payload: Record<string, any> = {
         id: u.id,
         email: u.email || null,
-        full_name: u.user_metadata?.full_name || u.user_metadata?.name || null,
-        avatar_url: u.user_metadata?.avatar_url || u.user_metadata?.picture || null,
+        full_name: meta.full_name || meta.name || null,
+        avatar_url: meta.avatar_url || meta.picture || null,
         updated_at: new Date().toISOString(),
-      }, { onConflict: 'id' });
+      };
+
+      if (meta.username) payload.username = meta.username;
+      if (meta.bio) payload.bio = meta.bio;
+      if (Array.isArray(meta.looking_for)) payload.looking_for = meta.looking_for;
+      if (meta.twitter_url) payload.twitter_url = meta.twitter_url;
+      if (meta.linkedin_url) payload.linkedin_url = meta.linkedin_url;
+      if (meta.website_url) payload.website_url = meta.website_url;
+      if (meta.booking_url) payload.booking_url = meta.booking_url;
+
+      const { error } = await supabase.from('profiles').upsert(payload, { onConflict: 'id' });
       if (error) console.error('Profile save error:', error.message);
     } catch (e) {
       console.error('Profile save failed:', e);
@@ -2299,20 +2310,29 @@ export default function App() {
       .map(sponsorToDisplayProduct)
     : [];
 
+  const isSubmitPage =
+    currentRoute === '/submit' ||
+    (typeof window !== 'undefined' &&
+      (window.location.pathname === '/submit' ||
+        window.location.pathname.startsWith('/submit/') ||
+        window.location.hash.includes('submit')));
+
   const globalHeader = (
     <div className="sticky top-0 z-40 w-full">
-      {/* Mobile-only Infinite Scrolling Sponsors ABOVE Top Nav */}
-      <MobileTopSponsorTicker
-        enabled={sponsorRailsEnabled}
-        sponsors={activeRailSponsors}
-        soundEnabled={soundEnabled}
-        onTrackClick={handleTrackClick}
-        onOpenProduct={handleOpenProduct}
-        onOpenFeaturedSpotModal={() => {
-          setFeaturedModalMode('sponsor');
-          setIsFeaturedSpotModalOpen(true);
-        }}
-      />
+      {/* Mobile-only Infinite Scrolling Sponsors ABOVE Top Nav - hidden on /submit page */}
+      {!isSubmitPage && (
+        <MobileTopSponsorTicker
+          enabled={sponsorRailsEnabled}
+          sponsors={activeRailSponsors}
+          soundEnabled={soundEnabled}
+          onTrackClick={handleTrackClick}
+          onOpenProduct={handleOpenProduct}
+          onOpenFeaturedSpotModal={() => {
+            setFeaturedModalMode('sponsor');
+            setIsFeaturedSpotModalOpen(true);
+          }}
+        />
+      )}
       <Header
         onGoHome={handleBackToLeaderboard}
         onOpenSubmit={handleTopNavSubmit}
@@ -2446,6 +2466,11 @@ export default function App() {
           allSubmissions={submissions}
           onBack={handleBackToLeaderboard}
           onSignOut={handleSignOut}
+          onOpenSubmit={handleOpenSubmit}
+          onOpenFeaturedSpotModal={() => {
+            setFeaturedModalMode('sponsor');
+            setIsFeaturedSpotModalOpen(true);
+          }}
           onDeleteProduct={(productId) => setProducts((prev) => prev.filter((p) => p.id !== productId))}
           onUpdateProduct={handleUpdateProduct}
           onSelectProduct={handleOpenProduct}
@@ -2903,18 +2928,20 @@ export default function App() {
         onOpenTerms={() => handleNavigateLegal('terms')}
         onOpenPricing={handleOpenPricing}
       />
-      {/* Sticky Bottom Infinite Scrolling Sponsors (Mobile Only) */}
-      <MobileBottomStickySponsorTicker
-        enabled={sponsorRailsEnabled}
-        sponsors={activeRailSponsors}
-        soundEnabled={soundEnabled}
-        onTrackClick={handleTrackClick}
-        onOpenProduct={handleOpenProduct}
-        onOpenFeaturedSpotModal={() => {
-          setFeaturedModalMode('sponsor');
-          setIsFeaturedSpotModalOpen(true);
-        }}
-      />
+      {/* Sticky Bottom Infinite Scrolling Sponsors (Mobile Only) - hidden on /submit */}
+      {!isSubmitPage && (
+        <MobileBottomStickySponsorTicker
+          enabled={sponsorRailsEnabled}
+          sponsors={activeRailSponsors}
+          soundEnabled={soundEnabled}
+          onTrackClick={handleTrackClick}
+          onOpenProduct={handleOpenProduct}
+          onOpenFeaturedSpotModal={() => {
+            setFeaturedModalMode('sponsor');
+            setIsFeaturedSpotModalOpen(true);
+          }}
+        />
+      )}
     </div>
   );
 
@@ -3512,18 +3539,20 @@ export default function App() {
         }}
       />
 
-      {/* Sticky Bottom Infinite Scrolling Sponsor Ticker (Mobile Only) */}
-      <MobileBottomStickySponsorTicker
-        enabled={sponsorRailsEnabled}
-        sponsors={activeRailSponsors}
-        soundEnabled={soundEnabled}
-        onTrackClick={handleTrackClick}
-        onOpenProduct={handleOpenProduct}
-        onOpenFeaturedSpotModal={() => {
-          setFeaturedModalMode('sponsor');
-          setIsFeaturedSpotModalOpen(true);
-        }}
-      />
+      {/* Sticky Bottom Infinite Scrolling Sponsor Ticker (Mobile Only) - hidden on /submit */}
+      {!isSubmitPage && (
+        <MobileBottomStickySponsorTicker
+          enabled={sponsorRailsEnabled}
+          sponsors={activeRailSponsors}
+          soundEnabled={soundEnabled}
+          onTrackClick={handleTrackClick}
+          onOpenProduct={handleOpenProduct}
+          onOpenFeaturedSpotModal={() => {
+            setFeaturedModalMode('sponsor');
+            setIsFeaturedSpotModalOpen(true);
+          }}
+        />
+      )}
 
     </div>
   );
