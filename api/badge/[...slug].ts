@@ -115,8 +115,8 @@ export default async function handler(req: any, res: any) {
       const { data } = await supabase
         .from('products')
         .select('rank')
-        .or(`id.eq.${productId},id.eq.${altId}`)
-        .single();
+        .or(`id.eq.${productId},id.eq.${altId},name.ilike.${productId}`)
+        .maybeSingle();
       if (data?.rank) rank = data.rank;
     } catch {
       // Serve default badge — still valid

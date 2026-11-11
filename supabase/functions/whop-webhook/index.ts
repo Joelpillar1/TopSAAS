@@ -104,9 +104,11 @@ serve(async (req: Request) => {
         };
         if (targetProductId) {
           await supabase.from('submissions').update(relaunchPayload).eq('id', targetProductId);
+          await supabase.from('products').update(relaunchPayload).eq('id', targetProductId);
         }
         if (productName) {
           await supabase.from('submissions').update(relaunchPayload).ilike('name', productName);
+          await supabase.from('products').update(relaunchPayload).ilike('name', productName);
         }
         console.log(`Successfully scheduled weekly relaunch for product: ${productName || targetProductId}`);
       }

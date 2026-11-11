@@ -1,4 +1,5 @@
 import { Product } from '../types';
+import { getProductSlug } from './slug';
 
 export type BadgeStyle = 'featured' | 'classic' | 'rank';
 export type BadgeTheme = 'light' | 'dark';
@@ -155,7 +156,8 @@ export function generateBadgeDataUrl(product: Product, options: BadgeOptions = {
  */
 export function getProductTopSaasUrl(product: Product, baseOrigin?: string): string {
   const origin = baseOrigin || (typeof window !== 'undefined' ? window.location.origin : 'https://topsaas.space');
-  return `${origin}/product/${encodeURIComponent(product.id)}?ref=badge`;
+  const slug = getProductSlug(product);
+  return `${origin}/products/${encodeURIComponent(slug)}?ref=badge`;
 }
 
 /**

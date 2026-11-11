@@ -54,7 +54,8 @@ interface RepoLiveMeta {
 }
 
 interface RepoDetailPageProps {
-  repo: CuratedRepo;
+  repo?: CuratedRepo;
+  repoId?: string;
   soundEnabled: boolean;
   onBack: () => void;
   onSelectRepo: (repo: CuratedRepo) => void;
@@ -480,7 +481,8 @@ const StatRow: React.FC<{ label: string; value: React.ReactNode; sub?: string }>
 /* ───────────────────────── page ───────────────────────── */
 
 export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
-  repo,
+  repo: propRepo,
+  repoId,
   soundEnabled,
   onBack,
   onSelectRepo,
@@ -490,6 +492,27 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
   onTrackClick,
   onOpenFeaturedSpotModal,
 }) => {
+  const repo = propRepo || (repoId ? CURATED_REPOS.find((r) => r.full_name.toLowerCase() === repoId.toLowerCase()) : null);
+
+  if (!repo) {
+    return (
+      <div className="min-h-screen bg-white text-neutral-900 flex items-center justify-center font-sans">
+        <div className="text-center space-y-3">
+          <h2 className="text-lg font-bold">Repository not found</h2>
+          <p className="text-sm text-neutral-400">
+            This repo may have been removed from the collection.
+          </p>
+          <button
+            onClick={onBack}
+            className="mt-2 rounded-xl bg-white border border-neutral-300 text-black px-4 py-2 text-xs font-bold cursor-pointer hover:bg-neutral-50"
+          >
+            Back to Home
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const [live, setLive] = useState<RepoLiveMeta | null>(() => getCachedMeta(repo.full_name));
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const ctaRef = useRef<HTMLDivElement | null>(null);

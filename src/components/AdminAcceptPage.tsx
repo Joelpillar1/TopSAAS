@@ -6,7 +6,7 @@ import confetti from 'canvas-confetti';
 import { WebsiteSubmission, Category, Product, Sponsor, SponsorDraft } from '../types';
 import { playSound } from '../utils/sound';
 import { getWebsiteFavicon } from '../utils/logo';
-import { publishedProductId, loadSubmissionById, isSponsorOnlyProduct } from '../utils/db';
+import { publishedProductId, loadSubmissionById, isSponsorOnlyProduct, getProductSlug } from '../utils/db';
 import { getCountdown, formatRemainingMs } from '../utils/countdown';
 import { RichText } from './RichText';
 import { ProductLogo } from './ProductLogo';
@@ -987,7 +987,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                             {isApproved && (
                               <>
                                 <a
-                                  href={`/product/${liveProduct?.id || sub.id}`}
+                                  href={`/products/${getProductSlug(liveProduct) || getProductSlug(sub) || liveProduct?.id || sub.id}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="rounded-xl border border-neutral-200 bg-neutral-100 px-3 py-1.5 text-xs font-bold text-neutral-700 hover:border-mint-500/60 hover:text-mint-700 hover:bg-mint-50/30 transition-all cursor-pointer flex items-center gap-1"
@@ -2347,7 +2347,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                         </button>
                       )}
                       <a
-                        href={`/product/${liveProduct?.id || sub.id}`}
+                        href={`/products/${getProductSlug(liveProduct) || getProductSlug(sub) || liveProduct?.id || sub.id}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1.5 rounded-xl bg-mint-500 px-4 py-2 text-xs font-black text-white hover:bg-mint-400 transition-all cursor-pointer shadow-md"

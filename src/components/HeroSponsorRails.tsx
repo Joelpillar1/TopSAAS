@@ -419,7 +419,9 @@ export const HeroSponsorRails: React.FC<HeroSponsorRailsProps> = ({
         <div className="hidden lg:flex flex-col gap-2 w-[215px] xl:w-[245px] shrink-0 sticky top-16 self-start">
           {LEFT_SLOTS.map((slot, index) => {
             const sponsoredItem = leftSponsors[index];
-            const card = sponsoredItem ? (
+            const card = isLoading ? (
+              <SkeletonAdCard key={slot.id} />
+            ) : sponsoredItem ? (
               <ActiveSponsorCard
                 key={`active-left-${sponsoredItem.id}`}
                 product={sponsoredItem}
@@ -460,7 +462,9 @@ export const HeroSponsorRails: React.FC<HeroSponsorRailsProps> = ({
         <div className="hidden lg:flex flex-col gap-2 w-[215px] xl:w-[245px] shrink-0 sticky top-16 self-start">
           {RIGHT_SLOTS.map((slot, index) => {
             const sponsoredItem = rightSponsors[index];
-            const card = sponsoredItem ? (
+            const card = isLoading ? (
+              <SkeletonAdCard key={slot.id} />
+            ) : sponsoredItem ? (
               <ActiveSponsorCard
                 key={`active-right-${sponsoredItem.id}`}
                 product={sponsoredItem}

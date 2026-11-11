@@ -32,6 +32,7 @@ import { Category, PricingModel, Product, ProductSocial, SocialPlatform, SUBMISS
 import { getWebsiteFavicon } from '../utils/logo';
 import { mapDbProduct, mapDbSubmission, updateProductDirect, submissionToProduct } from '../utils/db';
 import { ProductLogo } from './ProductLogo';
+import { SkeletonRows } from './SkeletonCard';
 import { playSound } from '../utils/sound';
 import { EmbedBadgeModal } from './EmbedBadgeModal';
 import { RichTextEditor } from './RichTextEditor';
@@ -1157,9 +1158,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         {activeProfileTab === 'live' && (
           <div className="space-y-3">
             {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-6 w-6 text-neutral-400 animate-spin" />
-              </div>
+              <SkeletonRows count={3} />
             ) : products.length === 0 ? (
               <div className="rounded-2xl border border-neutral-200 bg-white p-6 sm:p-10 text-center">
                 <Globe className="mx-auto h-8 w-8 text-neutral-400 mb-3" />

@@ -9,25 +9,14 @@ import { HomeHero } from './components/HomeHero';
 import { HowItWorksModal } from './components/HowItWorksModal';
 import { ShareModal } from './components/ShareModal';
 import { Pagination } from './components/Pagination';
-import { AdminAcceptPage } from './components/AdminAcceptPage';
 import { RichFooter } from './components/RichFooter';
 import { Header, DirectoryTab } from './components/Header';
 import { SignInModal } from './components/SignInModal';
-import { ProfilePage } from './components/ProfilePage';
-import { PaymentSuccess } from './components/PaymentSuccess';
-import { SubmitPage } from './components/SubmitPage';
-import { SaaSIdeas } from './components/SaaSIdeas';
-import { TrendingPage } from './components/TrendingPage';
-import { GuidesListPage } from './components/GuidesListPage';
-import { GuideDetailPage } from './components/GuideDetailPage';
-import { MrrCalculatorPage } from './components/MrrCalculatorPage';
-import { LegalPage } from './components/LegalPage';
-import { PricingPage } from './components/PricingPage';
 import { LegalTab } from './components/LegalModal';
 import { playSound } from './utils/sound';
 import confetti from 'canvas-confetti';
 import { supabase } from './utils/supabase';
-import { loadProducts, loadProductById, loadSubmissions, invalidateCache, saveAllProducts, saveProductRanksDirect, debouncedSyncProducts, toggleUpvote, getUserUpvotes, getUpvoteStats, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, setGlobalFeaturedProducts, setProductFeaturedPosition, LOCAL_FEATURED_PRODUCTS_KEY, LOCAL_FEATURED_POSITIONS_MAP_KEY, insertProductDirect, updateProductDirect, fetchComments, addComment, getCachedCommentsSync, submissionToProduct, publishedProductId, isProductUpvoted, getGuestUpvotes, saveGuestUpvotes, incrementProductUpvotesDirect, incrementProductClicksDirect, loadSponsors, createSponsor, updateSponsor, endSponsor, endSponsorsForProduct, toggleSponsorPause, incrementSponsorClicks, sponsorToDisplayProduct, isLiveSponsor, getSponsorRailsEnabled, setSponsorRailsEnabled, LOCAL_SPONSOR_RAILS_KEY, getFeaturedPosition, setFeaturedPosition, LOCAL_FEATURED_POSITION_KEY, SUBMISSION_QUEUE_COLUMNS, loadSubmissionById, isSponsorOnlyProduct } from './utils/db';
+import { loadProducts, loadProductById, loadSubmissions, invalidateCache, saveAllProducts, saveProductRanksDirect, debouncedSyncProducts, toggleUpvote, getUserUpvotes, getUpvoteStats, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, setGlobalFeaturedProducts, setProductFeaturedPosition, LOCAL_FEATURED_PRODUCTS_KEY, LOCAL_FEATURED_POSITIONS_MAP_KEY, insertProductDirect, updateProductDirect, fetchComments, addComment, getCachedCommentsSync, submissionToProduct, publishedProductId, isProductUpvoted, getGuestUpvotes, saveGuestUpvotes, incrementProductUpvotesDirect, incrementProductClicksDirect, loadSponsors, createSponsor, updateSponsor, endSponsor, endSponsorsForProduct, toggleSponsorPause, incrementSponsorClicks, sponsorToDisplayProduct, isLiveSponsor, getSponsorRailsEnabled, setSponsorRailsEnabled, LOCAL_SPONSOR_RAILS_KEY, getFeaturedPosition, setFeaturedPosition, LOCAL_FEATURED_POSITION_KEY, SUBMISSION_QUEUE_COLUMNS, loadSubmissionById, isSponsorOnlyProduct, getProductSlug, matchesProductIdentifier } from './utils/db';
 import { trackGoal } from './utils/trackkit';
 import { isInWeek, getWeekInfo, getWeekNumber, getWeekByNumber, getMonthKey, isInMonth, formatMonthLabel, formatWeekDateRange, WeekInfo } from './utils/weeks';
 import { getWebsiteFavicon } from './utils/logo';
@@ -35,15 +24,31 @@ import { uploadScreenshotToStorage } from './utils/storage';
 import { Trophy, X, Plus, ShieldCheck, Loader2, Star, MessageCircle, Flame, Search } from 'lucide-react';
 import { FeaturedSpotModal } from './components/FeaturedSpotModal';
 import { ProductPage } from './components/ProductPage';
-import { RepoDetailPage } from './components/RepoDetailPage';
-import { CURATED_REPOS, CuratedRepo } from './data/curatedRepos';
 import { BadgeRoute } from './components/BadgeRoute';
+
+// Lazy-load secondary pages to keep the homepage bundle ultra-lightweight
+const AdminAcceptPage = React.lazy(() => import('./components/AdminAcceptPage').then((m) => ({ default: m.AdminAcceptPage })));
+const ProfilePage = React.lazy(() => import('./components/ProfilePage').then((m) => ({ default: m.ProfilePage })));
+const PaymentSuccess = React.lazy(() => import('./components/PaymentSuccess').then((m) => ({ default: m.PaymentSuccess })));
+const SubmitPage = React.lazy(() => import('./components/SubmitPage').then((m) => ({ default: m.SubmitPage })));
+const SaaSIdeas = React.lazy(() => import('./components/SaaSIdeas').then((m) => ({ default: m.SaaSIdeas })));
+const TrendingPage = React.lazy(() => import('./components/TrendingPage').then((m) => ({ default: m.TrendingPage })));
+const GuidesListPage = React.lazy(() => import('./components/GuidesListPage').then((m) => ({ default: m.GuidesListPage })));
+const GuideDetailPage = React.lazy(() => import('./components/GuideDetailPage').then((m) => ({ default: m.GuideDetailPage })));
+const MrrCalculatorPage = React.lazy(() => import('./components/MrrCalculatorPage').then((m) => ({ default: m.MrrCalculatorPage })));
+const LegalPage = React.lazy(() => import('./components/LegalPage').then((m) => ({ default: m.LegalPage })));
+const PricingPage = React.lazy(() => import('./components/PricingPage').then((m) => ({ default: m.PricingPage })));
+const RepoDetailPage = React.lazy(() => import('./components/RepoDetailPage').then((m) => ({ default: m.RepoDetailPage })));
+import type { CuratedRepo } from './data/curatedRepos';
 import { ProductRow, timeAgo } from './components/ProductRow';
 import { SponsorTile } from './components/SponsorTile';
 import { HeroSponsorRails, MobileTopSponsorTicker, MobileBottomStickySponsorTicker } from './components/HeroSponsorRails';
 import { WeeklyLaunchView } from './components/WeeklyLaunchView';
 import { BestOfSection } from './components/BestOfSection';
 import { ProductLogo } from './components/ProductLogo';
+import { SkeletonRows, SkeletonGrid, SkeletonTile } from './components/SkeletonCard';
+import { SkeletonTable } from './components/SkeletonTable';
+import { SkeletonProductPage } from './components/SkeletonProductPage';
 import { AdminLoginGate } from './components/AdminLoginGate';
 import { isAdminSessionActive, clearAdminSession } from './utils/adminAuth';
 
@@ -324,21 +329,67 @@ export default function App() {
       }
     } catch { }
 
-    // Start with empty directory — no seed products
-    return [];
+    // First-time visitor: instant paint from build-time initial products seed
+    return INITIAL_PRODUCTS;
   });
 
   // Sponsors (paid + trial placements) live in their own table and are never
   // mixed into the products directory.
-  const [sponsors, setSponsors] = useState<Sponsor[]>([]);
+  const [sponsors, setSponsors] = useState<Sponsor[]>(() => {
+    try {
+      const saved = localStorage.getItem('topsaas_sponsors_cache');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch { }
+    return [];
+  });
 
   // Auth state
   const [user, setUser] = useState<User | null>(null);
   const [authLoaded, setAuthLoaded] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminSessionUnlocked, setAdminSessionUnlocked] = useState<boolean>(() => isAdminSessionActive());
-  const [userUpvotes, setUserUpvotes] = useState<Set<string>>(new Set());
-  const [productsLoaded, setProductsLoaded] = useState(() => products.length > 0);
+  const [userUpvotes, setUserUpvotes] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem('topsaas_user_upvotes');
+      if (raw) {
+        const arr = JSON.parse(raw);
+        if (Array.isArray(arr)) {
+          const set = new Set<string>();
+          for (const id of arr) {
+            if (typeof id === 'string') {
+              set.add(id);
+              if (id.startsWith('prod-')) set.add(id.replace(/^prod-/, ''));
+              else set.add(`prod-${id}`);
+            }
+          }
+          return set;
+        }
+      }
+    } catch { }
+    return new Set();
+  });
+
+  const updateUserUpvotes = useCallback((updater: Set<string> | ((prev: Set<string>) => Set<string>)) => {
+    setUserUpvotes((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      try {
+        localStorage.setItem('topsaas_user_upvotes', JSON.stringify(Array.from(next)));
+      } catch { }
+      return next;
+    });
+  }, []);
+  // Initialize loaded immediately if we have cached or seed products (instant paint in 0ms)
+  const [productsLoaded, setProductsLoaded] = useState<boolean>(() => products.length > 0);
+
+  // Sync loaded state whenever products populate
+  useEffect(() => {
+    if (products.length > 0 && !productsLoaded) {
+      setProductsLoaded(true);
+    }
+  }, [products.length, productsLoaded]);
 
   // Featured products (admin can set multiple products as featured, or user paid for it)
   const [featuredProductIds, setFeaturedProductIds] = useState<string[]>(() => {
@@ -523,9 +574,21 @@ export default function App() {
   const [selectedWeek, setSelectedWeek] = useState<WeekInfo | null>(() => getWeekInfo(Date.now()));
 
   // Upvotes earned per launch week (derived from upvotes.created_at)
-  const [weeklyUpvotes, setWeeklyUpvotes] = useState<Record<number, Record<string, number>>>({});
+  const [weeklyUpvotes, setWeeklyUpvotes] = useState<Record<number, Record<string, number>>>(() => {
+    try {
+      const saved = localStorage.getItem('topsaas_weekly_upvotes_cache');
+      if (saved) return JSON.parse(saved);
+    } catch { }
+    return {};
+  });
   // Upvotes earned per calendar month (derived from upvotes.created_at)
-  const [monthlyUpvotes, setMonthlyUpvotes] = useState<Record<string, Record<string, number>>>({});
+  const [monthlyUpvotes, setMonthlyUpvotes] = useState<Record<string, Record<string, number>>>(() => {
+    try {
+      const saved = localStorage.getItem('topsaas_monthly_upvotes_cache');
+      if (saved) return JSON.parse(saved);
+    } catch { }
+    return {};
+  });
 
   // Comments (discussion threads on product detail pages)
   const [comments, setComments] = useState<Comment[]>(() => {
@@ -572,10 +635,10 @@ export default function App() {
     return byMonth;
   }, [comments]);
 
-  // Product detail route state — resolved from /product/:id or /badge/:id
+  // Product detail route state — resolved from /products/:name, /product/:id, or /badge/:id
   const [productRouteId, setProductRouteId] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
-      const m = window.location.pathname.match(/^\/(?:product|badge)\/(.+)$/);
+      const m = window.location.pathname.match(/^\/(?:products?|badge)\/(.+)$/);
       if (m) return decodeURIComponent(m[1]);
     }
     return null;
@@ -612,7 +675,7 @@ export default function App() {
       const hash = window.location.hash;
 
       const badgeMatch = path.match(/^\/badge\/(.+)$/);
-      const productMatch = path.match(/^\/product\/(.+)$/);
+      const productMatch = path.match(/^\/(?:products?)\/(.+)$/);
       const repoMatch = path.match(/^\/repo\/(.+)$/);
       if (badgeMatch) {
         setCurrentRoute('badge');
@@ -772,9 +835,10 @@ export default function App() {
   // Navigate to a product's detail page
   const handleOpenProduct = (product: Product) => {
     setCurrentRoute('product');
-    setProductRouteId(product.id);
+    const slug = getProductSlug(product);
+    setProductRouteId(slug || product.id);
     try {
-      window.history.pushState({}, product.name, `/product/${encodeURIComponent(product.id)}`);
+      window.history.pushState({}, product.name, `/products/${encodeURIComponent(slug || product.id)}`);
     } catch { }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -859,11 +923,28 @@ export default function App() {
     loadProductById(targetId).then((fullProd) => {
       if (!fullProd) return;
       setProducts((prev) => {
-        const found = prev.some((p) => p.id === fullProd.id || p.id === targetId || p.id === publishedProductId(targetId));
+        const found = prev.some((p) => p.id === fullProd.id || matchesProductIdentifier(p, targetId));
         if (found) {
           return prev.map((p) => {
-            if (p.id === fullProd.id || p.id === targetId || p.id === publishedProductId(targetId)) {
-              return { ...p, ...fullProd };
+            if (p.id === fullProd.id || matchesProductIdentifier(p, targetId)) {
+              // Maintain directory authoritative upvotes & rank so details page exactly matches directory cards
+              return {
+                ...fullProd,
+                ...p,
+                description: fullProd.description || p.description,
+                problemItSolves: fullProd.problemItSolves || p.problemItSolves,
+                solution: fullProd.solution || p.solution,
+                uniqueSellingPoint: fullProd.uniqueSellingPoint || p.uniqueSellingPoint,
+                screenshots: (fullProd.screenshots && fullProd.screenshots.length > 0) ? fullProd.screenshots : p.screenshots,
+                features: fullProd.features || p.features,
+                useCases: fullProd.useCases || p.useCases,
+                targetAudience: fullProd.targetAudience || p.targetAudience,
+                pricingModel: fullProd.pricingModel || p.pricingModel,
+                keyHighlights: fullProd.keyHighlights || p.keyHighlights,
+                demoVideoUrl: fullProd.demoVideoUrl || p.demoVideoUrl,
+                upvotes: p.upvotes !== undefined ? p.upvotes : fullProd.upvotes,
+                rank: p.rank || fullProd.rank,
+              };
             }
             return p;
           });
@@ -872,6 +953,25 @@ export default function App() {
       });
     });
   }, [currentRoute, productRouteId]);
+
+  // Canonical app-name URL auto-sync: If user visits /product/xxx or /products/prod-sub-xxx,
+  // smoothly replace URL address bar with /products/<name> (e.g. /products/cvarchitect)
+  useEffect(() => {
+    if (currentRoute !== 'product' || !productRouteId) return;
+    const matched = products.find((p) => matchesProductIdentifier(p, productRouteId));
+    if (matched) {
+      const slug = getProductSlug(matched);
+      if (slug && typeof window !== 'undefined') {
+        const canonicalPath = `/products/${encodeURIComponent(slug)}`;
+        if (window.location.pathname !== canonicalPath) {
+          try {
+            window.history.replaceState({}, matched.name, canonicalPath);
+            setProductRouteId(slug);
+          } catch { }
+        }
+      }
+    }
+  }, [currentRoute, productRouteId, products]);
 
   // Auth: listen for session changes, get initial session, and save profile
   useEffect(() => {
@@ -978,19 +1078,26 @@ export default function App() {
         getSponsorRailsEnabled(),
       ]);
       setSponsors(dbSponsors);
+      try {
+        localStorage.setItem('topsaas_sponsors_cache', JSON.stringify(dbSponsors));
+      } catch { }
       setSponsorRailsEnabledState(railsEnabled);
       setWeeklyUpvotes(upvoteStats.byWeek);
       setMonthlyUpvotes(upvoteStats.byMonth);
+      try {
+        localStorage.setItem('topsaas_weekly_upvotes_cache', JSON.stringify(upvoteStats.byWeek));
+        localStorage.setItem('topsaas_monthly_upvotes_cache', JSON.stringify(upvoteStats.byMonth));
+      } catch { }
       const upvoteCounts = upvoteStats.total;
 
-      // Repair the products table whenever a stored count is lower than reality.
+      // Repair the products table whenever a stored count diverges from reality.
       // Uses the security-definer increment RPC so even anonymous visitors can heal
       // counts (direct UPDATEs are RLS-restricted to signed-in users).
       const repairStoredUpvoteCounts = async (list: Product[]) => {
         for (const p of list) {
           const real = upvoteCounts.get(p.id);
           const stored = p.upvotes ?? 0;
-          if (real === undefined || real <= stored) continue;
+          if (real === undefined || real === stored) continue;
           try {
             const { error: rpcError } = await supabase.rpc('increment_product_upvotes', {
               p_product_id: p.id,
@@ -1052,7 +1159,8 @@ export default function App() {
   useEffect(() => {
     if (!user) {
       setIsAdmin(false);
-      setUserUpvotes(new Set());
+      updateUserUpvotes(new Set());
+      try { localStorage.removeItem('topsaas_user_upvotes'); } catch { }
       try { localStorage.removeItem('topsaas_guest_upvotes'); } catch { }
       return;
     }
@@ -1091,7 +1199,7 @@ export default function App() {
         });
     });
     getUserUpvotes().then((dbVotes) => {
-      setUserUpvotes(dbVotes);
+      updateUserUpvotes(dbVotes);
     });
   }, [user]);
 
@@ -1308,20 +1416,24 @@ export default function App() {
 
     playSound('upvote', soundEnabled);
 
-    const currentlyUpvoted = isProductUpvoted(product.id, userUpvotes);
+    const canonicalId = product.id.startsWith('prod-') ? product.id : publishedProductId(product.id);
+    const bareId = product.id.startsWith('prod-') ? product.id.replace(/^prod-/, '') : product.id;
+
+    const currentlyUpvoted = isProductUpvoted(product.id, userUpvotes) || isProductUpvoted(canonicalId, userUpvotes);
     const willBeUpvoted = !currentlyUpvoted;
     const delta = willBeUpvoted ? 1 : -1;
-    const altId = product.id.startsWith('prod-') ? product.id.replace(/^prod-/, '') : `prod-${product.id}`;
 
-    // 1. Instant optimistic update for userUpvotes state
-    setUserUpvotes((prev) => {
+    // 1. Instant optimistic update for userUpvotes state (persisted immediately)
+    updateUserUpvotes((prev) => {
       const next = new Set(prev);
       if (willBeUpvoted) {
         next.add(product.id);
-        next.add(altId);
+        next.add(canonicalId);
+        next.add(bareId);
       } else {
         next.delete(product.id);
-        next.delete(altId);
+        next.delete(canonicalId);
+        next.delete(bareId);
       }
       return next;
     });
@@ -1331,7 +1443,7 @@ export default function App() {
     let reRankedProducts: Product[] = [];
     setProducts((prev) => {
       const updated = prev.map((p) => {
-        const isMatch = p.id === product.id || p.id === altId;
+        const isMatch = p.id === product.id || p.id === canonicalId || p.id === bareId;
         if (isMatch) {
           const nextUpvotes = Math.max(0, (p.upvotes ?? 0) + delta);
           return { ...p, upvotes: nextUpvotes, updatedAt: Date.now() };
@@ -1362,9 +1474,14 @@ export default function App() {
       const current = prev[week] ?? {};
       const nextCount = Math.max(
         0,
-        (current[product.id] ?? current[altId] ?? 0) + delta
+        (current[product.id] ?? current[canonicalId] ?? current[bareId] ?? 0) + delta
       );
-      const nextWeek: Record<string, number> = { ...current, [product.id]: nextCount, [altId]: nextCount };
+      const nextWeek: Record<string, number> = {
+        ...current,
+        [product.id]: nextCount,
+        [canonicalId]: nextCount,
+        [bareId]: nextCount,
+      };
       return { ...prev, [week]: nextWeek };
     });
 
@@ -1374,29 +1491,36 @@ export default function App() {
       const current = prev[month] ?? {};
       const nextCount = Math.max(
         0,
-        (current[product.id] ?? current[altId] ?? 0) + delta
+        (current[product.id] ?? current[canonicalId] ?? current[bareId] ?? 0) + delta
       );
-      const nextMonth: Record<string, number> = { ...current, [product.id]: nextCount, [altId]: nextCount };
+      const nextMonth: Record<string, number> = {
+        ...current,
+        [product.id]: nextCount,
+        [canonicalId]: nextCount,
+        [bareId]: nextCount,
+      };
       return { ...prev, [month]: nextMonth };
     });
 
-    // 3. Background persistence to Supabase via toggleUpvote RPC
-    toggleUpvote(product.id).then((rpcResult) => {
+    // 3. Background persistence to Supabase via toggleUpvote RPC / direct table fallback
+    toggleUpvote(canonicalId).then((rpcResult) => {
       if (rpcResult === null) {
-        // If RPC returned null (e.g. constraints/network), fallback to direct increment or debounced sync
-        incrementProductUpvotesDirect(product.id, delta).catch(() => {
+        // Network/RPC failure: keep optimistic state and try direct increment fallback
+        incrementProductUpvotesDirect(canonicalId, delta).catch(() => {
           debouncedSyncProducts(reRankedProducts);
         });
       } else if (rpcResult !== willBeUpvoted) {
-        // Reconcile state if remote RPC returned opposite
-        setUserUpvotes((prev) => {
+        // Reconcile state only if remote server returned a definitive opposite result
+        updateUserUpvotes((prev) => {
           const synced = new Set(prev);
           if (rpcResult) {
             synced.add(product.id);
-            synced.add(altId);
+            synced.add(canonicalId);
+            synced.add(bareId);
           } else {
             synced.delete(product.id);
-            synced.delete(altId);
+            synced.delete(canonicalId);
+            synced.delete(bareId);
           }
           return synced;
         });
@@ -2597,8 +2721,17 @@ export default function App() {
       return (
         <>
           {globalHeader}
-          <div className="min-h-screen bg-white text-neutral-900 flex items-center justify-center font-sans">
-            <Loader2 className="h-6 w-6 text-neutral-400 animate-spin" />
+          <div className="min-h-screen bg-white text-neutral-900 font-sans">
+            <div className="mx-auto w-full max-w-4xl px-4 py-8 space-y-6">
+              <div className="flex items-center gap-4">
+                <div className="h-16 w-16 rounded-full bg-neutral-200 animate-pulse" />
+                <div className="space-y-2">
+                  <div className="h-5 w-40 rounded bg-neutral-200 animate-pulse" />
+                  <div className="h-3 w-56 rounded bg-neutral-200 animate-pulse" />
+                </div>
+              </div>
+              <SkeletonRows count={3} />
+            </div>
           </div>
           {globalModals}
         </>
@@ -2612,22 +2745,24 @@ export default function App() {
     return (
       <>
         {globalHeader}
-        <ProfilePage
-          user={user}
-          allProducts={products}
-          allSubmissions={submissions}
-          onBack={handleBackToLeaderboard}
-          onSignOut={handleSignOut}
-          onOpenSubmit={handleOpenSubmit}
-          onOpenFeaturedSpotModal={() => {
-            setFeaturedModalMode('sponsor');
-            setIsFeaturedSpotModalOpen(true);
-          }}
-          onDeleteProduct={(productId) => setProducts((prev) => prev.filter((p) => p.id !== productId))}
-          onUpdateProduct={handleUpdateProduct}
-          onSelectProduct={handleOpenProduct}
-          soundEnabled={soundEnabled}
-        />
+        <React.Suspense fallback={<div className="mx-auto w-full max-w-4xl px-4 py-8"><SkeletonRows count={3} /></div>}>
+          <ProfilePage
+            user={user}
+            allProducts={products}
+            allSubmissions={submissions}
+            onBack={handleBackToLeaderboard}
+            onSignOut={handleSignOut}
+            onOpenSubmit={handleOpenSubmit}
+            onOpenFeaturedSpotModal={() => {
+              setFeaturedModalMode('sponsor');
+              setIsFeaturedSpotModalOpen(true);
+            }}
+            onDeleteProduct={(productId) => setProducts((prev) => prev.filter((p) => p.id !== productId))}
+            onUpdateProduct={handleUpdateProduct}
+            onSelectProduct={handleOpenProduct}
+            soundEnabled={soundEnabled}
+          />
+        </React.Suspense>
         {globalModals}
       </>
     );
@@ -2644,30 +2779,19 @@ export default function App() {
     );
   }
 
-  // 1.5 PRODUCT DETAIL ROUTE (/product/:id)
+  // 1.5 PRODUCT DETAIL ROUTE (/products/:name or legacy /product/:id)
   if (currentRoute === 'product') {
     const routeId = productRouteId || '';
-    // If someone visits /product/sub-topsaas or /product/topsaas, redirect to home
-    if (routeId.toLowerCase() === 'sub-topsaas' || routeId.toLowerCase() === 'topsaas') {
-      if (typeof window !== 'undefined') {
-        try { window.history.replaceState('', document.title, '/'); } catch { }
-        window.location.replace('/');
-      }
-      return null;
-    }
 
-    // Listings are addressed by their deterministic id. Both the published
-    // `prod-<id>` form and the bare id resolve, so old links keep working.
-    const bareRouteId = routeId.startsWith('prod-') ? routeId.replace(/^prod-/, '') : routeId;
-    const canonicalId = routeId ? publishedProductId(bareRouteId) : '';
-
+    // Listings are addressed by their app name or deterministic id. Both the published
+    // `prod-<id>` form, bare id, and clean app name resolve, so old links keep working.
     let rawProduct = routeId
-      ? products.find((p) => p.id === routeId || p.id === canonicalId || p.id === bareRouteId) || null
+      ? products.find((p) => matchesProductIdentifier(p, routeId)) || null
       : null;
 
     // A submission with no published listing yet (for example an owner previewing
     // their own pending entry) renders straight from the submission, or enriches product details.
-    const matchingSub = routeId ? submissions.find((s) => s.id === bareRouteId || s.id === routeId || s.id === canonicalId) : null;
+    const matchingSub = routeId ? submissions.find((s) => matchesProductIdentifier({ id: s.id, name: s.name }, routeId)) : null;
     if (!rawProduct && matchingSub) {
       rawProduct = submissionToProduct(matchingSub, products.length + 1);
     } else if (rawProduct && matchingSub) {
@@ -2694,7 +2818,7 @@ export default function App() {
 
     const rankIndex = rawProduct
       ? sortedByRankProducts.findIndex(
-        (p) => p.id === rawProduct!.id || p.id === publishedProductId(rawProduct!.id)
+        (p) => p.id === rawProduct!.id || matchesProductIdentifier(p, rawProduct!.id)
       )
       : -1;
     const dynamicRank = rawProduct ? (rankIndex >= 0 ? rankIndex + 1 : (rawProduct.rank || 1)) : 1;
@@ -2704,9 +2828,7 @@ export default function App() {
         return (
           <>
             {globalHeader}
-            <div className="min-h-screen bg-white text-neutral-900 flex items-center justify-center font-sans">
-              <Loader2 className="h-6 w-6 text-neutral-400 animate-spin" />
-            </div>
+            <SkeletonProductPage onBack={handleBackToLeaderboard} />
             {globalModals}
           </>
         );
@@ -2737,7 +2859,7 @@ export default function App() {
       <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between font-sans">
         {globalHeader}
         <ProductPage
-          product={product}
+          product={markOwnership(product)}
           topProduct={topProduct || product}
           allProducts={sortedByRankProducts.map((p, idx) => ({ ...markOwnership(p), rank: idx + 1 }))}
           sponsors={sponsors
@@ -2750,6 +2872,11 @@ export default function App() {
           comments={comments.filter((c) => c.productId === product.id)}
           soundEnabled={soundEnabled}
           isSignedIn={!!user}
+          userId={user?.id}
+          isOwner={Boolean(
+            markOwnership(product).isUserOwned ||
+            (user && product.submittedBy && (product.submittedBy === user.id || (user.email && product.submittedBy.toLowerCase() === user.email.toLowerCase())))
+          )}
           userName={submitterName}
           userEmail={user?.email}
           userAvatar={user?.user_metadata?.avatar_url || user?.user_metadata?.picture}
@@ -2762,8 +2889,9 @@ export default function App() {
           }}
           onSelectProduct={(p) => {
             setCurrentRoute('product');
-            setProductRouteId(p.id);
-            try { window.history.pushState({}, p.name, `/product/${encodeURIComponent(p.id)}`); } catch { }
+            const slug = getProductSlug(p);
+            setProductRouteId(slug || p.id);
+            try { window.history.pushState({}, p.name, `/products/${encodeURIComponent(slug || p.id)}`); } catch { }
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
           onShare={(p) => setShareProduct(p)}
@@ -2827,9 +2955,6 @@ export default function App() {
   // 1.6 REPO DETAIL ROUTE (/repo/:owner/:name)
   if (currentRoute === 'repo') {
     const repoId = repoRouteId || '';
-    const repo =
-      CURATED_REPOS.find((r) => r.full_name.toLowerCase() === repoId.toLowerCase()) || null;
-
     const backToHome = () => {
       setCurrentRoute('/');
       try {
@@ -2838,96 +2963,33 @@ export default function App() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    if (!repo) {
-      return (
-        <>
-          {globalHeader}
-          <div className="min-h-screen bg-white text-neutral-900 flex items-center justify-center font-sans">
-            <div className="text-center space-y-3">
-              <h2 className="text-lg font-bold">Repository not found</h2>
-              <p className="text-sm text-neutral-400">
-                This repo may have been removed from the collection.
-              </p>
-              <button
-                onClick={backToHome}
-                className="mt-2 rounded-xl bg-white text-black px-4 py-2 text-xs font-bold cursor-pointer"
-              >
-                Back to SaaS Ideas
-              </button>
-            </div>
-          </div>
-          {globalModals}
-        </>
-      );
-    }
-
     return (
       <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between font-sans">
         {globalHeader}
-        <RepoDetailPage
-          repo={repo}
-          soundEnabled={soundEnabled}
-          onBack={backToHome}
-          onSelectRepo={handleOpenRepo}
-          sponsors={activeRailSponsors}
-          onSelectProduct={handleOpenProduct}
-          onTrackClick={handleTrackClick}
-          onOpenFeaturedSpotModal={() => {
-            setFeaturedModalMode('sponsor');
-            setIsFeaturedSpotModalOpen(true);
-          }}
-          onOpenFeatured={() => {
-            setFeaturedModalMode('featured');
-            if (!user) {
-              setIsSignInModalOpen(true);
-            } else {
+        <React.Suspense fallback={<div className="mx-auto w-full max-w-7xl px-4 py-8"><SkeletonRows count={4} /></div>}>
+          <RepoDetailPage
+            repoId={repoId}
+            soundEnabled={soundEnabled}
+            onBack={backToHome}
+            onSelectRepo={handleOpenRepo}
+            sponsors={activeRailSponsors}
+            onSelectProduct={handleOpenProduct}
+            onTrackClick={handleTrackClick}
+            onOpenFeaturedSpotModal={() => {
+              setFeaturedModalMode('sponsor');
               setIsFeaturedSpotModalOpen(true);
-            }
-          }}
-        />
-        <RichFooter
-          totalProducts={directoryProducts.length}
-          soundEnabled={soundEnabled}
-          onOpenSubmit={handleOpenSubmit}
-          onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
-          onSelectCategory={setSelectedCategory}
-          onOpenPrivacy={() => {
-            setCurrentRoute('/privacy');
-            try { window.history.pushState('', document.title, '/privacy'); } catch { }
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
-          onOpenTerms={() => {
-            setCurrentRoute('/terms');
-            try { window.history.pushState('', document.title, '/terms'); } catch { }
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
-          onOpenPricing={handleOpenPricing}
-        />
-        <SignInModal
-          isOpen={isSignInModalOpen}
-          onClose={() => setIsSignInModalOpen(false)}
-          onSignIn={handleSignIn}
-        />
-        <FeaturedSpotModal
-          isOpen={isFeaturedSpotModalOpen}
-          onClose={() => setIsFeaturedSpotModalOpen(false)}
-          products={products}
-          user={user}
-          mode={featuredModalMode}
-          featuredProductIds={featuredProductIds}
-          initialTier={featuredInitialTier}
-          soundEnabled={soundEnabled}
-          onActivateSponsor={handleActivateSponsorTrial}
-          onActivateFeatured={handleActivateFeatured}
-          onOpenSignInModal={() => {
-            setIsFeaturedSpotModalOpen(false);
-            setIsSignInModalOpen(true);
-          }}
-          onOpenSubmitModal={() => {
-            setIsFeaturedSpotModalOpen(false);
-            handleOpenSubmit();
-          }}
-        />
+            }}
+            onOpenFeatured={() => {
+              setFeaturedModalMode('featured');
+              if (!user) {
+                setIsSignInModalOpen(true);
+              } else {
+                setIsFeaturedSpotModalOpen(true);
+              }
+            }}
+          />
+        </React.Suspense>
+        {globalModals}
       </div>
     );
   }
@@ -2948,25 +3010,29 @@ export default function App() {
     return (
       <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between font-sans">
         {globalHeader}
-        <SubmitPage
-          isSignedIn={!!user}
-          defaultCreatorName={submitterName}
-          defaultCreatorAvatar={user?.user_metadata?.avatar_url || user?.user_metadata?.picture || ''}
-          onBack={handleBackToLeaderboard}
-          onSignInRequest={() => setIsSignInModalOpen(true)}
-          onSubmit={handleConfirmSubmit}
-          onViewListing={(productId) => {
-            setCurrentRoute('product');
-            setProductRouteId(productId);
-            try {
-              window.history.pushState({}, 'Product', `/product/${encodeURIComponent(productId)}`);
-            } catch { }
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
-          soundEnabled={soundEnabled}
-          products={products}
-          submissions={submissions}
-        />
+        <React.Suspense fallback={<div className="mx-auto w-full max-w-2xl px-4 py-8"><SkeletonRows count={4} /></div>}>
+          <SubmitPage
+            isSignedIn={!!user}
+            defaultCreatorName={submitterName}
+            defaultCreatorAvatar={user?.user_metadata?.avatar_url || user?.user_metadata?.picture || ''}
+            onBack={handleBackToLeaderboard}
+            onSignInRequest={() => setIsSignInModalOpen(true)}
+            onSubmit={handleConfirmSubmit}
+            onViewListing={(productId) => {
+              setCurrentRoute('product');
+              const targetProd = products.find((p) => matchesProductIdentifier(p, productId));
+              const slug = targetProd ? getProductSlug(targetProd) : productId;
+              setProductRouteId(slug || productId);
+              try {
+                window.history.pushState({}, targetProd?.name || 'Product', `/products/${encodeURIComponent(slug || productId)}`);
+              } catch { }
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            soundEnabled={soundEnabled}
+            products={products}
+            submissions={submissions}
+          />
+        </React.Suspense>
         <RichFooter
           totalProducts={directoryProducts.length}
           soundEnabled={soundEnabled}
@@ -3032,47 +3098,49 @@ export default function App() {
     }
     return (
       <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between font-sans">
-        <AdminAcceptPage
-          submissions={submissions}
-          products={products}
-          sponsors={sponsors}
-          onCreateSponsor={handleCreateSponsor}
-          onUpdateSponsor={handleUpdateSponsor}
-          onEndSponsor={handleEndSponsor}
-          onPauseSponsor={handlePauseSponsor}
-          onRefreshSubmissions={refreshAdminSubmissions}
-          onAcceptSubmission={handleAcceptSubmission}
-          onRejectSubmission={handleRejectSubmission}
-          onDeleteSubmission={handleDeleteSubmission}
-          onUpdateSubmission={handleUpdateSubmission}
-          onRestoreSubmission={handleRestoreSubmission}
-          onDelistProduct={handleDelistProduct}
-          onAssignRank={handleAssignRank}
-          onAutoRankByUpvotes={handleAutoRankByUpvotes}
-          onBackToDirectory={handleBackToLeaderboard}
-          onOpenSubmitModal={handleOpenSubmit}
-          onSeedSampleSubmissions={handleSeedSampleSubmissions}
-          soundEnabled={soundEnabled}
-          onToggleSound={() => setSoundEnabled(!soundEnabled)}
-          featuredProductId={featuredProductId}
-          featuredExpiresAt={featuredExpiresAt}
-          onSetFeatured={handleSetFeatured}
-          featuredProductIds={featuredProductIds}
-          onSetFeaturedProducts={handleSetFeaturedProducts}
-          onSaveProductsOrder={handleSaveProductsOrder}
-          onToggleVerified={handleToggleVerifiedProduct}
-          onUpdateProduct={handleUpdateProduct}
-          sponsorRailsEnabled={sponsorRailsEnabled}
-          onToggleSponsorRails={handleToggleSponsorRails}
-          featuredPosition={featuredPosition}
-          onSetFeaturedPosition={handleSetFeaturedPosition}
-          featuredPositions={featuredPositions}
-          onSetProductFeaturedPosition={handleSetProductFeaturedPosition}
-          onSignOutAdmin={() => {
-            clearAdminSession();
-            setAdminSessionUnlocked(false);
-          }}
-        />
+        <React.Suspense fallback={<div className="mx-auto w-full max-w-7xl px-4 py-8"><SkeletonRows count={6} /></div>}>
+          <AdminAcceptPage
+            submissions={submissions}
+            products={products}
+            sponsors={sponsors}
+            onCreateSponsor={handleCreateSponsor}
+            onUpdateSponsor={handleUpdateSponsor}
+            onEndSponsor={handleEndSponsor}
+            onPauseSponsor={handlePauseSponsor}
+            onRefreshSubmissions={refreshAdminSubmissions}
+            onAcceptSubmission={handleAcceptSubmission}
+            onRejectSubmission={handleRejectSubmission}
+            onDeleteSubmission={handleDeleteSubmission}
+            onUpdateSubmission={handleUpdateSubmission}
+            onRestoreSubmission={handleRestoreSubmission}
+            onDelistProduct={handleDelistProduct}
+            onAssignRank={handleAssignRank}
+            onAutoRankByUpvotes={handleAutoRankByUpvotes}
+            onBackToDirectory={handleBackToLeaderboard}
+            onOpenSubmitModal={handleOpenSubmit}
+            onSeedSampleSubmissions={handleSeedSampleSubmissions}
+            soundEnabled={soundEnabled}
+            onToggleSound={() => setSoundEnabled(!soundEnabled)}
+            featuredProductId={featuredProductId}
+            featuredExpiresAt={featuredExpiresAt}
+            onSetFeatured={handleSetFeatured}
+            featuredProductIds={featuredProductIds}
+            onSetFeaturedProducts={handleSetFeaturedProducts}
+            onSaveProductsOrder={handleSaveProductsOrder}
+            onToggleVerified={handleToggleVerifiedProduct}
+            onUpdateProduct={handleUpdateProduct}
+            sponsorRailsEnabled={sponsorRailsEnabled}
+            onToggleSponsorRails={handleToggleSponsorRails}
+            featuredPosition={featuredPosition}
+            onSetFeaturedPosition={handleSetFeaturedPosition}
+            featuredPositions={featuredPositions}
+            onSetProductFeaturedPosition={handleSetProductFeaturedPosition}
+            onSignOutAdmin={() => {
+              clearAdminSession();
+              setAdminSessionUnlocked(false);
+            }}
+          />
+        </React.Suspense>
 
         <SignInModal
           isOpen={isSignInModalOpen}
@@ -3088,16 +3156,18 @@ export default function App() {
     return (
       <>
         {globalHeader}
-        <LegalPage
-          initialDoc={currentRoute === '/terms' ? 'terms' : 'privacy'}
-          onBack={handleBackToLeaderboard}
-          onOpenSubmit={handleOpenSubmit}
-          totalProducts={directoryProducts.length}
-          soundEnabled={soundEnabled}
-          onSelectCategory={setSelectedCategory}
-          onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
-          onOpenPricing={handleOpenPricing}
-        />
+        <React.Suspense fallback={<div className="mx-auto w-full max-w-4xl px-4 py-8"><SkeletonRows count={3} /></div>}>
+          <LegalPage
+            initialDoc={currentRoute === '/terms' ? 'terms' : 'privacy'}
+            onBack={handleBackToLeaderboard}
+            onOpenSubmit={handleOpenSubmit}
+            totalProducts={directoryProducts.length}
+            soundEnabled={soundEnabled}
+            onSelectCategory={setSelectedCategory}
+            onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
+            onOpenPricing={handleOpenPricing}
+          />
+        </React.Suspense>
         {globalModals}
       </>
     );
@@ -3107,7 +3177,9 @@ export default function App() {
   const routeChrome = (page: React.ReactNode) => (
     <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between selection:bg-mint-500/20 selection:text-neutral-900 font-sans pb-16 lg:pb-0">
       {globalHeader}
-      {page}
+      <React.Suspense fallback={<div className="mx-auto w-full max-w-7xl px-4 py-8"><SkeletonRows count={5} /></div>}>
+        {page}
+      </React.Suspense>
       <RichFooter
         totalProducts={directoryProducts.length}
         soundEnabled={soundEnabled}
@@ -3166,27 +3238,29 @@ export default function App() {
       <main className="mx-auto w-full max-w-7xl px-3.5 sm:px-6 space-y-4 sm:space-y-5 flex-1 pb-16 pt-4 sm:pt-6">
 
         {activeTab === 'saas-ideas' ? (
-          <SaaSIdeas
-            soundEnabled={soundEnabled}
-            topProducts={topThreeProducts}
-            productsLoaded={productsLoaded}
-            featuredProductId={featuredProductId}
-            featuredProduct={explicitFeaturedProduct}
-            commentCounts={commentCounts}
-            onOpenFeaturedSpotModal={() => {
-              if (!user) {
-                setIsSignInModalOpen(true);
-              } else {
-                setIsFeaturedSpotModalOpen(true);
-              }
-            }}
-            onShareProduct={(p) => setShareProduct(p)}
-            onTrackClick={handleTrackClick}
-            onUpvote={handleUpvote}
-            onOpenDetail={handleOpenProduct}
-            onOpenRepo={handleOpenRepo}
-            upvotedIds={userUpvotes}
-          />
+          <React.Suspense fallback={<SkeletonRows count={6} />}>
+            <SaaSIdeas
+              soundEnabled={soundEnabled}
+              topProducts={topThreeProducts}
+              productsLoaded={productsLoaded}
+              featuredProductId={featuredProductId}
+              featuredProduct={explicitFeaturedProduct}
+              commentCounts={commentCounts}
+              onOpenFeaturedSpotModal={() => {
+                if (!user) {
+                  setIsSignInModalOpen(true);
+                } else {
+                  setIsFeaturedSpotModalOpen(true);
+                }
+              }}
+              onShareProduct={(p) => setShareProduct(p)}
+              onTrackClick={handleTrackClick}
+              onUpvote={handleUpvote}
+              onOpenDetail={handleOpenProduct}
+              onOpenRepo={handleOpenRepo}
+              upvotedIds={userUpvotes}
+            />
+          </React.Suspense>
         ) : (
           <>
             {/* ── Hero: brand statement + search ── */}
@@ -3194,6 +3268,7 @@ export default function App() {
               enabled={sponsorRailsEnabled}
               sponsors={activeRailSponsors}
               soundEnabled={soundEnabled}
+              isLoading={!productsLoaded}
               onTrackClick={handleTrackClick}
               onOpenProduct={handleOpenProduct}
               onOpenFeaturedSpotModal={() => {
@@ -3335,7 +3410,22 @@ export default function App() {
                   </div>
 
                   {/* Leaderboard Rendering */}
-                  {filteredProducts.length === 0 ? (
+                  {!productsLoaded ? (
+                    <div className="space-y-3">
+                      {/* Top featured spot placeholder shimmer */}
+                      <div className="h-[84px] sm:h-[88px] w-full rounded-2xl border border-neutral-200/80 bg-white p-3.5 sm:p-4 flex items-center justify-between animate-pulse">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-neutral-200 shrink-0" />
+                          <div className="space-y-2">
+                            <div className="h-3.5 sm:h-4 w-32 sm:w-44 rounded bg-neutral-200" />
+                            <div className="h-2.5 sm:h-3 w-48 sm:w-72 rounded bg-neutral-200" />
+                          </div>
+                        </div>
+                        <div className="h-8 sm:h-9 w-20 sm:w-24 rounded-xl bg-neutral-200 shrink-0" />
+                      </div>
+                      <SkeletonRows count={8} />
+                    </div>
+                  ) : filteredProducts.length === 0 ? (
                     <div className="space-y-3">
                       {/* Active, not expired featured products OR default open spot keep showing even when there are no other products */}
                       {currentPage === 1 && !isEmptyFeatured && (
@@ -3654,6 +3744,7 @@ export default function App() {
                   }
                   soundEnabled={soundEnabled}
                   commentCounts={commentCounts}
+                  isLoading={!productsLoaded}
                   onOpenProduct={handleOpenProduct}
                   onUpvote={handleUpvote}
                   isUpvoted={(productId) => isProductUpvoted(productId, userUpvotes)}
@@ -3667,6 +3758,7 @@ export default function App() {
                   emptyMessage="No launches were ranked last month."
                   soundEnabled={soundEnabled}
                   commentCounts={commentCounts}
+                  isLoading={!productsLoaded}
                   onOpenProduct={handleOpenProduct}
                   onUpvote={handleUpvote}
                   isUpvoted={(productId) => isProductUpvoted(productId, userUpvotes)}

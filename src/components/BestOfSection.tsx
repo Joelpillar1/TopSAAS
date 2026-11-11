@@ -1,6 +1,7 @@
 import React from 'react';
 import { Product } from '../types';
 import { ProductRow } from './ProductRow';
+import { SkeletonRows } from './SkeletonCard';
 
 interface BestOfSectionProps {
   id: string;
@@ -10,6 +11,7 @@ interface BestOfSectionProps {
   emptyMessage: string;
   soundEnabled: boolean;
   commentCounts: Record<string, number>;
+  isLoading?: boolean;
   onOpenProduct: (product: Product) => void;
   onUpvote: (product: Product) => void;
   isUpvoted: (productId: string) => boolean;
@@ -27,6 +29,7 @@ export const BestOfSection: React.FC<BestOfSectionProps> = ({
   emptyMessage,
   soundEnabled,
   commentCounts,
+  isLoading = false,
   onOpenProduct,
   onUpvote,
   isUpvoted,
@@ -43,7 +46,9 @@ export const BestOfSection: React.FC<BestOfSectionProps> = ({
         <p className="text-[11px] font-medium text-neutral-500">{subtitle}</p>
       </div>
 
-      {products.length === 0 ? (
+      {isLoading ? (
+        <SkeletonRows count={3} />
+      ) : products.length === 0 ? (
         <div className="rounded-xl border border-dashed border-neutral-200 bg-white px-4 py-6 text-center">
           <p className="text-xs font-semibold text-neutral-500">{emptyMessage}</p>
         </div>

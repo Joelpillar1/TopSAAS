@@ -13,6 +13,7 @@ import { LaunchWeekSelector } from './LaunchWeekSelector';
 import { autofillWithOpenAI, formatAutofillErrorMessage } from '../utils/autofill';
 import { redirectToCheckout, WHOP_LINKS } from '../utils/whop';
 import { appendTrackkitParams } from '../utils/trackkit';
+import { getProductSlug } from '../utils/slug';
 import { VerifiedBadge } from './VerifiedBadge';
 import { applyPageSeo } from '../utils/pageSeo';
 import {
@@ -839,7 +840,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
     'type2-light': 'https://topsaas.space/Share%20Badge/TopSAAS%20Type%202%20-%20light.png',
   };
   const badgeImgSrc = BADGE_IMG_SRCS[badgeVariant];
-  const productListingUrl = `https://topsaas.space/product/${encodeURIComponent(previewProduct.id)}?ref=badge`;
+  const slug = getProductSlug(previewProduct);
+  const productListingUrl = `https://topsaas.space/products/${encodeURIComponent(slug)}?ref=badge`;
   const badgeAltText = 'Featured on TopSAAS';
   const badgeEmbedSnippet = badgeFormat === 'markdown'
     ? `[![${badgeAltText}](${badgeImgSrc})](${productListingUrl})`

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Check, Copy, Code2, ExternalLink } from 'lucide-react';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
+import { getProductSlug } from '../utils/slug';
 
 interface EmbedBadgeModalProps {
   isOpen: boolean;
@@ -73,7 +74,8 @@ export const EmbedBadgeModal: React.FC<EmbedBadgeModalProps> = ({
   if (!isOpen) return null;
 
   const selectedBadge = BADGE_OPTIONS.find((b) => b.id === selectedVariant) || BADGE_OPTIONS[0];
-  const productListingUrl = `https://topsaas.space/product/${encodeURIComponent(product.id)}?ref=badge`;
+  const slug = getProductSlug(product);
+  const productListingUrl = `https://topsaas.space/products/${encodeURIComponent(slug)}?ref=badge`;
   const badgeAltText = `Featured on TopSAAS`;
 
   const snippet = (() => {

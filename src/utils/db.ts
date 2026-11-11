@@ -3,8 +3,9 @@ import { Product, Category, Comment, WebsiteSubmission, Sponsor, SponsorDraft } 
 import { getMonthKey, getWeekNumber } from './weeks';
 import { getCached, setCached, invalidateCache, CACHE_TTL } from './cache';
 import { richTextToPlain } from './richText';
+import { slugify, getProductSlug, matchesProductIdentifier } from './slug';
 
-export { invalidateCache, CACHE_TTL };
+export { invalidateCache, CACHE_TTL, slugify, getProductSlug, matchesProductIdentifier };
 
 // ── Submissions ──
 
@@ -443,7 +444,7 @@ export async function loadProducts(forceFresh = false): Promise<Product[] | null
 
   const { data, error } = await supabase
     .from('products')
-    .select('*')
+    .select(PRODUCT_DIRECTORY_COLUMNS)
     .order('rank', { ascending: true });
   if (error || !data) {
     return getCached<Product[]>('products_list', Infinity) || null;
@@ -464,15 +465,52 @@ export async function loadProductById(id: string, forceFresh = false): Promise<P
   try {
     const bare = id.startsWith('prod-') ? id.replace(/^prod-/, '') : id;
     const canonical = id.startsWith('prod-') ? id : `prod-${id}`;
-    const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .or(`id.eq.${id},id.eq.${canonical},id.eq.${bare}`)
-      .limit(1)
-      .maybeSingle();
-    if (error || !data) {
+
+    let data: Record<string, unknown> | null = null;
+    try {
+      const { data: idMatch } = await supabase
+        .from('products')
+        .select('*')
+        .or(`id.eq.${id},id.eq.${canonical},id.eq.${bare}`)
+        .limit(1)
+        .maybeSingle();
+      if (idMatch) data = idMatch as Record<string, unknown>;
+    } catch { }
+
+    // If not found by direct ID, find by name or slug across ALL products
+    if (!data) {
+      try {
+        const cleanTerm = id.replace(/-/g, ' ').trim();
+        const { data: nameCandidates } = await supabase
+          .from('products')
+          .select('*')
+          .or(`name.ilike.${id},name.ilike.${cleanTerm},name.ilike.%${cleanTerm}%`)
+          .limit(15);
+
+        if (nameCandidates && nameCandidates.length > 0) {
+          data = (nameCandidates.find((row) => matchesProductIdentifier({ id: row.id as string, name: row.name as string }, id)) || nameCandidates[0]) as Record<string, unknown>;
+        }
+      } catch { }
+    }
+
+    if (!data) {
       // Fallback: Check submissions table if not found in products
-      const sub = await loadSubmissionById(bare, forceFresh) || (bare !== id ? await loadSubmissionById(id, forceFresh) : null);
+      let sub = await loadSubmissionById(bare, forceFresh) || (bare !== id ? await loadSubmissionById(id, forceFresh) : null);
+      if (!sub) {
+        try {
+          const cleanTerm = id.replace(/-/g, ' ').trim();
+          const { data: subCandidates } = await supabase
+            .from('submissions')
+            .select('*')
+            .or(`name.ilike.${id},name.ilike.${cleanTerm}`)
+            .limit(10);
+          if (subCandidates && subCandidates.length > 0) {
+            const bestSub = subCandidates.find((s) => matchesProductIdentifier({ id: s.id as string, name: s.name as string }, id)) || subCandidates[0];
+            sub = mapDbSubmission(bestSub as unknown as Record<string, unknown>);
+          }
+        } catch { }
+      }
+
       if (sub) {
         const prodFromSub = submissionToProduct(sub);
         setCached(cacheKey, prodFromSub);
@@ -481,6 +519,18 @@ export async function loadProductById(id: string, forceFresh = false): Promise<P
       return getCached<Product>(cacheKey, Infinity);
     }
     const mapped = mapDbProduct(data);
+
+    // Fetch authoritative upvote count directly from upvotes table so details page always matches directory cards
+    try {
+      const { count: realCount, error: countErr } = await supabase
+        .from('upvotes')
+        .select('*', { count: 'exact', head: true })
+        .or(`product_id.eq.${mapped.id},product_id.eq.${bare},product_id.eq.${canonical}`);
+      if (!countErr && typeof realCount === 'number') {
+        mapped.upvotes = realCount;
+      }
+    } catch { }
+
     const isBoilerplate = (d?: string | null) => !d || /is a high-quality product in the/i.test(d);
     // If rich fields or screenshots were missing from products table row, try to hydrate from submissions
     if (!mapped.problemItSolves || !mapped.solution || !mapped.uniqueSellingPoint || isBoilerplate(mapped.description) || !mapped.screenshots || mapped.screenshots.length === 0) {
@@ -502,6 +552,10 @@ export async function loadProductById(id: string, forceFresh = false): Promise<P
       } catch { }
     }
     setCached(cacheKey, mapped);
+    if (canonical !== id) setCached(`product_${canonical}`, mapped);
+    if (bare !== id) setCached(`product_${bare}`, mapped);
+    const slug = slugify(mapped.name);
+    if (slug && slug !== id) setCached(`product_${slug}`, mapped);
     return mapped;
   } catch {
     return getCached<Product>(cacheKey, Infinity);
@@ -677,18 +731,84 @@ export async function submitVerifiedGameScore(
 
 // ── Upvotes ──
 
-/** Toggle upvote via Supabase RPC (returns true if upvoted, false if un-upvoted) */
+/** Toggle upvote via Supabase RPC with direct DB fallback (returns true if upvoted, false if un-upvoted) */
 export async function toggleUpvote(productId: string): Promise<boolean | null> {
+  const canonicalId = productId.startsWith('prod-') ? productId : `prod-${productId}`;
+  const bareId = productId.startsWith('prod-') ? productId.replace(/^prod-/, '') : productId;
+
   invalidateCache('upvote_');
   invalidateCache('products_list');
-  const { data, error } = await supabase.rpc('toggle_upvote', { p_product_id: productId });
-  if (error) {
-    const altId = productId.startsWith('prod-') ? productId.replace(/^prod-/, '') : `prod-${productId}`;
-    const retry = await supabase.rpc('toggle_upvote', { p_product_id: altId });
-    if (!retry.error) return retry.data as boolean;
+  invalidateUpvoteStatsCache();
+  invalidateCache(`product_${productId}`);
+  invalidateCache(`product_${canonicalId}`);
+  invalidateCache(`product_${bareId}`);
+
+  // 1. Ensure user has a valid authenticated session before proceeding
+  let userId: string | undefined;
+  try {
+    const { data: sessionData } = await supabase.auth.getSession();
+    userId = sessionData?.session?.user?.id;
+  } catch { }
+
+  if (!userId) {
     return null;
   }
-  return data as boolean;
+
+  // 2. Try Supabase RPC first with canonical ID, then bare ID
+  try {
+    const { data, error } = await supabase.rpc('toggle_upvote', { p_product_id: canonicalId });
+    if (!error && typeof data === 'boolean') {
+      return data;
+    }
+    if (error) {
+      const retry = await supabase.rpc('toggle_upvote', { p_product_id: bareId });
+      if (!retry.error && typeof retry.data === 'boolean') {
+        return retry.data;
+      }
+    }
+  } catch { }
+
+  // 3. Fallback: Direct table operations with RLS
+  try {
+    const { data: existing, error: selErr } = await supabase
+      .from('upvotes')
+      .select('id, product_id')
+      .eq('user_id', userId)
+      .or(`product_id.eq.${canonicalId},product_id.eq.${bareId}`)
+      .limit(1)
+      .maybeSingle();
+
+    if (!selErr && existing) {
+      // Remove existing upvote
+      const { error: delErr } = await supabase
+        .from('upvotes')
+        .delete()
+        .eq('id', existing.id);
+      if (!delErr) {
+        await incrementProductUpvotesDirect(canonicalId, -1);
+        return false;
+      }
+    } else if (!selErr && !existing) {
+      // Insert new upvote (try canonical ID first)
+      const { error: insErr } = await supabase
+        .from('upvotes')
+        .insert({ user_id: userId, product_id: canonicalId });
+      if (!insErr) {
+        await incrementProductUpvotesDirect(canonicalId, 1);
+        return true;
+      }
+      // If foreign key failed, retry with bare ID
+      const { error: insBareErr } = await supabase
+        .from('upvotes')
+        .insert({ user_id: userId, product_id: bareId });
+      if (!insBareErr) {
+        await incrementProductUpvotesDirect(bareId, 1);
+        return true;
+      }
+    }
+  } catch { }
+
+  return null;
 }
 
 /** Get current user's upvoted product IDs */
@@ -782,12 +902,21 @@ export interface ProductUpvoteStats {
   byMonth: Record<string, Record<string, number>>;
 }
 
+let cachedUpvoteStats: { data: ProductUpvoteStats; expiresAt: number } | null = null;
+
+export function invalidateUpvoteStatsCache() {
+  cachedUpvoteStats = null;
+}
+
 /**
  * Cumulative and per-week upvote stats derived from the `upvotes` table.
  * Weekly counts use the upvote's own `created_at`, so a product's weekly
  * ranking reflects only the votes it earned during that launch week.
  */
-export async function getUpvoteStats(): Promise<ProductUpvoteStats> {
+export async function getUpvoteStats(forceFresh = false): Promise<ProductUpvoteStats> {
+  if (!forceFresh && cachedUpvoteStats && Date.now() < cachedUpvoteStats.expiresAt) {
+    return cachedUpvoteStats.data;
+  }
   const total = new Map<string, number>();
   const byWeek: Record<number, Record<string, number>> = {};
   const byMonth: Record<string, Record<string, number>> = {};
@@ -831,7 +960,9 @@ export async function getUpvoteStats(): Promise<ProductUpvoteStats> {
       if (data.length < PAGE_SIZE) break;
     }
   } catch { }
-  return { total, byWeek, byMonth };
+  const result = { total, byWeek, byMonth };
+  cachedUpvoteStats = { data: result, expiresAt: Date.now() + 45_000 };
+  return result;
 }
 
 /**

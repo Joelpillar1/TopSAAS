@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Product } from '../types';
 import { BadgeStyle, BadgeTheme, generateBadgeSvg } from '../utils/badgeSvg';
+import { matchesProductIdentifier } from '../utils/slug';
 
 interface BadgeRouteProps {
   productId: string;
@@ -14,11 +15,10 @@ export const BadgeRoute: React.FC<BadgeRouteProps> = ({ productId, products, sub
   const style = (params.get('style') as BadgeStyle) || 'featured';
   const theme = (params.get('theme') as BadgeTheme) || 'light';
 
-  // Find product by id or alt id
-  const altId = productId.startsWith('prod-') ? productId.replace(/^prod-/, '') : `prod-${productId}`;
+  // Find product by id, canonical id, bare id, or slug/name
   const product =
-    products.find((p) => p.id === productId || p.id === altId) ||
-    submissions.find((s) => s.id === productId || s.id === altId);
+    products.find((p) => matchesProductIdentifier(p, productId)) ||
+    submissions.find((s) => matchesProductIdentifier({ id: s.id, name: s.name }, productId));
 
   const targetProduct: Product = (product as Product) || {
     id: productId,

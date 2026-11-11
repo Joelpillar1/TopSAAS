@@ -3,6 +3,7 @@ import { X, Copy, Check, Share2, ExternalLink } from 'lucide-react';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
+import { getProductSlug } from '../utils/slug';
 
 interface ShareModalProps {
   product: Product | null;
@@ -21,10 +22,12 @@ export const ShareModal: React.FC<ShareModalProps> = ({
 
   if (!isOpen || !product) return null;
 
-  const currentUrl = typeof window !== 'undefined' ? window.location.origin : 'https://topsaas.top';
+  const slug = getProductSlug(product);
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://www.topsaas.space';
+  const productShareUrl = `${origin}/products/${encodeURIComponent(slug)}`;
   const tweetText = `Check out ${product.name} on TopSAAS, the curated SaaS directory!\n\nDiscover it here:\n`;
-  const shareText = `${tweetText}${currentUrl}`;
-  const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(currentUrl)}`;
+  const shareText = `${tweetText}${productShareUrl}`;
+  const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(productShareUrl)}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(shareText);

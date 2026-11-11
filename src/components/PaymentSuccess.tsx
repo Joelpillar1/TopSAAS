@@ -95,6 +95,20 @@ export const PaymentSuccess: React.FC<PaymentSuccessProps> = ({
       localStorage.removeItem('topsaas_featured_pending_new_product_days');
     }
 
+    // Immediate local activation for weekly relaunch
+    if (planParam === 'weekly_relaunch' && targetProductId) {
+      const nowMs = Date.now();
+      const relaunchPayload = {
+        auto_relaunch: true,
+        auto_relaunch_paid: true,
+        auto_relaunch_paid_at: nowMs,
+        is_relaunched: true,
+        last_relaunched_at: nowMs,
+      };
+      supabase.from('products').update(relaunchPayload).eq('id', targetProductId).then(() => {});
+      supabase.from('submissions').update(relaunchPayload).eq('id', targetProductId).then(() => {});
+    }
+
     // After successful payment, activate a pending featured product globally.
     const pendingProductId = targetProductId || localStorage.getItem('topsaas_featured_pending');
     const pendingPlan = planParam || localStorage.getItem('topsaas_featured_pending_plan');
