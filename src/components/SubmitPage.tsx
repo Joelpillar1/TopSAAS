@@ -17,7 +17,7 @@ import { getProductSlug } from '../utils/slug';
 import { VerifiedBadge } from './VerifiedBadge';
 import { applyPageSeo } from '../utils/pageSeo';
 import { FreeSubmitUpvoteModal } from './FreeSubmitUpvoteModal';
-import { loadProducts, isProductUpvoted } from '../utils/db';
+import { loadProducts, isProductUpvoted, isSponsorOnlyProduct } from '../utils/db';
 import {
   DRAFT_KEY,
   STEP_KEY,
@@ -447,20 +447,21 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
 
   const [launched, setLaunched] = useState<{ id: string; name: string } | null>(null);
   const [isFreeUpvoteModalOpen, setIsFreeUpvoteModalOpen] = useState(false);
+  const [freeUpvoteCandidateIds, setFreeUpvoteCandidateIds] = useState<string[]>([]);
+  const [freeUpvoteGateSatisfied, setFreeUpvoteGateSatisfied] = useState(false);
   const [fallbackProducts, setFallbackProducts] = useState<Product[]>([]);
 
   useEffect(() => {
-    if (!products || products.length < 10) {
+    if (!products || products.length === 0) {
       loadProducts().then((res) => {
         if (res && res.length > 0) setFallbackProducts(res);
-      }).catch(() => {});
+      }).catch(() => { });
     }
   }, [products]);
 
   const allAvailableProducts = useMemo(() => {
-    if (products && products.length >= 10) return products;
-    if (fallbackProducts.length > 0) return fallbackProducts;
-    return products || [];
+    if (products && products.length > 0) return products;
+    return fallbackProducts;
   }, [products, fallbackProducts]);
 
   // ── Launch Tier & Verification States ──
@@ -1032,22 +1033,32 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
       return;
     }
 
-    // For free submissions: verify 5 upvotes across top 10 directory apps first
-    if (submissionPlan === 'free') {
-      const top10 = [...allAvailableProducts]
-        .sort((a, b) => {
-          const rankA = a.rank ?? 9999;
-          const rankB = b.rank ?? 9999;
-          if (rankA !== rankB) return rankA - rankB;
-          return (b.upvotes ?? 0) - (a.upvotes ?? 0);
-        })
-        .slice(0, 10);
-
-      const upvotedCount = top10.filter((p) => isProductUpvoted(p.id, userUpvotes)).length;
-      if (upvotedCount < 5) {
-        setIsFreeUpvoteModalOpen(true);
-        return;
+    // For free submissions: require upvoting 5 directory apps that user hasn't upvoted yet
+    if (submissionPlan === 'free' && !freeUpvoteGateSatisfied) {
+      let candidateIds = freeUpvoteCandidateIds;
+      if (candidateIds.length === 0) {
+        candidateIds = [...allAvailableProducts]
+          .filter((p) => !isSponsorOnlyProduct(p) && !isProductUpvoted(p.id, userUpvotes))
+          .sort((a, b) => {
+            const rankA = a.rank ?? 9999;
+            const rankB = b.rank ?? 9999;
+            if (rankA !== rankB) return rankA - rankB;
+            return (b.upvotes ?? 0) - (a.upvotes ?? 0);
+          })
+          .slice(0, 10)
+          .map((p) => p.id);
+        setFreeUpvoteCandidateIds(candidateIds);
       }
+
+      if (candidateIds.length > 0) {
+        const required = Math.min(5, candidateIds.length);
+        const upvotedCount = candidateIds.filter((id) => isProductUpvoted(id, userUpvotes)).length;
+        if (upvotedCount < required) {
+          setIsFreeUpvoteModalOpen(true);
+          return;
+        }
+      }
+      setFreeUpvoteGateSatisfied(true);
     }
 
     // When users toggle the $5, it does nothing till they click submit
@@ -1061,6 +1072,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
   };
 
   const handleCompleteFreeSubmit = async () => {
+    setFreeUpvoteGateSatisfied(true);
     setIsFreeUpvoteModalOpen(false);
     if (autoRelaunch && !autoRelaunchPaid) {
       setIsAutoRelaunchModalOpen(true);
@@ -3061,7 +3073,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                   ) : (
                     <span className="inline-flex items-center gap-1.5">
                       <CheckCircle2 className="h-3.5 w-3.5 text-white/90" />
-                      <span>Submit website free</span>
+                      <span>Submit</span>
                     </span>
                   )}
                 </button>
@@ -3243,6 +3255,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
           onClose={() => setIsFreeUpvoteModalOpen(false)}
           onComplete={handleCompleteFreeSubmit}
           products={allAvailableProducts}
+          candidateIds={freeUpvoteCandidateIds}
           userUpvotes={userUpvotes}
           onUpvote={onUpvote}
           soundEnabled={soundEnabled}

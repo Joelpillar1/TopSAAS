@@ -1,5 +1,5 @@
-import React, { useMemo, useState, useEffect } from 'react';
-import { X, ChevronUp, Check, ExternalLink, Sparkles, AlertCircle, Loader2 } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { X, ChevronUp, Check, ExternalLink, Sparkles, Loader2 } from 'lucide-react';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
 import { getWebsiteFavicon } from '../utils/logo';
@@ -10,7 +10,10 @@ interface FreeSubmitUpvoteModalProps {
   isOpen: boolean;
   onClose: () => void;
   onComplete: () => void;
+  /** Live directory products list (updated by App.tsx onUpvote) */
   products: Product[];
+  /** Snapshot IDs of up to 10 un-upvoted directory apps chosen when the modal opened */
+  candidateIds: string[];
   userUpvotes?: Set<string>;
   onUpvote?: (product: Product) => void;
   soundEnabled: boolean;
@@ -22,68 +25,37 @@ export const FreeSubmitUpvoteModal: React.FC<FreeSubmitUpvoteModalProps> = ({
   onClose,
   onComplete,
   products = [],
+  candidateIds = [],
   userUpvotes = new Set<string>(),
   onUpvote,
   soundEnabled,
   isSubmitting = false,
 }) => {
-  // Take top 10 products ranked in directory
-  const top10 = useMemo(() => {
-    return [...products]
-      .sort((a, b) => {
-        const rankA = a.rank ?? 9999;
-        const rankB = b.rank ?? 9999;
-        if (rankA !== rankB) return rankA - rankB;
-        return (b.upvotes ?? 0) - (a.upvotes ?? 0);
-      })
-      .slice(0, 10);
-  }, [products]);
-
-  // Track local upvotes state for instant responsive UI feedback
-  const [localUpvotes, setLocalUpvotes] = useState<Set<string>>(() => new Set(userUpvotes));
-  const [upvoteDeltas, setUpvoteDeltas] = useState<Record<string, number>>({});
-
-  // Sync with incoming userUpvotes
-  useEffect(() => {
-    if (userUpvotes && userUpvotes.size > 0) {
-      setLocalUpvotes((prev) => {
-        const merged = new Set(prev);
-        userUpvotes.forEach((id) => merged.add(id));
-        return merged;
-      });
-    }
-  }, [userUpvotes]);
+  // Resolve live Product objects for the snapshotted candidate IDs so upvote counts
+  // and upvoted state come directly from App.tsx without duplication or list jumping.
+  const modalProducts = useMemo(() => {
+    const byId = new Map(products.map((p) => [p.id, p]));
+    return candidateIds
+      .map((id) => byId.get(id))
+      .filter((p): p is Product => Boolean(p));
+  }, [products, candidateIds]);
 
   if (!isOpen) return null;
 
-  const handleToggleUpvote = (prod: Product, e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    playSound('upvote', soundEnabled);
+  const requiredCount = Math.min(5, modalProducts.length);
+  const upvotedCount = modalProducts.filter((p) => isProductUpvoted(p.id, userUpvotes)).length;
+  const isRequirementMet = modalProducts.length === 0 || upvotedCount >= requiredCount;
+  const remaining = Math.max(0, requiredCount - upvotedCount);
+  const progressPercent = requiredCount > 0
+    ? Math.min(100, Math.round((upvotedCount / requiredCount) * 100))
+    : 100;
 
-    const currentlyUpvoted = isProductUpvoted(prod.id, localUpvotes);
-    const next = new Set(localUpvotes);
-
-    if (currentlyUpvoted) {
-      next.delete(prod.id);
-      next.delete(prod.id.replace(/^prod-/, ''));
-      next.delete(`prod-${prod.id}`);
-      setUpvoteDeltas((prev) => ({ ...prev, [prod.id]: (prev[prod.id] ?? 0) - 1 }));
-    } else {
-      next.add(prod.id);
-      setUpvoteDeltas((prev) => ({ ...prev, [prod.id]: (prev[prod.id] ?? 0) + 1 }));
-    }
-
-    setLocalUpvotes(next);
-
-    if (onUpvote) {
-      onUpvote(prod);
-    }
+  const handleToggleUpvote = (prod: Product, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Delegate directly to App.tsx's handleUpvote (handles sound, optimistic +1/-1, userUpvotes & DB sync)
+    onUpvote?.(prod);
   };
-
-  const upvotedCount = top10.filter((p) => isProductUpvoted(p.id, localUpvotes)).length;
-  const isRequirementMet = upvotedCount >= 5;
-  const remaining = Math.max(0, 5 - upvotedCount);
-  const progressPercent = Math.min(100, Math.round((upvotedCount / 5) * 100));
 
   return (
     <div
@@ -121,7 +93,11 @@ export const FreeSubmitUpvoteModal: React.FC<FreeSubmitUpvoteModalProps> = ({
               </span>
             </div>
             <p className="text-xs text-neutral-500 mt-1 leading-relaxed">
-              TopSAAS is community-powered! Upvote at least <strong className="text-neutral-900 font-bold">5 of the top 10</strong> launches below to unlock your free directory submission.
+              TopSAAS is community-powered! Upvote at least{' '}
+              <strong className="text-neutral-900 font-bold">
+                {requiredCount} of the {modalProducts.length} apps
+              </strong>{' '}
+              below that you haven&apos;t upvoted yet to unlock your submission.
             </p>
           </div>
         </div>
@@ -135,11 +111,12 @@ export const FreeSubmitUpvoteModal: React.FC<FreeSubmitUpvoteModalProps> = ({
             {isRequirementMet ? (
               <span className="inline-flex items-center gap-1 font-bold text-mint-700 bg-mint-50 border border-mint-200 px-2.5 py-0.5 rounded-full text-[11px]">
                 <Check className="h-3 w-3 stroke-[3]" />
-                {upvotedCount} of 5 upvoted — Ready to submit!
+                {upvotedCount} of {requiredCount} upvoted — Ready to submit!
               </span>
             ) : (
               <span className="font-bold text-neutral-700 text-[11px] bg-white border border-neutral-200 px-2.5 py-0.5 rounded-full shadow-2xs">
-                {upvotedCount} of 5 upvoted · <span className="text-blue-600 font-extrabold">{remaining} more required</span>
+                {upvotedCount} of {requiredCount} upvoted ·{' '}
+                <span className="text-blue-600 font-extrabold">{remaining} more required</span>
               </span>
             )}
           </div>
@@ -154,34 +131,33 @@ export const FreeSubmitUpvoteModal: React.FC<FreeSubmitUpvoteModalProps> = ({
           </div>
         </div>
 
-        {/* Scrollable Top 10 Apps List */}
+        {/* Scrollable Apps List */}
         <div className="border border-neutral-200 rounded-2xl overflow-hidden mb-5">
           <div className="bg-neutral-100/70 border-b border-neutral-200 px-3.5 py-2 text-[11px] font-bold text-neutral-500 flex items-center justify-between">
-            <span>Top 10 Launches on TopSAAS</span>
+            <span>Apps you haven&apos;t upvoted yet</span>
             <span>Click ▲ to upvote</span>
           </div>
 
           <div className="max-h-[320px] sm:max-h-[360px] overflow-y-auto divide-y divide-neutral-100 bg-white">
-            {top10.length === 0 ? (
+            {modalProducts.length === 0 ? (
               <div className="p-8 text-center text-xs text-neutral-400">
-                Loading directory products...
+                No un-upvoted directory apps available.
               </div>
             ) : (
-              top10.map((prod, index) => {
-                const isUpvoted = isProductUpvoted(prod.id, localUpvotes);
+              modalProducts.map((prod, index) => {
+                const upvoted = isProductUpvoted(prod.id, userUpvotes);
                 const logoSrc = prod.logoUrl || getWebsiteFavicon(prod.url);
-                const currentVotes = (prod.upvotes ?? 0) + (upvoteDeltas[prod.id] ?? 0);
 
                 return (
                   <div
                     key={prod.id}
                     className={`flex items-center gap-3 p-3 transition-colors ${
-                      isUpvoted ? 'bg-mint-50/20' : 'hover:bg-neutral-50/70'
+                      upvoted ? 'bg-mint-50/25' : 'hover:bg-neutral-50/70'
                     }`}
                   >
-                    {/* Rank Number */}
+                    {/* Directory Rank */}
                     <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-neutral-100 text-[11px] font-black text-neutral-600 font-mono-num">
-                      #{index + 1}
+                      #{prod.rank ?? index + 1}
                     </div>
 
                     {/* Product Logo */}
@@ -214,7 +190,7 @@ export const FreeSubmitUpvoteModal: React.FC<FreeSubmitUpvoteModalProps> = ({
                         )}
                         {prod.category && (
                           <span className="hidden sm:inline-flex text-[9px] font-semibold px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-600 border border-neutral-200/60 truncate max-w-[100px]">
-                            {prod.category}
+                            {prod.category.split(',')[0].trim()}
                           </span>
                         )}
                       </div>
@@ -223,24 +199,24 @@ export const FreeSubmitUpvoteModal: React.FC<FreeSubmitUpvoteModalProps> = ({
                       </p>
                     </div>
 
-                    {/* Upvote Button */}
+                    {/* Upvote Button (identical to ProductRow) */}
                     <button
                       type="button"
                       onClick={(e) => handleToggleUpvote(prod, e)}
-                      title={isUpvoted ? 'Upvoted (click to undo)' : 'Click to upvote'}
+                      title={upvoted ? 'Remove your upvote' : 'Upvote this product'}
                       className={`flex flex-col items-center justify-center rounded-xl border py-1 w-11 transition-all cursor-pointer active:scale-95 shrink-0 ${
-                        isUpvoted
-                          ? 'border-mint-500 bg-mint-500 text-white shadow-2xs ring-2 ring-mint-500/20'
+                        upvoted
+                          ? 'border-mint-500 bg-mint-500 text-white shadow-2xs'
                           : 'border-neutral-200 bg-white text-neutral-800 hover:border-neutral-400 hover:bg-neutral-50 shadow-2xs'
                       }`}
                     >
                       <ChevronUp
-                        className={`h-3.5 w-3.5 ${
-                          isUpvoted ? 'text-white' : 'text-neutral-900 fill-neutral-900'
+                        className={`h-4 w-4 ${
+                          upvoted ? 'text-white' : 'text-neutral-900 fill-neutral-900'
                         }`}
                       />
-                      <span className="text-[11px] font-black font-mono-num leading-tight">
-                        {currentVotes}
+                      <span className="text-xs font-black font-mono-num leading-tight">
+                        {prod.upvotes ?? 0}
                       </span>
                     </button>
                   </div>
@@ -284,7 +260,7 @@ export const FreeSubmitUpvoteModal: React.FC<FreeSubmitUpvoteModalProps> = ({
                 <span>Submitting product...</span>
               </>
             ) : isRequirementMet ? (
-              <span>Submit Free Listing ({upvotedCount}/5 upvoted) →</span>
+              <span>Submit ({upvotedCount}/{requiredCount} upvoted) →</span>
             ) : (
               <span>Upvote {remaining} more app{remaining === 1 ? '' : 's'} to submit</span>
             )}
@@ -294,4 +270,3 @@ export const FreeSubmitUpvoteModal: React.FC<FreeSubmitUpvoteModalProps> = ({
     </div>
   );
 };
-
