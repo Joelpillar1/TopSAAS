@@ -259,12 +259,22 @@ export function saveLaunchDraft(
     localStorage.setItem(DRAFT_KEY, JSON.stringify(draft.data));
     localStorage.setItem(STEP_KEY, String(validStep));
   } catch {
-    // Quota fallback: omit large screenshots/logo data URLs
+    // Quota fallback: first omit heavy screenshots gallery, but preserve logo
     try {
-      const lightweight = { ...draft.data, screenshots: [], logoDataUrl: '' };
+      const lightweight = { ...draft.data, screenshots: [] };
       localStorage.setItem(DRAFT_KEY, JSON.stringify(lightweight));
     } catch {
-      /* ignore */
+      // Last resort: if still over quota, only strip logoDataUrl if it is a large base64 data: URL
+      try {
+        const minimal = {
+          ...draft.data,
+          screenshots: [],
+          logoDataUrl: draft.data.logoDataUrl?.startsWith('data:') ? '' : draft.data.logoDataUrl,
+        };
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(minimal));
+      } catch {
+        /* ignore */
+      }
     }
   }
 

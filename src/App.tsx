@@ -1668,7 +1668,7 @@ export default function App() {
         };
         if (payload.backer_email) minimal.backer_email = payload.backer_email;
         if (payload.submitted_by) minimal.submitted_by = payload.submitted_by;
-        if (payload.logo_url && !String(payload.logo_url).startsWith('data:image')) {
+        if (payload.logo_url) {
           minimal.logo_url = payload.logo_url;
         }
         if (payload.screenshots && Array.isArray(payload.screenshots) && payload.screenshots.length > 0) {
@@ -3031,6 +3031,8 @@ export default function App() {
             soundEnabled={soundEnabled}
             products={products}
             submissions={submissions}
+            onUpvote={handleUpvote}
+            userUpvotes={userUpvotes}
           />
         </React.Suspense>
         <RichFooter

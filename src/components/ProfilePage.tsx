@@ -864,6 +864,12 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
       const dataUrl = await processImageFile(file, { maxSide: 256, format: 'image/png' });
       setEditForm((prev) => ({ ...prev, logoUrl: dataUrl }));
       playSound('click', soundEnabled);
+
+      const cleanPrefix = (editForm.name || 'product').toLowerCase().replace(/[^a-z0-9_-]/g, '-').slice(0, 24) || 'product';
+      const cdnUrl = await uploadScreenshotToStorage(file, `${cleanPrefix}-logo`);
+      if (cdnUrl) {
+        setEditForm((prev) => ({ ...prev, logoUrl: cdnUrl }));
+      }
     } catch (err) {
       setEditError(err instanceof Error ? err.message : 'Could not process logo');
     }

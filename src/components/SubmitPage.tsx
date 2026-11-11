@@ -16,6 +16,8 @@ import { appendTrackkitParams } from '../utils/trackkit';
 import { getProductSlug } from '../utils/slug';
 import { VerifiedBadge } from './VerifiedBadge';
 import { applyPageSeo } from '../utils/pageSeo';
+import { FreeSubmitUpvoteModal } from './FreeSubmitUpvoteModal';
+import { loadProducts, isProductUpvoted } from '../utils/db';
 import {
   DRAFT_KEY,
   STEP_KEY,
@@ -262,6 +264,8 @@ interface SubmitPageProps {
   soundEnabled: boolean;
   products?: Product[];
   submissions?: WebsiteSubmission[];
+  onUpvote?: (product: Product) => void;
+  userUpvotes?: Set<string>;
 }
 
 const inputClass = (invalid: boolean) =>
@@ -294,6 +298,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
   soundEnabled,
   products = [],
   submissions = [],
+  onUpvote,
+  userUpvotes = new Set<string>(),
 }) => {
   useEffect(() => {
     return applyPageSeo({
@@ -399,9 +405,11 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
       if (draft) {
         setForm((prev) => ({
           ...prev,
-          creatorName: prev.creatorName || defaultCreatorName || '',
-          creatorAvatar: prev.creatorAvatar || defaultCreatorAvatar || '',
+          creatorName: prev.creatorName || draft.creatorName || defaultCreatorName || '',
+          creatorAvatar: prev.creatorAvatar || draft.creatorAvatar || defaultCreatorAvatar || '',
           ...draft,
+          logoDataUrl: prev.logoDataUrl || draft.logoDataUrl || '',
+          screenshots: prev.screenshots.length > 0 ? prev.screenshots : (draft.screenshots || []),
         }));
         setStep(loadSavedStep());
       } else if (defaultCreatorName || defaultCreatorAvatar) {
@@ -438,6 +446,22 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
   const [draftSaved, setDraftSaved] = useState(false);
 
   const [launched, setLaunched] = useState<{ id: string; name: string } | null>(null);
+  const [isFreeUpvoteModalOpen, setIsFreeUpvoteModalOpen] = useState(false);
+  const [fallbackProducts, setFallbackProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    if (!products || products.length < 10) {
+      loadProducts().then((res) => {
+        if (res && res.length > 0) setFallbackProducts(res);
+      }).catch(() => {});
+    }
+  }, [products]);
+
+  const allAvailableProducts = useMemo(() => {
+    if (products && products.length >= 10) return products;
+    if (fallbackProducts.length > 0) return fallbackProducts;
+    return products || [];
+  }, [products, fallbackProducts]);
 
   // ── Launch Tier & Verification States ──
   const [submissionPlan, setSubmissionPlan] = useState<'free' | 'paid_19'>(() => {
@@ -729,9 +753,17 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
   // ── Logo ──
   const applyLogoFile = async (file: File) => {
     try {
+      // 1. Instantly process and set base64 preview for instant UI feedback
       const dataUrl = await processImageFile(file, { maxSide: 256, format: 'image/png' });
       set('logoDataUrl', dataUrl);
       playSound('click', soundEnabled);
+
+      // 2. Upload to Supabase Storage CDN for permanent persistence and small payload
+      const cleanPrefix = (form.name || 'product').toLowerCase().replace(/[^a-z0-9_-]/g, '-').slice(0, 24) || 'product';
+      const cdnUrl = await uploadScreenshotToStorage(file, `${cleanPrefix}-logo`);
+      if (cdnUrl) {
+        set('logoDataUrl', cdnUrl);
+      }
     } catch (err) {
       setBanner(err instanceof Error ? err.message : 'Could not process that image.');
     }
@@ -828,6 +860,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
     rank: 1,
     upvotes: 1,
     clicks: 0,
+    logoUrl: form.logoDataUrl || (normalizeUrl(form.url).ok ? getWebsiteFavicon(form.url, 128) : undefined),
     createdAt: Date.now(),
     updatedAt: Date.now(),
   };
@@ -999,6 +1032,24 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
       return;
     }
 
+    // For free submissions: verify 5 upvotes across top 10 directory apps first
+    if (submissionPlan === 'free') {
+      const top10 = [...allAvailableProducts]
+        .sort((a, b) => {
+          const rankA = a.rank ?? 9999;
+          const rankB = b.rank ?? 9999;
+          if (rankA !== rankB) return rankA - rankB;
+          return (b.upvotes ?? 0) - (a.upvotes ?? 0);
+        })
+        .slice(0, 10);
+
+      const upvotedCount = top10.filter((p) => isProductUpvoted(p.id, userUpvotes)).length;
+      if (upvotedCount < 5) {
+        setIsFreeUpvoteModalOpen(true);
+        return;
+      }
+    }
+
     // When users toggle the $5, it does nothing till they click submit
     // Once they click on submit, show the modal so they can pay from there
     if (autoRelaunch && !autoRelaunchPaid) {
@@ -1006,6 +1057,15 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
       return;
     }
 
+    await executeSubmission();
+  };
+
+  const handleCompleteFreeSubmit = async () => {
+    setIsFreeUpvoteModalOpen(false);
+    if (autoRelaunch && !autoRelaunchPaid) {
+      setIsAutoRelaunchModalOpen(true);
+      return;
+    }
     await executeSubmission();
   };
 
@@ -3177,6 +3237,17 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
             </div>
           </div>
         )}
+        {/* Free Submission Community Upvote Gate Modal */}
+        <FreeSubmitUpvoteModal
+          isOpen={isFreeUpvoteModalOpen}
+          onClose={() => setIsFreeUpvoteModalOpen(false)}
+          onComplete={handleCompleteFreeSubmit}
+          products={allAvailableProducts}
+          userUpvotes={userUpvotes}
+          onUpvote={onUpvote}
+          soundEnabled={soundEnabled}
+          isSubmitting={isSubmitting}
+        />
       </main>
     </div>
   );
