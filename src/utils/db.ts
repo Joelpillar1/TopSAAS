@@ -693,17 +693,41 @@ export async function toggleUpvote(productId: string): Promise<boolean | null> {
 
 /** Get current user's upvoted product IDs */
 export async function getUserUpvotes(): Promise<Set<string>> {
-  const { data, error } = await supabase.rpc('get_user_upvotes');
-  if (error || !data) return new Set();
   const set = new Set<string>();
-  for (const id of data as string[]) {
+  const addId = (id: string) => {
     set.add(id);
     if (id.startsWith('prod-')) {
       set.add(id.replace(/^prod-/, ''));
     } else {
       set.add(`prod-${id}`);
     }
+  };
+
+  // Read the `upvotes` table directly first. It is the source of truth and does
+  // not depend on the `get_user_upvotes()` RPC being deployed to the project.
+  try {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    if (userId) {
+      const { data, error } = await supabase
+        .from('upvotes')
+        .select('product_id')
+        .eq('user_id', userId);
+      if (!error && data) {
+        for (const row of data as { product_id?: string }[]) {
+          if (row.product_id) addId(row.product_id);
+        }
+        return set;
+      }
+    }
+  } catch {
+    // Fall through to the RPC below.
   }
+
+  // Fallback: RPC for databases where the table is not directly readable.
+  const { data, error } = await supabase.rpc('get_user_upvotes');
+  if (error || !data) return set;
+  for (const id of data as string[]) addId(id);
   return set;
 }
 

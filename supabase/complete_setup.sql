@@ -558,6 +558,17 @@ begin
 end;
 $$ language plpgsql security definer;
 
+-- Product IDs the current user has upvoted
+create or replace function public.get_user_upvotes()
+returns setof text
+language sql
+security definer
+as $$
+  select product_id from public.upvotes where user_id = auth.uid();
+$$;
+
+grant execute on function public.get_user_upvotes() to authenticated, service_role;
+
 -- Atomic guest upvote counter increment
 create or replace function public.increment_product_upvotes(p_product_id text, p_delta int)
 returns int

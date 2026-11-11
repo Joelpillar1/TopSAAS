@@ -56,7 +56,7 @@ export const ProductRow: React.FC<ProductRowProps> = ({
   onUpvote,
   upvoted = false,
   onTrackClick,
-}) => {
+}: ProductRowProps) => {
   const handleOpen = () => {
     playSound('click', soundEnabled);
     onOpen(product);

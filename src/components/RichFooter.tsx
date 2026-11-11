@@ -236,6 +236,22 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                     onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
                   />
                 </a>
+                <a
+                  href="https://www.indietool.io"
+                  target="_blank"
+                  rel="noopener"
+                  className="transition-opacity hover:opacity-80 inline-flex items-center shrink-0"
+                >
+                  <img
+                    src="https://www.indietool.io/badge.svg"
+                    alt="Featured on IndieTool"
+                    width={236}
+                    height={54}
+                    className="h-7.5 w-auto"
+                    loading="lazy"
+                    onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                  />
+                </a>
 
                 {/* Set 2 (for seamless infinite loop) */}
                 <a
@@ -397,6 +413,22 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                   <img
                     src="https://submitmysaas.com/featured-badge.png"
                     alt="Featured on SubmitMySaas"
+                    className="h-7.5 w-auto"
+                    loading="lazy"
+                    onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                  />
+                </a>
+                <a
+                  href="https://www.indietool.io"
+                  target="_blank"
+                  rel="noopener"
+                  className="transition-opacity hover:opacity-80 inline-flex items-center shrink-0"
+                >
+                  <img
+                    src="https://www.indietool.io/badge.svg"
+                    alt="Featured on IndieTool"
+                    width={236}
+                    height={54}
                     className="h-7.5 w-auto"
                     loading="lazy"
                     onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}

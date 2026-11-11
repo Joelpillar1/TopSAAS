@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import confetti from 'canvas-confetti';
 import { AlertCircle, Check, ChevronDown, ChevronLeft, ChevronRight, Clock, Loader2, Search, Video, X, Tag, Percent, Gift, Sparkles, Trash2, GripVertical, Star, ShieldCheck, CheckCircle2, Lock, Copy, Zap } from 'lucide-react';
 import { Category, PricingModel, Product, ProductSocial, SUBMISSION_CATEGORIES, SubmitProductDetails, WebsiteSubmission } from '../types';
@@ -6,7 +6,7 @@ import { getWebsiteFavicon } from '../utils/logo';
 import { playSound } from '../utils/sound';
 import { BadgeStyle, BadgeTheme, BadgeFormat, generateBadgeSvg, generateBadgeSnippet } from '../utils/badgeSvg';
 import { verifyBadgeViaEdge, fetchHtmlBestEffort, containsBadge } from '../utils/badgeVerify';
-import { prepareRichText, richTextToPlain } from '../utils/richText';
+import { prepareRichText } from '../utils/richText';
 import { uploadScreenshotToStorage } from '../utils/storage';
 import { RichTextEditor } from './RichTextEditor';
 import { LaunchWeekSelector } from './LaunchWeekSelector';
@@ -69,17 +69,7 @@ interface FormState {
   scheduledLaunchDate?: number;
 }
 
-type FieldKey =
-  | 'name'
-  | 'tagline'
-  | 'url'
-  | 'category'
-  | 'demoVideoUrl'
-  | 'badge'
-  | 'description'
-  | 'problemItSolves'
-  | 'solution'
-  | 'uniqueSellingPoint';
+type FieldKey = 'name' | 'tagline' | 'url' | 'category' | 'demoVideoUrl' | 'badge';
 
 const EMPTY_FORM: FormState = {
   url: '',
@@ -196,6 +186,30 @@ function normalizeUrl(raw: string): { ok: boolean; value: string; error?: string
     return { ok: false, value: u, error: 'Enter a valid URL, e.g. https://yourproduct.com' };
   }
 }
+
+/**
+ * Domain-only key used to detect a website that is already listed.
+ * Ignores protocol, "www.", path, query, hash, casing and trailing slash so
+ * https://www.Example.com/ and http://example.com both resolve to "example.com".
+ */
+function websiteDomainKey(raw: string): string {
+  let value = raw.trim().toLowerCase();
+  if (!value) return '';
+  if (!/^https?:\/\//i.test(value)) value = `https://${value}`;
+  try {
+    return new URL(value).hostname.replace(/^www\./, '');
+  } catch {
+    return value
+      .replace(/^https?:\/\//i, '')
+      .replace(/^www\./, '')
+      .split(/[/?#]/)[0];
+  }
+}
+
+const duplicateListingMessage = (name?: string) =>
+  name
+    ? `"${name}" is already listed on TopSAAS. Each website can only be listed once.`
+    : 'This website is already listed on TopSAAS. Each website can only be listed once.';
 
 /**
  * Read an image file and return a compressed data URL.
@@ -330,6 +344,15 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
   });
   const [errors, setErrors] = useState<Partial<Record<FieldKey, string>>>({});
   const [banner, setBanner] = useState<string | null>(null);
+
+  // A website can only be listed once. Match the entered URL against the live
+  // directory so the user is told before they fill in the rest of the form.
+  const duplicateListing = useMemo(() => {
+    const key = websiteDomainKey(form.url);
+    if (!key) return null;
+    const match = products.find((p) => websiteDomainKey(p.url) === key);
+    return match ? { id: match.id, name: match.name } : null;
+  }, [form.url, products]);
 
   const [step, setStep] = useState<number>(() => (isSignedIn ? loadSavedStep() : 0));
   const [autoRelaunch, setAutoRelaunch] = useState<boolean>(() => {
@@ -477,6 +500,14 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
       return;
     }
 
+    if (duplicateListing) {
+      const message = duplicateListingMessage(duplicateListing.name);
+      setErrors((prev) => ({ ...prev, url: message }));
+      setBanner(message);
+      playSound('error', soundEnabled);
+      return;
+    }
+
     const targetUrl = check.value;
     setIsAutofilling(true);
     setBanner(null);
@@ -544,27 +575,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
       setBadgeVerificationSuccess(null);
       setBadgeVerificationError(null);
     }
-    if (
-      (key === 'name' ||
-        key === 'tagline' ||
-        key === 'url' ||
-        key === 'category' ||
-        key === 'description' ||
-        key === 'problemItSolves' ||
-        key === 'solution' ||
-        key === 'uniqueSellingPoint') &&
-      value
-    ) {
-      const plain = typeof value === 'string' ? richTextToPlain(value).trim() : '';
-      if (
-        plain.length >= 10 ||
-        (key !== 'description' &&
-          key !== 'problemItSolves' &&
-          key !== 'solution' &&
-          key !== 'uniqueSellingPoint')
-      ) {
-        setErrors((prev) => ({ ...prev, [key]: undefined }));
-      }
+    if ((key === 'name' || key === 'tagline' || key === 'url' || key === 'category') && value) {
+      setErrors((prev) => ({ ...prev, [key]: undefined }));
     }
   };
 
@@ -599,7 +611,11 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
         out.url = 'Enter your website URL.';
       } else {
         const check = normalizeUrl(form.url);
-        if (!check.ok) out.url = check.error || 'Enter a valid website URL, e.g. https://yourproduct.com';
+        if (!check.ok) {
+          out.url = check.error || 'Enter a valid website URL, e.g. https://yourproduct.com';
+        } else if (duplicateListing) {
+          out.url = duplicateListingMessage(duplicateListing.name);
+        }
       }
 
       if (!form.name.trim()) {
@@ -617,13 +633,6 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
       } else if (form.tagline.trim().length > 80) {
         out.tagline = 'Taglines are capped at 80 characters.';
       }
-
-      const plainDesc = richTextToPlain(form.description).trim();
-      if (!plainDesc) {
-        out.description = 'Please provide an About description for your product.';
-      } else if (plainDesc.length < 10) {
-        out.description = 'Description must be at least 10 characters.';
-      }
     } else if (i === 1) {
       if (form.demoVideoUrl.trim()) {
         const check = normalizeUrl(form.demoVideoUrl);
@@ -632,27 +641,6 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
     } else if (i === 2) {
       if (form.categories.length === 0 && !form.category.trim()) {
         out.category = 'Choose at least one category for your listing.';
-      }
-
-      const plainProblem = richTextToPlain(form.problemItSolves).trim();
-      if (!plainProblem) {
-        out.problemItSolves = 'Please describe the problem your product solves.';
-      } else if (plainProblem.length < 10) {
-        out.problemItSolves = 'Problem description must be at least 10 characters.';
-      }
-
-      const plainSolution = richTextToPlain(form.solution).trim();
-      if (!plainSolution) {
-        out.solution = 'Please describe your solution.';
-      } else if (plainSolution.length < 10) {
-        out.solution = 'Solution description must be at least 10 characters.';
-      }
-
-      const plainDiff = richTextToPlain(form.uniqueSellingPoint).trim();
-      if (!plainDiff) {
-        out.uniqueSellingPoint = 'Please describe what makes your product different.';
-      } else if (plainDiff.length < 10) {
-        out.uniqueSellingPoint = 'Differentiator must be at least 10 characters.';
       }
     }
     return out;
@@ -665,7 +653,6 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
       return (
         form.name.trim().length >= 2 &&
         form.tagline.trim().length >= 3 &&
-        richTextToPlain(form.description).trim().length >= 10 &&
         normalizeUrl(form.url).ok
       );
     }
@@ -673,13 +660,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
       return isStepComplete(0);
     }
     if (i === 2) {
-      return (
-        isStepComplete(0) &&
-        (form.categories.length > 0 || !!form.category.trim()) &&
-        richTextToPlain(form.problemItSolves).trim().length >= 10 &&
-        richTextToPlain(form.solution).trim().length >= 10 &&
-        richTextToPlain(form.uniqueSellingPoint).trim().length >= 10
-      );
+      return isStepComplete(0) && (form.categories.length > 0 || !!form.category.trim());
     }
     if (i === 3) {
       return isStepComplete(0) && isStepComplete(2);
@@ -707,7 +688,11 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
       if (Object.keys(stepErrors).length > 0 || !isStepComplete(s)) {
         setStep(s);
         setErrors(stepErrors);
-        setBanner('Please fill in the required fields before proceeding to the next step.');
+        setBanner(
+          s === 0 && duplicateListing
+            ? duplicateListingMessage(duplicateListing.name)
+            : 'Please fill in the required fields before proceeding to the next step.'
+        );
         playSound('click', soundEnabled);
         requestAnimationFrame(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
         return;
@@ -724,7 +709,11 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
     const stepErrors = validateStep(step);
     if (Object.keys(stepErrors).length > 0 || !isStepComplete(step)) {
       setErrors(stepErrors);
-      setBanner('Please complete the required fields to continue.');
+      setBanner(
+        step === 0 && duplicateListing
+          ? duplicateListingMessage(duplicateListing.name)
+          : 'Please complete the required fields to continue.'
+      );
       playSound('click', soundEnabled);
       return;
     }
@@ -949,6 +938,17 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
 
   // ── Launch ──
   const handleLaunch = async () => {
+    // A live listing cannot be submitted again, regardless of which step the user is on.
+    if (duplicateListing) {
+      const message = duplicateListingMessage(duplicateListing.name);
+      setErrors((prev) => ({ ...prev, url: message }));
+      setBanner(message);
+      setStep(0);
+      playSound('error', soundEnabled);
+      requestAnimationFrame(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+      return;
+    }
+
     // Validate every step; jump to the first one with a problem
     const missing: number[] = [];
     for (let i = 0; i < STEPS.length; i++) {
@@ -1012,6 +1012,16 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
     overridePaid?: boolean,
     skipSuccessUi?: boolean
   ): Promise<string | undefined> => {
+    // Final guard: never create a submission for a website that is already live.
+    if (duplicateListing) {
+      const message = duplicateListingMessage(duplicateListing.name);
+      setErrors((prev) => ({ ...prev, url: message }));
+      setBanner(message);
+      setStep(0);
+      playSound('error', soundEnabled);
+      return undefined;
+    }
+
     setIsSubmitting(true);
     setBanner(null);
     try {
@@ -1183,12 +1193,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
 
   const showNameError = step === 0 && !!errors.name;
   const showTaglineError = step === 0 && !!errors.tagline;
-  const showUrlError = step === 0 && !!errors.url;
-  const showDescriptionError = step === 0 && !!errors.description;
+  const showUrlError = step === 0 && !!errors.url && !duplicateListing;
   const showCategoryError = step === 2 && !!errors.category;
-  const showProblemError = step === 2 && !!errors.problemItSolves;
-  const showSolutionError = step === 2 && !!errors.solution;
-  const showDiffError = step === 2 && !!errors.uniqueSellingPoint;
 
   const autoLogoPreview = !form.logoDataUrl && normalizeUrl(form.url).ok ? getWebsiteFavicon(form.url, 128) : '';
 
@@ -1314,6 +1320,19 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                   </button>
                 </div>
                 <FieldError message={showUrlError ? errors.url : undefined} />
+                {duplicateListing && (
+                  <div className="mt-2 flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2">
+                    <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
+                    <div className="space-y-0.5">
+                      <p className="text-[11px] font-bold text-amber-900">
+                        Already listed
+                      </p>
+                      <p className="text-[11px] font-medium leading-relaxed text-amber-800">
+                        {duplicateListingMessage(duplicateListing.name)}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
 
@@ -1360,9 +1379,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
               </div>
 
               <div>
-                <label className={labelClass}>
-                  About / Description <span className="text-red-400">*</span>
-                </label>
+                <label className={labelClass}>Description</label>
                 <RichTextEditor
                   value={form.description}
                   onChange={(html) => {
@@ -1372,10 +1389,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                   placeholder="What does it do, and who is it for? Use the toolbar to add bold, lists, links and more."
                   maxLength={2000}
                   minHeightClass="min-h-[150px]"
-                  ariaLabel="About / Description"
-                  className={showDescriptionError ? 'border-red-400 ring-1 ring-red-400' : ''}
+                  ariaLabel="Description"
                 />
-                <FieldError message={showDescriptionError ? errors.description : undefined} />
               </div>
             </section>
           )}
@@ -1951,9 +1966,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                     />
                   </div>
                   <div>
-                    <label className={labelClass}>
-                      Problem it solves <span className="text-red-400">*</span>
-                    </label>
+                    <label className={labelClass}>Problem it solves</label>
                     <RichTextEditor
                       value={form.problemItSolves}
                       onChange={(html) => set('problemItSolves', html)}
@@ -1961,14 +1974,10 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                       maxLength={600}
                       minHeightClass="min-h-[96px]"
                       ariaLabel="Problem it solves"
-                      className={showProblemError ? 'border-red-400 ring-1 ring-red-400' : ''}
                     />
-                    <FieldError message={showProblemError ? errors.problemItSolves : undefined} />
                   </div>
                   <div>
-                    <label className={labelClass}>
-                      Your solution <span className="text-red-400">*</span>
-                    </label>
+                    <label className={labelClass}>Your solution</label>
                     <RichTextEditor
                       value={form.solution}
                       onChange={(html) => set('solution', html)}
@@ -1976,14 +1985,10 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                       maxLength={600}
                       minHeightClass="min-h-[96px]"
                       ariaLabel="Your solution"
-                      className={showSolutionError ? 'border-red-400 ring-1 ring-red-400' : ''}
                     />
-                    <FieldError message={showSolutionError ? errors.solution : undefined} />
                   </div>
                   <div>
-                    <label className={labelClass}>
-                      What makes it different <span className="text-red-400">*</span>
-                    </label>
+                    <label className={labelClass}>What makes it different</label>
                     <RichTextEditor
                       value={form.uniqueSellingPoint}
                       onChange={(html) => set('uniqueSellingPoint', html)}
@@ -1991,9 +1996,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                       maxLength={600}
                       minHeightClass="min-h-[96px]"
                       ariaLabel="What makes it different"
-                      className={showDiffError ? 'border-red-400 ring-1 ring-red-400' : ''}
                     />
-                    <FieldError message={showDiffError ? errors.uniqueSellingPoint : undefined} />
                   </div>
                 </div>
               </div>
