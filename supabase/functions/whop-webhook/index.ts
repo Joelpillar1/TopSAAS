@@ -312,6 +312,41 @@ serve(async (req: Request) => {
       } catch (logErr) {
         console.warn('Could not write to sponsor_orders (optional):', logErr);
       }
+
+      // Send payment confirmation email via send-email Edge Function
+      if (email && supabaseUrl && supabaseServiceKey) {
+        const planLabel = isVerifiedLaunch
+          ? 'Verified Launch ($19)'
+          : isWeeklyRelaunch
+            ? 'Auto Weekly Relaunch ($5/week)'
+            : isFeatured
+              ? `Featured Spot (${durationDays} days)`
+              : `Sidebar Sponsor (${durationDays} days)`;
+        const displayName = productRecord?.name || productName || 'Your product';
+        const paymentKey = data.id || `${finalProductId || displayName}-${rawPlanType}-${now.toISOString().slice(0, 10)}`;
+
+        try {
+          await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${supabaseServiceKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              type: 'payment_receipt',
+              to: email,
+              idempotencyKey: `payment_receipt:${paymentKey}`,
+              data: {
+                planName: planLabel,
+                productName: displayName,
+                durationDays: isVerifiedLaunch ? 0 : durationDays,
+              },
+            }),
+          });
+        } catch (emailErr) {
+          console.warn('Could not trigger payment_receipt email:', emailErr);
+        }
+      }
     }
 
     return new Response(JSON.stringify({ received: true }), {

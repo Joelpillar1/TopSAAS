@@ -16,11 +16,14 @@ import {
   Award,
   Pause,
   Play,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react';
 import { Product, Sponsor, SponsorDraft } from '../types';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
 import { getCountdown, formatRemainingMs } from '../utils/countdown';
+import { sortSponsorsByOrder } from '../utils/db';
 import confetti from 'canvas-confetti';
 
 interface SponsorTrackerTabProps {
@@ -33,6 +36,8 @@ interface SponsorTrackerTabProps {
   onPauseSponsor: (sponsorId: string) => Promise<void> | void;
   sponsorRailsEnabled?: boolean;
   onToggleSponsorRails?: (enabled: boolean) => void;
+  sponsorOrderIds?: string[];
+  onSetSponsorOrder?: (ids: string[]) => void;
 }
 
 interface OutreachModalState {
@@ -57,6 +62,8 @@ export const SponsorTrackerTab: React.FC<SponsorTrackerTabProps> = ({
   onPauseSponsor,
   sponsorRailsEnabled = true,
   onToggleSponsorRails,
+  sponsorOrderIds = [],
+  onSetSponsorOrder,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [tierFilter, setTierFilter] = useState<'all' | 'active_trial' | 'paid' | 'expiring' | 'expired'>('all');
@@ -84,6 +91,21 @@ export const SponsorTrackerTab: React.FC<SponsorTrackerTabProps> = ({
 
   const isLive = (sponsor: Sponsor) =>
     sponsor.status === 'active' && sponsor.expiresAt > now;
+
+  const orderedLiveSponsors = sortSponsorsByOrder<Sponsor>(
+    sponsors.filter((s) => isLive(s)),
+    sponsorOrderIds
+  );
+
+  const handleMoveSponsor = (index: number, direction: -1 | 1) => {
+    const targetIdx = index + direction;
+    if (targetIdx < 0 || targetIdx >= orderedLiveSponsors.length) return;
+    playSound('click', soundEnabled);
+    const next = [...orderedLiveSponsors];
+    const [moved] = next.splice(index, 1);
+    next.splice(targetIdx, 0, moved);
+    onSetSponsorOrder?.(next.map((s) => s.id));
+  };
 
   const activeTrials = sponsors.filter((s) => isLive(s) && s.tier === 'trial');
 
@@ -570,6 +592,66 @@ https://topsaas.space`,
           </div>
         )}
       </div>
+
+      {/* ── Sidebar Rail Display Order (just like Featured tab) ── */}
+      {onSetSponsorOrder && orderedLiveSponsors.length > 0 && (
+        <div className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-5 shadow-2xs space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <h3 className="text-sm font-black text-neutral-950">
+                Sidebar Rail Order ({orderedLiveSponsors.length})
+              </h3>
+              <p className="text-xs text-neutral-500">
+                Reorder how active sponsors appear on the left &amp; right sidebar rails.
+              </p>
+            </div>
+          </div>
+          <div className="divide-y divide-neutral-100 rounded-xl border border-neutral-200 bg-neutral-50/40 overflow-hidden">
+            {orderedLiveSponsors.map((sp, idx) => (
+              <div
+                key={sp.id}
+                className="flex items-center justify-between gap-3 px-3.5 py-2.5 bg-white hover:bg-neutral-50/80 transition-colors"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-blue-50 border border-blue-200 text-[11px] font-black text-blue-700 font-mono-num">
+                    #{idx + 1}
+                  </span>
+                  <ProductLogo
+                    src={sp.logoUrl}
+                    alt={sp.name}
+                    containerClassName="h-8 w-8 shrink-0 rounded-lg border border-neutral-200 bg-white flex items-center justify-center overflow-hidden"
+                    iconClassName="h-4 w-4 text-neutral-400"
+                  />
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold text-neutral-950 truncate">{sp.name}</div>
+                    <div className="text-[11px] text-neutral-500 truncate">{sp.tagline}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    disabled={idx === 0}
+                    onClick={() => handleMoveSponsor(idx, -1)}
+                    className="rounded-lg border border-neutral-200 bg-white p-1.5 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-950 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-all"
+                    title="Move up"
+                  >
+                    <ChevronUp className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    disabled={idx === orderedLiveSponsors.length - 1}
+                    onClick={() => handleMoveSponsor(idx, 1)}
+                    className="rounded-lg border border-neutral-200 bg-white p-1.5 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-950 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-all"
+                    title="Move down"
+                  >
+                    <ChevronDown className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ── Filter & Search Toolbar ── */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">

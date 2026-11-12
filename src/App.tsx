@@ -16,11 +16,12 @@ import { LegalTab } from './components/LegalModal';
 import { playSound } from './utils/sound';
 import confetti from 'canvas-confetti';
 import { supabase } from './utils/supabase';
-import { loadProducts, loadProductById, loadSubmissions, invalidateCache, saveAllProducts, saveProductRanksDirect, debouncedSyncProducts, toggleUpvote, getUserUpvotes, getUpvoteStats, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, setGlobalFeaturedProducts, setProductFeaturedPosition, LOCAL_FEATURED_PRODUCTS_KEY, LOCAL_FEATURED_POSITIONS_MAP_KEY, insertProductDirect, updateProductDirect, fetchComments, addComment, getCachedCommentsSync, submissionToProduct, publishedProductId, isProductUpvoted, getGuestUpvotes, saveGuestUpvotes, incrementProductUpvotesDirect, incrementProductClicksDirect, loadSponsors, createSponsor, updateSponsor, endSponsor, endSponsorsForProduct, toggleSponsorPause, incrementSponsorClicks, sponsorToDisplayProduct, isLiveSponsor, getSponsorRailsEnabled, setSponsorRailsEnabled, LOCAL_SPONSOR_RAILS_KEY, getFeaturedPosition, setFeaturedPosition, LOCAL_FEATURED_POSITION_KEY, SUBMISSION_QUEUE_COLUMNS, loadSubmissionById, isSponsorOnlyProduct, getProductSlug, matchesProductIdentifier } from './utils/db';
+import { loadProducts, loadProductById, loadSubmissions, invalidateCache, saveAllProducts, saveProductRanksDirect, debouncedSyncProducts, toggleUpvote, getUserUpvotes, getUpvoteStats, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, setGlobalFeaturedProducts, setProductFeaturedPosition, LOCAL_FEATURED_PRODUCTS_KEY, LOCAL_FEATURED_POSITIONS_MAP_KEY, insertProductDirect, updateProductDirect, fetchComments, addComment, getCachedCommentsSync, submissionToProduct, publishedProductId, isProductUpvoted, getGuestUpvotes, saveGuestUpvotes, incrementProductUpvotesDirect, incrementProductClicksDirect, loadSponsors, createSponsor, updateSponsor, endSponsor, endSponsorsForProduct, toggleSponsorPause, incrementSponsorClicks, sponsorToDisplayProduct, isLiveSponsor, getSponsorRailsEnabled, setSponsorRailsEnabled, LOCAL_SPONSOR_RAILS_KEY, getSponsorOrder, setSponsorOrder, sortSponsorsByOrder, LOCAL_SPONSOR_ORDER_KEY, getFeaturedPosition, setFeaturedPosition, LOCAL_FEATURED_POSITION_KEY, SUBMISSION_QUEUE_COLUMNS, loadSubmissionById, isSponsorOnlyProduct, getProductSlug, matchesProductIdentifier } from './utils/db';
 import { trackGoal } from './utils/trackkit';
 import { isInWeek, getWeekInfo, getWeekNumber, getWeekByNumber, getMonthKey, isInMonth, formatMonthLabel, formatWeekDateRange, WeekInfo } from './utils/weeks';
 import { getWebsiteFavicon } from './utils/logo';
 import { uploadScreenshotToStorage } from './utils/storage';
+import { sendEmailNotification } from './utils/email';
 import { Trophy, X, Plus, ShieldCheck, Loader2, Star, MessageCircle, Flame, Search } from 'lucide-react';
 import { FeaturedSpotModal } from './components/FeaturedSpotModal';
 import { ProductPage } from './components/ProductPage';
@@ -521,6 +522,29 @@ export default function App() {
   const handleToggleSponsorRails = async (enabled: boolean) => {
     setSponsorRailsEnabledState(enabled);
     await setSponsorRailsEnabled(enabled);
+  };
+
+  // Custom display order for sidebar sponsors (stored in site_settings + localStorage)
+  const [sponsorOrderIds, setSponsorOrderIds] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem(LOCAL_SPONSOR_ORDER_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch { }
+    return [];
+  });
+
+  useEffect(() => {
+    getSponsorOrder().then((ids) => {
+      if (ids.length > 0) setSponsorOrderIds(ids);
+    });
+  }, []);
+
+  const handleSetSponsorOrder = async (ids: string[]) => {
+    setSponsorOrderIds(ids);
+    await setSponsorOrder(ids);
   };
 
   // Submitter name auto-filled from Google profile
@@ -1468,6 +1492,29 @@ export default function App() {
       return reRanked;
     });
 
+    // Notify product owner when crossing key upvote milestones (deduplicated server-side)
+    if (willBeUpvoted) {
+      const nextUpvotes = (product.upvotes ?? 0) + 1;
+      const UPVOTE_MILESTONES = [10, 25, 50, 100, 250, 500];
+      if (UPVOTE_MILESTONES.includes(nextUpvotes)) {
+        const matchingSub = submissions.find((s) => publishedProductId(s.id) === canonicalId || s.id === canonicalId);
+        const ownerEmail = matchingSub?.backerEmail || product.sponsorContactEmail;
+        if (ownerEmail) {
+          void sendEmailNotification({
+            type: 'milestone',
+            to: ownerEmail,
+            idempotencyKey: `milestone:upvotes:${canonicalId}:${nextUpvotes}`,
+            data: {
+              productName: product.name,
+              slug: getProductSlug(product),
+              milestoneType: 'upvotes',
+              value: nextUpvotes,
+            },
+          });
+        }
+      }
+    }
+
     // The vote just cast belongs to the current calendar week
     setWeeklyUpvotes((prev) => {
       const week = getWeekNumber(Date.now());
@@ -1692,6 +1739,8 @@ export default function App() {
         if (payload.offer_code) minimal.offer_code = payload.offer_code;
         if (payload.offer_url) minimal.offer_url = payload.offer_url;
         if (payload.offer_details) minimal.offer_details = payload.offer_details;
+        if (payload.scheduled_launch_week) minimal.scheduled_launch_week = payload.scheduled_launch_week;
+        if (payload.scheduled_launch_date) minimal.scheduled_launch_date = payload.scheduled_launch_date;
         await supabase.from('submissions').insert(minimal);
       }
     } catch (err) {
@@ -1701,6 +1750,20 @@ export default function App() {
     // The founder name/photo edited on the Submit page should become the
     // account's public profile values too.
     await syncCreatorProfile(details.creatorName, details.creatorAvatar);
+
+    // Notify submitter that their product is in the review queue
+    void sendEmailNotification({
+      type: 'submission_received',
+      to: newSubmission.backerEmail,
+      idempotencyKey: `submission_received:${subId}`,
+      data: {
+        productName: newSubmission.name,
+        isVerified: Boolean(newSubmission.verified),
+        scheduledWeekLabel: newSubmission.scheduledLaunchWeek
+          ? `Week ${newSubmission.scheduledLaunchWeek}`
+          : undefined,
+      },
+    });
 
     return subId;
   };
@@ -1783,10 +1846,26 @@ export default function App() {
         await insertProductDirect(productToSync);
       } catch { }
     }
+
+    // Notify submitter that their listing is live
+    if (fullSub.backerEmail) {
+      const slug = getProductSlug(productToSync || { id: listingId, name: fullSub.name });
+      void sendEmailNotification({
+        type: 'submission_approved',
+        to: fullSub.backerEmail,
+        idempotencyKey: `submission_approved:${sub.id}`,
+        data: {
+          productName: fullSub.name,
+          slug,
+          isVerified: Boolean(productToSync?.verified ?? fullSub.verified),
+        },
+      });
+    }
   };
 
   // Admin Reject Pipeline
   const handleRejectSubmission = async (submissionId: string, reason?: string) => {
+    const targetSub = submissions.find((s) => s.id === submissionId);
     const reviewedAt = Date.now();
     const rejectionReason = reason || 'Did not meet current directory guidelines';
     invalidateCache('submissions_queue');
@@ -1798,6 +1877,18 @@ export default function App() {
     try {
       await supabase.from('submissions').update({ status: 'rejected', reviewed_at: reviewedAt, rejection_reason: rejectionReason }).eq('id', submissionId);
     } catch { }
+
+    if (targetSub?.backerEmail) {
+      void sendEmailNotification({
+        type: 'submission_rejected',
+        to: targetSub.backerEmail,
+        idempotencyKey: `submission_rejected:${submissionId}:${reviewedAt}`,
+        data: {
+          productName: targetSub.name,
+          reason: rejectionReason,
+        },
+      });
+    }
   };
 
   // Admin Delete Permanent
@@ -1962,6 +2053,18 @@ export default function App() {
         const exists = prev.some((s) => s.id === created.id);
         return exists ? prev.map((s) => (s.id === created.id ? created : s)) : [created, ...prev];
       });
+      if (created.contactEmail && created.status === 'active') {
+        const durationDays = Math.max(1, Math.round((created.expiresAt - created.startedAt) / 86400000));
+        void sendEmailNotification({
+          type: 'sponsor_live',
+          to: created.contactEmail,
+          idempotencyKey: `sponsor_live:${created.id}`,
+          data: {
+            productName: created.name,
+            durationDays,
+          },
+        });
+      }
     }
   };
 
@@ -2249,8 +2352,20 @@ export default function App() {
 
   const explicitFeaturedProduct = featuredProducts[0] || null;
 
-  // Only submitted directory products belong in the leaderboard/rankings table (exclude sponsor-only ads)
-  const directoryProducts = products.filter((p) => !isSponsorOnlyProduct(p));
+  // Only submitted directory products whose scheduled launch has started belong in the public leaderboard/directory
+  const isProductLaunched = (p: Product, now = Date.now()): boolean => {
+    if (p.scheduledLaunchWeek) {
+      return getWeekByNumber(p.scheduledLaunchWeek).start <= now;
+    }
+    if (p.scheduledLaunchDate) {
+      return Number(p.scheduledLaunchDate) <= now;
+    }
+    if (p.createdAt && Number(p.createdAt) > now) {
+      return false;
+    }
+    return true;
+  };
+  const directoryProducts = products.filter((p) => !isSponsorOnlyProduct(p) && isProductLaunched(p));
   const sortedByRankProducts = [...directoryProducts].sort(compareProductsByRank);
   const topProduct = explicitFeaturedProduct || sortedByRankProducts[0] || null;
 
@@ -2311,6 +2426,24 @@ export default function App() {
         setComments((prev) => prev.map((c) => (c.id === comment.id ? saved : c)));
       }
     });
+
+    // Notify product owner of the new comment (skip if owner commented on their own product)
+    const targetProduct = products.find((p) => p.id === productId);
+    const matchingSub = submissions.find((s) => publishedProductId(s.id) === productId || s.id === productId);
+    const ownerEmail = matchingSub?.backerEmail || targetProduct?.sponsorContactEmail;
+    if (ownerEmail && (!userEmail || ownerEmail.toLowerCase() !== userEmail.toLowerCase())) {
+      void sendEmailNotification({
+        type: 'new_comment',
+        to: ownerEmail,
+        idempotencyKey: `new_comment:${productId}:${comment.createdAt}`,
+        data: {
+          productName: targetProduct?.name || matchingSub?.name || 'Your product',
+          slug: targetProduct ? getProductSlug(targetProduct) : productId,
+          commenterName: comment.userName,
+          commentSnippet: trimmed,
+        },
+      });
+    }
   };
 
   // Seed the traffic rail from stored products once data is loaded
@@ -2390,8 +2523,8 @@ export default function App() {
   const weekScopedProducts = selectedWeek
     ? directoryProducts.filter((p) => {
       if (isInWeek(p.createdAt, selectedWeek)) return true;
-      // Auto weekly relaunch for users who opted for $5/week weekly relaunch
-      if (p.autoRelaunch) return true;
+      // Auto weekly relaunch for users who opted for $5/week weekly relaunch (only on or after initial launch week)
+      if (p.autoRelaunch && p.createdAt < selectedWeek.end) return true;
       if (p.relaunchWeeks && selectedWeek.weekNumber && p.relaunchWeeks.includes(selectedWeek.weekNumber)) return true;
       if (p.lastRelaunchedAt && isInWeek(p.lastRelaunchedAt, selectedWeek)) return true;
       return false;
@@ -2534,16 +2667,13 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Sponsors shown on the public rails are display-only adapters of sponsor
-  // rows. Featured products take priority, so linked sponsors are hidden.
+  // Sponsors shown on the public rails are display-only adapters of live sponsor
+  // rows, ordered by admin custom order (and allowed alongside Featured).
   const activeRailSponsors = sponsorRailsEnabled
-    ? sponsors
-      .filter((s) => isLiveSponsor(s))
-      .filter(
-        (s) =>
-          !(s.productId && (featuredProductIds.includes(s.productId) || s.productId === featuredProductId))
-      )
-      .map(sponsorToDisplayProduct)
+    ? sortSponsorsByOrder(
+        sponsors.filter((s) => isLiveSponsor(s)),
+        sponsorOrderIds
+      ).map(sponsorToDisplayProduct)
     : [];
 
   const isSubmitPage =
@@ -2760,10 +2890,17 @@ export default function App() {
             onDeleteProduct={(productId) => setProducts((prev) => prev.filter((p) => p.id !== productId))}
             onUpdateProduct={handleUpdateProduct}
             onSelectProduct={handleOpenProduct}
+            onShareProduct={(p) => setShareProduct(p)}
             soundEnabled={soundEnabled}
           />
         </React.Suspense>
         {globalModals}
+        <ShareModal
+          product={shareProduct}
+          isOpen={!!shareProduct}
+          onClose={() => setShareProduct(null)}
+          soundEnabled={soundEnabled}
+        />
       </>
     );
   }
@@ -2855,16 +2992,43 @@ export default function App() {
         </>
       );
     }
+    const ownedProduct = markOwnership(product);
+    const isProductOwner = Boolean(
+      ownedProduct.isUserOwned ||
+      (user && product.submittedBy && (product.submittedBy === user.id || (user.email && product.submittedBy.toLowerCase() === user.email.toLowerCase())))
+    );
+    const isThisProductPaid = Boolean(
+      product.verified ||
+      product.autoRelaunchPaid ||
+      product.autoRelaunch ||
+      product.isSponsored ||
+      (product.sponsorTier && product.sponsorTier !== 'none' && product.sponsorTier !== 'trial') ||
+      featuredProductId === product.id ||
+      featuredProductIds.includes(product.id) ||
+      sponsors.some((s) =>
+        s.productId === product.id &&
+        s.tier !== 'none' &&
+        s.tier !== 'trial' &&
+        s.status !== 'ended'
+      ) ||
+      submissions.some((s) =>
+        publishedProductId(s.id) === product.id &&
+        Boolean(s.autoRelaunchPaid || s.verified)
+      )
+    );
+    const canViewAnalytics = Boolean(isAdmin || (isProductOwner && isThisProductPaid));
+
     return (
       <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between font-sans">
         {globalHeader}
         <ProductPage
-          product={markOwnership(product)}
+          product={ownedProduct}
           topProduct={topProduct || product}
           allProducts={sortedByRankProducts.map((p, idx) => ({ ...markOwnership(p), rank: idx + 1 }))}
-          sponsors={sponsors
-            .filter((s) => isLiveSponsor(s) && s.productId !== product.id)
-            .map(sponsorToDisplayProduct)}
+          sponsors={sortSponsorsByOrder(
+            sponsors.filter((s) => isLiveSponsor(s) && s.productId !== product.id),
+            sponsorOrderIds
+          ).map(sponsorToDisplayProduct)}
           onOpenFeaturedSpotModal={() => {
             setFeaturedModalMode('sponsor');
             setIsFeaturedSpotModalOpen(true);
@@ -2873,10 +3037,8 @@ export default function App() {
           soundEnabled={soundEnabled}
           isSignedIn={!!user}
           userId={user?.id}
-          isOwner={Boolean(
-            markOwnership(product).isUserOwned ||
-            (user && product.submittedBy && (product.submittedBy === user.id || (user.email && product.submittedBy.toLowerCase() === user.email.toLowerCase())))
-          )}
+          isOwner={isProductOwner}
+          isAdmin={isAdmin}
           userName={submitterName}
           userEmail={user?.email}
           userAvatar={user?.user_metadata?.avatar_url || user?.user_metadata?.picture}
@@ -2898,6 +3060,12 @@ export default function App() {
           onTrackClick={handleTrackClick}
           onUpvote={handleUpvote}
           isUpvoted={isProductUpvoted(product.id, userUpvotes)}
+          hasPaidAccess={canViewAnalytics}
+          onOpenPricing={() => {
+            setCurrentRoute('/pricing');
+            try { window.history.pushState('', document.title, '/pricing'); } catch { }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
         />
         <RichFooter
           totalProducts={directoryProducts.length}
@@ -3133,6 +3301,8 @@ export default function App() {
             onUpdateProduct={handleUpdateProduct}
             sponsorRailsEnabled={sponsorRailsEnabled}
             onToggleSponsorRails={handleToggleSponsorRails}
+            sponsorOrderIds={sponsorOrderIds}
+            onSetSponsorOrder={handleSetSponsorOrder}
             featuredPosition={featuredPosition}
             onSetFeaturedPosition={handleSetFeaturedPosition}
             featuredPositions={featuredPositions}

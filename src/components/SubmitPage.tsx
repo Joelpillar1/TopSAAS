@@ -1208,11 +1208,19 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
     requestAnimationFrame(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   };
 
+  useEffect(() => {
+    if (launched) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    }
+  }, [launched]);
+
   // ── Success (Under Review) ──
   if (launched) {
     return (
       <div className="min-h-screen bg-white text-neutral-900 font-sans">
-        <div className="mx-auto flex max-w-xl flex-col items-center px-4 py-20 text-center">
+        <div className="mx-auto flex max-w-xl flex-col items-center px-4 py-10 sm:py-16 text-center">
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-mint-50 border border-mint-200 text-mint-600 shadow-xs">
             <Clock className="h-8 w-8" strokeWidth={2.5} />
           </div>

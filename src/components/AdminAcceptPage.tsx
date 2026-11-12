@@ -7,6 +7,7 @@ import { WebsiteSubmission, Category, Product, Sponsor, SponsorDraft } from '../
 import { playSound } from '../utils/sound';
 import { getWebsiteFavicon } from '../utils/logo';
 import { publishedProductId, loadSubmissionById, isSponsorOnlyProduct, getProductSlug } from '../utils/db';
+import { getWeekByNumber, getWeekInfo, formatWeekDateRange } from '../utils/weeks';
 import { getCountdown, formatRemainingMs } from '../utils/countdown';
 import { RichText } from './RichText';
 import { ProductLogo } from './ProductLogo';
@@ -77,6 +78,8 @@ interface AdminAcceptPageProps {
   onUpdateProduct?: (product: Product) => void;
   sponsorRailsEnabled?: boolean;
   onToggleSponsorRails?: (enabled: boolean) => void;
+  sponsorOrderIds?: string[];
+  onSetSponsorOrder?: (ids: string[]) => void;
   featuredPosition?: number;
   onSetFeaturedPosition?: (position: number) => void;
   featuredPositions?: Record<string, number>;
@@ -114,6 +117,8 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
   onUpdateProduct,
   sponsorRailsEnabled = true,
   onToggleSponsorRails,
+  sponsorOrderIds = [],
+  onSetSponsorOrder,
   featuredPosition = 0,
   onSetFeaturedPosition,
   featuredPositions = {},
@@ -274,6 +279,59 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
   const [featuredSearchQuery, setFeaturedSearchQuery] = useState('');
   const [isFeaturedSearchOpen, setIsFeaturedSearchOpen] = useState(false);
 
+  // Quick Assign Sponsor modal state (from Live Products tab)
+  const [sponsorAssignProduct, setSponsorAssignProduct] = useState<Product | null>(null);
+  const [sponsorAssignTier, setSponsorAssignTier] = useState<'trial' | '1mo' | '3mo' | '1yr'>('1mo');
+  const [sponsorAssignEmail, setSponsorAssignEmail] = useState('');
+  const [isAssigningSponsor, setIsAssigningSponsor] = useState(false);
+
+  const openAssignSponsorModal = (product: Product) => {
+    playSound('click', soundEnabled);
+    const matchingSub = submissions.find(
+      (s) => publishedProductId(s.id) === product.id || s.id === product.id
+    );
+    setSponsorAssignEmail(product.sponsorContactEmail || matchingSub?.backerEmail || '');
+    setSponsorAssignTier('1mo');
+    setSponsorAssignProduct(product);
+  };
+
+  const handleConfirmAssignSponsor = async () => {
+    if (!sponsorAssignProduct || isAssigningSponsor) return;
+    setIsAssigningSponsor(true);
+    const now = Date.now();
+    const days =
+      sponsorAssignTier === 'trial'
+        ? 7
+        : sponsorAssignTier === '3mo'
+          ? 90
+          : sponsorAssignTier === '1yr'
+            ? 365
+            : 30;
+    const p = sponsorAssignProduct;
+    await onCreateSponsor({
+      id: `spn_${now}_${Math.random().toString(36).slice(2, 8)}`,
+      productId: p.id,
+      name: p.name,
+      tagline: p.tagline,
+      url: p.url,
+      logoUrl: p.logoUrl,
+      category: p.category,
+      contactEmail: sponsorAssignEmail.trim() || undefined,
+      tier: sponsorAssignTier,
+      status: 'active',
+      startedAt: now,
+      expiresAt: now + days * 86400 * 1000,
+      clicks: 0,
+      source: 'admin_grant',
+    });
+    playSound('success', soundEnabled);
+    try {
+      confetti({ particleCount: 40, spread: 60, origin: { y: 0.6 } });
+    } catch {}
+    setIsAssigningSponsor(false);
+    setSponsorAssignProduct(null);
+  };
+
   const handleAddFeatured = (productId: string) => {
     if (activeFeaturedIds.includes(productId)) return;
     const nextIds = [...activeFeaturedIds, productId];
@@ -282,11 +340,6 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
     } else {
       onSetFeatured(nextIds[0]);
     }
-    // A featured placement takes priority over sponsor rails. End any sponsor
-    // records linked to this product instead of mutating the product row.
-    sponsors
-      .filter((s) => s.productId === productId && s.status !== 'ended')
-      .forEach((s) => onEndSponsor(s.id));
     playSound('success', soundEnabled);
     try {
       confetti({
@@ -922,11 +975,17 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                   Submitted {formatTimestamp(sub.submittedAt)}
                                 </span>
 
-                                {sub.scheduledLaunchWeek && (
-                                  <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 border border-blue-200 px-1.5 py-0.2 text-[10px] font-bold text-blue-700">
-                                    <span>Target: Week {sub.scheduledLaunchWeek}</span>
-                                  </span>
-                                )}
+                                {(sub.scheduledLaunchWeek || sub.scheduledLaunchDate) && (() => {
+                                  const weekInfo = sub.scheduledLaunchWeek
+                                    ? getWeekByNumber(sub.scheduledLaunchWeek)
+                                    : getWeekInfo(sub.scheduledLaunchDate!);
+                                  return (
+                                    <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 border border-blue-200 px-1.5 py-0.5 text-[10px] font-bold text-blue-700">
+                                      <Calendar className="h-3 w-3" />
+                                      <span>Launch: {formatWeekDateRange(weekInfo, '–')} ({weekInfo.label})</span>
+                                    </span>
+                                  );
+                                })()}
 
                                 {(sub.autoRelaunch || sub.autoRelaunchPaid) && (
                                   <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 border border-blue-200 px-2 py-0.5 text-[10.5px] font-bold text-blue-800">
@@ -1408,6 +1467,38 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                 >
                                   <Crown className={`h-3.5 w-3.5 shrink-0 ${isFeat ? 'text-amber-500 fill-amber-500' : 'text-neutral-400'}`} />
                                   <span>{isFeat ? `Featured (#${featRank})` : 'Feature'}</span>
+                                </button>
+                              );
+                            })()}
+
+                            {(() => {
+                              const activeSponsor = sponsors.find(
+                                (s) => s.productId === product.id && s.status === 'active' && s.expiresAt > Date.now()
+                              );
+                              return (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (activeSponsor) {
+                                      playSound('click', soundEnabled);
+                                      onEndSponsor(activeSponsor.id);
+                                    } else {
+                                      openAssignSponsorModal(product);
+                                    }
+                                  }}
+                                  className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition-all cursor-pointer ${
+                                    activeSponsor
+                                      ? 'border-blue-500/50 bg-blue-50 text-blue-700 hover:bg-blue-100 shadow-2xs'
+                                      : 'border-neutral-200 bg-neutral-100 text-neutral-500 hover:border-blue-400 hover:text-blue-700 hover:bg-blue-50/60'
+                                  }`}
+                                  title={
+                                    activeSponsor
+                                      ? `"${product.name}" is Sponsored — click to end sponsor placement`
+                                      : `Assign "${product.name}" to Sidebar Sponsor rail`
+                                  }
+                                >
+                                  <Megaphone className={`h-3.5 w-3.5 shrink-0 ${activeSponsor ? 'text-blue-600' : 'text-neutral-400'}`} />
+                                  <span>{activeSponsor ? 'Sponsored' : 'Sponsor'}</span>
                                 </button>
                               );
                             })()}
@@ -2051,6 +2142,8 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
             onPauseSponsor={onPauseSponsor}
             sponsorRailsEnabled={sponsorRailsEnabled}
             onToggleSponsorRails={onToggleSponsorRails}
+            sponsorOrderIds={sponsorOrderIds}
+            onSetSponsorOrder={onSetSponsorOrder}
           />
         )}
       </main>
@@ -2773,6 +2866,107 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
           </div>
         );
       })()}
+
+      {/* Quick Assign Sponsor Modal */}
+      {sponsorAssignProduct && (
+        <div
+          className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+          onClick={() => setSponsorAssignProduct(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-2xl text-neutral-900"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-2 mb-4">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 border border-blue-200 text-blue-600">
+                  <Megaphone className="h-4 w-4" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-base font-black text-neutral-950 truncate">
+                    Assign Sponsor: {sponsorAssignProduct.name}
+                  </h3>
+                  <p className="text-xs text-neutral-500">
+                    Place on the 24/7 sidebar sponsor rails
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSponsorAssignProduct(null)}
+                className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900 cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-neutral-700 mb-1.5">
+                  Duration / Tier
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {(
+                    [
+                      { id: 'trial', label: '7-Day Trial' },
+                      { id: '1mo', label: '1 Month (30d)' },
+                      { id: '3mo', label: '3 Months (90d)' },
+                      { id: '1yr', label: '1 Year (365d)' },
+                    ] as const
+                  ).map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => setSponsorAssignTier(opt.id)}
+                      className={`rounded-xl border px-3 py-2 text-xs font-bold transition-all cursor-pointer ${
+                        sponsorAssignTier === opt.id
+                          ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-2xs'
+                          : 'border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-neutral-700 mb-1.5">
+                  Founder / Contact Email (optional)
+                </label>
+                <input
+                  type="email"
+                  value={sponsorAssignEmail}
+                  onChange={(e) => setSponsorAssignEmail(e.target.value)}
+                  placeholder="founder@company.com"
+                  className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs text-neutral-900 focus:border-blue-500 focus:outline-none"
+                />
+                <p className="mt-1 text-[11px] text-neutral-500">
+                  If provided, they&apos;ll automatically receive a Sponsor Live email.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setSponsorAssignProduct(null)}
+                className="rounded-xl border border-neutral-200 bg-white px-4 py-2 text-xs font-bold text-neutral-700 hover:bg-neutral-50 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmAssignSponsor}
+                disabled={isAssigningSponsor}
+                className="rounded-xl bg-blue-600 hover:bg-blue-700 px-4 py-2 text-xs font-black text-white shadow-xs cursor-pointer disabled:opacity-50"
+              >
+                {isAssigningSponsor ? 'Assigning...' : 'Activate Sponsor'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Lightbox Modal for Screenshots */}
       {lightboxImage && (

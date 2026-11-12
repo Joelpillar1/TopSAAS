@@ -79,44 +79,45 @@ export const FreeSubmitUpvoteModal: React.FC<FreeSubmitUpvoteModalProps> = ({
         </button>
 
         {/* Header */}
-        <div className="flex items-start gap-3.5 pr-8 mb-4">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-neutral-100 text-neutral-950 font-black shadow-2xs border border-neutral-200">
-            <Sparkles className="h-5 w-5 text-amber-500 fill-amber-400" />
+        <div className="flex items-start gap-3 pr-8 mb-3.5 sm:mb-4">
+          <div className="flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-neutral-100 text-neutral-950 font-black shadow-2xs border border-neutral-200">
+            <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500 fill-amber-400" />
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-lg sm:text-xl font-extrabold text-neutral-950 tracking-tight">
-                Support Creators to Launch Free
+              <h3 className="text-base sm:text-xl font-extrabold text-neutral-950 tracking-tight leading-snug">
+                Upvote to Launch Free
               </h3>
-              <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-700 border border-neutral-200">
-                Community Step
+              <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                Community
               </span>
             </div>
-            <p className="text-xs text-neutral-500 mt-1 leading-relaxed">
-              TopSAAS is community-powered! Upvote at least{' '}
+            <p className="text-xs text-neutral-500 mt-1 leading-snug">
+              Upvote{' '}
               <strong className="text-neutral-900 font-bold">
-                {requiredCount} of the {modalProducts.length} apps
+                {requiredCount} {requiredCount === 1 ? 'app' : 'apps'}
               </strong>{' '}
-              below that you haven&apos;t upvoted yet to unlock your submission.
+              below to unlock your free launch.
             </p>
           </div>
         </div>
 
         {/* Progress Tracker Card */}
-        <div className="rounded-2xl border border-neutral-200/90 bg-neutral-50/80 p-3.5 sm:p-4 mb-4">
-          <div className="flex items-center justify-between text-xs">
-            <span className="font-bold text-neutral-800">
-              Your Upvote Progress
+        <div className="rounded-2xl border border-neutral-200/90 bg-neutral-50/80 p-3 sm:p-4 mb-3.5 sm:mb-4">
+          <div className="flex items-center justify-between gap-2 text-xs">
+            <span className="font-bold text-neutral-800 whitespace-nowrap">
+              <span className="sm:hidden">Progress</span>
+              <span className="hidden sm:inline">Your Upvote Progress</span>
             </span>
             {isRequirementMet ? (
-              <span className="inline-flex items-center gap-1 font-bold text-mint-700 bg-mint-50 border border-mint-200 px-2.5 py-0.5 rounded-full text-[11px]">
+              <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full text-[11px] whitespace-nowrap">
                 <Check className="h-3 w-3 stroke-[3]" />
-                {upvotedCount} of {requiredCount} upvoted — Ready to submit!
+                {upvotedCount}/{requiredCount} upvoted — Ready!
               </span>
             ) : (
-              <span className="font-bold text-neutral-700 text-[11px] bg-white border border-neutral-200 px-2.5 py-0.5 rounded-full shadow-2xs">
-                {upvotedCount} of {requiredCount} upvoted ·{' '}
-                <span className="text-blue-600 font-extrabold">{remaining} more required</span>
+              <span className="font-bold text-neutral-700 text-[11px] bg-white border border-neutral-200 px-2.5 py-0.5 rounded-full shadow-2xs whitespace-nowrap">
+                {upvotedCount}/{requiredCount} upvoted ·{' '}
+                <span className="text-blue-600 font-extrabold">{remaining} left</span>
               </span>
             )}
           </div>
@@ -124,7 +125,7 @@ export const FreeSubmitUpvoteModal: React.FC<FreeSubmitUpvoteModalProps> = ({
           <div className="w-full bg-neutral-200 rounded-full h-2 overflow-hidden mt-2.5">
             <div
               className={`h-full rounded-full transition-all duration-300 ${
-                isRequirementMet ? 'bg-mint-500' : 'bg-neutral-900'
+                isRequirementMet ? 'bg-emerald-500' : 'bg-blue-600'
               }`}
               style={{ width: `${progressPercent}%` }}
             />
@@ -132,10 +133,13 @@ export const FreeSubmitUpvoteModal: React.FC<FreeSubmitUpvoteModalProps> = ({
         </div>
 
         {/* Scrollable Apps List */}
-        <div className="border border-neutral-200 rounded-2xl overflow-hidden mb-5">
-          <div className="bg-neutral-100/70 border-b border-neutral-200 px-3.5 py-2 text-[11px] font-bold text-neutral-500 flex items-center justify-between">
-            <span>Apps you haven&apos;t upvoted yet</span>
-            <span>Click ▲ to upvote</span>
+        <div className="border border-neutral-200 rounded-2xl overflow-hidden mb-4 sm:mb-5">
+          <div className="bg-neutral-100/70 border-b border-neutral-200 px-3.5 py-2 text-[11px] font-bold text-neutral-500 flex items-center justify-between gap-2">
+            <span className="truncate">Pick apps to upvote</span>
+            <span className="whitespace-nowrap">
+              <span className="sm:hidden">Tap ▲</span>
+              <span className="hidden sm:inline">Click ▲ to upvote</span>
+            </span>
           </div>
 
           <div className="max-h-[320px] sm:max-h-[360px] overflow-y-auto divide-y divide-neutral-100 bg-white">
@@ -227,7 +231,7 @@ export const FreeSubmitUpvoteModal: React.FC<FreeSubmitUpvoteModalProps> = ({
         </div>
 
         {/* Modal Action Buttons */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1 border-t border-neutral-100">
+        <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-2.5 sm:gap-3 pt-2 border-t border-neutral-100">
           <button
             type="button"
             onClick={() => {
@@ -237,7 +241,7 @@ export const FreeSubmitUpvoteModal: React.FC<FreeSubmitUpvoteModalProps> = ({
             disabled={isSubmitting}
             className="w-full sm:w-auto text-xs font-bold text-neutral-500 hover:text-neutral-950 py-2.5 px-3 rounded-xl hover:bg-neutral-100 transition-colors cursor-pointer text-center"
           >
-            Back to review
+            Back
           </button>
 
           <button
@@ -248,21 +252,21 @@ export const FreeSubmitUpvoteModal: React.FC<FreeSubmitUpvoteModalProps> = ({
               onComplete();
             }}
             disabled={!isRequirementMet || isSubmitting}
-            className={`w-full sm:w-auto flex items-center justify-center gap-1.5 rounded-xl py-3 px-6 text-xs font-bold transition-all ${
+            className={`w-full sm:w-auto flex items-center justify-center gap-1.5 rounded-xl py-3 px-6 text-xs font-black transition-all ${
               isRequirementMet && !isSubmitting
-                ? 'btn-primary bg-neutral-950 text-white hover:bg-neutral-800 shadow-md cursor-pointer'
-                : 'bg-neutral-100 text-neutral-400 border border-neutral-200 cursor-not-allowed opacity-70'
+                ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md cursor-pointer'
+                : 'bg-neutral-100 text-neutral-400 border border-neutral-200 cursor-not-allowed opacity-80'
             }`}
           >
             {isSubmitting ? (
               <>
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                <span>Submitting product...</span>
+                <span>Submitting...</span>
               </>
             ) : isRequirementMet ? (
-              <span>Submit ({upvotedCount}/{requiredCount} upvoted) →</span>
+              <span>Submit Launch ({upvotedCount}/{requiredCount}) →</span>
             ) : (
-              <span>Upvote {remaining} more app{remaining === 1 ? '' : 's'} to submit</span>
+              <span>Upvote {remaining} more to submit</span>
             )}
           </button>
         </div>

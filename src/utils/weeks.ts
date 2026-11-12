@@ -127,7 +127,7 @@ export function formatWeekDateRange(week: WeekInfo, format: 'to' | '–' = 'to')
   }
 
   if (startMonth === endMonth) {
-    return `${startMonth} ${startDay} – ${endDay}`;
+    return `${startMonth} ${startDay}–${endDay}`;
   }
   return `${startMonth} ${startDay} – ${endMonth} ${endDay}`;
 }

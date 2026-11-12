@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { CalendarDays, ChevronDown } from 'lucide-react';
 import { Product, WebsiteSubmission } from '../types';
 import { playSound } from '../utils/sound';
-import { MAX_WEEKLY_LAUNCH_CAP } from '../utils/weeks';
+import { MAX_WEEKLY_LAUNCH_CAP, getWeekByNumber, getWeekNumber } from '../utils/weeks';
+import { isSponsorOnlyProduct, publishedProductId } from '../utils/db';
 
 interface LaunchWeekSelectorProps {
   selectedWeekNumber?: number;
@@ -14,7 +15,7 @@ interface LaunchWeekSelectorProps {
 
 export interface LaunchSlot {
   id: string;
-  isoWeek: number;
+  weekNumber: number;
   start: number;
   end: number;
   dateRange: string;
@@ -23,15 +24,6 @@ export interface LaunchSlot {
   available: number;
   cap: number;
   label: string;
-}
-
-/** Computes ISO 8601 week number (1-53) */
-function getISOWeek(date: Date): number {
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  const dayNum = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
 }
 
 /** Formats date range according to convention (e.g. Nov 9–15, 2026 or Dec 28, 2026 – Jan 3, 2027) */
@@ -51,14 +43,6 @@ function formatSlotDateRange(start: Date, end: Date): string {
     return `${startMonth} ${startDay} – ${endMonth} ${endDay}, ${startYear}`;
   }
   return `${startMonth} ${startDay}–${endDay}, ${startYear}`;
-}
-
-/** Returns Monday 00:00:00 of the present week */
-function getPresentMonday(): Date {
-  const now = new Date();
-  const day = now.getDay();
-  const diff = (day === 0 ? -6 : 1) - day;
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate() + diff, 0, 0, 0, 0);
 }
 
 export const LaunchWeekSelector: React.FC<LaunchWeekSelectorProps> = ({
@@ -92,51 +76,62 @@ export const LaunchWeekSelector: React.FC<LaunchWeekSelectorProps> = ({
     };
   }, []);
 
-  // Generate 24 upcoming launch round slots starting dynamically from the PRESENT week
-  // Accurately computing live available apps for each round based on the MAX_WEEKLY_LAUNCH_CAP (30)
+  // Generate 24 upcoming TopSAAS launch round slots starting from the current platform week.
+  // Excludes rejected submissions, sponsor-only items, and previous-week products.
   const slots: LaunchSlot[] = useMemo(() => {
-    const presentMonday = getPresentMonday().getTime();
+    const now = Date.now();
+    const currentWeekNum = getWeekNumber(now);
     const result: LaunchSlot[] = [];
     const totalSlots = 24;
-    const now = Date.now();
-    const cap = MAX_WEEKLY_LAUNCH_CAP; // 30 apps per week
+    const cap = MAX_WEEKLY_LAUNCH_CAP;
+
+    const rejectedIds = new Set<string>();
+    for (const s of submissions) {
+      if (s.status === 'rejected') {
+        rejectedIds.add(s.id);
+        rejectedIds.add(publishedProductId(s.id));
+      }
+    }
 
     for (let i = 0; i < totalSlots; i++) {
-      const startMs = presentMonday + i * 7 * 86400000;
-      const endMs = startMs + 7 * 86400000 - 1;
+      const weekInfo = getWeekByNumber(currentWeekNum + i);
+      const weekNum = weekInfo.weekNumber;
+      const startMs = weekInfo.start;
+      const endMs = weekInfo.end - 1;
       const startDate = new Date(startMs);
       const endDate = new Date(endMs);
-      const isoWeek = getISOWeek(startDate);
       const dateRange = formatSlotDateRange(startDate, endDate);
-      const slotId = `${startDate.getFullYear()}-W${isoWeek}`;
+      const slotId = weekInfo.key;
 
-      // Aggregate live active apps for this slot
+      // Aggregate active apps for this specific launch round
       const activeAppIds = new Set<string>();
-      const isKickoff = i === 0;
 
       for (const p of products) {
-        const pDate = p.scheduledLaunchDate ? Number(p.scheduledLaunchDate) : Number(p.createdAt || 0);
-        const inDateRange = isKickoff ? pDate <= endMs : pDate >= startMs && pDate <= endMs;
-        const inIsoWeek = p.scheduledLaunchWeek ? p.scheduledLaunchWeek === isoWeek : false;
-        const autoRelaunch = Boolean(p.autoRelaunch);
-        const inRelaunchWeeks = Array.isArray(p.relaunchWeeks) && p.relaunchWeeks.includes(isoWeek);
+        if (isSponsorOnlyProduct(p) || rejectedIds.has(p.id)) continue;
 
-        if (inDateRange || inIsoWeek || autoRelaunch || inRelaunchWeeks) {
+        const pDate = p.scheduledLaunchDate ? Number(p.scheduledLaunchDate) : Number(p.createdAt || 0);
+        const matchesScheduledWeek = p.scheduledLaunchWeek
+          ? p.scheduledLaunchWeek === weekNum
+          : pDate >= startMs && pDate <= endMs;
+        const autoRelaunch = Boolean(p.autoRelaunch);
+        const inRelaunchWeeks = Array.isArray(p.relaunchWeeks) && p.relaunchWeeks.includes(weekNum);
+
+        if (matchesScheduledWeek || autoRelaunch || inRelaunchWeeks) {
           activeAppIds.add(p.id);
         }
       }
 
       for (const s of submissions) {
         if (s.status !== 'approved' && s.status !== 'under_review') continue;
-        const prodId = s.id.startsWith('prod-') ? s.id : `prod-${s.id}`;
-        // Skip duplicate if already represented in published products
+        const prodId = publishedProductId(s.id);
         if (activeAppIds.has(prodId) || activeAppIds.has(s.id)) continue;
 
         const sDate = s.scheduledLaunchDate ? Number(s.scheduledLaunchDate) : Number(s.submittedAt || 0);
-        const inDateRange = isKickoff ? sDate <= endMs : sDate >= startMs && sDate <= endMs;
-        const inIsoWeek = s.scheduledLaunchWeek ? s.scheduledLaunchWeek === isoWeek : false;
+        const matchesWeek = s.scheduledLaunchWeek
+          ? s.scheduledLaunchWeek === weekNum
+          : sDate >= startMs && sDate <= endMs;
 
-        if (inDateRange || inIsoWeek) {
+        if (matchesWeek) {
           activeAppIds.add(s.id);
         }
       }
@@ -148,12 +143,12 @@ export const LaunchWeekSelector: React.FC<LaunchWeekSelectorProps> = ({
       const isFull = isPast || available === 0;
 
       const label = isFull
-        ? `Week ${isoWeek} · ${dateRange} · full (0/${cap} available)`
-        : `Week ${isoWeek} · ${dateRange} · ${available}/${cap} available`;
+        ? `${dateRange} · full (0/${cap} available)`
+        : `${dateRange} · ${available}/${cap} available`;
 
       result.push({
         id: slotId,
-        isoWeek,
+        weekNumber: weekNum,
         start: startMs,
         end: endMs,
         dateRange,
@@ -173,7 +168,7 @@ export const LaunchWeekSelector: React.FC<LaunchWeekSelectorProps> = ({
 
   const activeSlot = useMemo(() => {
     if (selectedWeekNumber) {
-      const match = slots.find((s) => s.isoWeek === selectedWeekNumber && !s.isFull);
+      const match = slots.find((s) => s.weekNumber === selectedWeekNumber && !s.isFull);
       if (match) return match;
     }
     return firstAvailableSlot;
@@ -182,7 +177,7 @@ export const LaunchWeekSelector: React.FC<LaunchWeekSelectorProps> = ({
   // Ensure the parent form has the selected week registered
   useEffect(() => {
     if (!selectedWeekNumber && activeSlot) {
-      onSelectWeek(activeSlot.isoWeek, activeSlot.start);
+      onSelectWeek(activeSlot.weekNumber, activeSlot.start);
     }
   }, [selectedWeekNumber, activeSlot, onSelectWeek]);
 
@@ -259,7 +254,7 @@ export const LaunchWeekSelector: React.FC<LaunchWeekSelectorProps> = ({
                   onClick={() => {
                     if (slot.isFull) return;
                     playSound('click', soundEnabled);
-                    onSelectWeek(slot.isoWeek, slot.start);
+                    onSelectWeek(slot.weekNumber, slot.start);
                     setIsOpen(false);
                   }}
                   className={`w-full px-3.5 py-2 text-left text-xs sm:text-[13px] transition-colors select-none ${

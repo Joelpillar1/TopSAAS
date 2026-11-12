@@ -25,12 +25,13 @@ import {
   FileText,
   ArrowRight,
   AlertTriangle,
+  Share2,
 } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '../utils/supabase';
 import { Category, PricingModel, Product, ProductSocial, SocialPlatform, SUBMISSION_CATEGORIES, WebsiteSubmission } from '../types';
 import { getWebsiteFavicon } from '../utils/logo';
-import { mapDbProduct, mapDbSubmission, updateProductDirect, submissionToProduct } from '../utils/db';
+import { mapDbProduct, mapDbSubmission, updateProductDirect, submissionToProduct, loadProductById } from '../utils/db';
 import { ProductLogo } from './ProductLogo';
 import { SkeletonRows } from './SkeletonCard';
 import { playSound } from '../utils/sound';
@@ -59,6 +60,7 @@ interface ProfilePageProps {
   onDeleteProduct?: (productId: string) => void;
   onUpdateProduct?: (product: Product) => void;
   onSelectProduct?: (product: Product) => void;
+  onShareProduct?: (product: Product) => void;
   soundEnabled?: boolean;
 }
 
@@ -119,6 +121,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   onDeleteProduct,
   onUpdateProduct,
   onSelectProduct,
+  onShareProduct,
   soundEnabled = true,
 }) => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -750,6 +753,35 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
       offerUrl: p.offerUrl || '',
       offerDetails: p.offerDetails || '',
     });
+
+    // Homepage list queries omit heavy fields (screenshots, long rich text) to save egress.
+    // Hydrate the full product record on-demand so existing screenshots & rich details always appear.
+    loadProductById(p.id, true)
+      .then((full) => {
+        if (!full) return;
+        setEditingProduct((curr) => (curr && curr.id === p.id ? { ...curr, ...full } : curr));
+        setEditForm((prev) => ({
+          ...prev,
+          description: prev.description || full.description || '',
+          pricingModel: prev.pricingModel || (full.pricingModel as PricingModel) || '',
+          targetAudience: prev.targetAudience || full.targetAudience || '',
+          problemItSolves: prev.problemItSolves || full.problemItSolves || '',
+          solution: prev.solution || full.solution || '',
+          uniqueSellingPoint: prev.uniqueSellingPoint || full.uniqueSellingPoint || '',
+          demoVideoUrl: prev.demoVideoUrl || full.demoVideoUrl || '',
+          screenshots:
+            prev.screenshots.length > 0
+              ? prev.screenshots
+              : Array.isArray(full.screenshots)
+                ? [...full.screenshots]
+                : [],
+          offerDiscount: prev.offerDiscount || full.offerDiscount || '',
+          offerCode: prev.offerCode || full.offerCode || '',
+          offerUrl: prev.offerUrl || full.offerUrl || '',
+          offerDetails: prev.offerDetails || full.offerDetails || '',
+        }));
+      })
+      .catch(() => { });
   };
 
   const handleCloseEdit = () => {
@@ -1189,119 +1221,217 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                 )}
               </div>
             ) : (
-              products.map((product) => (
-                <div
-                  key={product.id}
-                  className="rounded-xl border border-neutral-200 bg-white p-3.5 sm:p-4 shadow-xs hover:border-neutral-200 transition-all"
-                >
-                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-                    <div className="flex items-start gap-3 min-w-0 flex-1">
-                      <ProductLogo
-                        src={product.logoUrl || getWebsiteFavicon(product.url)}
-                        alt={product.name}
-                        containerClassName="relative h-11 w-11 rounded-lg overflow-hidden border border-neutral-200 bg-neutral-100 shrink-0 flex items-center justify-center shadow-2xs"
-                        iconClassName="h-5 w-5 text-neutral-500 shrink-0"
-                      />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                          <h4
-                            onClick={() => {
-                              playSound('click', soundEnabled);
-                              if (onSelectProduct) onSelectProduct(product);
-                            }}
-                            className="text-sm font-black text-neutral-950 truncate hover:text-mint-600 hover:underline cursor-pointer transition-colors"
-                            title="Click to view details"
-                          >
-                            {product.name}
-                          </h4>
-                          <span className="text-[9px] font-bold text-mint-600 bg-mint-500/15 border border-mint-500/30 px-1.5 py-0.5 rounded shrink-0">
-                            Live
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {products.map((product) => {
+                  const launchedDate = product.createdAt
+                    ? new Date(product.createdAt).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })
+                    : 'Recently';
+                  return (
+                    <div
+                      key={product.id}
+                      className="group rounded-2xl border border-neutral-200/90 bg-white p-4 sm:p-5 shadow-xs hover:shadow-md hover:border-neutral-300/90 transition-all flex flex-col justify-between gap-4"
+                    >
+                      <div className="space-y-4">
+                        {/* Identity Row */}
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <ProductLogo
+                              src={product.logoUrl || getWebsiteFavicon(product.url)}
+                              alt={product.name}
+                              containerClassName="relative h-11 w-11 rounded-xl overflow-hidden border border-neutral-200 bg-white shrink-0 flex items-center justify-center shadow-2xs"
+                              iconClassName="h-5 w-5 text-neutral-500 shrink-0"
+                            />
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <h4
+                                  onClick={() => {
+                                    playSound('click', soundEnabled);
+                                    if (onSelectProduct) onSelectProduct(product);
+                                  }}
+                                  className="text-base font-black text-neutral-950 truncate hover:text-blue-600 cursor-pointer transition-colors"
+                                >
+                                  {product.name}
+                                </h4>
+                                <a
+                                  href={product.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="text-neutral-400 hover:text-neutral-900 transition-colors shrink-0"
+                                  title="Open website"
+                                >
+                                  <ExternalLink className="h-3.5 w-3.5" />
+                                </a>
+                              </div>
+                              <div className="flex items-center gap-1.5 text-[11px] font-medium text-neutral-500 mt-0.5">
+                                <Calendar className="h-3 w-3 text-neutral-400 shrink-0" />
+                                <span>Launched {launchedDate}</span>
+                                <span className="text-neutral-300">·</span>
+                                <span className="truncate">{product.category.split(',')[0].trim()}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-[11px] font-bold text-emerald-700 shrink-0">
+                            <Check className="h-3 w-3 stroke-[2.75]" />
+                            Launched
                           </span>
-                          {product.autoRelaunch && !product.isSponsored && (
-                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-blue-700 bg-blue-50 border border-blue-200/80 px-1.5 py-0.5 rounded shadow-2xs shrink-0">
-                              <span>🚀</span>
-                              <span>Weekly Relaunch Active</span>
-                            </span>
-                          )}
-                          {product.isSponsored && (
-                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-neutral-800 bg-neutral-100 border border-neutral-300 px-1.5 py-0.5 rounded shadow-2xs shrink-0">
-                              <span>Sponsor Rails</span>
-                            </span>
-                          )}
                         </div>
-                        <p className="text-xs text-neutral-500 truncate mt-0.5">{product.tagline}</p>
-                        <div className="flex flex-wrap items-center gap-2 mt-2">
-                          <span className="inline-flex items-center gap-1 rounded-md bg-neutral-100 border border-neutral-200 px-2 py-0.5 text-[10px] font-bold text-neutral-600">
-                            <Globe className="h-2.5 w-2.5" />
-                            {product.category}
-                          </span>
-                          <a
-                            href={product.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-[10px] font-bold text-neutral-500 hover:text-neutral-950 transition-colors"
+
+                        {/* Live Performance Scorecard */}
+                        <div className="grid grid-cols-3 divide-x divide-neutral-200/80 rounded-xl border border-neutral-200/80 bg-neutral-50/70 py-2.5 text-center">
+                          <div>
+                            <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Rank</div>
+                            <div className="text-sm font-black text-neutral-950 font-mono-num mt-0.5">#{product.rank || '—'}</div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Upvotes</div>
+                            <div className="text-sm font-black text-neutral-950 font-mono-num mt-0.5">{(product.upvotes ?? 0).toLocaleString()}</div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Visits</div>
+                            <div className="text-sm font-black text-neutral-950 font-mono-num mt-0.5">{(product.clicks ?? 0).toLocaleString()}</div>
+                          </div>
+                        </div>
+
+                        {/* Stacked Action Rows */}
+                        <div className="space-y-2">
+                          {/* Row 1: Edit launch details */}
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEdit(product)}
+                            className="w-full flex items-center justify-between gap-3 rounded-xl border border-neutral-200/90 bg-white px-3.5 py-2.5 text-left hover:border-neutral-300 hover:bg-neutral-50/80 transition-all cursor-pointer group/row"
                           >
-                            Visit
-                            <ExternalLink className="h-2.5 w-2.5" />
-                          </a>
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-neutral-100 text-neutral-600 group-hover/row:bg-neutral-200/70 transition-colors">
+                                <Pencil className="h-3.5 w-3.5" />
+                              </div>
+                              <div className="min-w-0">
+                                <div className="text-xs font-bold text-neutral-950">Edit launch details</div>
+                                <div className="text-[11px] text-neutral-500 truncate">
+                                  Approved. Update screenshots, copy &amp; deals anytime.
+                                </div>
+                              </div>
+                            </div>
+                            <ChevronRight className="h-4 w-4 text-neutral-400 group-hover/row:translate-x-0.5 group-hover/row:text-neutral-700 transition-all shrink-0" />
+                          </button>
+
+                          {/* Row 2: Share Banner & Embed Badge */}
+                          <div className="grid grid-cols-2 gap-2">
+                            {onShareProduct && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  playSound('click', soundEnabled);
+                                  onShareProduct(product);
+                                }}
+                                className="flex items-center justify-between gap-2 rounded-xl border border-neutral-200/90 bg-white px-3 py-2.5 text-left hover:border-blue-300 hover:bg-blue-50/50 transition-all cursor-pointer"
+                              >
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <Share2 className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+                                  <span className="text-xs font-bold text-neutral-900 truncate">Share</span>
+                                </div>
+                                <ChevronRight className="h-3.5 w-3.5 text-neutral-400 shrink-0" />
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                playSound('click', soundEnabled);
+                                setBadgeProduct(product);
+                              }}
+                              className={`flex items-center justify-between gap-2 rounded-xl border border-neutral-200/90 bg-white px-3 py-2.5 text-left hover:border-emerald-300 hover:bg-emerald-50/40 transition-all cursor-pointer ${
+                                !onShareProduct ? 'col-span-2' : ''
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                <Code2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                                <span className="text-xs font-bold text-neutral-900 truncate">Embed Badge</span>
+                              </div>
+                              <ChevronRight className="h-3.5 w-3.5 text-neutral-400 shrink-0" />
+                            </button>
+                          </div>
+
+                          {/* Row 3: Highlighted Relaunch Card */}
+                          {!product.autoRelaunch ? (
+                            <div className="flex items-center justify-between gap-3 rounded-xl border border-blue-200/80 bg-blue-50/60 px-3.5 py-2.5">
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <span className="text-base shrink-0">🚀</span>
+                                <div className="min-w-0">
+                                  <div className="text-xs font-bold text-neutral-950">Relaunch this product</div>
+                                  <div className="text-[11px] text-neutral-600 truncate">
+                                    Re-enter the weekly leaderboard every Monday.
+                                  </div>
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  playSound('click', soundEnabled);
+                                  setRelaunchProduct(product);
+                                }}
+                                className="shrink-0 rounded-lg bg-blue-600 hover:bg-blue-700 px-3 py-1.5 text-[11px] font-black text-white shadow-2xs transition-all cursor-pointer"
+                              >
+                                Relaunch ($5)
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-between gap-3 rounded-xl border border-blue-200/80 bg-blue-50/60 px-3.5 py-2.5">
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <span className="text-base shrink-0">🚀</span>
+                                <div className="min-w-0">
+                                  <div className="text-xs font-bold text-neutral-950">Weekly Relaunch Active</div>
+                                  <div className="text-[11px] text-neutral-600 truncate">
+                                    Automatically boosted into every weekly round.
+                                  </div>
+                                </div>
+                              </div>
+                              <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-blue-600 px-2.5 py-1 text-[10px] font-bold text-white">
+                                <Check className="h-3 w-3 stroke-[2.75]" />
+                                Active
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
-                    </div>
 
-                    {/* Actions: Relaunch, Embed Badge, Edit & Delete */}
-                    <div className="flex items-center gap-1.5 shrink-0 flex-wrap sm:flex-nowrap pt-2 sm:pt-0 border-t border-neutral-100 sm:border-t-0 justify-end">
-                      {!product.autoRelaunch && (
+                      {/* Subtle Footer: View Listing + Remove */}
+                      <div className="flex items-center justify-between pt-2 border-t border-neutral-100">
                         <button
                           type="button"
                           onClick={() => {
                             playSound('click', soundEnabled);
-                            setRelaunchProduct(product);
+                            if (onSelectProduct) onSelectProduct(product);
                           }}
-                          className="flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50/80 px-2.5 py-1.5 text-xs font-black text-blue-700 hover:bg-blue-100 hover:border-blue-300 transition-all cursor-pointer shadow-2xs"
-                          title="Relaunch into active weekly round ($5)"
+                          className="inline-flex items-center gap-1 text-[11px] font-bold text-neutral-600 hover:text-blue-600 transition-colors cursor-pointer"
                         >
-                          <span>🚀</span>
-                          <span>Relaunch ($5)</span>
+                          <span>View live listing</span>
+                          <ArrowRight className="h-3 w-3" />
                         </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          playSound('click', soundEnabled);
-                          setBadgeProduct(product);
-                        }}
-                        className="flex items-center gap-1 rounded-lg border border-neutral-200 bg-neutral-100 px-2.5 py-1.5 text-xs font-bold text-mint-600 hover:border-mint-500/60 hover:text-mint-700 transition-all cursor-pointer"
-                        title="Get Embeddable Badge"
-                      >
-                        <Code2 className="h-3 w-3 text-mint-600" />
-                        <span>Badge</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleOpenEdit(product)}
-                        className="flex items-center gap-1 rounded-lg border border-neutral-200 bg-neutral-100 px-2.5 py-1.5 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-all cursor-pointer shadow-2xs"
-                        title="Edit project"
-                      >
-                        <Pencil className="h-3 w-3" />
-                        <span>Edit</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(product.id)}
-                        disabled={deletingId === product.id}
-                        className="flex h-7 w-7 items-center justify-center rounded-lg border border-neutral-200 bg-neutral-100 text-neutral-500 hover:border-red-300 hover:text-red-600 hover:bg-red-50 transition-all cursor-pointer disabled:opacity-50 shrink-0"
-                        title="Remove product"
-                      >
-                        {deletingId === product.id ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-3.5 w-3.5" />
-                        )}
-                      </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(product.id)}
+                          disabled={deletingId === product.id}
+                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-neutral-400 hover:text-red-600 transition-colors cursor-pointer disabled:opacity-50"
+                          title="Remove product"
+                        >
+                          {deletingId === product.id ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3 w-3" />
+                          )}
+                          <span>Remove</span>
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              ))
+                  );
+                })}
+              </div>
             )}
           </div>
         )}

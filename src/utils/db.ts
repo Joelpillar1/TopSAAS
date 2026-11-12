@@ -271,6 +271,8 @@ export const toDbProduct = (p: Product) => {
     auto_relaunch: p.autoRelaunch || false,
     relaunch_weeks: p.relaunchWeeks || [],
     last_relaunched_at: p.lastRelaunchedAt || null,
+    scheduled_launch_week: p.scheduledLaunchWeek || null,
+    scheduled_launch_date: p.scheduledLaunchDate || null,
   };
 };
 
@@ -668,6 +670,8 @@ export async function insertProductDirect(p: Product): Promise<boolean> {
     if (p.creatorXHandle) minimal.creator_x_handle = p.creatorXHandle;
     if (p.creatorAvatar) minimal.creator_avatar = p.creatorAvatar;
     if (p.creatorRole) minimal.creator_role = p.creatorRole;
+    if (p.scheduledLaunchWeek) minimal.scheduled_launch_week = p.scheduledLaunchWeek;
+    if (p.scheduledLaunchDate) minimal.scheduled_launch_date = p.scheduledLaunchDate;
     if (p.demoVideoUrl) minimal.demo_video_url = p.demoVideoUrl;
 
     await preserveExistingCounters([minimal]);
@@ -1284,6 +1288,73 @@ export const FEATURED_PRODUCTS_KEY = 'featured_product_ids';
 export const LOCAL_FEATURED_PRODUCTS_KEY = 'topsaas_featured_product_ids';
 export const FEATURED_POSITIONS_MAP_KEY = 'featured_product_positions';
 export const LOCAL_FEATURED_POSITIONS_MAP_KEY = 'topsaas_featured_product_positions';
+export const SPONSOR_ORDER_KEY = 'sponsor_order_ids';
+export const LOCAL_SPONSOR_ORDER_KEY = 'topsaas_sponsor_order_ids';
+
+/** Get custom display order of active sponsors on the sidebar rails */
+export async function getSponsorOrder(): Promise<string[]> {
+  try {
+    const { data, error } = await supabase
+      .from('site_settings')
+      .select('value')
+      .eq('key', SPONSOR_ORDER_KEY)
+      .maybeSingle();
+
+    if (!error && data && data.value) {
+      const parsed = JSON.parse(data.value);
+      if (Array.isArray(parsed)) {
+        const ids = parsed.filter((id): id is string => typeof id === 'string');
+        try {
+          localStorage.setItem(LOCAL_SPONSOR_ORDER_KEY, JSON.stringify(ids));
+        } catch { }
+        return ids;
+      }
+    }
+  } catch { }
+
+  try {
+    const local = localStorage.getItem(LOCAL_SPONSOR_ORDER_KEY);
+    if (local) {
+      const parsed = JSON.parse(local);
+      if (Array.isArray(parsed)) return parsed.filter((id): id is string => typeof id === 'string');
+    }
+  } catch { }
+
+  return [];
+}
+
+/** Save custom display order of active sponsors to Supabase site_settings & localStorage */
+export async function setSponsorOrder(ids: string[]): Promise<void> {
+  const clean = ids.filter((id): id is string => typeof id === 'string');
+  try {
+    localStorage.setItem(LOCAL_SPONSOR_ORDER_KEY, JSON.stringify(clean));
+  } catch { }
+
+  try {
+    await supabase.from('site_settings').upsert({
+      key: SPONSOR_ORDER_KEY,
+      value: JSON.stringify(clean),
+      description: 'Ordered array of sponsor IDs for sidebar sponsor rails',
+      updated_at: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.warn('setSponsorOrder note:', err);
+  }
+}
+
+/** Sort sponsors by custom order array (unlisted sponsors preserve their original order after ordered ones) */
+export function sortSponsorsByOrder<T extends { id: string }>(list: T[], orderIds: string[]): T[] {
+  if (!orderIds || orderIds.length === 0) return list;
+  const orderMap = new Map(orderIds.map((id, idx) => [id, idx]));
+  return [...list].sort((a, b) => {
+    const idxA = orderMap.get(a.id);
+    const idxB = orderMap.get(b.id);
+    if (idxA !== undefined && idxB !== undefined) return idxA - idxB;
+    if (idxA !== undefined) return -1;
+    if (idxB !== undefined) return 1;
+    return 0;
+  });
+}
 
 /** Get whether a custom position is set for the featured card in the listing (default: 0 = top above #1) */
 export async function getFeaturedPosition(): Promise<number> {

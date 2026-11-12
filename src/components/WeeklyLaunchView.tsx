@@ -112,7 +112,8 @@ export const WeeklyLaunchView: React.FC<WeeklyLaunchViewProps> = ({
               const isCurrentCalendarWeek = week.key === currentWeek.key;
               const isPast = week.weekNumber < currentWeek.weekNumber;
               const isFuture = week.weekNumber > currentWeek.weekNumber;
-              const label = isCurrentCalendarWeek ? 'This Week' : week.label;
+              const dateRange = formatWeekDateRange(week, '–');
+              const label = dateRange;
 
               return (
                 <button
@@ -123,8 +124,10 @@ export const WeeklyLaunchView: React.FC<WeeklyLaunchViewProps> = ({
                   aria-current={isSelected ? 'page' : undefined}
                   title={
                     isFuture
-                      ? `${week.label} (Upcoming round)`
-                      : `${week.label} · ${formatWeekDateRange(week, '–')}`
+                      ? `${dateRange} (${week.label} · Upcoming round)`
+                      : isCurrentCalendarWeek
+                      ? `This Week · ${dateRange}`
+                      : `${week.label} · ${dateRange}`
                   }
                   className={`relative shrink-0 text-[13px] sm:text-sm px-3 py-1.5 rounded-xl transition-all ${
                     isFuture

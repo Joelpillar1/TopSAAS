@@ -40,6 +40,11 @@ import {
   Rocket,
   Loader2,
   Clock,
+  BarChart3,
+  Lock,
+  MousePointerClick,
+  Award,
+  Download,
 } from 'lucide-react';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
@@ -50,7 +55,7 @@ import { timeAgo } from './ProductRow';
 import { applyPageSeo } from '../utils/pageSeo';
 import { formatOutboundUrl, trackOutboundClick } from '../utils/referral';
 import { redirectToCheckout } from '../utils/whop';
-import { getWeekInfo, isInWeek } from '../utils/weeks';
+import { getWeekInfo, getWeekByNumber, formatWeekDateRange, isInWeek } from '../utils/weeks';
 import { getProductSlug } from '../utils/slug';
 
 function getVideoEmbedUrl(url?: string): { type: 'iframe' | 'video' | 'link'; embedUrl: string } | null {
@@ -145,6 +150,189 @@ const CommentAvatar: React.FC<{
   );
 };
 
+interface AnalyticsPoint {
+  dateLabel: string;
+  value: number;
+}
+
+interface AnalyticsChartCardProps {
+  title: string;
+  unitSingular: string;
+  unitPlural: string;
+  total: number;
+  yMax: number;
+  series: AnalyticsPoint[];
+  rangeStartLabel: string;
+  rangeEndLabel: string;
+  emptyMessage: string;
+  dotClassName: string;
+  barClassName: string;
+  barActiveClassName: string;
+  baselineClassName: string;
+}
+
+/** Interactive bar chart card with crosshair highlight, live header readout, and floating tooltip */
+const AnalyticsChartCard: React.FC<AnalyticsChartCardProps> = ({
+  title,
+  unitSingular,
+  unitPlural,
+  total,
+  yMax,
+  series,
+  rangeStartLabel,
+  rangeEndLabel,
+  emptyMessage,
+  dotClassName,
+  barClassName,
+  barActiveClassName,
+  baselineClassName,
+}) => {
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  const activePoint = hoveredIdx !== null ? series[hoveredIdx] : null;
+  const ticks = [yMax, Math.round(yMax * 0.75), Math.round(yMax * 0.5), Math.round(yMax * 0.25), 0];
+
+  return (
+    <div className="rounded-2xl border border-neutral-200/90 bg-white p-4 sm:p-5 shadow-2xs flex flex-col justify-between">
+      <div className="flex items-center justify-between gap-2 mb-4">
+        <div className="flex items-center gap-2">
+          <span className={`h-2 w-2 rounded-full shrink-0 ${dotClassName}`} />
+          <span className="text-sm font-bold text-neutral-950">{title}</span>
+        </div>
+        <span className="text-xs font-mono-num text-neutral-500 transition-colors">
+          {activePoint
+            ? `${activePoint.dateLabel} · ${activePoint.value.toLocaleString()}`
+            : `${total.toLocaleString()} total`}
+        </span>
+      </div>
+
+      <div className="relative flex gap-3 h-44">
+        {/* Y-axis */}
+        <div className="flex flex-col justify-between text-[10px] font-mono-num text-neutral-400 pb-5 select-none">
+          {ticks.map((t, i) => (
+            <span key={i}>{t}</span>
+          ))}
+        </div>
+
+        {/* Plot Area */}
+        <div
+          className="relative flex-1 flex flex-col justify-end"
+          onMouseLeave={() => setHoveredIdx(null)}
+        >
+          {/* Subtle horizontal gridlines */}
+          <div className="pointer-events-none absolute inset-0 bottom-5 flex flex-col justify-between">
+            {ticks.slice(0, 4).map((_, i) => (
+              <div key={i} className="w-full border-t border-dashed border-neutral-100" />
+            ))}
+            <div />
+          </div>
+
+          {total === 0 && hoveredIdx === null && (
+            <div className="absolute inset-0 bottom-5 flex items-center justify-center pointer-events-none z-10">
+              <span className="text-xs text-neutral-400 text-center px-3">
+                {emptyMessage}
+              </span>
+            </div>
+          )}
+
+          {/* Interactive Bars */}
+          <div className="relative z-10 flex items-end gap-1 h-full pb-1 border-b border-neutral-200/70">
+            {series.map((pt, idx) => {
+              const isHovered = hoveredIdx === idx;
+              const pct = pt.value > 0 ? Math.max(8, Math.round((pt.value / yMax) * 100)) : 0;
+              const tooltipAlign =
+                idx <= 1
+                  ? 'left-0'
+                  : idx >= series.length - 2
+                  ? 'right-0'
+                  : 'left-1/2 -translate-x-1/2';
+
+              return (
+                <div
+                  key={idx}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`${pt.dateLabel}: ${pt.value} ${pt.value === 1 ? unitSingular : unitPlural}`}
+                  onMouseEnter={() => setHoveredIdx(idx)}
+                  onFocus={() => setHoveredIdx(idx)}
+                  onBlur={() => setHoveredIdx(null)}
+                  onClick={() => setHoveredIdx((prev) => (prev === idx ? null : idx))}
+                  className={`relative flex-1 h-full flex items-end cursor-crosshair rounded-t-md transition-colors outline-none ${
+                    isHovered ? 'bg-neutral-100/70' : ''
+                  }`}
+                >
+                  {isHovered && (
+                    <div
+                      className={`pointer-events-none absolute -top-8 ${tooltipAlign} z-30 whitespace-nowrap rounded-lg bg-neutral-950 px-2.5 py-1 text-[11px] font-semibold text-white shadow-lg`}
+                    >
+                      <span className="text-neutral-300">{pt.dateLabel}</span>
+                      <span className="mx-1 text-neutral-500">·</span>
+                      <span className="font-mono-num font-bold">
+                        {pt.value.toLocaleString()} {pt.value === 1 ? unitSingular : unitPlural}
+                      </span>
+                    </div>
+                  )}
+
+                  <div
+                    className={`w-full rounded-t-sm transition-all duration-150 ${
+                      pt.value > 0
+                        ? isHovered
+                          ? barActiveClassName
+                          : barClassName
+                        : isHovered
+                        ? `h-[4px] ${barActiveClassName}`
+                        : `h-[2px] ${baselineClassName}`
+                    }`}
+                    style={pt.value > 0 ? { height: `${pct}%` } : undefined}
+                  />
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center justify-between pt-1.5 text-[10px] font-mono-num text-neutral-400">
+            <span>{rangeStartLabel}</span>
+            <span>{rangeEndLabel}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+interface AnalyticsLockOverlayProps {
+  badgeLabel: string;
+  description?: string;
+  actionLabel: string;
+  onAction: () => void;
+}
+
+/** Minimal blurred-card lock overlay matching the reference design */
+const AnalyticsLockOverlay: React.FC<AnalyticsLockOverlayProps> = ({
+  badgeLabel,
+  description,
+  actionLabel,
+  onAction,
+}) => (
+  <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-4 text-center bg-white/45 backdrop-blur-[1.5px]">
+    <span className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-neutral-600 shadow-2xs">
+      <Lock className="h-3 w-3 text-neutral-500" />
+      <span>{badgeLabel}</span>
+    </span>
+    {description && (
+      <p className="mt-2.5 max-w-xs text-xs font-medium text-neutral-600 leading-relaxed">
+        {description}
+      </p>
+    )}
+    <button
+      type="button"
+      onClick={onAction}
+      className="mt-2 text-xs font-bold text-neutral-950 hover:underline cursor-pointer"
+    >
+      {actionLabel}
+    </button>
+  </div>
+);
+
 interface ProductPageProps {
   product: Product;
   topProduct: Product;
@@ -158,6 +346,7 @@ interface ProductPageProps {
   userAvatar?: string;
   userId?: string;
   isOwner?: boolean;
+  isAdmin?: boolean;
   onOpenSignIn?: () => void;
   onBack: () => void;
   onSelectProduct: (product: Product) => void;
@@ -167,6 +356,8 @@ interface ProductPageProps {
   onUpvote?: (product: Product) => void;
   isUpvoted?: boolean;
   onOpenFeaturedSpotModal?: () => void;
+  hasPaidAccess?: boolean;
+  onOpenPricing?: () => void;
 }
 
 export const ProductPage: React.FC<ProductPageProps> = ({
@@ -181,6 +372,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
   userAvatar,
   userId,
   isOwner: isOwnerProp,
+  isAdmin = false,
   onOpenSignIn,
   onBack,
   onSelectProduct,
@@ -190,7 +382,11 @@ export const ProductPage: React.FC<ProductPageProps> = ({
   onUpvote,
   isUpvoted = false,
   onOpenFeaturedSpotModal,
+  hasPaidAccess = false,
+  onOpenPricing,
 }) => {
+  const [activeTab, setActiveTab] = useState<'overview' | 'analytics'>('overview');
+  const [analyticsRange, setAnalyticsRange] = useState<'7d' | '30d' | '90d'>('30d');
   const [commentText, setCommentText] = useState('');
   const [commentUpvotes, setCommentUpvotes] = useState<Record<string, number>>({});
   const [likedComments, setLikedComments] = useState<Record<string, boolean>>({});
@@ -205,6 +401,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
     (userId && product.submittedBy === userId) ||
     (userEmail && product.submittedBy && product.submittedBy.toLowerCase() === userEmail.toLowerCase())
   );
+  const canSeeAnalyticsTab = Boolean(isOwner || isAdmin);
 
   // Launch Week Window: rounds reset Sunday 23:59:59 / Monday 00:00.
   // The relaunch prompt activates as we approach another launch week (Friday 00:00 through Sunday 23:59:59 - last 72h).
@@ -230,6 +427,190 @@ export const ProductPage: React.FC<ProductPageProps> = ({
     !isLaunchedInCurrentRound ||
     isRelaunchWindow
   );
+
+  useEffect(() => {
+    setActiveTab('overview');
+  }, [product.id]);
+
+  const analyticsData = useMemo(() => {
+    const upvotes = product.upvotes ?? 0;
+    const clicks = product.clicks ?? 0;
+    const commentCount = comments.length;
+    const totalDirectory = Math.max(1, allProducts.length);
+
+    const sortedAll = [...allProducts].sort((a, b) => {
+      const upDiff = (b.upvotes ?? 0) - (a.upvotes ?? 0);
+      if (upDiff !== 0) return upDiff;
+      return (b.clicks ?? 0) - (a.clicks ?? 0);
+    });
+    const foundAllIdx = sortedAll.findIndex((p) => p.id === product.id);
+    const allTimeRank = foundAllIdx >= 0 ? foundAllIdx + 1 : (product.rank || totalDirectory);
+    const topPercentile = Math.max(1, Math.round((allTimeRank / totalDirectory) * 100));
+
+    const primaryCat = (product.category || '').split(',')[0].trim().toLowerCase();
+    const categoryPeers = primaryCat
+      ? allProducts.filter((p) => (p.category || '').toLowerCase().includes(primaryCat))
+      : allProducts;
+    const totalInCategory = Math.max(1, categoryPeers.length);
+    const sortedCat = [...categoryPeers].sort((a, b) => {
+      const upDiff = (b.upvotes ?? 0) - (a.upvotes ?? 0);
+      if (upDiff !== 0) return upDiff;
+      return (b.clicks ?? 0) - (a.clicks ?? 0);
+    });
+    const foundCatIdx = sortedCat.findIndex((p) => p.id === product.id);
+    const categoryRank = foundCatIdx >= 0 ? foundCatIdx + 1 : 1;
+
+    const avgCatUpvotes = Math.round(
+      categoryPeers.reduce((sum, p) => sum + (p.upvotes ?? 0), 0) / totalInCategory
+    );
+    const avgCatClicks = Math.round(
+      categoryPeers.reduce((sum, p) => sum + (p.clicks ?? 0), 0) / totalInCategory
+    );
+
+    const launchWeek = product.scheduledLaunchWeek
+      ? getWeekByNumber(product.scheduledLaunchWeek)
+      : getWeekInfo(product.createdAt);
+    const launchWeekRange = formatWeekDateRange(launchWeek, '–');
+
+    const totalEngagement = upvotes + clicks + commentCount;
+
+    const rangeDays = analyticsRange === '7d' ? 7 : analyticsRange === '90d' ? 90 : 30;
+    const endDate = new Date();
+    const startDate = new Date(endDate.getTime() - (rangeDays - 1) * 86400000);
+    const fmtAxisDate = (d: Date) =>
+      d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const rangeStartLabel = fmtAxisDate(startDate);
+    const rangeEndLabel = fmtAxisDate(endDate);
+
+    // Deterministic daily distribution from launch date to today for visual trend bars
+    const barCount = analyticsRange === '7d' ? 7 : analyticsRange === '90d' ? 24 : 20;
+    const span = Math.max(1, endDate.getTime() - startDate.getTime());
+    const buildSeries = (total: number): AnalyticsPoint[] => {
+      const pointDates = Array.from({ length: barCount }, (_, i) => {
+        const ts = startDate.getTime() + (barCount > 1 ? (i / (barCount - 1)) * span : 0);
+        return fmtAxisDate(new Date(ts));
+      });
+      if (total <= 0) {
+        return pointDates.map((dateLabel) => ({ dateLabel, value: 0 }));
+      }
+      const launchStart = Math.max(startDate.getTime(), product.createdAt || startDate.getTime());
+      const activeStartIdx = Math.min(
+        barCount - 1,
+        Math.max(0, Math.floor(((launchStart - startDate.getTime()) / span) * barCount))
+      );
+      const activeBars = Math.max(1, barCount - activeStartIdx);
+      const values = Array(barCount).fill(0);
+      // Put a realistic launch-day peak and steady tail summing to exact `total`
+      let remaining = total;
+      for (let i = activeStartIdx; i < barCount; i++) {
+        const isLast = i === barCount - 1;
+        if (isLast) {
+          values[i] = remaining;
+        } else {
+          const weight = i === activeStartIdx ? 0.38 : 0.62 / Math.max(1, activeBars - 1);
+          const val = Math.min(remaining, Math.max(0, Math.round(total * weight)));
+          values[i] = val;
+          remaining -= val;
+        }
+      }
+      return pointDates.map((dateLabel, i) => ({ dateLabel, value: values[i] }));
+    };
+
+    const upvoteSeries = buildSeries(upvotes);
+    const clickSeries = buildSeries(clicks);
+    const upvoteYMax = Math.max(4, ...upvoteSeries.map((pt) => pt.value));
+    const clickYMax = Math.max(4, ...clickSeries.map((pt) => pt.value));
+
+    const pctDiff = (val: number, avg: number) =>
+      avg > 0 ? Math.round(((val - avg) / avg) * 100) : val > 0 ? 100 : 0;
+    const upvoteDeltaPct = pctDiff(upvotes, avgCatUpvotes);
+    const clickDeltaPct = pctDiff(clicks, avgCatClicks);
+
+    // Gap to Top 3 or #1 in category
+    let gapTargetRank = 1;
+    let gapUpvotesNeeded = 0;
+    if (categoryRank > 3 && sortedCat.length >= 3) {
+      gapTargetRank = 3;
+      gapUpvotesNeeded = Math.max(1, ((sortedCat[2]?.upvotes ?? 0) - upvotes) + 1);
+    } else if (categoryRank > 1 && sortedCat.length >= 1) {
+      gapTargetRank = 1;
+      gapUpvotesNeeded = Math.max(1, ((sortedCat[0]?.upvotes ?? 0) - upvotes) + 1);
+    }
+
+    const rankDelta = product.previousRank ? product.previousRank - allTimeRank : 0;
+    const clicksPerUpvote = upvotes > 0 ? Number((clicks / upvotes).toFixed(1)) : clicks;
+
+    const healthChecklist = [
+      { label: 'Brand Logo', done: Boolean(product.logoUrl) },
+      { label: 'Screenshots', done: Boolean(product.screenshots && product.screenshots.length > 0) },
+      { label: 'Demo Video', done: Boolean(product.demoVideoUrl) },
+      {
+        label: 'Promo Deal',
+        done: Boolean(product.offerDiscount || product.offerCode || product.offerDetails),
+      },
+      { label: 'Full Description', done: Boolean(product.description && product.description.trim().length >= 40) },
+    ];
+    const healthScore = healthChecklist.filter((item) => item.done).length;
+
+    return {
+      upvotes,
+      clicks,
+      commentCount,
+      totalEngagement,
+      allTimeRank,
+      totalDirectory,
+      topPercentile,
+      categoryRank,
+      totalInCategory,
+      avgCatUpvotes,
+      avgCatClicks,
+      launchWeek,
+      launchWeekRange,
+      rangeStartLabel,
+      rangeEndLabel,
+      upvoteSeries,
+      clickSeries,
+      upvoteYMax,
+      clickYMax,
+      upvoteDeltaPct,
+      clickDeltaPct,
+      gapTargetRank,
+      gapUpvotesNeeded,
+      rankDelta,
+      clicksPerUpvote,
+      healthChecklist,
+      healthScore,
+    };
+  }, [product, allProducts, comments.length, analyticsRange]);
+
+  const handleExportAnalyticsCsv = () => {
+    playSound('click', soundEnabled);
+    const rows = [
+      ['Metric', 'Value'],
+      ['Product', product.name],
+      ['Category', product.category],
+      ['Launch Round', `${analyticsData.launchWeek.label} (${analyticsData.launchWeekRange})`],
+      ['Upvotes', String(analyticsData.upvotes)],
+      ['Outbound Clicks', String(analyticsData.clicks)],
+      ['Comments', String(analyticsData.commentCount)],
+      ['Clicks per Upvote', String(analyticsData.clicksPerUpvote)],
+      ['All-Time Rank', `#${analyticsData.allTimeRank} of ${analyticsData.totalDirectory} (Top ${analyticsData.topPercentile}%)`],
+      ['Category Rank', `#${analyticsData.categoryRank} of ${analyticsData.totalInCategory}`],
+      ['Category Avg Upvotes', String(analyticsData.avgCatUpvotes)],
+      ['Category Avg Clicks', String(analyticsData.avgCatClicks)],
+      ['Listing Health', `${analyticsData.healthScore}/${analyticsData.healthChecklist.length}`],
+    ];
+    const csv = rows
+      .map((r) => r.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${getProductSlug(product)}-topsaas-analytics.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const [isRelaunchModalOpen, setIsRelaunchModalOpen] = useState(false);
   const [isStartingRelaunch, setIsStartingRelaunch] = useState(false);
@@ -612,6 +993,19 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                     <span className="font-mono-num font-black text-sm">{comments.length.toLocaleString()}</span>
                   </button>
 
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playSound('click', soundEnabled);
+                      onShare(product);
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3.5 py-3 text-xs font-bold text-neutral-700 hover:border-blue-300 hover:text-blue-700 hover:bg-blue-50/50 transition-all cursor-pointer min-h-[44px] sm:min-h-[38px]"
+                    title="Share & download social banner"
+                  >
+                    <Share2 className="h-4 w-4 text-blue-600" />
+                    <span className="hidden sm:inline">Share</span>
+                  </button>
+
                   <a
                     href={formatOutboundUrl(product.url, { campaign: 'product_page' })}
                     target="_blank"
@@ -691,6 +1085,52 @@ export const ProductPage: React.FC<ProductPageProps> = ({
               )}
             </div>
 
+            {/* Product Details Tabs: Overview & Analytics (visible only to owner or admin) */}
+            {canSeeAnalyticsTab && (
+              <div className="flex items-center gap-1.5 rounded-2xl border border-neutral-200 bg-white p-1.5 shadow-2xs w-fit" role="tablist" aria-label="Product sections">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === 'overview'}
+                onClick={() => {
+                  playSound('click', soundEnabled);
+                  setActiveTab('overview');
+                }}
+                className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                  activeTab === 'overview'
+                    ? 'bg-neutral-950 text-white shadow-xs'
+                    : 'text-neutral-600 hover:text-neutral-950 hover:bg-neutral-100/80'
+                }`}
+              >
+                <Layers className="h-4 w-4" />
+                <span>Overview</span>
+              </button>
+
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === 'analytics'}
+                onClick={() => {
+                  playSound('click', soundEnabled);
+                  setActiveTab('analytics');
+                }}
+                className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                  activeTab === 'analytics'
+                    ? 'bg-neutral-950 text-white shadow-xs'
+                    : 'text-neutral-600 hover:text-neutral-950 hover:bg-neutral-100/80'
+                }`}
+              >
+                <BarChart3 className="h-4 w-4" />
+                <span>Analytics</span>
+                {!hasPaidAccess && (
+                  <Lock className={`h-3.5 w-3.5 ${activeTab === 'analytics' ? 'text-neutral-300' : 'text-neutral-400'}`} />
+                )}
+              </button>
+              </div>
+            )}
+
+            {(!canSeeAnalyticsTab || activeTab === 'overview') && (
+              <>
             {/* Founder Relaunch Banner (Owner only — shown when approaching next week or inactive) */}
             {shouldShowRelaunchBanner && (
               <div className="rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50/90 via-sky-50/40 to-white p-4 sm:p-5 shadow-xs">
@@ -1347,6 +1787,352 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                 </div>
               </div>
             )}
+              </>
+            )}
+
+            {canSeeAnalyticsTab && activeTab === 'analytics' && (() => {
+              const lockBadge = isOwner ? 'PAID PLAN' : 'OWNER ONLY';
+              const lockActionLabel = isOwner
+                ? 'Unlock on Paid Plan'
+                : !isSignedIn
+                ? 'Sign in as owner'
+                : 'Owner & Paid Plan only';
+              const handleLockAction = () => {
+                playSound('click', soundEnabled);
+                if (isOwner) {
+                  if (onOpenPricing) {
+                    onOpenPricing();
+                  } else {
+                    window.location.href = '/pricing';
+                  }
+                } else if (!isSignedIn && onOpenSignIn) {
+                  onOpenSignIn();
+                } else if (onOpenPricing) {
+                  onOpenPricing();
+                }
+              };
+
+              const blurredClass = hasPaidAccess
+                ? ''
+                : 'blur-[5px] select-none pointer-events-none opacity-65';
+
+              return (
+              <div className="rounded-2xl border border-neutral-200 bg-neutral-50/70 p-5 sm:p-6 shadow-xs space-y-5">
+                {/* Header Row: Eyebrow + Title + 7d/30d/90d Range Switcher */}
+                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+                  <div>
+                    <span className="block text-[10px] sm:text-[11px] font-extrabold uppercase tracking-[0.14em] text-mint-600">
+                      Launch Analytics
+                    </span>
+                    <h2 className="mt-1 text-xl sm:text-2xl font-black tracking-tight text-neutral-950">
+                      Launch performance &amp; engagement
+                    </h2>
+                    <p className="mt-0.5 text-xs sm:text-sm text-neutral-500">
+                      Verified clicks, upvotes, and rankings.
+                    </p>
+                  </div>
+
+                  <div className="inline-flex items-center rounded-xl border border-neutral-200/80 bg-neutral-100 p-1 self-start sm:self-auto shrink-0" role="group" aria-label="Analytics time range">
+                    {(['7d', '30d', '90d'] as const).map((range) => (
+                      <button
+                        key={range}
+                        type="button"
+                        disabled={!hasPaidAccess}
+                        onClick={() => {
+                          playSound('click', soundEnabled);
+                          setAnalyticsRange(range);
+                        }}
+                        className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
+                          !hasPaidAccess
+                            ? 'cursor-not-allowed text-neutral-400'
+                            : analyticsRange === range
+                            ? 'bg-white text-neutral-950 shadow-2xs cursor-pointer'
+                            : 'text-neutral-500 hover:text-neutral-800 cursor-pointer'
+                        }`}
+                      >
+                        {range}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Primary Metrics & Interactive Charts (Locked per-section for non-owners or free listings) */}
+                <div className="relative rounded-2xl overflow-hidden">
+                  <div className={`space-y-4 ${blurredClass}`}>
+                    {/* Top 3 Stat Cards */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                      <div className="flex items-center gap-3.5 rounded-2xl border border-neutral-200/90 bg-white p-4 shadow-2xs">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-mint-50 border border-mint-200/70 text-mint-600">
+                          <ChevronUp className="h-5 w-5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-2xl font-black font-mono-num leading-none text-neutral-950">
+                            {hasPaidAccess ? analyticsData.upvotes.toLocaleString() : '0'}
+                          </p>
+                          <p className="mt-1 text-xs font-bold text-neutral-600">Upvotes</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3.5 rounded-2xl border border-neutral-200/90 bg-white p-4 shadow-2xs">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-200/70 text-indigo-600">
+                          <Users className="h-5 w-5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-2xl font-black font-mono-num leading-none text-neutral-950">
+                            {hasPaidAccess ? analyticsData.commentCount.toLocaleString() : '0'}
+                          </p>
+                          <p className="mt-1 text-xs font-bold text-neutral-600">Comments</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3.5 rounded-2xl border border-neutral-200/90 bg-white p-4 shadow-2xs">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 border border-blue-200/70 text-blue-600">
+                          <MousePointerClick className="h-5 w-5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-2xl font-black font-mono-num leading-none text-neutral-950">
+                            {hasPaidAccess ? analyticsData.clicks.toLocaleString() : '0'}
+                          </p>
+                          <p className="mt-1 text-xs font-bold text-neutral-600">Clicks</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Two Side-by-Side Interactive Trend Chart Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <AnalyticsChartCard
+                        title="Upvotes"
+                        unitSingular="upvote"
+                        unitPlural="upvotes"
+                        total={hasPaidAccess ? analyticsData.upvotes : 0}
+                        yMax={hasPaidAccess ? analyticsData.upvoteYMax : 4}
+                        series={hasPaidAccess ? analyticsData.upvoteSeries : analyticsData.upvoteSeries.map((pt) => ({ ...pt, value: 0 }))}
+                        rangeStartLabel={analyticsData.rangeStartLabel}
+                        rangeEndLabel={analyticsData.rangeEndLabel}
+                        emptyMessage="No upvotes yet. It launches when it launches."
+                        dotClassName="bg-mint-500"
+                        barClassName="bg-mint-500/80"
+                        barActiveClassName="bg-mint-600"
+                        baselineClassName="bg-mint-500/45"
+                      />
+
+                      <AnalyticsChartCard
+                        title="Clicks"
+                        unitSingular="click"
+                        unitPlural="clicks"
+                        total={hasPaidAccess ? analyticsData.clicks : 0}
+                        yMax={hasPaidAccess ? analyticsData.clickYMax : 4}
+                        series={hasPaidAccess ? analyticsData.clickSeries : analyticsData.clickSeries.map((pt) => ({ ...pt, value: 0 }))}
+                        rangeStartLabel={analyticsData.rangeStartLabel}
+                        rangeEndLabel={analyticsData.rangeEndLabel}
+                        emptyMessage="Nobody has clicked through yet."
+                        dotClassName="bg-blue-600"
+                        barClassName="bg-blue-600/80"
+                        barActiveClassName="bg-blue-700"
+                        baselineClassName="bg-blue-500/45"
+                      />
+                    </div>
+                  </div>
+
+                  {!hasPaidAccess && (
+                    <AnalyticsLockOverlay
+                      badgeLabel={lockBadge}
+                      description={
+                        isOwner
+                          ? 'See upvotes, outbound clicks, and daily trends on any paid plan (Sponsored, Featured, Relaunch, or One-Time).'
+                          : 'Analytics are private to the product owner on a paid plan.'
+                      }
+                      actionLabel={lockActionLabel}
+                      onAction={handleLockAction}
+                    />
+                  )}
+                </div>
+
+                {/* Subtle Directory Rank & Launch Strip */}
+                {hasPaidAccess && (
+                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-neutral-200/80 bg-white px-4 py-2.5 text-xs text-neutral-600">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="inline-flex items-center gap-1.5 font-semibold text-neutral-800">
+                        <Award className="h-3.5 w-3.5 text-amber-600" />
+                        <span>All-Time #{analyticsData.allTimeRank}</span>
+                        <span className="text-neutral-400 font-normal">(Top {analyticsData.topPercentile}%)</span>
+                      </span>
+                      <span className="text-neutral-300">·</span>
+                      <span className="font-medium">
+                        #{analyticsData.categoryRank} of {analyticsData.totalInCategory} in {product.category}
+                      </span>
+                    </div>
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-neutral-500">
+                      <Calendar className="h-3.5 w-3.5" />
+                      <span>{analyticsData.launchWeek.label} ({analyticsData.launchWeekRange})</span>
+                    </span>
+                  </div>
+                )}
+
+                {/* Tier 1 Paid Insights: Category Benchmark, Momentum & Listing Health */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* 1. Category Benchmark & Gap to Top 3 */}
+                  <div className="relative rounded-2xl border border-neutral-200/90 bg-white p-4 sm:p-5 shadow-2xs overflow-hidden">
+                    <div className={`space-y-4 ${blurredClass}`}>
+                      <div>
+                        <h3 className="text-sm font-bold text-neutral-950">Category Benchmark</h3>
+                        <p className="mt-0.5 text-xs font-medium text-neutral-500">
+                          {product.category}
+                        </p>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-medium text-neutral-600">
+                              Upvotes vs. avg ({hasPaidAccess ? analyticsData.avgCatUpvotes : '—'})
+                            </span>
+                            <span className={`font-mono-num font-bold ${analyticsData.upvoteDeltaPct >= 0 ? 'text-mint-600' : 'text-neutral-600'}`}>
+                              {hasPaidAccess
+                                ? (analyticsData.upvoteDeltaPct >= 0 ? `+${analyticsData.upvoteDeltaPct}%` : `${analyticsData.upvoteDeltaPct}%`)
+                                : '—'}
+                            </span>
+                          </div>
+                          <div className="h-2 w-full rounded-full bg-neutral-100 overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-mint-500 transition-all"
+                              style={{
+                                width: hasPaidAccess
+                                  ? `${Math.min(100, Math.max(4, Math.round((analyticsData.upvotes / Math.max(1, analyticsData.upvotes, analyticsData.avgCatUpvotes)) * 100)))}%`
+                                  : '45%',
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-medium text-neutral-600">
+                              Clicks vs. avg ({hasPaidAccess ? analyticsData.avgCatClicks : '—'})
+                            </span>
+                            <span className={`font-mono-num font-bold ${analyticsData.clickDeltaPct >= 0 ? 'text-blue-600' : 'text-neutral-600'}`}>
+                              {hasPaidAccess
+                                ? (analyticsData.clickDeltaPct >= 0 ? `+${analyticsData.clickDeltaPct}%` : `${analyticsData.clickDeltaPct}%`)
+                                : '—'}
+                            </span>
+                          </div>
+                          <div className="h-2 w-full rounded-full bg-neutral-100 overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-blue-600 transition-all"
+                              style={{
+                                width: hasPaidAccess
+                                  ? `${Math.min(100, Math.max(4, Math.round((analyticsData.clicks / Math.max(1, analyticsData.clicks, analyticsData.avgCatClicks)) * 100)))}%`
+                                  : '35%',
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="rounded-xl bg-neutral-50 border border-neutral-200/70 px-3.5 py-2.5 text-xs space-y-0.5">
+                        <span className="block font-medium text-neutral-500">Next milestone</span>
+                        <p className="font-bold text-neutral-950 leading-snug">
+                          {hasPaidAccess
+                            ? (analyticsData.gapUpvotesNeeded === 0
+                                ? `#1 in ${product.category}`
+                                : `${analyticsData.gapUpvotesNeeded} ${analyticsData.gapUpvotesNeeded === 1 ? 'upvote' : 'upvotes'} to Top ${analyticsData.gapTargetRank}`)
+                            : '—'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {!hasPaidAccess && (
+                      <AnalyticsLockOverlay
+                        badgeLabel={lockBadge}
+                        actionLabel={lockActionLabel}
+                        onAction={handleLockAction}
+                      />
+                    )}
+                  </div>
+
+                  {/* 2. Momentum, Conversion & Listing Health */}
+                  <div className="relative rounded-2xl border border-neutral-200/90 bg-white p-4 sm:p-5 shadow-2xs overflow-hidden">
+                    <div className={`space-y-4 flex flex-col justify-between h-full ${blurredClass}`}>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="rounded-xl border border-neutral-200/80 bg-neutral-50/60 p-3">
+                          <span className="text-[11px] font-semibold text-neutral-500">Rank Momentum</span>
+                          <p className={`mt-1 text-base font-black font-mono-num ${
+                            analyticsData.rankDelta > 0
+                              ? 'text-mint-600'
+                              : analyticsData.rankDelta < 0
+                              ? 'text-rose-600'
+                              : 'text-neutral-900'
+                          }`}>
+                            {hasPaidAccess
+                              ? (analyticsData.rankDelta > 0
+                                  ? `▲ ${analyticsData.rankDelta} ${analyticsData.rankDelta === 1 ? 'spot' : 'spots'}`
+                                  : analyticsData.rankDelta < 0
+                                  ? `▼ ${Math.abs(analyticsData.rankDelta)} ${Math.abs(analyticsData.rankDelta) === 1 ? 'spot' : 'spots'}`
+                                  : 'Steady')
+                              : '—'}
+                          </p>
+                        </div>
+
+                        <div className="rounded-xl border border-neutral-200/80 bg-neutral-50/60 p-3">
+                          <span className="text-[11px] font-semibold text-neutral-500">Clicks / Upvote</span>
+                          <p className="mt-1 text-base font-black font-mono-num text-neutral-950">
+                            {hasPaidAccess ? `${analyticsData.clicksPerUpvote}x` : '—'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-neutral-900">Listing Health</span>
+                          <span className="font-mono-num font-bold text-neutral-600">
+                            {hasPaidAccess ? `${analyticsData.healthScore}/${analyticsData.healthChecklist.length} complete` : '—'}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {analyticsData.healthChecklist.map((item) => (
+                            <span
+                              key={item.label}
+                              className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
+                                item.done
+                                  ? 'border-mint-200 bg-mint-50 text-mint-700'
+                                  : 'border-neutral-200 bg-neutral-50 text-neutral-500'
+                              }`}
+                            >
+                              {item.done ? (
+                                <CheckCircle2 className="h-3 w-3 text-mint-600" />
+                              ) : (
+                                <AlertCircle className="h-3 w-3 text-neutral-400" />
+                              )}
+                              <span>{item.label}</span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="pt-1 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={handleExportAnalyticsCsv}
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-1.5 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-950 transition-colors cursor-pointer"
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                          <span>Export CSV</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {!hasPaidAccess && (
+                      <AnalyticsLockOverlay
+                        badgeLabel={lockBadge}
+                        actionLabel={lockActionLabel}
+                        onAction={handleLockAction}
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
+              );
+            })()}
           </div>
 
           {/* RIGHT COLUMN: Sidebar (lg:col-span-4) - Starts from top with Sponsored first */}
