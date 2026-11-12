@@ -164,10 +164,6 @@ function wrapLayout(params: {
     <tr>
       <td align="center">
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" class="email-card" style="max-width:560px;background-color:#ffffff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;">
-          <!-- Electric Royal Blue Top Accent -->
-          <tr>
-            <td style="height:4px;background:linear-gradient(90deg,#2563eb 0%,#3b82f6 100%);background-color:#2563eb;font-size:0;line-height:0;">&nbsp;</td>
-          </tr>
           <!-- Brand Header -->
           <tr>
             <td class="email-header" style="padding:22px 28px;border-bottom:1px solid #f1f5f9;">
