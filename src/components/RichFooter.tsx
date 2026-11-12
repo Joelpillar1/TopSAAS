@@ -273,6 +273,22 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                     onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
                   />
                 </a>
+                <a
+                  href="https://startupfa.me/s/topsaas?utm_source=topsaas.space"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="transition-opacity hover:opacity-80 inline-flex items-center shrink-0"
+                >
+                  <img
+                    src="https://startupfa.me/badges/featured-badge.webp"
+                    alt="TopSAAS - Featured on Startup Fame"
+                    width={171}
+                    height={54}
+                    className="h-7.5 w-auto"
+                    loading="lazy"
+                    onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                  />
+                </a>
 
                 {/* Set 2 (for seamless infinite loop) */}
                 <a
@@ -476,6 +492,22 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                     onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
                   />
                 </a>
+                <a
+                  href="https://startupfa.me/s/topsaas?utm_source=topsaas.space"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="transition-opacity hover:opacity-80 inline-flex items-center shrink-0"
+                >
+                  <img
+                    src="https://startupfa.me/badges/featured-badge.webp"
+                    alt="TopSAAS - Featured on Startup Fame"
+                    width={171}
+                    height={54}
+                    className="h-7.5 w-auto"
+                    loading="lazy"
+                    onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                  />
+                </a>
               </div>
             </div>
           </div>
@@ -524,6 +556,15 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                 >
                   Build Guides
                 </button>
+              </li>
+              <li>
+                <a
+                  href="/directories"
+                  onClick={(e) => { e.preventDefault(); playSound('click', soundEnabled); navigateTo('/directories'); }}
+                  className="text-xs text-neutral-600 hover:text-neutral-950 transition-colors cursor-pointer flex items-center gap-1.5"
+                >
+                  Product Directories
+                </a>
               </li>
               <li>
                 <button

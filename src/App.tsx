@@ -36,11 +36,14 @@ const SaaSIdeas = React.lazy(() => import('./components/SaaSIdeas').then((m) => 
 const TrendingPage = React.lazy(() => import('./components/TrendingPage').then((m) => ({ default: m.TrendingPage })));
 const GuidesListPage = React.lazy(() => import('./components/GuidesListPage').then((m) => ({ default: m.GuidesListPage })));
 const GuideDetailPage = React.lazy(() => import('./components/GuideDetailPage').then((m) => ({ default: m.GuideDetailPage })));
+const DirectoriesListPage = React.lazy(() => import('./components/DirectoriesListPage').then((m) => ({ default: m.DirectoriesListPage })));
+const DirectoryDetailPage = React.lazy(() => import('./components/DirectoryDetailPage').then((m) => ({ default: m.DirectoryDetailPage })));
 const MrrCalculatorPage = React.lazy(() => import('./components/MrrCalculatorPage').then((m) => ({ default: m.MrrCalculatorPage })));
 const LegalPage = React.lazy(() => import('./components/LegalPage').then((m) => ({ default: m.LegalPage })));
 const PricingPage = React.lazy(() => import('./components/PricingPage').then((m) => ({ default: m.PricingPage })));
 const RepoDetailPage = React.lazy(() => import('./components/RepoDetailPage').then((m) => ({ default: m.RepoDetailPage })));
 import type { CuratedRepo } from './data/curatedRepos';
+import { getDirectoryHub } from './data/directories';
 import { ProductRow, timeAgo } from './components/ProductRow';
 import { SponsorTile } from './components/SponsorTile';
 import { HeroSponsorRails, MobileTopSponsorTicker, MobileBottomStickySponsorTicker } from './components/HeroSponsorRails';
@@ -50,6 +53,7 @@ import { ProductLogo } from './components/ProductLogo';
 import { SkeletonRows, SkeletonGrid, SkeletonTile } from './components/SkeletonCard';
 import { SkeletonTable } from './components/SkeletonTable';
 import { SkeletonProductPage } from './components/SkeletonProductPage';
+import { SkeletonSaaSIdeas } from './components/SkeletonSaaSIdeas';
 import { AdminLoginGate } from './components/AdminLoginGate';
 import { isAdminSessionActive, clearAdminSession } from './utils/adminAuth';
 
@@ -224,6 +228,13 @@ export default function App() {
       }
       if (/^\/guides\//.test(path)) {
         return 'guide';
+      }
+      if (path === '/directories') {
+        return 'directories';
+      }
+      if (path.startsWith('/directories/')) {
+        const directorySlug = decodeURIComponent(path.replace('/directories/', ''));
+        return getDirectoryHub(directorySlug) ? 'directories' : 'directory';
       }
       if (path === '/trending' || hash === '#trending' || hash === '#/trending') {
         return 'trending';
@@ -683,6 +694,27 @@ export default function App() {
     }
     return null;
   });
+  // Directory routes — /directories, /directories/:hub, and /directories/:slug
+  const [directoryHubSlug, setDirectoryHubSlug] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      const m = window.location.pathname.match(/^\/directories\/([^/]+)$/);
+      if (m) {
+        const candidate = decodeURIComponent(m[1]);
+        if (getDirectoryHub(candidate)) return candidate;
+      }
+    }
+    return null;
+  });
+  const [directorySlug, setDirectorySlug] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      const m = window.location.pathname.match(/^\/directories\/([^/]+)$/);
+      if (m) {
+        const candidate = decodeURIComponent(m[1]);
+        if (!getDirectoryHub(candidate)) return candidate;
+      }
+    }
+    return null;
+  });
   // User's submitted product ID tracking (persists even if not signed in)
   const [myProductId, setMyProductId] = useState<string | null>(() => {
     try {
@@ -718,6 +750,22 @@ export default function App() {
         const gm = path.match(/^\/guides\/(.+)$/);
         setCurrentRoute('guide');
         setGuideSlug(gm ? decodeURIComponent(gm[1]) : null);
+      } else if (path === '/directories' || hash === '#directories' || hash === '#/directories') {
+        setCurrentRoute('directories');
+        setDirectoryHubSlug(null);
+        setDirectorySlug(null);
+      } else if (/^\/directories\//.test(path)) {
+        const dm = path.match(/^\/directories\/([^/]+)$/);
+        const candidate = dm ? decodeURIComponent(dm[1]) : null;
+        if (candidate && getDirectoryHub(candidate)) {
+          setCurrentRoute('directories');
+          setDirectoryHubSlug(candidate);
+          setDirectorySlug(null);
+        } else {
+          setCurrentRoute('directory');
+          setDirectorySlug(candidate);
+          setDirectoryHubSlug(null);
+        }
       } else if (path === '/accept' || hash === '#accept' || hash === '#/accept') {
         setCurrentRoute('/accept');
       } else if (path === '/payment-success' || path === '/payment/success' || hash === '#payment-success' || hash === '#/payment-success') {
@@ -2767,34 +2815,36 @@ export default function App() {
     return (
       <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between selection:bg-mint-500/20 selection:text-neutral-900 font-sans">
         {globalHeader}
-        <PricingPage
-          onOpenSubmit={(plan) => {
-            if (plan === 'free_relaunch') {
-              try {
-                localStorage.setItem('topsaas_submit_auto_relaunch', 'true');
-              } catch { }
-            }
-            handleOpenSubmit();
-          }}
-          onOpenSponsor={(tier) => {
-            playSound('click', soundEnabled);
-            setFeaturedModalMode('sponsor');
-            if (tier) {
-              setFeaturedInitialTier(tier);
-            }
-            setIsFeaturedSpotModalOpen(true);
-          }}
-          onOpenFeaturedSpot={(tier) => {
-            playSound('click', soundEnabled);
-            setFeaturedModalMode('featured');
-            if (tier) {
-              setFeaturedInitialTier(tier);
-            }
-            setIsFeaturedSpotModalOpen(true);
-          }}
-          onGoHome={handleBackToLeaderboard}
-          soundEnabled={soundEnabled}
-        />
+        <React.Suspense fallback={<div className="flex-1" />}>
+          <PricingPage
+            onOpenSubmit={(plan) => {
+              if (plan === 'free_relaunch') {
+                try {
+                  localStorage.setItem('topsaas_submit_auto_relaunch', 'true');
+                } catch { }
+              }
+              handleOpenSubmit();
+            }}
+            onOpenSponsor={(tier) => {
+              playSound('click', soundEnabled);
+              setFeaturedModalMode('sponsor');
+              if (tier) {
+                setFeaturedInitialTier(tier);
+              }
+              setIsFeaturedSpotModalOpen(true);
+            }}
+            onOpenFeaturedSpot={(tier) => {
+              playSound('click', soundEnabled);
+              setFeaturedModalMode('featured');
+              if (tier) {
+                setFeaturedInitialTier(tier);
+              }
+              setIsFeaturedSpotModalOpen(true);
+            }}
+            onGoHome={handleBackToLeaderboard}
+            soundEnabled={soundEnabled}
+          />
+        </React.Suspense>
         <RichFooter
           totalProducts={directoryProducts.length}
           soundEnabled={soundEnabled}
@@ -3134,7 +3184,7 @@ export default function App() {
     return (
       <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between font-sans">
         {globalHeader}
-        <React.Suspense fallback={<div className="mx-auto w-full max-w-7xl px-4 py-8"><SkeletonRows count={4} /></div>}>
+        <React.Suspense fallback={<div className="flex-1" />}>
           <RepoDetailPage
             repoId={repoId}
             soundEnabled={soundEnabled}
@@ -3178,7 +3228,7 @@ export default function App() {
     return (
       <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between font-sans">
         {globalHeader}
-        <React.Suspense fallback={<div className="mx-auto w-full max-w-2xl px-4 py-8"><SkeletonRows count={4} /></div>}>
+        <React.Suspense fallback={<div className="flex-1" />}>
           <SubmitPage
             isSignedIn={!!user}
             defaultCreatorName={submitterName}
@@ -3328,7 +3378,7 @@ export default function App() {
     return (
       <>
         {globalHeader}
-        <React.Suspense fallback={<div className="mx-auto w-full max-w-4xl px-4 py-8"><SkeletonRows count={3} /></div>}>
+        <React.Suspense fallback={<div className="min-h-screen bg-white" />}>
           <LegalPage
             initialDoc={currentRoute === '/terms' ? 'terms' : 'privacy'}
             onBack={handleBackToLeaderboard}
@@ -3349,7 +3399,7 @@ export default function App() {
   const routeChrome = (page: React.ReactNode) => (
     <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between selection:bg-mint-500/20 selection:text-neutral-900 font-sans pb-16 lg:pb-0">
       {globalHeader}
-      <React.Suspense fallback={<div className="mx-auto w-full max-w-7xl px-4 py-8"><SkeletonRows count={5} /></div>}>
+      <React.Suspense fallback={<div className="flex-1" />}>
         {page}
       </React.Suspense>
       <RichFooter
@@ -3397,6 +3447,28 @@ export default function App() {
     );
   }
 
+  // 1.9.1 PRODUCT DIRECTORIES ROUTE (/directories and filter hubs)
+  if (currentRoute === 'directories') {
+    return routeChrome(
+      <DirectoriesListPage
+        soundEnabled={soundEnabled}
+        onOpenSubmit={handleOpenSubmit}
+        hubSlug={directoryHubSlug}
+      />
+    );
+  }
+
+  // 1.9.2 DIRECTORY DETAIL ROUTE (/directories/:slug)
+  if (currentRoute === 'directory') {
+    return routeChrome(
+      <DirectoryDetailPage
+        slug={directorySlug}
+        soundEnabled={soundEnabled}
+        onOpenSubmit={handleOpenSubmit}
+      />
+    );
+  }
+
   // 1.10 SAAS MRR CALCULATOR ROUTE (/mrr-calculator)
   if (currentRoute === '/mrr-calculator') {
     return routeChrome(<MrrCalculatorPage soundEnabled={soundEnabled} />);
@@ -3410,7 +3482,7 @@ export default function App() {
       <main className="mx-auto w-full max-w-7xl px-3.5 sm:px-6 space-y-4 sm:space-y-5 flex-1 pb-16 pt-4 sm:pt-6">
 
         {activeTab === 'saas-ideas' ? (
-          <React.Suspense fallback={<SkeletonRows count={6} />}>
+          <React.Suspense fallback={<SkeletonSaaSIdeas />}>
             <SaaSIdeas
               soundEnabled={soundEnabled}
               topProducts={topThreeProducts}
