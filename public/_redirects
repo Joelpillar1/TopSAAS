@@ -7,4 +7,6 @@
 /products.json     /products.json     200
 /sitemap.xml       /sitemap.xml       200
 /robots.txt        /robots.txt        200
+/directories       /product-directory 301
+/directories/*     /product-directory/:splat 301
 /*                 /index.html        200

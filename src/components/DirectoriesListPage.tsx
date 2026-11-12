@@ -168,7 +168,7 @@ export const DirectoriesListPage: React.FC<DirectoriesListPageProps> = ({
     : `A ranked list of ${DIRECTORIES.length} SaaS directories and launch platforms, with Domain Rating, price, link type, and step-by-step submission pages.`;
 
   useEffect(() => {
-    const url = hub ? `/directories/${hub.slug}` : '/directories';
+    const url = hub ? `/product-directory/${hub.slug}` : '/product-directory';
     return applyPageSeo({
       title: `${title} | TopSAAS`,
       description: description.slice(0, 157),
@@ -204,7 +204,7 @@ export const DirectoriesListPage: React.FC<DirectoriesListPageProps> = ({
               '@type': 'ListItem',
               position: index + 1,
               name: directory.name,
-              url: `https://www.topsaas.space/directories/${directory.slug}`,
+              url: `https://www.topsaas.space/product-directory/${directory.slug}`,
               description: directory.description,
             })),
           },
@@ -220,9 +220,9 @@ export const DirectoriesListPage: React.FC<DirectoriesListPageProps> = ({
             '@type': 'BreadcrumbList',
             itemListElement: [
               { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.topsaas.space/' },
-              { '@type': 'ListItem', position: 2, name: 'Directories', item: 'https://www.topsaas.space/directories' },
+              { '@type': 'ListItem', position: 2, name: 'Product Directory', item: 'https://www.topsaas.space/product-directory' },
               ...(hub
-                ? [{ '@type': 'ListItem', position: 3, name: hub.label, item: `https://www.topsaas.space/directories/${hub.slug}` }]
+                ? [{ '@type': 'ListItem', position: 3, name: hub.label, item: `https://www.topsaas.space/product-directory/${hub.slug}` }]
                 : []),
             ],
           },
@@ -233,7 +233,7 @@ export const DirectoriesListPage: React.FC<DirectoriesListPageProps> = ({
 
   const openDirectory = (directory: DirectoryEntry) => {
     playSound('click', soundEnabled);
-    navigateTo(`/directories/${directory.slug}`);
+    navigateTo(`/product-directory/${directory.slug}`);
   };
 
   const trackOutbound = () => {
@@ -303,11 +303,11 @@ export const DirectoriesListPage: React.FC<DirectoriesListPageProps> = ({
       <section className="border-b border-neutral-200 bg-neutral-50/60">
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-center gap-2 px-4 py-4 sm:px-6">
           <a
-            href="/directories"
+            href="/product-directory"
             onClick={(event) => {
               event.preventDefault();
               playSound('click', soundEnabled);
-              navigateTo('/directories');
+              navigateTo('/product-directory');
             }}
             className={`rounded-full border px-3 py-1.5 text-xs font-bold transition-colors ${
               !hub ? 'border-neutral-950 bg-neutral-950 text-white' : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300'
@@ -318,11 +318,11 @@ export const DirectoriesListPage: React.FC<DirectoriesListPageProps> = ({
           {DIRECTORY_HUBS.map((item) => (
             <a
               key={item.slug}
-              href={`/directories/${item.slug}`}
+              href={`/product-directory/${item.slug}`}
               onClick={(event) => {
                 event.preventDefault();
                 playSound('click', soundEnabled);
-                navigateTo(`/directories/${item.slug}`);
+                navigateTo(`/product-directory/${item.slug}`);
               }}
               className={`rounded-full border px-3 py-1.5 text-xs font-bold transition-colors ${
                 hub?.slug === item.slug
@@ -478,7 +478,7 @@ export const DirectoriesListPage: React.FC<DirectoriesListPageProps> = ({
                   <td className="px-3 py-3 text-center text-xs font-bold font-mono-num text-neutral-400">{directory.rank}</td>
                   <td className="max-w-xs px-3 py-3">
                     <a
-                      href={`/directories/${directory.slug}`}
+                      href={`/product-directory/${directory.slug}`}
                       onClick={(event) => {
                         event.preventDefault();
                         openDirectory(directory);
@@ -544,7 +544,7 @@ export const DirectoriesListPage: React.FC<DirectoriesListPageProps> = ({
             <article key={directory.slug} className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-2xs">
               <div className="flex items-start justify-between gap-3">
                 <a
-                  href={`/directories/${directory.slug}`}
+                  href={`/product-directory/${directory.slug}`}
                   onClick={(event) => {
                     event.preventDefault();
                     openDirectory(directory);
@@ -570,7 +570,7 @@ export const DirectoriesListPage: React.FC<DirectoriesListPageProps> = ({
               </div>
               <div className="mt-3 flex items-center gap-2">
                 <a
-                  href={`/directories/${directory.slug}`}
+                  href={`/product-directory/${directory.slug}`}
                   onClick={(event) => {
                     event.preventDefault();
                     openDirectory(directory);
@@ -741,11 +741,11 @@ export const DirectoriesListPage: React.FC<DirectoriesListPageProps> = ({
                 <ArrowRight className="h-4 w-4" />
               </button>
               <a
-                href="/directories"
+                href="/product-directory"
                 onClick={(event) => {
                   event.preventDefault();
                   playSound('click', soundEnabled);
-                  navigateTo('/directories');
+                  navigateTo('/product-directory');
                 }}
                 className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-white/20 px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-white/10 sm:w-auto"
               >

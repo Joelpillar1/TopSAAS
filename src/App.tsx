@@ -229,12 +229,14 @@ export default function App() {
       if (/^\/guides\//.test(path)) {
         return 'guide';
       }
-      if (path === '/directories') {
-        return 'directories';
+      if (path === '/product-directory' || path === '/directories') {
+        return '/product-directory';
       }
-      if (path.startsWith('/directories/')) {
-        const directorySlug = decodeURIComponent(path.replace('/directories/', ''));
-        return getDirectoryHub(directorySlug) ? 'directories' : 'directory';
+      if (path.startsWith('/product-directory/') || path.startsWith('/directories/')) {
+        const directorySlug = decodeURIComponent(
+          path.replace(/^\/(?:product-directory|directories)\//, '')
+        );
+        return getDirectoryHub(directorySlug) ? '/product-directory' : '/product-directory-detail';
       }
       if (path === '/trending' || hash === '#trending' || hash === '#/trending') {
         return 'trending';
@@ -570,15 +572,19 @@ export default function App() {
     return false; // OFF by default as requested
   });
 
-  // Active tab: derived from currentRoute so /ideas and /pricing survive reload.
-  const activeTab: DirectoryTab =
-    currentRoute === '/ideas'
-      ? 'saas-ideas'
-      : currentRoute === '/mrr-calculator'
-        ? 'mrr-calculator'
-        : currentRoute === '/pricing'
-          ? 'pricing'
-          : 'directory';
+  // Active tab: only routes that own a top-level section highlight a tab.
+  // Repo, product, guides, trending, profile, submit, and legal pages return
+  // null so no tab looks selected.
+  const activeTab: DirectoryTab | null =
+    currentRoute === '/'
+      ? 'directory'
+      : currentRoute === '/product-directory' || currentRoute === '/product-directory-detail'
+        ? 'product-directory'
+        : currentRoute === '/ideas'
+          ? 'saas-ideas'
+          : currentRoute === '/mrr-calculator'
+            ? 'mrr-calculator'
+            : null;
 
   // View layout — single-column row list (the bento grid was retired)
   // Search and Category filtering state
@@ -694,10 +700,10 @@ export default function App() {
     }
     return null;
   });
-  // Directory routes — /directories, /directories/:hub, and /directories/:slug
+  // Directory routes — /product-directory, /product-directory/:hub, and /product-directory/:slug
   const [directoryHubSlug, setDirectoryHubSlug] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
-      const m = window.location.pathname.match(/^\/directories\/([^/]+)$/);
+      const m = window.location.pathname.match(/^\/(?:product-directory|directories)\/([^/]+)$/);
       if (m) {
         const candidate = decodeURIComponent(m[1]);
         if (getDirectoryHub(candidate)) return candidate;
@@ -707,7 +713,7 @@ export default function App() {
   });
   const [directorySlug, setDirectorySlug] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
-      const m = window.location.pathname.match(/^\/directories\/([^/]+)$/);
+      const m = window.location.pathname.match(/^\/(?:product-directory|directories)\/([^/]+)$/);
       if (m) {
         const candidate = decodeURIComponent(m[1]);
         if (!getDirectoryHub(candidate)) return candidate;
@@ -723,6 +729,17 @@ export default function App() {
       return null;
     }
   });
+
+  // Keep old /directories bookmarks working while the canonical slug is
+  // /product-directory. The route state already resolves either path.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const path = window.location.pathname;
+    if (path === '/directories' || path.startsWith('/directories/')) {
+      const next = `/product-directory${path.slice('/directories'.length)}`;
+      window.history.replaceState({}, document.title, `${next}${window.location.search}${window.location.hash}`);
+    }
+  }, []);
 
   // Hash change and browser history listener for SPA routing
   useEffect(() => {
@@ -750,19 +767,19 @@ export default function App() {
         const gm = path.match(/^\/guides\/(.+)$/);
         setCurrentRoute('guide');
         setGuideSlug(gm ? decodeURIComponent(gm[1]) : null);
-      } else if (path === '/directories' || hash === '#directories' || hash === '#/directories') {
-        setCurrentRoute('directories');
+      } else if (path === '/product-directory' || path === '/directories' || hash === '#product-directory' || hash === '#/product-directory') {
+        setCurrentRoute('/product-directory');
         setDirectoryHubSlug(null);
         setDirectorySlug(null);
-      } else if (/^\/directories\//.test(path)) {
-        const dm = path.match(/^\/directories\/([^/]+)$/);
+      } else if (/^\/(?:product-directory|directories)\//.test(path)) {
+        const dm = path.match(/^\/(?:product-directory|directories)\/([^/]+)$/);
         const candidate = dm ? decodeURIComponent(dm[1]) : null;
         if (candidate && getDirectoryHub(candidate)) {
-          setCurrentRoute('directories');
+          setCurrentRoute('/product-directory');
           setDirectoryHubSlug(candidate);
           setDirectorySlug(null);
         } else {
-          setCurrentRoute('directory');
+          setCurrentRoute('/product-directory-detail');
           setDirectorySlug(candidate);
           setDirectoryHubSlug(null);
         }
@@ -815,7 +832,7 @@ export default function App() {
 
   // Dynamic Category & Homepage SEO on main directory
   useEffect(() => {
-    if (currentRoute === '/' && activeTab === 'directory') {
+    if (currentRoute === '/') {
       if (selectedCategory && selectedCategory !== 'All') {
         const title = `Top ${selectedCategory} & Software (2026) | TopSAAS`;
         const desc = `Discover the best ${selectedCategory} software, AI tools, and indie products. Real-time community upvotes and verified launches on TopSAAS.`;
@@ -2679,27 +2696,35 @@ export default function App() {
   const handleTabChange = (tab: DirectoryTab) => {
     playSound('click', soundEnabled);
     const nextRoute =
-      tab === 'saas-ideas'
-        ? '/ideas'
-        : tab === 'mrr-calculator'
-          ? '/mrr-calculator'
-          : tab === 'pricing'
-            ? '/pricing'
-            : '/';
+      tab === 'directory'
+        ? '/'
+        : tab === 'product-directory'
+          ? '/product-directory'
+          : tab === 'saas-ideas'
+            ? '/ideas'
+            : tab === 'mrr-calculator'
+              ? '/mrr-calculator'
+              : '/pricing';
     const pageTitle =
-      tab === 'pricing'
-        ? 'Pricing'
-        : tab === 'saas-ideas'
-          ? 'SaaS Ideas'
-          : tab === 'mrr-calculator'
-            ? 'SaaS MRR Calculator'
-            : 'Directory';
+      tab === 'directory'
+        ? 'Directory'
+        : tab === 'product-directory'
+          ? 'Product Directory'
+          : tab === 'pricing'
+            ? 'Pricing'
+            : tab === 'saas-ideas'
+              ? 'SaaS Ideas'
+              : 'SaaS MRR Calculator';
     setCurrentRoute(nextRoute);
     try {
       window.history.pushState({}, pageTitle, nextRoute);
     } catch { }
     if (tab === 'directory') {
       setSelectedCategory('All');
+    }
+    if (tab === 'product-directory') {
+      setDirectoryHubSlug(null);
+      setDirectorySlug(null);
     }
     setCurrentPage(1);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -3447,8 +3472,8 @@ export default function App() {
     );
   }
 
-  // 1.9.1 PRODUCT DIRECTORIES ROUTE (/directories and filter hubs)
-  if (currentRoute === 'directories') {
+  // 1.9.1 PRODUCT DIRECTORY ROUTE (/product-directory and filter hubs)
+  if (currentRoute === '/product-directory') {
     return routeChrome(
       <DirectoriesListPage
         soundEnabled={soundEnabled}
@@ -3458,8 +3483,8 @@ export default function App() {
     );
   }
 
-  // 1.9.2 DIRECTORY DETAIL ROUTE (/directories/:slug)
-  if (currentRoute === 'directory') {
+  // 1.9.2 PRODUCT DIRECTORY DETAIL ROUTE (/product-directory/:slug)
+  if (currentRoute === '/product-directory-detail') {
     return routeChrome(
       <DirectoryDetailPage
         slug={directorySlug}

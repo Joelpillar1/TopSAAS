@@ -3,7 +3,7 @@ import { Trophy, Menu, X, User as UserIcon, Zap, TrendingUp, BookOpen, Plus } fr
 import { User } from '@supabase/supabase-js';
 import { navigateTo } from '../utils/nav';
 
-export type DirectoryTab = 'directory' | 'saas-ideas' | 'mrr-calculator' | 'pricing';
+export type DirectoryTab = 'directory' | 'product-directory' | 'saas-ideas' | 'mrr-calculator' | 'pricing';
 
 interface HeaderProps {
   onGoHome?: () => void;
@@ -11,16 +11,17 @@ interface HeaderProps {
   onSignIn?: () => void;
   onGoToProfile?: () => void;
   user?: User | null;
-  /** Active top-nav section (Directory / SaaS Ideas / Pricing) */
-  activeTab?: DirectoryTab;
+  /** Active top-nav section. Null means no section is active (home, detail pages, legal pages). */
+  activeTab?: DirectoryTab | null;
   onTabChange?: (tab: DirectoryTab) => void;
 }
 
 interface TabSwitcherProps {
-  activeTab: DirectoryTab;
+  activeTab: DirectoryTab | null;
   onTabChange: (tab: DirectoryTab) => void;
 }
 
+// Top-level sections in the top bar.
 const TABS: { key: DirectoryTab; label: string }[] = [
   { key: 'directory', label: 'Directory' },
   { key: 'saas-ideas', label: 'SaaS Ideas' },
@@ -29,7 +30,7 @@ const TABS: { key: DirectoryTab; label: string }[] = [
 
 const TabSwitcher: React.FC<TabSwitcherProps> = ({ activeTab, onTabChange }) => {
   return (
-    <nav className="flex items-center gap-5" aria-label="Browse sections">
+    <nav className="flex items-center gap-4" aria-label="Browse sections">
       {TABS.map((t) => {
         const active = activeTab === t.key;
         return (
@@ -62,7 +63,7 @@ export const Header: React.FC<HeaderProps> = ({
   onSignIn,
   onGoToProfile,
   user,
-  activeTab = 'directory',
+  activeTab = null,
   onTabChange,
 }) => {
   // Mobile hamburger menu state
@@ -120,7 +121,7 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Center: Top-nav sections (desktop only — mobile lives in the hamburger menu) */}
           {onTabChange && (
-            <div className="hidden flex-1 justify-center sm:flex">
+            <div className="hidden flex-1 items-center justify-center gap-5 md:flex">
               <TabSwitcher activeTab={activeTab} onTabChange={onTabChange} />
             </div>
           )}
@@ -139,7 +140,7 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
 
             {/* Auth: Sign in or User Avatar (desktop only — mobile lives in the hamburger menu) */}
-            <div className="hidden sm:flex items-center gap-2">
+            <div className="hidden md:flex items-center gap-2">
               {user ? (
                 /* User Avatar — click to view profile */
                 <button
@@ -178,14 +179,14 @@ export const Header: React.FC<HeaderProps> = ({
                     <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
                     <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                   </svg>
-                  <span className="hidden sm:inline">Sign in with Google</span>
-                  <span className="sm:hidden">Sign in</span>
+                  <span className="hidden lg:inline">Sign in with Google</span>
+                  <span className="lg:hidden">Sign in</span>
                 </button>
               )}
             </div>
 
             {/* Mobile: Hamburger menu */}
-            <div ref={menuRef} className="relative sm:hidden">
+            <div ref={menuRef} className="relative md:hidden">
               <button
                 type="button"
                 onClick={() => setMenuOpen((v) => !v)}

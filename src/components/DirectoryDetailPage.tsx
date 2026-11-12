@@ -107,10 +107,10 @@ export const DirectoryDetailPage: React.FC<DirectoryDetailPageProps> = ({
       return applyPageSeo({
         title: 'Directory not found | TopSAAS',
         description: 'This directory page could not be found. Browse the full list of product directories on TopSAAS.',
-        canonical: '/directories',
+        canonical: '/product-directory',
       });
     }
-    const url = `/directories/${directory.slug}`;
+    const url = `/product-directory/${directory.slug}`;
     return applyPageSeo({
       title: `How to Submit to ${directory.name} (2026) | TopSAAS`,
       description: `${directory.name}: Ahrefs DR ${directory.dr}, ${DIRECTORY_PRICE_LABELS[directory.price].toLowerCase()} listing, ${DIRECTORY_LINK_LABELS[directory.link].toLowerCase()} link. Step-by-step submission guide and requirements.`.slice(0, 157),
@@ -143,7 +143,7 @@ export const DirectoryDetailPage: React.FC<DirectoryDetailPageProps> = ({
             '@type': 'BreadcrumbList',
             itemListElement: [
               { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.topsaas.space/' },
-              { '@type': 'ListItem', position: 2, name: 'Directories', item: 'https://www.topsaas.space/directories' },
+              { '@type': 'ListItem', position: 2, name: 'Product Directory', item: 'https://www.topsaas.space/product-directory' },
               { '@type': 'ListItem', position: 3, name: directory.name, item: `https://www.topsaas.space${url}` },
             ],
           },
@@ -163,10 +163,10 @@ export const DirectoryDetailPage: React.FC<DirectoryDetailPageProps> = ({
           That directory page does not exist or has been renamed. Browse the full ranked list instead.
         </p>
         <a
-          href="/directories"
+          href="/product-directory"
           onClick={(event) => {
             event.preventDefault();
-            navigateTo('/directories');
+            navigateTo('/product-directory');
           }}
           className="mt-5 inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-neutral-950 px-5 py-3 text-sm font-bold text-white hover:bg-neutral-800"
         >
@@ -203,14 +203,14 @@ export const DirectoryDetailPage: React.FC<DirectoryDetailPageProps> = ({
           </a>
           <span className="text-neutral-300">/</span>
           <a
-            href="/directories"
+            href="/product-directory"
             onClick={(event) => {
               event.preventDefault();
-              navigateTo('/directories');
+              navigateTo('/product-directory');
             }}
             className="hover:text-neutral-900"
           >
-            Directories
+            Product Directory
           </a>
           <span className="text-neutral-300">/</span>
           <span className="text-neutral-900">{directory.name}</span>
@@ -376,10 +376,10 @@ export const DirectoryDetailPage: React.FC<DirectoryDetailPageProps> = ({
         <div className="flex flex-wrap items-end justify-between gap-2">
           <SectionTitle>Directories like {directory.name}</SectionTitle>
           <a
-            href="/directories"
+            href="/product-directory"
             onClick={(event) => {
               event.preventDefault();
-              navigateTo('/directories');
+              navigateTo('/product-directory');
             }}
             className="inline-flex items-center gap-1 text-xs font-bold text-neutral-600 hover:text-neutral-950"
           >
@@ -403,11 +403,11 @@ export const DirectoryDetailPage: React.FC<DirectoryDetailPageProps> = ({
                 <tr key={item.slug} className="group hover:bg-neutral-50/70">
                   <td className="px-3 py-3">
                     <a
-                      href={`/directories/${item.slug}`}
+                      href={`/product-directory/${item.slug}`}
                       onClick={(event) => {
                         event.preventDefault();
                         playSound('click', soundEnabled);
-                        navigateTo(`/directories/${item.slug}`);
+                        navigateTo(`/product-directory/${item.slug}`);
                       }}
                       className="font-bold text-neutral-950 group-hover:text-mint-700"
                     >
@@ -426,11 +426,11 @@ export const DirectoryDetailPage: React.FC<DirectoryDetailPageProps> = ({
                   </td>
                   <td className="px-3 py-3 text-right">
                     <a
-                      href={`/directories/${item.slug}`}
+                      href={`/product-directory/${item.slug}`}
                       onClick={(event) => {
                         event.preventDefault();
                         playSound('click', soundEnabled);
-                        navigateTo(`/directories/${item.slug}`);
+                        navigateTo(`/product-directory/${item.slug}`);
                       }}
                       className="inline-flex items-center gap-1 text-xs font-bold text-neutral-600 hover:text-neutral-950"
                     >
@@ -452,11 +452,11 @@ export const DirectoryDetailPage: React.FC<DirectoryDetailPageProps> = ({
           {DIRECTORY_HUBS.map((hub) => (
             <a
               key={hub.slug}
-              href={`/directories/${hub.slug}`}
+              href={`/product-directory/${hub.slug}`}
               onClick={(event) => {
                 event.preventDefault();
                 playSound('click', soundEnabled);
-                navigateTo(`/directories/${hub.slug}`);
+                navigateTo(`/product-directory/${hub.slug}`);
               }}
               className="rounded-full border border-neutral-200 bg-white px-3 py-1.5 text-xs font-bold text-neutral-700 hover:border-neutral-300"
             >

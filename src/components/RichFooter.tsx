@@ -711,11 +711,11 @@ export const RichFooter: React.FC<RichFooterProps> = ({
               </li>
               <li>
                 <a
-                  href="/directories"
-                  onClick={(e) => { e.preventDefault(); playSound('click', soundEnabled); navigateTo('/directories'); }}
+                  href="/product-directory"
+                  onClick={(e) => { e.preventDefault(); playSound('click', soundEnabled); navigateTo('/product-directory'); }}
                   className="text-xs text-neutral-600 hover:text-neutral-950 transition-colors cursor-pointer flex items-center gap-1.5"
                 >
-                  Product Directories
+                  Product Directory
                 </a>
               </li>
               <li>
