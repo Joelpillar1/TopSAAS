@@ -252,6 +252,11 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                     onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
                   />
                 </a>
+                <div className="inline-flex items-center shrink-0 transition-opacity hover:opacity-80 [&_img]:h-8 [&_img]:w-auto [&_img]:max-w-full">
+                  <a href="https://daniellaunches.com" target="_blank">
+                    <img src="https://daniellaunches.com/badge-light.svg" alt="Featured on DanielLaunches" width="220" height="48" />
+                  </a>
+                </div>
 
                 {/* Set 2 (for seamless infinite loop) */}
                 <a
@@ -434,6 +439,11 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                     onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
                   />
                 </a>
+                <div className="inline-flex items-center shrink-0 transition-opacity hover:opacity-80 [&_img]:h-8 [&_img]:w-auto [&_img]:max-w-full">
+                  <a href="https://daniellaunches.com" target="_blank">
+                    <img src="https://daniellaunches.com/badge-light.svg" alt="Featured on DanielLaunches" width="220" height="48" />
+                  </a>
+                </div>
               </div>
             </div>
           </div>
