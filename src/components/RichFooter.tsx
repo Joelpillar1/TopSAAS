@@ -334,6 +334,20 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                     onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
                   />
                 </a>
+                <a
+                  href="https://turbo0.com/item/topsaas"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="transition-opacity hover:opacity-80 inline-flex items-center shrink-0"
+                >
+                  <img
+                    src="https://img.turbo0.com/badge-listed-light.svg"
+                    alt="Listed on Turbo0"
+                    className="h-7.5 w-auto"
+                    loading="lazy"
+                    onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                  />
+                </a>
 
                 {/* Set 2 (for seamless infinite loop) */}
                 <a
@@ -593,6 +607,20 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                   <img
                     src="/badges/toolpilot.png"
                     alt="Featured on ToolPilot"
+                    className="h-7.5 w-auto"
+                    loading="lazy"
+                    onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                  />
+                </a>
+                <a
+                  href="https://turbo0.com/item/topsaas"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="transition-opacity hover:opacity-80 inline-flex items-center shrink-0"
+                >
+                  <img
+                    src="https://img.turbo0.com/badge-listed-light.svg"
+                    alt="Listed on Turbo0"
                     className="h-7.5 w-auto"
                     loading="lazy"
                     onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
