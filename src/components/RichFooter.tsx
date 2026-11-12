@@ -257,6 +257,22 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                     <img src="https://daniellaunches.com/badge-light.svg" alt="Featured on DanielLaunches" width="220" height="48" />
                   </a>
                 </div>
+                <a
+                  href="https://twelve.tools"
+                  target="_blank"
+                  rel="noopener"
+                  className="transition-opacity hover:opacity-80 inline-flex items-center shrink-0"
+                >
+                  <img
+                    src="https://twelve.tools/badge3-white.svg"
+                    alt="Featured on Twelve Tools"
+                    width={148}
+                    height={40}
+                    className="h-7.5 w-auto"
+                    loading="lazy"
+                    onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                  />
+                </a>
 
                 {/* Set 2 (for seamless infinite loop) */}
                 <a
@@ -444,6 +460,22 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                     <img src="https://daniellaunches.com/badge-light.svg" alt="Featured on DanielLaunches" width="220" height="48" />
                   </a>
                 </div>
+                <a
+                  href="https://twelve.tools"
+                  target="_blank"
+                  rel="noopener"
+                  className="transition-opacity hover:opacity-80 inline-flex items-center shrink-0"
+                >
+                  <img
+                    src="https://twelve.tools/badge3-white.svg"
+                    alt="Featured on Twelve Tools"
+                    width={148}
+                    height={40}
+                    className="h-7.5 w-auto"
+                    loading="lazy"
+                    onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                  />
+                </a>
               </div>
             </div>
           </div>
