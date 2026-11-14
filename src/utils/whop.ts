@@ -5,7 +5,7 @@ export const WHOP_LINKS = {
   // Weekly Relaunch ($5/week)
   weeklyRelaunch: 'https://whop.com/checkout/plan_81SmEHd2w16EG',
 
-  // $19 Per Product Pass / One-Time Verified Launch
+  // $5 Per Product Pass / One-Time Verified Launch
   oneTime: 'https://whop.com/checkout/plan_B4wY8ei9eab1S',
   perProductPass: 'https://whop.com/checkout/plan_B4wY8ei9eab1S',
   verifiedLaunch: 'https://whop.com/checkout/plan_B4wY8ei9eab1S',
@@ -91,7 +91,7 @@ export function normalizePlanKey(planType: PlanType): string {
   // Weekly relaunch
   if (p === 'weekly_relaunch' || p === 'weekly-relaunch' || p === 'relaunch') return 'weekly_relaunch';
 
-  // $19 Per Product Pass / Verified launch one-time
+  // $5 Per Product Pass / Verified launch one-time
   if (
     p === 'onetime' ||
     p === 'one-time' ||

@@ -18,12 +18,12 @@ interface PricingPageProps {
 
 const faqs = [
   {
-    q: 'What is the difference between Free and the $19 Verified Launch?',
-    a: 'Free submissions enter a manual queue that takes 7–14 days, with a standard nofollow backlink. The $19 Verified Launch gives you fast-track review within 24 hours, category top-3 pinned spot (1st month), auto weekly relaunch free for your first month (then optional $5/week), a dedicated 1,500+ word story on /blog (including "X vs Y" competitor comparison), permanent high-authority DoFollow backlink, official Verified Mint Badge, and /llms.txt AI search inclusion (ChatGPT, Perplexity and more).',
+    q: 'What is the difference between Free and the $5 Verified Launch?',
+    a: 'Free submissions enter a manual queue that takes 7–14 days, with a standard nofollow backlink. The $5 Verified Launch gives you fast-track review within 24 hours, permanent high-authority DoFollow backlink, official Verified Mint Badge on card & profile, category top-3 pinned spot (7 Days), a dedicated 1,000+ word story on /blog, and /llms.txt AI search inclusion (ChatGPT, Perplexity and more).',
   },
   {
-    q: 'Is the $19 Verified Launch a recurring subscription?',
-    a: 'No! The Verified Launch is a simple one-time payment of $19 per product. You get permanent lifetime directory listing, verified badge, and dofollow backlink with zero mandatory recurring charges.',
+    q: 'Is the $5 Verified Launch a recurring subscription?',
+    a: 'No! The Verified Launch is a simple one-time payment of $5 per product. You get permanent lifetime directory listing, verified badge, and dofollow backlink with zero recurring subscription fees.',
   },
   {
     q: 'What is the difference between Featured Spot and Sidebar Sponsor?',
@@ -53,11 +53,11 @@ const comparisonRows: Array<{
   { feature: 'SEO backlink type',               free: 'nofollow',       verified: 'dofollow (permanent)' },
   { feature: 'Verified badge (directory card)', free: false,            verified: true },
   { feature: 'Embeddable badge (your site)',    free: false,            verified: true },
-  { feature: 'Auto Weekly Relaunch',            free: '+$5/week toggle',  verified: '1st Month Free (then $5/week)' },
-  { feature: 'Category pinned placement',       free: false,            verified: 'Top 3 Pinned (1st Month)' },
-  { feature: '1,500+ word story on /blog',      free: false,            verified: 'Included (with "vs" breakdown)' },
+  { feature: 'Auto Weekly Relaunch',            free: '+$5/week toggle',  verified: '+$5/week optional' },
+  { feature: 'Category pinned placement',       free: false,            verified: 'Top 3 Pinned (7 Days)' },
+  { feature: '1,000+ word story on /blog',      free: false,            verified: 'Included' },
   { feature: 'Included in /llms.txt (AI SEO)',  free: false,            verified: 'ChatGPT, Perplexity & more' },
-  { feature: 'Pricing model',                   free: '$0 Forever',     verified: '$19 One-Time (Lifetime)' },
+  { feature: 'Pricing model',                   free: '$0 Forever',     verified: '$5 One-Time (Lifetime)' },
 ];
 
 export const PricingPage: React.FC<PricingPageProps> = ({
@@ -74,16 +74,16 @@ export const PricingPage: React.FC<PricingPageProps> = ({
   useEffect(() => {
     return applyPageSeo({
       title: 'Pricing & Launch Plans | TopSAAS',
-      description: 'Explore launch plans on TopSAAS. From free standard submissions to the $19 Verified Launch with permanent dofollow backlink, verified badge, and AI search inclusion.',
+      description: 'Explore launch plans on TopSAAS. From free standard submissions to the $5 Verified Launch with permanent dofollow backlink, verified badge, and AI search inclusion.',
       canonical: 'https://www.topsaas.space/pricing',
       jsonLd: {
         '@context': 'https://schema.org',
         '@type': 'Product',
         name: 'TopSAAS Verified Launch',
-        description: 'Permanent verified directory listing, high-authority dofollow backlink, verified badge, top 3 category placement, and /llms.txt AI search inclusion.',
+        description: 'Permanent verified directory listing, high-authority dofollow backlink, verified badge, top 3 category placement (7 Days), and /llms.txt AI search inclusion.',
         offers: {
           '@type': 'Offer',
-          price: '19',
+          price: '5',
           priceCurrency: 'USD',
           availability: 'https://schema.org/InStock',
         },
@@ -121,7 +121,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({
       </div>
 
       {/* ══════════════════════════════════════════════════════════
-          1. LAUNCH PLANS (Starter Free vs $19 Verified Launch)
+          1. LAUNCH PLANS (Starter Free vs $5 Verified Launch)
          ══════════════════════════════════════════════════════════ */}
       <div className="w-full rounded-3xl border border-neutral-200/80 bg-white p-6 sm:p-10 shadow-sm relative">
         {/* Header */}
@@ -268,7 +268,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({
             </div>
           </div>
 
-          {/* Card 2: Verified Launch ($19 / Product · One-time) — Elevated Hero Card */}
+          {/* Card 2: Verified Launch ($5 / Product · One-time) — Elevated Hero Card */}
           <div className="flex flex-col">
             <div className="rounded-2xl border border-neutral-300/80 bg-white p-6 shadow-[0_12px_30px_-8px_rgba(0,0,0,0.12)] ring-1 ring-black/5 flex flex-col justify-between min-h-[220px]">
               <div>
@@ -282,12 +282,12 @@ export const PricingPage: React.FC<PricingPageProps> = ({
                   </span>
                 </div>
                 <p className="h-10 text-xs text-neutral-500 leading-relaxed mt-1 mb-2 line-clamp-2">
-                  Fast-track 24h approval, category top-3 spot (1st mo), auto weekly relaunch, dofollow SEO backlink, and verified badge.
+                  Fast-track 24h approval, category top-3 spot (7 days), dofollow SEO backlink, and verified badge.
                 </p>
 
                 <div className="h-10 flex items-baseline gap-1.5 my-1">
                   <span className="text-3xl sm:text-4xl font-extrabold text-neutral-950 tracking-tight font-sans">
-                    $19.00
+                    $5.00
                   </span>
                   <span className="text-xs text-neutral-500 font-medium font-sans">/Product (One-time)</span>
                 </div>
@@ -335,19 +335,13 @@ export const PricingPage: React.FC<PricingPageProps> = ({
                   <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
                     <Check className="h-2.5 w-2.5 stroke-[3]" />
                   </div>
-                  <span><strong>Auto Weekly Relaunch:</strong> 1st Month Free (then $5/week optional)</span>
+                  <span><strong>Pinned Top 3</strong> in your primary category (7 Days)</span>
                 </li>
                 <li className="flex items-center gap-2.5">
                   <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
                     <Check className="h-2.5 w-2.5 stroke-[3]" />
                   </div>
-                  <span><strong>Pinned Top 3</strong> in your primary category (First Month)</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
-                    <Check className="h-2.5 w-2.5 stroke-[3]" />
-                  </div>
-                  <span><strong>1,500+ word story on /blog</strong> (with &quot;X vs Y&quot; competitor breakdown)</span>
+                  <span><strong>1,000+ word story on /blog</strong></span>
                 </li>
                 <li className="flex items-center gap-2.5">
                   <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0">
@@ -399,7 +393,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({
                     <th className="p-3.5 text-left font-semibold w-1/2">Feature</th>
                     <th className="p-3.5 text-center font-semibold">Starter</th>
                     <th className="p-3.5 text-center font-semibold text-mint-700 bg-mint-500/5 border-l border-neutral-200">
-                      Verified ($19)
+                      Verified ($5)
                     </th>
                   </tr>
                 </thead>

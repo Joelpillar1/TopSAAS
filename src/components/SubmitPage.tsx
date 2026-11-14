@@ -2483,7 +2483,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                     </button>
                   </div>
 
-                  {/* Option 2: Verified Launch ($19 / Product · One-time) with Overlapping Tag */}
+                  {/* Option 2: Verified Launch ($5 / Product · One-time) with Overlapping Tag */}
                   <div
                     onClick={() => {
                       playSound('click', soundEnabled);
@@ -2517,11 +2517,11 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                       </div>
 
                       <p className="text-xs text-neutral-600 leading-relaxed mt-1 mb-2">
-                        Fast-track 24h approval, category top-3 spot, dofollow SEO backlink, and verified badge.
+                        Fast-track 24h approval, category top-3 spot (7 days), dofollow SEO backlink, and verified badge.
                       </p>
 
                       <div className="flex items-baseline gap-2 my-1.5">
-                        <span className="text-3xl sm:text-4xl font-extrabold text-neutral-950 tracking-tight font-sans">$19.00</span>
+                        <span className="text-3xl sm:text-4xl font-extrabold text-neutral-950 tracking-tight font-sans">$5.00</span>
                         <span className="text-xs font-semibold text-neutral-500 font-sans">/Product (One-time)</span>
                       </div>
 
@@ -2530,12 +2530,6 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                           Everything in Starter, plus:
                         </p>
                         <ul className="space-y-2.5 text-xs sm:text-[13px] text-neutral-800 font-medium">
-                          <li className="flex items-start gap-2.5 leading-snug">
-                            <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200/90 text-emerald-600 mt-0.5">
-                              <Check className="h-3 w-3 stroke-[3]" />
-                            </div>
-                            <span><strong>No badge required on your website</strong> (skip verification)</span>
-                          </li>
                           <li className="flex items-start gap-2.5 leading-snug">
                             <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200/90 text-emerald-600 mt-0.5">
                               <Check className="h-3 w-3 stroke-[3]" />
@@ -2554,56 +2548,31 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                             </div>
                             <span><strong>Official Verified Mint Badge</strong> on card & profile</span>
                           </li>
-
-                          {/* Expandable Verified Launch Features */}
-                          {showAllVerifiedFeatures && (
-                            <>
-                              <li className="flex items-start gap-2.5 leading-snug animate-in fade-in-50 duration-150">
-                                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200/90 text-emerald-600 mt-0.5">
-                                  <Check className="h-3 w-3 stroke-[3]" />
-                                </div>
-                                <span><strong>Auto Weekly Relaunch:</strong> 1st Month Free (then $5/week optional)</span>
-                              </li>
-                              <li className="flex items-start gap-2.5 leading-snug animate-in fade-in-50 duration-150">
-                                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200/90 text-emerald-600 mt-0.5">
-                                  <Check className="h-3 w-3 stroke-[3]" />
-                                </div>
-                                <span><strong>Pinned Top 3</strong> in your primary category (First Month)</span>
-                              </li>
-                              <li className="flex items-start gap-2.5 leading-snug animate-in fade-in-50 duration-150">
-                                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200/90 text-emerald-600 mt-0.5">
-                                  <Check className="h-3 w-3 stroke-[3]" />
-                                </div>
-                                <span><strong>1,500+ word story on /blog</strong> (with competitor breakdown)</span>
-                              </li>
-                              <li className="flex items-start gap-2.5 leading-snug animate-in fade-in-50 duration-150">
-                                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200/90 text-emerald-600 mt-0.5">
-                                  <Check className="h-3 w-3 stroke-[3]" />
-                                </div>
-                                <span>Indexed in <strong>/llms.txt</strong> for AI search (ChatGPT, Perplexity)</span>
-                              </li>
-                              <li className="flex items-start gap-2.5 leading-snug animate-in fade-in-50 duration-150">
-                                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200/90 text-emerald-600 mt-0.5">
-                                  <Check className="h-3 w-3 stroke-[3]" />
-                                </div>
-                                <span>Lifetime listing — <strong>zero recurring subscription fees</strong></span>
-                              </li>
-                            </>
-                          )}
+                          <li className="flex items-start gap-2.5 leading-snug">
+                            <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200/90 text-emerald-600 mt-0.5">
+                              <Check className="h-3 w-3 stroke-[3]" />
+                            </div>
+                            <span><strong>Pinned Top 3</strong> in your primary category (7 Days)</span>
+                          </li>
+                          <li className="flex items-start gap-2.5 leading-snug">
+                            <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200/90 text-emerald-600 mt-0.5">
+                              <Check className="h-3 w-3 stroke-[3]" />
+                            </div>
+                            <span><strong>1,000+ word story on /blog</strong></span>
+                          </li>
+                          <li className="flex items-start gap-2.5 leading-snug">
+                            <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200/90 text-emerald-600 mt-0.5">
+                              <Check className="h-3 w-3 stroke-[3]" />
+                            </div>
+                            <span>Indexed in <strong>/llms.txt</strong> for AI search (ChatGPT, Perplexity and more)</span>
+                          </li>
+                          <li className="flex items-start gap-2.5 leading-snug">
+                            <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200/90 text-emerald-600 mt-0.5">
+                              <Check className="h-3 w-3 stroke-[3]" />
+                            </div>
+                            <span>Lifetime listing — <strong>zero recurring subscription fees</strong></span>
+                          </li>
                         </ul>
-
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            playSound('click', soundEnabled);
-                            setShowAllVerifiedFeatures((prev) => !prev);
-                          }}
-                          className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-800 transition-colors cursor-pointer py-1"
-                        >
-                          <span>{showAllVerifiedFeatures ? 'Show fewer features' : '+ 5 more features included'}</span>
-                          <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${showAllVerifiedFeatures ? 'rotate-180' : ''}`} />
-                        </button>
                       </div>
                     </div>
 
@@ -2617,7 +2586,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                       }}
                       className="w-full rounded-2xl bg-neutral-950 hover:bg-neutral-800 text-white py-3 px-4 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-neutral-950/20"
                     >
-                      <span>{submissionPlan === 'paid_19' ? 'Selected ✓' : 'Get Verified Launch — $19 →'}</span>
+                      <span>{submissionPlan === 'paid_19' ? 'Selected ✓' : 'Get Verified Launch — $5 →'}</span>
                     </button>
                   </div>
                 </div>
@@ -2625,14 +2594,14 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
 
               {/* 2. Plan Specific Options */}
               {submissionPlan === 'paid_19' ? (
-                /* ── Fast-Track ($19) Details ── */
+                /* ── Fast-Track ($5) Details ── */
                 <div className="space-y-4 border-t border-neutral-200 pt-5">
                   <div className="rounded-2xl border border-blue-200/80 bg-gradient-to-r from-blue-50/70 via-slate-50/40 to-white p-4 sm:p-5 flex items-start gap-3.5 shadow-2xs">
                     <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white shrink-0 mt-0.5 shadow-sm">
                       <CheckCircle2 className="h-5 w-5" />
                     </div>
                     <div className="space-y-1">
-                      <p className="font-bold text-neutral-950 text-xs sm:text-sm">No website badge required for Fast-Track ($19)</p>
+                      <p className="font-bold text-neutral-950 text-xs sm:text-sm">No website badge required for Fast-Track ($5)</p>
                       <p className="text-[11px] sm:text-xs text-neutral-600 leading-relaxed">
                         You do not need to add any badge or backlink to your site. Your submission will bypass website verification, jump straight into the expedited 24-hour review queue, and receive permanent DoFollow SEO value upon approval.
                       </p>
@@ -3026,7 +2995,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                   ) : (
                     <>
                       <span>⚡</span>
-                      <span>Launch Now - $19</span>
+                      <span>Launch Now - $5</span>
                     </>
                   )}
                 </button>
