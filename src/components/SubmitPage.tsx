@@ -448,7 +448,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
   const [launched, setLaunched] = useState<{ id: string; name: string } | null>(null);
   const [freeVerificationMethod, setFreeVerificationMethod] = useState<'upvote' | 'badge'>('upvote');
   const [showAdvancedDetails, setShowAdvancedDetails] = useState<boolean>(() => {
-    return Boolean(form.problemItSolves || form.solution || form.uniqueSellingPoint || form.targetAudience);
+    return Boolean(form.problemItSolves || form.solution || form.uniqueSellingPoint);
   });
   const [fallbackProducts, setFallbackProducts] = useState<Product[]>([]);
 
@@ -1469,6 +1469,30 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                 />
               </div>
 
+              {/* Target Audience */}
+              <div>
+                <label className={labelClass}>
+                  Target audience
+                  <span className="float-right font-mono-num text-[10px] font-semibold text-neutral-500">
+                    {form.targetAudience.length}/120
+                  </span>
+                </label>
+                <input
+                  type="text"
+                  value={form.targetAudience}
+                  maxLength={120}
+                  onChange={(e) => {
+                    set('targetAudience', e.target.value);
+                    if (draftSaved) setDraftSaved(false);
+                  }}
+                  placeholder="e.g. Indie hackers, developers, small teams, marketers"
+                  className={inputClass(false)}
+                />
+                <p className="mt-1 text-[11px] font-medium text-neutral-500">
+                  Who is this product built for? Helps people find you in search and category filters.
+                </p>
+              </div>
+
               {/* Multi-Category Selection */}
               <div className="border-t border-neutral-200 pt-4">
                 <div className="flex items-center justify-between mb-1.5">
@@ -1641,17 +1665,6 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
 
                   {showAdvancedDetails && (
                     <div className="mt-4 pt-4 border-t border-neutral-200 space-y-4 animate-in fade-in-50 duration-150">
-                      <div>
-                        <label className={labelClass}>Target audience</label>
-                        <input
-                          type="text"
-                          value={form.targetAudience}
-                          maxLength={120}
-                          onChange={(e) => set('targetAudience', e.target.value)}
-                          placeholder="e.g. Indie hackers, developers, small teams"
-                          className={inputClass(false)}
-                        />
-                      </div>
                       <div>
                         <label className={labelClass}>Problem it solves</label>
                         <RichTextEditor
