@@ -42,15 +42,15 @@ export const SponsorShowcaseSection: React.FC<SponsorShowcaseSectionProps> = ({
            ══════════════════════════════════════════════════════════ */}
         <div className="flex flex-col">
           {/* Top Pod */}
-          <div className="rounded-2xl border border-neutral-200/90 bg-white p-6 shadow-xs hover:shadow-md transition-all flex flex-col justify-between min-h-[220px]">
+          <div className="rounded-2xl border border-neutral-200/90 bg-white p-5 sm:p-6 shadow-xs hover:shadow-md transition-all flex flex-col justify-between min-h-[220px]">
             <div>
-              <div className="h-7 flex items-center justify-between">
-                <h3 className="text-lg font-bold text-neutral-900 tracking-tight">1-Week Sponsor</h3>
-                <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-neutral-100 text-neutral-600">
+              <div className="min-h-7 flex items-center justify-between gap-2">
+                <h3 className="text-base sm:text-lg font-bold text-neutral-900 tracking-tight whitespace-nowrap">1-Week Sponsor</h3>
+                <span className="shrink-0 whitespace-nowrap text-[10px] sm:text-[11px] font-semibold px-2 sm:px-2.5 py-0.5 rounded-full bg-neutral-100 text-neutral-600">
                   7 Days
                 </span>
               </div>
-              <p className="h-10 text-xs text-neutral-500 leading-relaxed mt-1 mb-2 line-clamp-2">
+              <p className="min-h-10 text-xs text-neutral-500 leading-relaxed mt-1 mb-2 line-clamp-2">
                 Fast 7-day launch sprint on sticky side rails across high-traffic desktop views.
               </p>
 
@@ -111,15 +111,15 @@ export const SponsorShowcaseSection: React.FC<SponsorShowcaseSectionProps> = ({
            ══════════════════════════════════════════════════════════ */}
         <div className="flex flex-col">
           {/* Top Pod (Elevated) */}
-          <div className="rounded-2xl border border-neutral-300/80 bg-white p-6 shadow-[0_12px_30px_-8px_rgba(0,0,0,0.12)] ring-1 ring-black/5 flex flex-col justify-between min-h-[220px] relative">
+          <div className="rounded-2xl border border-neutral-300/80 bg-white p-5 sm:p-6 shadow-[0_12px_30px_-8px_rgba(0,0,0,0.12)] ring-1 ring-black/5 flex flex-col justify-between min-h-[220px] relative">
             <div>
-              <div className="h-7 flex items-center justify-between">
-                <h3 className="text-lg font-bold text-neutral-900 tracking-tight">1-Month Sponsor</h3>
-                <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200/60">
+              <div className="min-h-7 flex items-center justify-between gap-2">
+                <h3 className="text-base sm:text-lg font-bold text-neutral-900 tracking-tight whitespace-nowrap">1-Month Sponsor</h3>
+                <span className="shrink-0 whitespace-nowrap text-[10px] sm:text-[11px] font-semibold px-2 sm:px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200/60">
                   Save 28%
                 </span>
               </div>
-              <p className="h-10 text-xs text-neutral-500 leading-relaxed mt-1 mb-2 line-clamp-2">
+              <p className="min-h-10 text-xs text-neutral-500 leading-relaxed mt-1 mb-2 line-clamp-2">
                 Full 30 days of high-frequency sticky brand visibility across all visitor sessions.
               </p>
 

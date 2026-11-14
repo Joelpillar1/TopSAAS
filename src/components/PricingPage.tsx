@@ -141,15 +141,15 @@ export const PricingPage: React.FC<PricingPageProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto items-stretch">
           {/* Card 1: Starter (Free) */}
           <div className="flex flex-col">
-            <div className="rounded-2xl border border-neutral-200/90 bg-white p-6 shadow-xs hover:shadow-md transition-all flex flex-col justify-between min-h-[220px]">
+            <div className="rounded-2xl border border-neutral-200/90 bg-white p-5 sm:p-6 shadow-xs hover:shadow-md transition-all flex flex-col justify-between min-h-[220px]">
               <div>
-                <div className="h-7 flex items-center justify-between">
-                  <h3 className="text-lg font-bold text-neutral-900 tracking-tight">Starter</h3>
-                  <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-neutral-100 text-neutral-600">
+                <div className="min-h-7 flex items-center justify-between gap-2">
+                  <h3 className="text-base sm:text-lg font-bold text-neutral-900 tracking-tight whitespace-nowrap">Starter</h3>
+                  <span className="shrink-0 whitespace-nowrap text-[10px] sm:text-[11px] font-semibold px-2 sm:px-2.5 py-0.5 rounded-full bg-neutral-100 text-neutral-600">
                     Free Forever
                   </span>
                 </div>
-                <p className="h-10 text-xs text-neutral-500 leading-relaxed mt-1 mb-2 line-clamp-2">
+                <p className="min-h-10 text-xs text-neutral-500 leading-relaxed mt-1 mb-2 line-clamp-2">
                   Your launch partner. Unlock community directory visibility with a simple free submission.
                 </p>
 
@@ -270,18 +270,18 @@ export const PricingPage: React.FC<PricingPageProps> = ({
 
           {/* Card 2: Verified Launch ($5 / Product · One-time) — Elevated Hero Card */}
           <div className="flex flex-col">
-            <div className="rounded-2xl border border-neutral-300/80 bg-white p-6 shadow-[0_12px_30px_-8px_rgba(0,0,0,0.12)] ring-1 ring-black/5 flex flex-col justify-between min-h-[220px]">
+            <div className="rounded-2xl border border-neutral-300/80 bg-white p-5 sm:p-6 shadow-[0_12px_30px_-8px_rgba(0,0,0,0.12)] ring-1 ring-black/5 flex flex-col justify-between min-h-[220px]">
               <div>
-                <div className="h-7 flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <h3 className="text-lg font-bold text-neutral-900 tracking-tight">Verified Launch</h3>
-                    <VerifiedBadge className="h-4 w-4" />
+                <div className="min-h-7 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <h3 className="text-base sm:text-lg font-bold text-neutral-900 tracking-tight whitespace-nowrap">Verified Launch</h3>
+                    <VerifiedBadge className="h-4 w-4 shrink-0" />
                   </div>
-                  <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-200/60">
+                  <span className="shrink-0 whitespace-nowrap text-[10px] sm:text-[11px] font-semibold px-2 sm:px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-200/60">
                     Most Popular
                   </span>
                 </div>
-                <p className="h-10 text-xs text-neutral-500 leading-relaxed mt-1 mb-2 line-clamp-2">
+                <p className="min-h-10 text-xs text-neutral-500 leading-relaxed mt-1 mb-2 line-clamp-2">
                   Fast-track 24h approval, category top-3 spot (7 days), dofollow SEO backlink, and verified badge.
                 </p>
 
@@ -447,15 +447,15 @@ export const PricingPage: React.FC<PricingPageProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto items-stretch">
           {/* Card 1: 1-Week Featured ($15) */}
           <div className="flex flex-col">
-            <div className="rounded-2xl border border-neutral-200/90 bg-white p-6 shadow-xs hover:shadow-md transition-all flex flex-col justify-between min-h-[220px]">
+            <div className="rounded-2xl border border-neutral-200/90 bg-white p-5 sm:p-6 shadow-xs hover:shadow-md transition-all flex flex-col justify-between min-h-[220px]">
               <div>
-                <div className="h-7 flex items-center justify-between">
-                  <h3 className="text-lg font-bold text-neutral-900 tracking-tight">1-Week Featured</h3>
-                  <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-neutral-100 text-neutral-600">
+                <div className="min-h-7 flex items-center justify-between gap-2">
+                  <h3 className="text-base sm:text-lg font-bold text-neutral-900 tracking-tight whitespace-nowrap">1-Week Featured</h3>
+                  <span className="shrink-0 whitespace-nowrap text-[10px] sm:text-[11px] font-semibold px-2 sm:px-2.5 py-0.5 rounded-full bg-neutral-100 text-neutral-600">
                     7 Days
                   </span>
                 </div>
-                <p className="h-10 text-xs text-neutral-500 leading-relaxed mt-1 mb-2 line-clamp-2">
+                <p className="min-h-10 text-xs text-neutral-500 leading-relaxed mt-1 mb-2 line-clamp-2">
                   A high-impact 7-day boost to capture launch momentum and surge community upvotes.
                 </p>
 
@@ -521,15 +521,15 @@ export const PricingPage: React.FC<PricingPageProps> = ({
 
           {/* Card 2: 1-Month Featured ($39) — Elevated Hero Card */}
           <div className="flex flex-col">
-            <div className="rounded-2xl border border-neutral-300/80 bg-white p-6 shadow-[0_12px_30px_-8px_rgba(0,0,0,0.12)] ring-1 ring-black/5 flex flex-col justify-between min-h-[220px]">
+            <div className="rounded-2xl border border-neutral-300/80 bg-white p-5 sm:p-6 shadow-[0_12px_30px_-8px_rgba(0,0,0,0.12)] ring-1 ring-black/5 flex flex-col justify-between min-h-[220px]">
               <div>
-                <div className="h-7 flex items-center justify-between">
-                  <h3 className="text-lg font-bold text-neutral-900 tracking-tight">1-Month Featured</h3>
-                  <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200/60">
+                <div className="min-h-7 flex items-center justify-between gap-2">
+                  <h3 className="text-base sm:text-lg font-bold text-neutral-900 tracking-tight whitespace-nowrap">1-Month Featured</h3>
+                  <span className="shrink-0 whitespace-nowrap text-[10px] sm:text-[11px] font-semibold px-2 sm:px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200/60">
                     Save 35%
                   </span>
                 </div>
-                <p className="h-10 text-xs text-neutral-500 leading-relaxed mt-1 mb-2 line-clamp-2">
+                <p className="min-h-10 text-xs text-neutral-500 leading-relaxed mt-1 mb-2 line-clamp-2">
                   Continuous 30-day top pinned spotlight for sustained traffic and compound brand authority.
                 </p>
 

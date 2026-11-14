@@ -2380,8 +2380,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                   >
                     <div>
                       <div className="flex items-center justify-between gap-2">
-                        <h4 className="text-xl sm:text-2xl font-black text-neutral-950 tracking-tight">Starter</h4>
-                        <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${submissionPlan === 'free'
+                        <h4 className="text-lg sm:text-2xl font-black text-neutral-950 tracking-tight whitespace-nowrap">Starter</h4>
+                        <span className={`shrink-0 whitespace-nowrap text-[10px] font-bold px-2.5 py-0.5 rounded-full ${submissionPlan === 'free'
                           ? 'border border-emerald-300 bg-emerald-50 text-emerald-700'
                           : 'border border-neutral-200 bg-neutral-100 text-neutral-600'
                           }`}>
@@ -2505,12 +2505,12 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
 
                     <div>
                       <div className="flex items-center justify-between gap-2 pt-1">
-                        <div className="flex items-center gap-1.5">
-                          <h4 className="text-xl sm:text-2xl font-black text-neutral-950 tracking-tight">Verified Launch</h4>
-                          <VerifiedBadge className="h-5 w-5" />
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <h4 className="text-lg sm:text-2xl font-black text-neutral-950 tracking-tight whitespace-nowrap">Verified Launch</h4>
+                          <VerifiedBadge className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
                         </div>
                         {submissionPlan === 'paid_19' && (
-                          <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-blue-200 bg-blue-50 text-blue-700">
+                          <span className="shrink-0 whitespace-nowrap text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-blue-200 bg-blue-50 text-blue-700">
                             Selected
                           </span>
                         )}
