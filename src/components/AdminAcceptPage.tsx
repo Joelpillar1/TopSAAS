@@ -975,10 +975,10 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                   Submitted {formatTimestamp(sub.submittedAt)}
                                 </span>
 
-                                {(sub.scheduledLaunchWeek || sub.scheduledLaunchDate) && (() => {
-                                  const weekInfo = sub.scheduledLaunchWeek
-                                    ? getWeekByNumber(sub.scheduledLaunchWeek)
-                                    : getWeekInfo(sub.scheduledLaunchDate!);
+                                {(sub.scheduledLaunchWeek != null || sub.scheduledLaunchDate != null) && (() => {
+                                  const weekInfo = sub.scheduledLaunchWeek != null
+                                    ? getWeekByNumber(Number(sub.scheduledLaunchWeek))
+                                    : getWeekInfo(Number(sub.scheduledLaunchDate!));
                                   return (
                                     <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 border border-blue-200 px-1.5 py-0.5 text-[10px] font-bold text-blue-700">
                                       <Calendar className="h-3 w-3" />

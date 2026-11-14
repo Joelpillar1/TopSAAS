@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import { Product, Category, Comment, WebsiteSubmission, Sponsor, SponsorDraft } from '../types';
-import { getMonthKey, getWeekNumber } from './weeks';
+import { getMonthKey, getWeekNumber, getWeekByNumber } from './weeks';
 import { getCached, setCached, invalidateCache, CACHE_TTL } from './cache';
 import { richTextToPlain } from './richText';
 import { slugify, getProductSlug, matchesProductIdentifier } from './slug';
@@ -47,8 +47,8 @@ export const mapDbSubmission = (row: Record<string, unknown>): WebsiteSubmission
   autoRelaunchPaid: Boolean(row.auto_relaunch_paid ?? row.autoRelaunchPaid) || undefined,
   autoRelaunchPaidAt: (row.auto_relaunch_paid_at as number) || undefined,
   verified: Boolean(row.verified) || false,
-  scheduledLaunchWeek: (row.scheduled_launch_week as number) || undefined,
-  scheduledLaunchDate: (row.scheduled_launch_date as number) || undefined,
+  scheduledLaunchWeek: row.scheduled_launch_week != null ? Number(row.scheduled_launch_week) : (row.scheduledLaunchWeek != null ? Number(row.scheduledLaunchWeek) : undefined),
+  scheduledLaunchDate: row.scheduled_launch_date != null ? Number(row.scheduled_launch_date) : (row.scheduledLaunchDate != null ? Number(row.scheduledLaunchDate) : undefined),
 });
 
 /** Map a WebsiteSubmission to Supabase insert/update format */
@@ -87,6 +87,8 @@ export const toDbSubmission = (sub: WebsiteSubmission) => {
     problem_it_solves: sub.problemItSolves || null,
     solution: sub.solution || null,
     unique_selling_point: sub.uniqueSellingPoint || null,
+    scheduled_launch_week: sub.scheduledLaunchWeek != null ? Number(sub.scheduledLaunchWeek) : null,
+    scheduled_launch_date: sub.scheduledLaunchDate != null ? Number(sub.scheduledLaunchDate) : null,
   };
 };
 
@@ -219,8 +221,8 @@ export const mapDbProduct = (row: Record<string, unknown>): Product => ({
   relaunchWeeks: (row.relaunch_weeks as number[]) || (row.relaunchWeeks as number[]) || undefined,
   isRelaunched: Boolean(row.is_relaunched ?? row.isRelaunched) || undefined,
   lastRelaunchedAt: (row.last_relaunched_at as number) || (row.lastRelaunchedAt as number) || undefined,
-  scheduledLaunchWeek: (row.scheduled_launch_week as number) || (row.scheduledLaunchWeek as number) || undefined,
-  scheduledLaunchDate: (row.scheduled_launch_date as number) || (row.scheduledLaunchDate as number) || undefined,
+  scheduledLaunchWeek: row.scheduled_launch_week != null ? Number(row.scheduled_launch_week) : (row.scheduledLaunchWeek != null ? Number(row.scheduledLaunchWeek) : undefined),
+  scheduledLaunchDate: row.scheduled_launch_date != null ? Number(row.scheduled_launch_date) : (row.scheduledLaunchDate != null ? Number(row.scheduledLaunchDate) : undefined),
 });
 
 /** Map a Product to Supabase insert/update format */
@@ -271,8 +273,8 @@ export const toDbProduct = (p: Product) => {
     auto_relaunch: p.autoRelaunch || false,
     relaunch_weeks: p.relaunchWeeks || [],
     last_relaunched_at: p.lastRelaunchedAt || null,
-    scheduled_launch_week: p.scheduledLaunchWeek || null,
-    scheduled_launch_date: p.scheduledLaunchDate || null,
+    scheduled_launch_week: p.scheduledLaunchWeek != null ? Number(p.scheduledLaunchWeek) : null,
+    scheduled_launch_date: p.scheduledLaunchDate != null ? Number(p.scheduledLaunchDate) : null,
   };
 };
 
@@ -323,6 +325,11 @@ export function submissionToProduct(sub: WebsiteSubmission, rank: number = 1): P
     featuresList.push({ title: 'Problem Solved', description: plainProblem || sub.problemItSolves, tag: 'Value' });
   }
 
+  const scheduledWeek = sub.scheduledLaunchWeek != null ? Number(sub.scheduledLaunchWeek) : undefined;
+  const scheduledDate = scheduledWeek != null
+    ? getWeekByNumber(scheduledWeek).start
+    : (sub.scheduledLaunchDate != null ? Number(sub.scheduledLaunchDate) : undefined);
+
   return {
     id: prodId,
     rank,
@@ -344,7 +351,7 @@ export function submissionToProduct(sub: WebsiteSubmission, rank: number = 1): P
     dinoScore: 0,
     upvotes: 0,
     clicks: 0,
-    createdAt: sub.scheduledLaunchDate || sub.submittedAt || Date.now(),
+    createdAt: scheduledDate || (sub.submittedAt ? Number(sub.submittedAt) : Date.now()),
     updatedAt: Date.now(),
     verified: Boolean(sub.verified) || false,
     autoRelaunch: sub.autoRelaunch || undefined,
@@ -352,8 +359,8 @@ export function submissionToProduct(sub: WebsiteSubmission, rank: number = 1): P
     autoRelaunchPaidAt: sub.autoRelaunchPaidAt || undefined,
     isUserOwned: false,
     submittedBy: sub.submittedBy,
-    scheduledLaunchWeek: sub.scheduledLaunchWeek,
-    scheduledLaunchDate: sub.scheduledLaunchDate,
+    scheduledLaunchWeek: scheduledWeek,
+    scheduledLaunchDate: scheduledDate,
     description: sub.description || undefined,
     problemItSolves: sub.problemItSolves || undefined,
     solution: sub.solution || undefined,

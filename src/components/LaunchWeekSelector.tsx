@@ -28,13 +28,13 @@ export interface LaunchSlot {
 
 /** Formats date range according to convention (e.g. Nov 9–15, 2026 or Dec 28, 2026 – Jan 3, 2027) */
 function formatSlotDateRange(start: Date, end: Date): string {
-  const startMonth = start.toLocaleDateString('en-US', { month: 'short' });
-  const startDay = start.getDate();
-  const startYear = start.getFullYear();
+  const startMonth = start.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' });
+  const startDay = start.getUTCDate();
+  const startYear = start.getUTCFullYear();
 
-  const endMonth = end.toLocaleDateString('en-US', { month: 'short' });
-  const endDay = end.getDate();
-  const endYear = end.getFullYear();
+  const endMonth = end.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' });
+  const endDay = end.getUTCDate();
+  const endYear = end.getUTCFullYear();
 
   if (startYear !== endYear) {
     return `${startMonth} ${startDay}, ${startYear} – ${endMonth} ${endDay}, ${endYear}`;
@@ -110,11 +110,11 @@ export const LaunchWeekSelector: React.FC<LaunchWeekSelectorProps> = ({
         if (isSponsorOnlyProduct(p) || rejectedIds.has(p.id)) continue;
 
         const pDate = p.scheduledLaunchDate ? Number(p.scheduledLaunchDate) : Number(p.createdAt || 0);
-        const matchesScheduledWeek = p.scheduledLaunchWeek
-          ? p.scheduledLaunchWeek === weekNum
+        const matchesScheduledWeek = p.scheduledLaunchWeek != null
+          ? Number(p.scheduledLaunchWeek) === weekNum
           : pDate >= startMs && pDate <= endMs;
         const autoRelaunch = Boolean(p.autoRelaunch);
-        const inRelaunchWeeks = Array.isArray(p.relaunchWeeks) && p.relaunchWeeks.includes(weekNum);
+        const inRelaunchWeeks = Array.isArray(p.relaunchWeeks) && p.relaunchWeeks.map(Number).includes(weekNum);
 
         if (matchesScheduledWeek || autoRelaunch || inRelaunchWeeks) {
           activeAppIds.add(p.id);
@@ -127,8 +127,8 @@ export const LaunchWeekSelector: React.FC<LaunchWeekSelectorProps> = ({
         if (activeAppIds.has(prodId) || activeAppIds.has(s.id)) continue;
 
         const sDate = s.scheduledLaunchDate ? Number(s.scheduledLaunchDate) : Number(s.submittedAt || 0);
-        const matchesWeek = s.scheduledLaunchWeek
-          ? s.scheduledLaunchWeek === weekNum
+        const matchesWeek = s.scheduledLaunchWeek != null
+          ? Number(s.scheduledLaunchWeek) === weekNum
           : sDate >= startMs && sDate <= endMs;
 
         if (matchesWeek) {

@@ -95,8 +95,8 @@ const mapDbSubmission = (row: Record<string, unknown>): WebsiteSubmission => ({
   autoRelaunchPaid: Boolean(row.auto_relaunch_paid ?? row.autoRelaunchPaid) || undefined,
   autoRelaunchPaidAt: (row.auto_relaunch_paid_at as number) || undefined,
   verified: Boolean(row.verified) || false,
-  scheduledLaunchWeek: (row.scheduled_launch_week as number) || (row.scheduledLaunchWeek as number) || undefined,
-  scheduledLaunchDate: (row.scheduled_launch_date as number) || (row.scheduledLaunchDate as number) || undefined,
+  scheduledLaunchWeek: row.scheduled_launch_week != null ? Number(row.scheduled_launch_week) : (row.scheduledLaunchWeek != null ? Number(row.scheduledLaunchWeek) : undefined),
+  scheduledLaunchDate: row.scheduled_launch_date != null ? Number(row.scheduled_launch_date) : (row.scheduledLaunchDate != null ? Number(row.scheduledLaunchDate) : undefined),
   relaunchWeeks: (row.relaunch_weeks as number[]) || (row.relaunchWeeks as number[]) || undefined,
   isRelaunched: Boolean(row.is_relaunched ?? row.isRelaunched) || undefined,
   lastRelaunchedAt: (row.last_relaunched_at as number) || (row.lastRelaunchedAt as number) || undefined,
@@ -142,8 +142,8 @@ const toDbSubmission = (sub: WebsiteSubmission) => {
     auto_relaunch_paid: sub.autoRelaunchPaid || false,
     auto_relaunch_paid_at: sub.autoRelaunchPaidAt || null,
     verified: sub.verified || false,
-    scheduled_launch_week: sub.scheduledLaunchWeek || null,
-    scheduled_launch_date: sub.scheduledLaunchDate || null,
+    scheduled_launch_week: sub.scheduledLaunchWeek != null ? Number(sub.scheduledLaunchWeek) : null,
+    scheduled_launch_date: sub.scheduledLaunchDate != null ? Number(sub.scheduledLaunchDate) : null,
     relaunch_weeks: sub.relaunchWeeks || null,
     is_relaunched: sub.isRelaunched || false,
     last_relaunched_at: sub.lastRelaunchedAt || null,
@@ -1438,6 +1438,9 @@ export default function App() {
       // No engagement yet: earliest launch in that round first, then name for stability.
       // Relaunches without a timestamp this round sort after genuinely new launches.
       const launchTime = (p: Product) => {
+        if (p.scheduledLaunchWeek != null && Number(p.scheduledLaunchWeek) === week.weekNumber) {
+          return p.scheduledLaunchDate ? Number(p.scheduledLaunchDate) : week.start;
+        }
         if (isInWeek(p.createdAt, week)) return p.createdAt;
         if (p.lastRelaunchedAt && isInWeek(p.lastRelaunchedAt, week)) return p.lastRelaunchedAt;
         return week.end;
@@ -1885,7 +1888,9 @@ export default function App() {
               previousRank: p.previousRank ?? p.rank,
               upvotes: p.upvotes,
               clicks: p.clicks,
-              createdAt: p.createdAt,
+              createdAt: fresh.createdAt || p.createdAt,
+              scheduledLaunchWeek: fresh.scheduledLaunchWeek ?? p.scheduledLaunchWeek,
+              scheduledLaunchDate: fresh.scheduledLaunchDate ?? p.scheduledLaunchDate,
             }
             : p
         )
@@ -2419,10 +2424,10 @@ export default function App() {
 
   // Only submitted directory products whose scheduled launch has started belong in the public leaderboard/directory
   const isProductLaunched = (p: Product, now = Date.now()): boolean => {
-    if (p.scheduledLaunchWeek) {
-      return getWeekByNumber(p.scheduledLaunchWeek).start <= now;
+    if (p.scheduledLaunchWeek != null) {
+      return getWeekByNumber(Number(p.scheduledLaunchWeek)).start <= now;
     }
-    if (p.scheduledLaunchDate) {
+    if (p.scheduledLaunchDate != null) {
       return Number(p.scheduledLaunchDate) <= now;
     }
     if (p.createdAt && Number(p.createdAt) > now) {
@@ -2584,16 +2589,34 @@ export default function App() {
     ];
   }, [directoryProducts]);
 
+  // Helper to determine if a product belongs to a launch week round
+  const isProductInLaunchRound = useCallback((p: Product, week: WeekInfo): boolean => {
+    // 1. Explicit scheduled launch week
+    if (p.scheduledLaunchWeek != null) {
+      const schedWeek = Number(p.scheduledLaunchWeek);
+      if (schedWeek === week.weekNumber) return true;
+      // Scheduled for a future week round - must never appear in earlier rounds
+      if (schedWeek > week.weekNumber) return false;
+    } else {
+      if (isInWeek(p.createdAt, week)) return true;
+    }
+
+    // 2. Auto weekly relaunch (only on or after initial launch week)
+    const initialWeek = p.scheduledLaunchWeek != null ? Number(p.scheduledLaunchWeek) : getWeekNumber(p.createdAt);
+    if (p.autoRelaunch && week.weekNumber >= initialWeek) return true;
+
+    // 3. Explicit relaunch weeks array
+    if (p.relaunchWeeks && week.weekNumber && p.relaunchWeeks.map(Number).includes(week.weekNumber)) return true;
+
+    // 4. Last relaunched timestamp
+    if (p.lastRelaunchedAt && isInWeek(p.lastRelaunchedAt, week)) return true;
+
+    return false;
+  }, []);
+
   // Weekly launch rounds: scope products to the selected week, upvote-ranked
   const weekScopedProducts = selectedWeek
-    ? directoryProducts.filter((p) => {
-      if (isInWeek(p.createdAt, selectedWeek)) return true;
-      // Auto weekly relaunch for users who opted for $5/week weekly relaunch (only on or after initial launch week)
-      if (p.autoRelaunch && p.createdAt < selectedWeek.end) return true;
-      if (p.relaunchWeeks && selectedWeek.weekNumber && p.relaunchWeeks.includes(selectedWeek.weekNumber)) return true;
-      if (p.lastRelaunchedAt && isInWeek(p.lastRelaunchedAt, selectedWeek)) return true;
-      return false;
-    })
+    ? directoryProducts.filter((p) => isProductInLaunchRound(p, selectedWeek))
     : directoryProducts;
 
   // Helper to determine if a product has an active deal/discount/promo code
@@ -2657,12 +2680,7 @@ export default function App() {
     : null;
   const lastWeekBest = lastWeekInfo
     ? [...directoryProducts]
-      .filter((p) => {
-        if (isInWeek(p.createdAt, lastWeekInfo)) return true;
-        if (p.autoRelaunch) return true;
-        if (p.lastRelaunchedAt && isInWeek(p.lastRelaunchedAt, lastWeekInfo)) return true;
-        return Boolean(p.relaunchWeeks?.includes(lastWeekInfo.weekNumber));
-      })
+      .filter((p) => isProductInLaunchRound(p, lastWeekInfo))
       .sort(compareProductsForWeek(lastWeekInfo))
     : [];
 

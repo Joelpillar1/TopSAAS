@@ -414,10 +414,13 @@ export const ProductPage: React.FC<ProductPageProps> = ({
 
   // Did this product launch in the current active calendar week?
   const isLaunchedInCurrentRound = useMemo(() => {
+    if (product.scheduledLaunchWeek != null) {
+      return Number(product.scheduledLaunchWeek) === currentWeek.weekNumber;
+    }
     if (product.createdAt && isInWeek(product.createdAt, currentWeek)) return true;
     if (product.lastRelaunchedAt && isInWeek(product.lastRelaunchedAt, currentWeek)) return true;
     return false;
-  }, [product.createdAt, product.lastRelaunchedAt, currentWeek]);
+  }, [product.scheduledLaunchWeek, product.createdAt, product.lastRelaunchedAt, currentWeek]);
 
   // Natural timing flow:
   // Only shows when it's approaching another launch week (Friday 00:00 through Sunday 23:59:59 - last 72h),

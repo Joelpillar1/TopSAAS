@@ -1,30 +1,31 @@
 // TopSAAS Platform Launch Week utilities
-// Platform officially kicks off with Week 1 starting Monday, Nov 2, 2026.
+// Platform officially kicks off with Week 1 starting Monday, Nov 2, 2026 00:00:00 UTC.
 
 export interface WeekInfo {
   key: string; // 'W1'
   label: string; // 'Week 1'
   weekNumber: number; // 1
-  start: number; // Monday 00:00 local (inclusive)
-  end: number; // next Monday 00:00 local (exclusive)
+  start: number; // Monday 00:00 UTC (inclusive)
+  end: number; // next Monday 00:00 UTC (exclusive)
   isCurrent?: boolean;
   isFuture?: boolean;
 }
 
 export const WEEK_MS = 7 * 86400000;
 
-// TopSAAS Week 1 Launch Epoch — Monday, Nov 2, 2026 00:00:00 local
-export const LAUNCH_EPOCH_START = new Date(2026, 10, 2, 0, 0, 0, 0).getTime();
+// TopSAAS Week 1 Launch Epoch — Monday, Nov 2, 2026 00:00:00 UTC (deterministic across all clients and timezones)
+export const LAUNCH_EPOCH_START = Date.UTC(2026, 10, 2, 0, 0, 0, 0);
 
 /** Returns the 1-based TopSAAS launch week number */
 export function getWeekNumber(ts: number = Date.now()): number {
-  if (ts < LAUNCH_EPOCH_START) return 1;
-  return Math.floor((ts - LAUNCH_EPOCH_START) / WEEK_MS) + 1;
+  const t = Number(ts) || Date.now();
+  if (t < LAUNCH_EPOCH_START) return 1;
+  return Math.floor((t - LAUNCH_EPOCH_START) / WEEK_MS) + 1;
 }
 
 /** Returns WeekInfo for a specific 1-based week number */
 export function getWeekByNumber(num: number): WeekInfo {
-  const n = Math.max(1, num);
+  const n = Math.max(1, Number(num) || 1);
   const start = LAUNCH_EPOCH_START + (n - 1) * WEEK_MS;
   const end = start + WEEK_MS;
   const now = Date.now();
@@ -85,29 +86,30 @@ export function getWeeksWindow(centerOffset = 0, countBefore = 3, countAfter = 3
 
 /** True if the timestamp falls inside the week range */
 export function isInWeek(ts: number, week: WeekInfo | { start: number; end: number; weekNumber?: number }): boolean {
+  const t = Number(ts);
   // Week 1 captures all early launches up to Week 1 end
-  if (('weekNumber' in week && week.weekNumber === 1) || week.start <= LAUNCH_EPOCH_START) {
-    return ts < week.end;
+  if (('weekNumber' in week && Number(week.weekNumber) === 1) || week.start <= LAUNCH_EPOCH_START) {
+    return t < week.end;
   }
-  return ts >= week.start && ts < week.end;
+  return t >= week.start && t < week.end;
 }
 
 /** Calendar month key in local time, e.g. "2026-11" */
 export function getMonthKey(ts: number = Date.now()): string {
-  const d = new Date(ts);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  const d = new Date(Number(ts) || Date.now());
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
 }
 
 /** True if the timestamp falls in the same calendar month as the reference time */
 export function isInMonth(ts: number, reference: number = Date.now()): boolean {
-  const a = new Date(ts);
-  const b = new Date(reference);
-  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
+  const a = new Date(Number(ts) || 0);
+  const b = new Date(Number(reference) || 0);
+  return a.getUTCFullYear() === b.getUTCFullYear() && a.getUTCMonth() === b.getUTCMonth();
 }
 
 /** Human-readable calendar month, e.g. "November 2026" */
 export function formatMonthLabel(reference: number = Date.now()): string {
-  return new Date(reference).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  return new Date(Number(reference) || Date.now()).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
 }
 
 /** Internal scale capacity per week. TopSAAS launches 25 apps each week. */
@@ -116,11 +118,11 @@ export const MAX_WEEKLY_LAUNCH_CAP = 25;
 /** Formats a WeekInfo into a clean human date range, e.g. "Nov 9 to Nov 15" */
 export function formatWeekDateRange(week: WeekInfo, format: 'to' | '–' = 'to'): string {
   const startDate = new Date(week.start);
-  const endDate = new Date(week.end - 1); // Sunday 23:59
-  const startMonth = startDate.toLocaleDateString('en-US', { month: 'short' });
-  const startDay = startDate.getDate();
-  const endMonth = endDate.toLocaleDateString('en-US', { month: 'short' });
-  const endDay = endDate.getDate();
+  const endDate = new Date(week.end - 1); // Sunday 23:59:59.999 UTC
+  const startMonth = startDate.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' });
+  const startDay = startDate.getUTCDate();
+  const endMonth = endDate.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' });
+  const endDay = endDate.getUTCDate();
 
   if (format === 'to') {
     return `${startMonth} ${startDay} to ${endMonth} ${endDay}`;
