@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import confetti from 'canvas-confetti';
-import { AlertCircle, Check, ChevronDown, ChevronLeft, ChevronRight, Clock, Loader2, Search, Video, X, Tag, Percent, Gift, Sparkles, Trash2, GripVertical, Star, ShieldCheck, CheckCircle2, Lock, Copy, Zap } from 'lucide-react';
+import { AlertCircle, Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, ExternalLink, Loader2, Search, Video, X, Tag, Percent, Gift, Sparkles, Trash2, GripVertical, Star, ShieldCheck, CheckCircle2, Lock, Copy, Zap } from 'lucide-react';
 import { Category, PricingModel, Product, ProductSocial, SUBMISSION_CATEGORIES, SubmitProductDetails, WebsiteSubmission } from '../types';
 import { getWebsiteFavicon } from '../utils/logo';
 import { playSound } from '../utils/sound';
@@ -16,7 +16,7 @@ import { appendTrackkitParams } from '../utils/trackkit';
 import { getProductSlug } from '../utils/slug';
 import { VerifiedBadge } from './VerifiedBadge';
 import { applyPageSeo } from '../utils/pageSeo';
-import { FreeSubmitUpvoteModal } from './FreeSubmitUpvoteModal';
+import { ProductLogo } from './ProductLogo';
 import { loadProducts, isProductUpvoted, isSponsorOnlyProduct } from '../utils/db';
 import {
   DRAFT_KEY,
@@ -33,7 +33,7 @@ const PRICING_OPTIONS: { value: PricingModel; hint: string }[] = [
   { value: 'Open Source', hint: 'Source code available' },
 ];
 
-const STEPS = ['Website', 'Media', 'Details', 'Founder', 'Launch'] as const;
+const STEPS = ['Website', 'Media', 'Founder', 'Launch'] as const;
 
 interface FormState {
   id?: string;
@@ -141,7 +141,7 @@ function loadSavedStep(): number {
     const raw = localStorage.getItem(STEP_KEY);
     if (!raw) return 0;
     const parsed = parseInt(raw, 10);
-    return Number.isFinite(parsed) && parsed >= 0 && parsed <= 4 ? parsed : 0;
+    return Number.isFinite(parsed) && parsed >= 0 && parsed <= 3 ? parsed : 0;
   } catch {
     return 0;
   }
@@ -446,9 +446,10 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
   const [draftSaved, setDraftSaved] = useState(false);
 
   const [launched, setLaunched] = useState<{ id: string; name: string } | null>(null);
-  const [isFreeUpvoteModalOpen, setIsFreeUpvoteModalOpen] = useState(false);
-  const [freeUpvoteCandidateIds, setFreeUpvoteCandidateIds] = useState<string[]>([]);
-  const [freeUpvoteGateSatisfied, setFreeUpvoteGateSatisfied] = useState(false);
+  const [freeVerificationMethod, setFreeVerificationMethod] = useState<'upvote' | 'badge'>('upvote');
+  const [showAdvancedDetails, setShowAdvancedDetails] = useState<boolean>(() => {
+    return Boolean(form.problemItSolves || form.solution || form.uniqueSellingPoint || form.targetAudience);
+  });
   const [fallbackProducts, setFallbackProducts] = useState<Product[]>([]);
 
   useEffect(() => {
@@ -463,6 +464,28 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
     if (products && products.length > 0) return products;
     return fallbackProducts;
   }, [products, fallbackProducts]);
+
+  const candidateProducts = useMemo(() => {
+    return [...allAvailableProducts]
+      .filter((p) => !isSponsorOnlyProduct(p))
+      .sort((a, b) => {
+        const aUp = isProductUpvoted(a.id, userUpvotes) ? 1 : 0;
+        const bUp = isProductUpvoted(b.id, userUpvotes) ? 1 : 0;
+        if (aUp !== bUp) return aUp - bUp;
+        const rankA = a.rank ?? 9999;
+        const rankB = b.rank ?? 9999;
+        if (rankA !== rankB) return rankA - rankB;
+        return (b.upvotes ?? 0) - (a.upvotes ?? 0);
+      })
+      .slice(0, 10);
+  }, [allAvailableProducts, userUpvotes]);
+
+  const upvotedCount = useMemo(() => {
+    if (!allAvailableProducts || allAvailableProducts.length === 0) return 0;
+    return allAvailableProducts.filter((p) => isProductUpvoted(p.id, userUpvotes)).length;
+  }, [allAvailableProducts, userUpvotes]);
+
+  const isUpvoteRequirementMet = allAvailableProducts.length === 0 || upvotedCount >= 5;
 
   // ── Launch Tier & Verification States ──
   const [submissionPlan, setSubmissionPlan] = useState<'free' | 'paid_19'>(() => {
@@ -659,14 +682,14 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
       } else if (form.tagline.trim().length > 80) {
         out.tagline = 'Taglines are capped at 80 characters.';
       }
+
+      if (form.categories.length === 0 && !form.category.trim()) {
+        out.category = 'Choose at least one category for your listing.';
+      }
     } else if (i === 1) {
       if (form.demoVideoUrl.trim()) {
         const check = normalizeUrl(form.demoVideoUrl);
         if (!check.ok) out.demoVideoUrl = 'Enter a valid video URL or clear this field.';
-      }
-    } else if (i === 2) {
-      if (form.categories.length === 0 && !form.category.trim()) {
-        out.category = 'Choose at least one category for your listing.';
       }
     }
     return out;
@@ -679,21 +702,22 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
       return (
         form.name.trim().length >= 2 &&
         form.tagline.trim().length >= 3 &&
-        normalizeUrl(form.url).ok
+        normalizeUrl(form.url).ok &&
+        (form.categories.length > 0 || !!form.category.trim())
       );
     }
     if (i === 1) {
       return isStepComplete(0);
     }
     if (i === 2) {
-      return isStepComplete(0) && (form.categories.length > 0 || !!form.category.trim());
+      return isStepComplete(1);
     }
     if (i === 3) {
-      return isStepComplete(0) && isStepComplete(2);
-    }
-    if (i === 4) {
-      if (submissionPlan === 'paid_19') return isStepComplete(3);
-      return isStepComplete(3) && isBadgeVerified;
+      if (submissionPlan === 'paid_19') return isStepComplete(2);
+      if (freeVerificationMethod === 'upvote') {
+        return isStepComplete(2) && isUpvoteRequirementMet;
+      }
+      return isStepComplete(2) && isBadgeVerified;
     }
     return false;
   };
@@ -999,11 +1023,19 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
       return;
     }
 
-    if (submissionPlan === 'free' && !isBadgeVerified) {
-      setBanner('Please embed and verify the TopSAAS badge on your website in Step 5 before submitting.');
-      setStep(4);
-      requestAnimationFrame(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
-      return;
+    if (submissionPlan === 'free') {
+      if (freeVerificationMethod === 'upvote' && !isUpvoteRequirementMet) {
+        setBanner(`Please upvote ${Math.max(0, 5 - upvotedCount)} more product${5 - upvotedCount === 1 ? '' : 's'} in Step 4 to unlock your free launch.`);
+        setStep(3);
+        requestAnimationFrame(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+        return;
+      }
+      if (freeVerificationMethod === 'badge' && !isBadgeVerified) {
+        setBanner('Please embed and verify the TopSAAS badge on your website in Step 4 before submitting.');
+        setStep(3);
+        requestAnimationFrame(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+        return;
+      }
     }
 
     if (submissionPlan === 'paid_19') {
@@ -1033,34 +1065,6 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
       return;
     }
 
-    // For free submissions: require upvoting 5 directory apps that user hasn't upvoted yet
-    if (submissionPlan === 'free' && !freeUpvoteGateSatisfied) {
-      let candidateIds = freeUpvoteCandidateIds;
-      if (candidateIds.length === 0) {
-        candidateIds = [...allAvailableProducts]
-          .filter((p) => !isSponsorOnlyProduct(p) && !isProductUpvoted(p.id, userUpvotes))
-          .sort((a, b) => {
-            const rankA = a.rank ?? 9999;
-            const rankB = b.rank ?? 9999;
-            if (rankA !== rankB) return rankA - rankB;
-            return (b.upvotes ?? 0) - (a.upvotes ?? 0);
-          })
-          .slice(0, 10)
-          .map((p) => p.id);
-        setFreeUpvoteCandidateIds(candidateIds);
-      }
-
-      if (candidateIds.length > 0) {
-        const required = Math.min(5, candidateIds.length);
-        const upvotedCount = candidateIds.filter((id) => isProductUpvoted(id, userUpvotes)).length;
-        if (upvotedCount < required) {
-          setIsFreeUpvoteModalOpen(true);
-          return;
-        }
-      }
-      setFreeUpvoteGateSatisfied(true);
-    }
-
     // When users toggle the $5, it does nothing till they click submit
     // Once they click on submit, show the modal so they can pay from there
     if (autoRelaunch && !autoRelaunchPaid) {
@@ -1068,16 +1072,6 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
       return;
     }
 
-    await executeSubmission();
-  };
-
-  const handleCompleteFreeSubmit = async () => {
-    setFreeUpvoteGateSatisfied(true);
-    setIsFreeUpvoteModalOpen(false);
-    if (autoRelaunch && !autoRelaunchPaid) {
-      setIsAutoRelaunchModalOpen(true);
-      return;
-    }
     await executeSubmission();
   };
 
@@ -1276,7 +1270,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
   const showNameError = step === 0 && !!errors.name;
   const showTaglineError = step === 0 && !!errors.tagline;
   const showUrlError = step === 0 && !!errors.url && !duplicateListing;
-  const showCategoryError = step === 2 && !!errors.category;
+  const showCategoryError = step === 0 && !!errors.category;
 
   const autoLogoPreview = !form.logoDataUrl && normalizeUrl(form.url).ok ? getWebsiteFavicon(form.url, 128) : '';
 
@@ -1292,7 +1286,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
           <div className="mb-5 pt-1">
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-neutral-950">Submit your website</h1>
             <p className="mt-1 text-[13px] sm:text-sm font-medium text-neutral-500">
-              Five quick steps: website details, media & video, directory specs, founder profile, and badge verification.
+              Four quick steps: product details, media & links, founder profile, and launch options.
             </p>
           </div>
 
@@ -1317,7 +1311,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
           )}
 
           {/* ── Step tabs ── */}
-          <div className="mb-5 grid grid-cols-5 gap-1 rounded-2xl border border-neutral-200 bg-white p-1 shadow-2xs" role="tablist" aria-label="Submission steps">
+          <div className="mb-5 grid grid-cols-4 gap-1 rounded-2xl border border-neutral-200 bg-white p-1 shadow-2xs" role="tablist" aria-label="Submission steps">
             {STEPS.map((label, i) => {
               const active = step === i;
               const isCompleted = isStepComplete(i) && step > i;
@@ -1473,6 +1467,341 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                   minHeightClass="min-h-[150px]"
                   ariaLabel="Description"
                 />
+              </div>
+
+              {/* Multi-Category Selection */}
+              <div className="border-t border-neutral-200 pt-4">
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className={labelClass}>
+                    Categories <span className="text-red-400">*</span>
+                  </label>
+                  <span className="font-mono-num text-[11px] font-bold text-neutral-700 bg-neutral-50 px-2 py-0.5 rounded-md border border-neutral-200">
+                    {form.categories.length}/3 selected
+                  </span>
+                </div>
+
+                {/* Selected categories pill tags */}
+                {form.categories.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-3 p-2.5 rounded-xl border border-neutral-200 bg-white">
+                    {form.categories.map((cat) => (
+                      <span
+                        key={cat}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-mint-500/15 border border-mint-500/40 px-2.5 py-1 text-xs font-bold text-mint-700 shadow-2xs"
+                      >
+                        <span>{cat}</span>
+                        <button
+                          type="button"
+                          onClick={() => toggleCategory(cat)}
+                          className="flex h-4 w-4 items-center justify-center rounded-full hover:bg-mint-500/30 text-mint-600 hover:text-white transition-colors cursor-pointer"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                <div ref={categoryRef} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playSound('click', soundEnabled);
+                      setIsCategoryOpen((o) => !o);
+                      setCategorySearch('');
+                    }}
+                    className={`w-full flex items-center justify-between rounded-xl border bg-white px-3.5 py-2.5 text-sm font-semibold text-neutral-900 transition-all cursor-pointer text-left ${showCategoryError
+                      ? 'border-red-500/70'
+                      : isCategoryOpen
+                        ? 'border-neutral-900 ring-2 ring-neutral-900/10'
+                        : 'border-neutral-300 hover:border-neutral-400'
+                      }`}
+                  >
+                    <span className="text-neutral-700 font-medium">
+                      {form.categories.length > 0
+                        ? `${form.categories.length} category${form.categories.length > 1 ? 'ies' : ''} selected — click to manage`
+                        : 'Choose up to 3 categories...'}
+                    </span>
+                    <ChevronDown
+                      className={`h-4 w-4 shrink-0 text-neutral-500 transition-transform duration-200 ${isCategoryOpen ? 'rotate-180' : ''
+                        }`}
+                    />
+                  </button>
+
+                  {isCategoryOpen && (
+                    <div className="absolute left-0 right-0 top-full z-30 mt-1.5 rounded-xl border border-neutral-200 bg-white p-2 shadow-2xl space-y-2">
+                      <div className="relative">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-500" />
+                        <input
+                          type="text"
+                          autoFocus
+                          value={categorySearch}
+                          onChange={(e) => setCategorySearch(e.target.value)}
+                          placeholder="Search 25+ categories..."
+                          className="w-full rounded-lg border border-neutral-200 bg-neutral-50 pl-8 pr-3 py-1.5 text-xs text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-900 focus:outline-none"
+                        />
+                      </div>
+                      <div className="max-h-56 overflow-y-auto space-y-0.5 pr-0.5">
+                        {visibleCategories.length === 0 ? (
+                          <div className="p-3 text-center text-xs text-neutral-500">No matching categories</div>
+                        ) : (
+                          visibleCategories.map((cat) => {
+                            const selected = form.categories.includes(cat);
+                            return (
+                              <button
+                                key={cat}
+                                type="button"
+                                onClick={() => toggleCategory(cat)}
+                                className={`w-full flex items-center justify-between rounded-lg px-2.5 py-2 text-left text-xs transition-colors cursor-pointer ${selected
+                                  ? 'bg-mint-500/20 font-bold text-mint-700'
+                                  : 'font-medium text-neutral-700 hover:bg-neutral-100 hover:text-neutral-950'
+                                  }`}
+                              >
+                                <span className="truncate">{cat}</span>
+                                {selected && <Check className="h-3.5 w-3.5 shrink-0 text-mint-600 stroke-[3]" />}
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <FieldError message={showCategoryError ? errors.category : undefined} />
+              </div>
+
+              {/* Pricing */}
+              <div className="border-t border-neutral-200 pt-4">
+                <label className={labelClass}>Pricing model</label>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {PRICING_OPTIONS.map((opt) => {
+                    const selected = form.pricingModel === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => {
+                          playSound('click', soundEnabled);
+                          set('pricingModel', selected ? '' : opt.value);
+                        }}
+                        className={`rounded-xl border px-3 py-2.5 text-left transition-all cursor-pointer ${selected
+                          ? 'border-neutral-950 bg-neutral-950 text-white'
+                          : 'border-neutral-200 bg-white hover:border-neutral-400 text-neutral-900'
+                          }`}
+                      >
+                        <span className={`block text-xs font-bold ${selected ? 'text-white' : 'text-neutral-900'}`}>
+                          {opt.value}
+                        </span>
+                        <span className={`block text-[10px] font-medium ${selected ? 'text-neutral-300' : 'text-neutral-500'}`}>
+                          {opt.hint}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* ── Collapsible Advanced Details (Problem, Solution, Different) ── */}
+              <div className="border-t border-neutral-200 pt-4">
+                <div className="rounded-2xl border border-neutral-200 bg-neutral-50/60 p-4 transition-all">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playSound('click', soundEnabled);
+                      setShowAdvancedDetails((prev) => !prev);
+                    }}
+                    className="flex w-full items-center justify-between text-left cursor-pointer select-none"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-white border border-neutral-200 shadow-2xs text-neutral-900 shrink-0">
+                        <Sparkles className="h-3.5 w-3.5 text-blue-600" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs font-bold text-neutral-950">
+                            Add Advanced Details
+                          </span>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white border border-neutral-200 text-neutral-600 shadow-2xs">
+                            Optional
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-neutral-500 mt-0.5">
+                          Problem, solution, what makes it different, and special offers
+                        </p>
+                      </div>
+                    </div>
+                    <div className="h-6 w-6 rounded-lg border border-neutral-200 flex items-center justify-center bg-white shadow-2xs shrink-0">
+                      <ChevronDown
+                        className={`h-3.5 w-3.5 text-neutral-700 transition-transform duration-200 ${
+                          showAdvancedDetails ? 'rotate-180' : ''
+                        }`}
+                      />
+                    </div>
+                  </button>
+
+                  {showAdvancedDetails && (
+                    <div className="mt-4 pt-4 border-t border-neutral-200 space-y-4 animate-in fade-in-50 duration-150">
+                      <div>
+                        <label className={labelClass}>Target audience</label>
+                        <input
+                          type="text"
+                          value={form.targetAudience}
+                          maxLength={120}
+                          onChange={(e) => set('targetAudience', e.target.value)}
+                          placeholder="e.g. Indie hackers, developers, small teams"
+                          className={inputClass(false)}
+                        />
+                      </div>
+                      <div>
+                        <label className={labelClass}>Problem it solves</label>
+                        <RichTextEditor
+                          value={form.problemItSolves}
+                          onChange={(html) => set('problemItSolves', html)}
+                          placeholder="What pain point does it address?"
+                          maxLength={600}
+                          minHeightClass="min-h-[96px]"
+                          ariaLabel="Problem it solves"
+                        />
+                      </div>
+                      <div>
+                        <label className={labelClass}>Your solution</label>
+                        <RichTextEditor
+                          value={form.solution}
+                          onChange={(html) => set('solution', html)}
+                          placeholder="How does it solve that problem?"
+                          maxLength={600}
+                          minHeightClass="min-h-[96px]"
+                          ariaLabel="Your solution"
+                        />
+                      </div>
+                      <div>
+                        <label className={labelClass}>What makes it different</label>
+                        <RichTextEditor
+                          value={form.uniqueSellingPoint}
+                          onChange={(html) => set('uniqueSellingPoint', html)}
+                          placeholder="What sets it apart from alternatives?"
+                          maxLength={600}
+                          minHeightClass="min-h-[96px]"
+                          ariaLabel="What makes it different"
+                        />
+                      </div>
+
+                      {/* Special Offer & Viewer Discount */}
+                      <div className="border-t border-neutral-200 pt-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-mint-500/15 text-mint-600 border border-mint-500/30">
+                              <Tag className="h-3.5 w-3.5" />
+                            </div>
+                            <h3 className="text-xs font-bold text-neutral-950 flex items-center gap-1.5">
+                              <span>Special Offer & Discount</span>
+                              <span className="rounded bg-mint-500/15 border border-mint-500/30 px-1.5 py-0.5 text-[9px] font-black text-mint-600">
+                                Boosts Clicks
+                              </span>
+                            </h3>
+                          </div>
+                          <span className="text-[10px] font-semibold text-neutral-500">
+                            Optional
+                          </span>
+                        </div>
+
+                        <div className="rounded-xl border border-neutral-200 bg-white p-3.5 sm:p-4 space-y-3.5">
+                          {/* Preset chips for quick fill */}
+                          <div>
+                            <div className="text-[10px] font-bold text-neutral-600 mb-1.5">
+                              Quick Discount Presets:
+                            </div>
+                            <div className="flex flex-wrap gap-1.5">
+                              {['10% OFF', '20% OFF', '30% OFF', '50% OFF', 'Free Trial', 'Lifetime Deal'].map((preset) => (
+                                <button
+                                  key={preset}
+                                  type="button"
+                                  onClick={() => {
+                                    playSound('click', soundEnabled);
+                                    set('offerDiscount', preset);
+                                    if (!form.offerCode) {
+                                      const num = preset.match(/\d+/)?.[0] || 'DEAL';
+                                      set('offerCode', `TOPSAAS${num}`);
+                                    }
+                                  }}
+                                  className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all cursor-pointer ${form.offerDiscount === preset
+                                    ? 'bg-mint-500 text-white border border-mint-400 shadow-2xs'
+                                    : 'bg-white text-neutral-700 border border-neutral-200 hover:border-neutral-400 hover:bg-neutral-50 hover:text-neutral-950'
+                                    }`}
+                                >
+                                  {preset}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                              <label className={labelClass}>
+                                Discount / Offer Headline
+                              </label>
+                              <input
+                                type="text"
+                                value={form.offerDiscount}
+                                maxLength={50}
+                                onChange={(e) => set('offerDiscount', e.target.value)}
+                                placeholder="e.g. 20% OFF or 50% Lifetime"
+                                className={inputClass(false)}
+                              />
+                            </div>
+
+                            <div>
+                              <label className={labelClass}>
+                                Promo / Coupon Code
+                              </label>
+                              <input
+                                type="text"
+                                value={form.offerCode}
+                                maxLength={30}
+                                onChange={(e) => set('offerCode', e.target.value.toUpperCase())}
+                                placeholder="e.g. TOPSAAS20"
+                                className={`${inputClass(false)} font-mono font-bold tracking-wider`}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                            <div>
+                              <label className={labelClass}>
+                                Offer Redemption URL
+                              </label>
+                              <input
+                                type="url"
+                                value={form.offerUrl}
+                                onChange={(e) => set('offerUrl', e.target.value)}
+                                onBlur={(e) => {
+                                  const formatted = autoFormatUrl(e.target.value);
+                                  if (formatted !== e.target.value) set('offerUrl', formatted);
+                                }}
+                                placeholder="e.g. https://yoursite.com/deal or checkout link"
+                                className={inputClass(false)}
+                              />
+                            </div>
+
+                            <div>
+                              <label className={labelClass}>
+                                Offer Details / Terms
+                              </label>
+                              <input
+                                type="text"
+                                value={form.offerDetails}
+                                maxLength={100}
+                                onChange={(e) => set('offerDetails', e.target.value)}
+                                placeholder="e.g. Valid on first year of annual plans"
+                                className={inputClass(false)}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </section>
           )}
@@ -1777,314 +2106,9 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                   Add a YouTube, Loom, Vimeo, or video link demonstrating your product. It will be showcased on your listing page.
                 </p>
               </div>
-            </section>
-          )}
-
-          {step === 2 && (
-            <section className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-6 shadow-xs space-y-6">
-              {/* Multi-Category Selection */}
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className={labelClass}>
-                    Categories <span className="text-red-400">*</span>
-                  </label>
-                  <span className="font-mono-num text-[11px] font-bold text-neutral-700 bg-neutral-50 px-2 py-0.5 rounded-md border border-neutral-200">
-                    {form.categories.length}/3 selected
-                  </span>
-                </div>
-
-                {/* Selected categories pill tags */}
-                {form.categories.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mb-3 p-2.5 rounded-xl border border-neutral-200 bg-white">
-                    {form.categories.map((cat) => (
-                      <span
-                        key={cat}
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-mint-500/15 border border-mint-500/40 px-2.5 py-1 text-xs font-bold text-mint-700 shadow-2xs"
-                      >
-                        <span>{cat}</span>
-                        <button
-                          type="button"
-                          onClick={() => toggleCategory(cat)}
-                          className="flex h-4 w-4 items-center justify-center rounded-full hover:bg-mint-500/30 text-mint-600 hover:text-white transition-colors cursor-pointer"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                <div ref={categoryRef} className="relative">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      playSound('click', soundEnabled);
-                      setIsCategoryOpen((o) => !o);
-                      setCategorySearch('');
-                    }}
-                    className={`w-full flex items-center justify-between rounded-xl border bg-white px-3.5 py-2.5 text-sm font-semibold text-neutral-900 transition-all cursor-pointer text-left ${showCategoryError
-                      ? 'border-red-500/70'
-                      : isCategoryOpen
-                        ? 'border-neutral-900 ring-2 ring-neutral-900/10'
-                        : 'border-neutral-300 hover:border-neutral-400'
-                      }`}
-                  >
-                    <span className="text-neutral-700 font-medium">
-                      {form.categories.length > 0
-                        ? `${form.categories.length} category${form.categories.length > 1 ? 'ies' : ''} selected — click to manage`
-                        : 'Choose up to 3 categories...'}
-                    </span>
-                    <ChevronDown
-                      className={`h-4 w-4 shrink-0 text-neutral-500 transition-transform duration-200 ${isCategoryOpen ? 'rotate-180' : ''
-                        }`}
-                    />
-                  </button>
-
-                  {isCategoryOpen && (
-                    <div className="absolute left-0 right-0 top-full z-30 mt-1.5 rounded-xl border border-neutral-200 bg-white p-2 shadow-2xl space-y-2">
-                      <div className="relative">
-                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-500" />
-                        <input
-                          type="text"
-                          autoFocus
-                          value={categorySearch}
-                          onChange={(e) => setCategorySearch(e.target.value)}
-                          placeholder="Search 25+ categories..."
-                          className="w-full rounded-lg border border-neutral-200 bg-neutral-50 pl-8 pr-3 py-1.5 text-xs text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-900 focus:outline-none"
-                        />
-                      </div>
-                      <div className="max-h-56 overflow-y-auto space-y-0.5 pr-0.5">
-                        {visibleCategories.length === 0 ? (
-                          <div className="p-3 text-center text-xs text-neutral-500">No matching categories</div>
-                        ) : (
-                          visibleCategories.map((cat) => {
-                            const selected = form.categories.includes(cat);
-                            return (
-                              <button
-                                key={cat}
-                                type="button"
-                                onClick={() => toggleCategory(cat)}
-                                className={`w-full flex items-center justify-between rounded-lg px-2.5 py-2 text-left text-xs transition-colors cursor-pointer ${selected
-                                  ? 'bg-mint-500/20 font-bold text-mint-700'
-                                  : 'font-medium text-neutral-700 hover:bg-neutral-100 hover:text-neutral-950'
-                                  }`}
-                              >
-                                <span className="truncate">{cat}</span>
-                                {selected && <Check className="h-3.5 w-3.5 shrink-0 text-mint-600 stroke-[3]" />}
-                              </button>
-                            );
-                          })
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <FieldError message={showCategoryError ? errors.category : undefined} />
-              </div>
-
-              {/* Pricing */}
-              <div className="border-t border-neutral-200 pt-5">
-                <label className={labelClass}>Pricing model</label>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  {PRICING_OPTIONS.map((opt) => {
-                    const selected = form.pricingModel === opt.value;
-                    return (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() => {
-                          playSound('click', soundEnabled);
-                          set('pricingModel', selected ? '' : opt.value);
-                        }}
-                        className={`rounded-xl border px-3 py-2.5 text-left transition-all cursor-pointer ${selected
-                          ? 'border-neutral-950 bg-neutral-950 text-white'
-                          : 'border-neutral-200 bg-white hover:border-neutral-400 text-neutral-900'
-                          }`}
-                      >
-                        <span className={`block text-xs font-bold ${selected ? 'text-white' : 'text-neutral-900'}`}>
-                          {opt.value}
-                        </span>
-                        <span className={`block text-[10px] font-medium ${selected ? 'text-neutral-300' : 'text-neutral-500'}`}>
-                          {opt.hint}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Special Offer & Viewer Discount */}
-              <div className="border-t border-neutral-200 pt-5 space-y-3.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-mint-500/15 text-mint-600 border border-mint-500/30">
-                      <Tag className="h-3.5 w-3.5" />
-                    </div>
-                    <div>
-                      <h3 className="text-xs font-bold text-neutral-950 flex items-center gap-1.5">
-                        <span>Special Offer & Discount</span>
-                        <span className="rounded bg-mint-500/15 border border-mint-500/30 px-1.5 py-0.5 text-[9px] font-black text-mint-600">
-                          Boosts Clicks
-                        </span>
-                      </h3>
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-semibold text-neutral-500">
-                    Optional
-                  </span>
-                </div>
-
-                <div className="rounded-xl border border-neutral-200 bg-white p-3.5 sm:p-4 space-y-3.5">
-                  {/* Preset chips for quick fill */}
-                  <div>
-                    <div className="text-[10px] font-bold text-neutral-600 mb-1.5">
-                      Quick Discount Presets:
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {['10% OFF', '20% OFF', '30% OFF', '50% OFF', 'Free Trial', 'Lifetime Deal'].map((preset) => (
-                        <button
-                          key={preset}
-                          type="button"
-                          onClick={() => {
-                            playSound('click', soundEnabled);
-                            set('offerDiscount', preset);
-                            if (!form.offerCode) {
-                              const num = preset.match(/\d+/)?.[0] || 'DEAL';
-                              set('offerCode', `TOPSAAS${num}`);
-                            }
-                          }}
-                          className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all cursor-pointer ${form.offerDiscount === preset
-                            ? 'bg-mint-500 text-white border border-mint-400 shadow-2xs'
-                            : 'bg-white text-neutral-700 border border-neutral-200 hover:border-neutral-400 hover:bg-neutral-50 hover:text-neutral-950'
-                            }`}
-                        >
-                          {preset}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className={labelClass}>
-                        Discount / Offer Headline
-                      </label>
-                      <input
-                        type="text"
-                        value={form.offerDiscount}
-                        maxLength={50}
-                        onChange={(e) => set('offerDiscount', e.target.value)}
-                        placeholder="e.g. 20% OFF or 50% Lifetime"
-                        className={inputClass(false)}
-                      />
-                    </div>
-
-                    <div>
-                      <label className={labelClass}>
-                        Promo / Coupon Code
-                      </label>
-                      <input
-                        type="text"
-                        value={form.offerCode}
-                        maxLength={30}
-                        onChange={(e) => set('offerCode', e.target.value.toUpperCase())}
-                        placeholder="e.g. TOPSAAS20"
-                        className={`${inputClass(false)} font-mono font-bold tracking-wider`}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                    <div>
-                      <label className={labelClass}>
-                        Offer Redemption URL
-                      </label>
-                      <input
-                        type="url"
-                        value={form.offerUrl}
-                        onChange={(e) => set('offerUrl', e.target.value)}
-                        onBlur={(e) => {
-                          const formatted = autoFormatUrl(e.target.value);
-                          if (formatted !== e.target.value) set('offerUrl', formatted);
-                        }}
-                        placeholder="e.g. https://yoursite.com/deal or checkout link"
-                        className={inputClass(false)}
-                      />
-                    </div>
-
-                    <div>
-                      <label className={labelClass}>
-                        Offer Details / Terms
-                      </label>
-                      <input
-                        type="text"
-                        value={form.offerDetails}
-                        maxLength={100}
-                        onChange={(e) => set('offerDetails', e.target.value)}
-                        placeholder="e.g. Valid on first year of annual plans"
-                        className={inputClass(false)}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Who it's for */}
-              <div className="border-t border-neutral-200 pt-5">
-                <h2 className="mb-3 text-[11px] font-bold text-neutral-700">
-                  Who it&apos;s for
-                </h2>
-                <div className="space-y-4">
-                  <div>
-                    <label className={labelClass}>Target audience</label>
-                    <input
-                      type="text"
-                      value={form.targetAudience}
-                      maxLength={120}
-                      onChange={(e) => set('targetAudience', e.target.value)}
-                      placeholder="e.g. Indie hackers, developers, small teams"
-                      className={inputClass(false)}
-                    />
-                  </div>
-                  <div>
-                    <label className={labelClass}>Problem it solves</label>
-                    <RichTextEditor
-                      value={form.problemItSolves}
-                      onChange={(html) => set('problemItSolves', html)}
-                      placeholder="What pain point does it address?"
-                      maxLength={600}
-                      minHeightClass="min-h-[96px]"
-                      ariaLabel="Problem it solves"
-                    />
-                  </div>
-                  <div>
-                    <label className={labelClass}>Your solution</label>
-                    <RichTextEditor
-                      value={form.solution}
-                      onChange={(html) => set('solution', html)}
-                      placeholder="How does it solve that problem?"
-                      maxLength={600}
-                      minHeightClass="min-h-[96px]"
-                      ariaLabel="Your solution"
-                    />
-                  </div>
-                  <div>
-                    <label className={labelClass}>What makes it different</label>
-                    <RichTextEditor
-                      value={form.uniqueSellingPoint}
-                      onChange={(html) => set('uniqueSellingPoint', html)}
-                      placeholder="What sets it apart from alternatives?"
-                      maxLength={600}
-                      minHeightClass="min-h-[96px]"
-                      ariaLabel="What makes it different"
-                    />
-                  </div>
-                </div>
-              </div>
 
               {/* Social & Distribution Links */}
-              <div className="border-t border-neutral-200 pt-5 space-y-4">
+              <div className="mt-6 border-t border-neutral-200 pt-6 space-y-4">
                 <div>
                   <h2 className="text-[11px] font-bold text-neutral-700">
                     Social & Distribution Links
@@ -2216,7 +2240,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
             </section>
           )}
 
-          {step === 3 && (
+          {step === 2 && (
             <section className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-6 shadow-xs space-y-6">
               {/* Founder Profile Picture */}
               <div>
@@ -2356,8 +2380,8 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
             </section>
           )}
 
-          {/* ── Step 4: Launch Options & Pricing Plan ── */}
-          {step === 4 && (
+          {/* ── Step 3: Launch Options & Pricing Plan ── */}
+          {step === 3 && (
             <section className="space-y-6 animate-in fade-in-50 duration-200">
               {/* 1. Choose Your Launch Plan */}
               <div className="space-y-3">
@@ -2666,216 +2690,401 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                   )}
                 </div>
               ) : (
-                /* ── Free Plan: Mandatory Badge & Verification ── */
+                /* ── Free Plan: Upvote 5 Products OR Embed Website Badge ── */
                 <div className="space-y-5 border-t border-neutral-200 pt-5">
-                  {/* Badge Picker */}
-                  <div className="space-y-2">
-                    <p className="text-xs font-bold text-neutral-700">2. Choose Your Badge</p>
-                    <div className="grid grid-cols-4 gap-2 sm:gap-2.5">
-                      {([
-                        { id: 'type1-blue', src: '/Share%20Badge/TopSAAS%20Type%201%20-%20blue.png', label: 'Type 1 · Blue', bg: 'bg-[#1a2580]' },
-                        { id: 'type1-light', src: '/Share%20Badge/TopSAAS%20Type%201%20-%20light.png', label: 'Type 1 · Light', bg: 'bg-white' },
-                        { id: 'type2-blue', src: '/Share%20Badge/TopSAAS%20Type%202%20-%20blue.png', label: 'Type 2 · Blue', bg: 'bg-[#1a2580]' },
-                        { id: 'type2-light', src: '/Share%20Badge/TopSAAS%20Type%202%20-%20light.png', label: 'Type 2 · Light', bg: 'bg-white' },
-                      ] as { id: BadgeVariant; src: string; label: string; bg: string }[]).map(({ id, src, label, bg }) => (
-                        <button
-                          key={id}
-                          type="button"
-                          onClick={() => { playSound('click', soundEnabled); setBadgeVariant(id); }}
-                          className={`relative flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 p-2 sm:p-2.5 transition-all cursor-pointer ${badgeVariant === id
-                            ? 'border-mint-500 shadow-sm shadow-mint-500/20'
-                            : 'border-neutral-200 hover:border-neutral-400'
-                            } ${bg}`}
-                        >
-                          {badgeVariant === id && (
-                            <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-mint-500">
-                              <Check className="h-2.5 w-2.5 text-white stroke-[3]" />
-                            </span>
-                          )}
-                          <img
-                            src={src}
-                            alt={label}
-                            className="h-6 sm:h-7.5 w-auto max-w-[85%] object-contain"
-                            draggable={false}
-                          />
-                          <span className={`text-[9px] sm:text-[10px] font-bold text-center leading-tight truncate max-w-full ${id.endsWith('light') ? 'text-neutral-700' : 'text-white/85'
-                            }`}>{label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Copy Code Snippet */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-neutral-900">3. Copy Snippet to Your Website</span>
-                      <div className="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-neutral-200 text-[11px]">
-                        <button
-                          type="button"
-                          onClick={() => setBadgeFormat('html')}
-                          className={`px-2 py-0.5 rounded font-bold transition-all cursor-pointer ${badgeFormat === 'html' ? 'bg-neutral-950 text-white' : 'text-neutral-600 hover:text-neutral-950'}`}
-                        >
-                          HTML
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setBadgeFormat('markdown')}
-                          className={`px-2 py-0.5 rounded font-bold transition-all cursor-pointer ${badgeFormat === 'markdown' ? 'bg-neutral-950 text-white' : 'text-neutral-600 hover:text-neutral-950'}`}
-                        >
-                          Markdown
-                        </button>
-                      </div>
+                      <p className="text-xs font-bold text-neutral-900">2. Free Verification Requirement</p>
+                      <span className="text-[11px] font-semibold text-neutral-500">Choose one option below</span>
                     </div>
 
-                    <div className="relative rounded-xl border border-neutral-200 bg-[#17171a] p-3 font-mono text-[11px] text-neutral-300 leading-relaxed overflow-x-auto">
-                      <pre className="whitespace-pre-wrap break-all pr-16">{badgeEmbedSnippet}</pre>
+                    {/* Method Selector Tabs */}
+                    <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl border border-neutral-200 bg-neutral-100/70">
                       <button
                         type="button"
-                        onClick={handleCopyBadgeSnippet}
-                        className={`absolute top-2.5 right-2.5 inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-bold transition-all cursor-pointer shadow-xs ${copiedBadge ? 'bg-mint-500 text-white' : 'bg-white text-neutral-800 hover:bg-neutral-100 border border-neutral-300'
-                          }`}
+                        onClick={() => {
+                          playSound('click', soundEnabled);
+                          setFreeVerificationMethod('upvote');
+                        }}
+                        className={`flex items-center justify-center gap-1.5 rounded-xl py-2 px-3 text-xs font-bold transition-all cursor-pointer ${
+                          freeVerificationMethod === 'upvote'
+                            ? 'bg-white text-neutral-950 shadow-sm'
+                            : 'text-neutral-600 hover:text-neutral-950'
+                        }`}
                       >
-                        {copiedBadge ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                        <span>{copiedBadge ? 'Copied' : 'Copy'}</span>
+                        <Sparkles className="h-3.5 w-3.5 text-blue-600" />
+                        <span>Upvote 5 Products</span>
+                        <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-blue-50 text-blue-700">Instant</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playSound('click', soundEnabled);
+                          setFreeVerificationMethod('badge');
+                        }}
+                        className={`flex items-center justify-center gap-1.5 rounded-xl py-2 px-3 text-xs font-bold transition-all cursor-pointer ${
+                          freeVerificationMethod === 'badge'
+                            ? 'bg-white text-neutral-950 shadow-sm'
+                            : 'text-neutral-600 hover:text-neutral-950'
+                        }`}
+                      >
+                        <ShieldCheck className="h-3.5 w-3.5 text-mint-600" />
+                        <span>Embed Website Badge</span>
                       </button>
                     </div>
-                    <p className="text-[11px] text-neutral-500">
-                      Place this badge in your website footer, homepage, or docs. Free users must verify the badge before submitting.
-                    </p>
                   </div>
 
-                  {/* 4. Badge Verification */}
-                  <div className="space-y-3 pt-1">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-neutral-900">4. Verify Placement</span>
-                      <span className="text-[11px] text-neutral-500">Target: <code className="font-mono text-neutral-700 bg-neutral-100 px-1.5 py-0.5 rounded">{customBadgeUrl || form.url || 'your website'}</code></span>
-                    </div>
+                  {freeVerificationMethod === 'upvote' ? (
+                    /* ── In-Place 5 Upvote Section ── */
+                    <div className="space-y-4 animate-in fade-in-50 duration-150">
+                      {/* Progress Tracker Card */}
+                      <div className="rounded-2xl border border-neutral-200/90 bg-neutral-50/80 p-4 shadow-2xs">
+                        <div className="flex items-center justify-between gap-2 text-xs">
+                          <span className="font-bold text-neutral-900">
+                            Community Upvote Progress
+                          </span>
+                          {isUpvoteRequirementMet ? (
+                            <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full text-[11px] whitespace-nowrap">
+                              <Check className="h-3 w-3 stroke-[3]" />
+                              {upvotedCount}/5 upvoted — Free Launch Unlocked!
+                            </span>
+                          ) : (
+                            <span className="font-bold text-neutral-700 text-[11px] bg-white border border-neutral-200 px-2.5 py-0.5 rounded-full shadow-2xs whitespace-nowrap">
+                              {upvotedCount}/5 upvoted ·{' '}
+                              <span className="text-blue-600 font-extrabold">{Math.max(0, 5 - upvotedCount)} left</span>
+                            </span>
+                          )}
+                        </div>
 
-                    {isBadgeVerified ? (
-                      <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 text-xs text-emerald-900 flex items-center justify-between gap-3 shadow-2xs">
-                        <div className="flex items-center gap-2.5">
-                          <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-emerald-500 text-white shrink-0">
-                            <Check className="h-4 w-4 stroke-[3]" />
-                          </div>
-                          <div>
-                            <p className="font-bold text-emerald-950 text-xs">TopSAAS Badge Verified!</p>
-                            <p className="text-[11px] text-emerald-700">
-                              {badgeVerificationSuccess || 'Badge confirmed on your website. The submit button is now unlocked below.'}
-                            </p>
+                        <div className="w-full bg-neutral-200 rounded-full h-2.5 overflow-hidden mt-2.5">
+                          <div
+                            className={`h-full rounded-full transition-all duration-300 ${
+                              isUpvoteRequirementMet ? 'bg-emerald-500' : 'bg-blue-600'
+                            }`}
+                            style={{ width: `${Math.min(100, Math.round((upvotedCount / 5) * 100))}%` }}
+                          />
+                        </div>
+
+                        <p className="text-[11px] text-neutral-500 mt-2 leading-relaxed">
+                          {isUpvoteRequirementMet
+                            ? 'Great job! You have upvoted at least 5 products. You can now launch your product for free below.'
+                            : 'Click the ▲ button on any 5 products below to support community makers and unlock your free launch right here.'}
+                        </p>
+                      </div>
+
+                      {/* Embedded Live Directory Products List */}
+                      <div className="border border-neutral-200 rounded-2xl overflow-hidden shadow-2xs bg-white">
+                        <div className="bg-neutral-100/70 border-b border-neutral-200 px-3.5 py-2 text-[11px] font-bold text-neutral-600 flex items-center justify-between gap-2">
+                          <span>Pick apps to upvote</span>
+                          <span>Click ▲ to upvote</span>
+                        </div>
+
+                        <div className="max-h-[340px] overflow-y-auto divide-y divide-neutral-100">
+                          {candidateProducts.length === 0 ? (
+                            <div className="p-8 text-center text-xs text-neutral-400">
+                              No directory products available right now.
+                            </div>
+                          ) : (
+                            candidateProducts.map((prod, index) => {
+                              const upvoted = isProductUpvoted(prod.id, userUpvotes);
+                              const logoSrc = prod.logoUrl || getWebsiteFavicon(prod.url);
+
+                              return (
+                                <div
+                                  key={prod.id}
+                                  className={`flex items-center gap-3 p-3 transition-colors ${
+                                    upvoted ? 'bg-mint-50/25' : 'hover:bg-neutral-50/70'
+                                  }`}
+                                >
+                                  {/* Directory Rank */}
+                                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-neutral-100 text-[11px] font-black text-neutral-600 font-mono-num">
+                                    #{prod.rank ?? index + 1}
+                                  </div>
+
+                                  {/* Product Logo */}
+                                  <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-2xs">
+                                    <ProductLogo
+                                      src={logoSrc}
+                                      alt={prod.name}
+                                      containerClassName="h-full w-full flex items-center justify-center"
+                                      iconClassName="h-4 w-4 text-neutral-400"
+                                    />
+                                  </div>
+
+                                  {/* Product Info */}
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <span className="font-bold text-xs sm:text-sm text-neutral-950 truncate">
+                                        {prod.name}
+                                      </span>
+                                      {prod.url && (
+                                        <a
+                                          href={prod.url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          onClick={(e) => e.stopPropagation()}
+                                          className="text-neutral-400 hover:text-neutral-700 transition-colors p-0.5"
+                                          title="Visit website"
+                                        >
+                                          <ExternalLink className="h-3 w-3" />
+                                        </a>
+                                      )}
+                                      {prod.category && (
+                                        <span className="hidden sm:inline-flex text-[9px] font-semibold px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-600 border border-neutral-200/60 truncate max-w-[100px]">
+                                          {prod.category.split(',')[0].trim()}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-[11px] text-neutral-500 truncate mt-0.5">
+                                      {prod.tagline}
+                                    </p>
+                                  </div>
+
+                                  {/* Upvote Button */}
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      onUpvote?.(prod);
+                                    }}
+                                    title={upvoted ? 'Remove upvote' : 'Upvote this product'}
+                                    className={`flex flex-col items-center justify-center rounded-xl border py-1 px-2.5 min-w-[46px] transition-all cursor-pointer active:scale-95 shrink-0 ${
+                                      upvoted
+                                        ? 'border-mint-500 bg-mint-500 text-white shadow-2xs'
+                                        : 'border-neutral-200 bg-white text-neutral-800 hover:border-neutral-400 hover:bg-neutral-50 shadow-2xs'
+                                    }`}
+                                  >
+                                    <ChevronUp
+                                      className={`h-4 w-4 ${
+                                        upvoted ? 'text-white' : 'text-neutral-900 fill-neutral-900'
+                                      }`}
+                                    />
+                                    <span className="text-[10px] font-mono-num font-bold">
+                                      {prod.upvotes ?? 0}
+                                    </span>
+                                  </button>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    /* ── Embed Website Badge Section ── */
+                    <div className="space-y-5 animate-in fade-in-50 duration-150">
+                      {/* Badge Picker */}
+                      <div className="space-y-2">
+                        <p className="text-xs font-bold text-neutral-700">Choose Your Badge Style</p>
+                        <div className="grid grid-cols-4 gap-2 sm:gap-2.5">
+                          {([
+                            { id: 'type1-blue', src: '/Share%20Badge/TopSAAS%20Type%201%20-%20blue.png', label: 'Type 1 · Blue', bg: 'bg-[#1a2580]' },
+                            { id: 'type1-light', src: '/Share%20Badge/TopSAAS%20Type%201%20-%20light.png', label: 'Type 1 · Light', bg: 'bg-white' },
+                            { id: 'type2-blue', src: '/Share%20Badge/TopSAAS%20Type%202%20-%20blue.png', label: 'Type 2 · Blue', bg: 'bg-[#1a2580]' },
+                            { id: 'type2-light', src: '/Share%20Badge/TopSAAS%20Type%202%20-%20light.png', label: 'Type 2 · Light', bg: 'bg-white' },
+                          ] as { id: BadgeVariant; src: string; label: string; bg: string }[]).map(({ id, src, label, bg }) => (
+                            <button
+                              key={id}
+                              type="button"
+                              onClick={() => { playSound('click', soundEnabled); setBadgeVariant(id); }}
+                              className={`relative flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 p-2 sm:p-2.5 transition-all cursor-pointer ${badgeVariant === id
+                                ? 'border-mint-500 shadow-sm shadow-mint-500/20'
+                                : 'border-neutral-200 hover:border-neutral-400'
+                                } ${bg}`}
+                            >
+                              {badgeVariant === id && (
+                                <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-mint-500">
+                                  <Check className="h-2.5 w-2.5 text-white stroke-[3]" />
+                                </span>
+                              )}
+                              <img
+                                src={src}
+                                alt={label}
+                                className="h-6 sm:h-7.5 w-auto max-w-[85%] object-contain"
+                                draggable={false}
+                              />
+                              <span className={`text-[9px] sm:text-[10px] font-bold text-center leading-tight truncate max-w-full ${id.endsWith('light') ? 'text-neutral-700' : 'text-white/85'
+                                }`}>{label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Copy Code Snippet */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-neutral-900">Copy Snippet to Your Website</span>
+                          <div className="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-neutral-200 text-[11px]">
+                            <button
+                              type="button"
+                              onClick={() => setBadgeFormat('html')}
+                              className={`px-2 py-0.5 rounded font-bold transition-all cursor-pointer ${badgeFormat === 'html' ? 'bg-neutral-950 text-white' : 'text-neutral-600 hover:text-neutral-950'}`}
+                            >
+                              HTML
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setBadgeFormat('markdown')}
+                              className={`px-2 py-0.5 rounded font-bold transition-all cursor-pointer ${badgeFormat === 'markdown' ? 'bg-neutral-950 text-white' : 'text-neutral-600 hover:text-neutral-950'}`}
+                            >
+                              Markdown
+                            </button>
                           </div>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsBadgeVerified(false);
-                            setBadgeVerificationSuccess(null);
-                          }}
-                          className="text-[11px] font-bold text-emerald-700 hover:text-emerald-950 underline cursor-pointer"
-                        >
-                          Re-check
-                        </button>
+
+                        <div className="relative rounded-xl border border-neutral-200 bg-[#17171a] p-3 font-mono text-[11px] text-neutral-300 leading-relaxed overflow-x-auto">
+                          <pre className="whitespace-pre-wrap break-all pr-16">{badgeEmbedSnippet}</pre>
+                          <button
+                            type="button"
+                            onClick={handleCopyBadgeSnippet}
+                            className={`absolute top-2.5 right-2.5 inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-bold transition-all cursor-pointer shadow-xs ${copiedBadge ? 'bg-mint-500 text-white' : 'bg-white text-neutral-800 hover:bg-neutral-100 border border-neutral-300'
+                              }`}
+                          >
+                            {copiedBadge ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                            <span>{copiedBadge ? 'Copied' : 'Copy'}</span>
+                          </button>
+                        </div>
+                        <p className="text-[11px] text-neutral-500">
+                          Place this badge in your website footer, homepage, or docs. Verify the badge before submitting.
+                        </p>
                       </div>
-                    ) : badgeVerificationError ? (
-                      <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 text-xs text-neutral-800 space-y-3 shadow-2xs">
-                        <div className="flex items-start gap-3">
-                          <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-amber-100 text-amber-700 shrink-0 mt-0.5">
-                            <AlertCircle className="h-4 w-4" />
+
+                      {/* Badge Verification */}
+                      <div className="space-y-3 pt-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-neutral-900">Verify Placement</span>
+                          <span className="text-[11px] text-neutral-500">Target: <code className="font-mono text-neutral-700 bg-neutral-100 px-1.5 py-0.5 rounded">{customBadgeUrl || form.url || 'your website'}</code></span>
+                        </div>
+
+                        {isBadgeVerified ? (
+                          <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 text-xs text-emerald-900 flex items-center justify-between gap-3 shadow-2xs">
+                            <div className="flex items-center gap-2.5">
+                              <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-emerald-500 text-white shrink-0">
+                                <Check className="h-4 w-4 stroke-[3]" />
+                              </div>
+                              <div>
+                                <p className="font-bold text-emerald-950 text-xs">TopSAAS Badge Verified!</p>
+                                <p className="text-[11px] text-emerald-700">
+                                  {badgeVerificationSuccess || 'Badge confirmed on your website. The submit button is now unlocked below.'}
+                                </p>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsBadgeVerified(false);
+                                setBadgeVerificationSuccess(null);
+                              }}
+                              className="text-[11px] font-bold text-emerald-700 hover:text-emerald-950 underline cursor-pointer"
+                            >
+                              Re-check
+                            </button>
                           </div>
-                          <div className="space-y-1.5 flex-1">
-                            <p className="font-bold text-neutral-900 text-xs">Badge Not Detected Yet</p>
-                            <p className="text-[11px] text-neutral-600 leading-relaxed">{badgeVerificationError}</p>
-                            <div className="pt-2 flex items-center gap-2 flex-wrap">
+                        ) : badgeVerificationError ? (
+                          <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 text-xs text-neutral-800 space-y-3 shadow-2xs">
+                            <div className="flex items-start gap-3">
+                              <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-amber-100 text-amber-700 shrink-0 mt-0.5">
+                                <AlertCircle className="h-4 w-4" />
+                              </div>
+                              <div className="space-y-1.5 flex-1">
+                                <p className="font-bold text-neutral-900 text-xs">Badge Not Detected Yet</p>
+                                <p className="text-[11px] text-neutral-600 leading-relaxed">{badgeVerificationError}</p>
+                                <div className="pt-2 flex items-center gap-2 flex-wrap">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleVerifyBadge()}
+                                    disabled={isVerifyingBadge}
+                                    className="inline-flex items-center gap-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white px-3.5 py-1.5 text-[11px] font-bold transition-colors cursor-pointer"
+                                  >
+                                    {isVerifyingBadge ? <Loader2 className="h-3 w-3 animate-spin" /> : <ShieldCheck className="h-3 w-3" />}
+                                    <span>Try verifying again</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowCustomUrlInput(!showCustomUrlInput)}
+                                    className="rounded-lg border border-neutral-300 bg-white hover:bg-neutral-100 text-neutral-800 px-3 py-1.5 text-[11px] font-bold transition-colors cursor-pointer"
+                                  >
+                                    {showCustomUrlInput ? 'Hide alternate URL' : 'Badge on another page?'}
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Alternate Page URL input */}
+                            {showCustomUrlInput && (
+                              <div className="rounded-xl border border-neutral-200 bg-white p-3 space-y-2">
+                                <label className="text-[11px] font-bold text-neutral-700 block">
+                                  Enter the specific page where the badge is embedded:
+                                </label>
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="url"
+                                    value={customBadgeUrl}
+                                    onChange={(e) => setCustomBadgeUrl(e.target.value)}
+                                    placeholder="https://yourproduct.com/footer or https://docs.yourproduct.com"
+                                    className="flex-1 rounded-lg border border-neutral-300 px-3 py-1.5 text-xs text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-950 focus:outline-none"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => handleVerifyBadge(customBadgeUrl)}
+                                    disabled={isVerifyingBadge || !customBadgeUrl.trim()}
+                                    className="rounded-lg bg-neutral-900 hover:bg-neutral-800 disabled:opacity-50 text-white px-3 py-1.5 text-xs font-bold transition-colors cursor-pointer shrink-0"
+                                  >
+                                    Verify URL
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Manual Confirmation Fallback */}
+                            <div className="border-t border-neutral-200 pt-3 flex items-center justify-between gap-3">
+                              <p className="text-[11px] text-neutral-500">
+                                Behind Cloudflare, SPA, or private environment?
+                              </p>
+                              <button
+                                type="button"
+                                onClick={handleManualConfirmBadge}
+                                className="text-[11px] font-bold text-neutral-900 hover:text-mint-600 underline cursor-pointer shrink-0"
+                              >
+                                Confirm badge placement manually →
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="rounded-2xl border border-neutral-200 bg-neutral-50/70 p-4 text-xs text-neutral-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                            <div className="space-y-0.5">
+                              <p className="font-bold text-neutral-900 text-xs">Ready to verify badge?</p>
+                              <p className="text-[11px] text-neutral-500">
+                                Paste the snippet into your website footer or homepage, then click verify.
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
                               <button
                                 type="button"
                                 onClick={() => handleVerifyBadge()}
                                 disabled={isVerifyingBadge}
-                                className="inline-flex items-center gap-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white px-3.5 py-1.5 text-[11px] font-bold transition-colors cursor-pointer"
+                                className="inline-flex items-center gap-1.5 rounded-xl bg-neutral-950 hover:bg-neutral-800 text-white px-4 py-2 text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95 disabled:opacity-60"
                               >
-                                {isVerifyingBadge ? <Loader2 className="h-3 w-3 animate-spin" /> : <ShieldCheck className="h-3 w-3" />}
-                                <span>Try verifying again</span>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setShowCustomUrlInput(!showCustomUrlInput)}
-                                className="rounded-lg border border-neutral-300 bg-white hover:bg-neutral-100 text-neutral-800 px-3 py-1.5 text-[11px] font-bold transition-colors cursor-pointer"
-                              >
-                                {showCustomUrlInput ? 'Hide alternate URL' : 'Badge on another page?'}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Alternate Page URL input */}
-                        {showCustomUrlInput && (
-                          <div className="rounded-xl border border-neutral-200 bg-white p-3 space-y-2">
-                            <label className="text-[11px] font-bold text-neutral-700 block">
-                              Enter the specific page where the badge is embedded:
-                            </label>
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="url"
-                                value={customBadgeUrl}
-                                onChange={(e) => setCustomBadgeUrl(e.target.value)}
-                                placeholder="https://yourproduct.com/footer or https://docs.yourproduct.com"
-                                className="flex-1 rounded-lg border border-neutral-300 px-3 py-1.5 text-xs text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-950 focus:outline-none"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => handleVerifyBadge(customBadgeUrl)}
-                                disabled={isVerifyingBadge || !customBadgeUrl.trim()}
-                                className="rounded-lg bg-neutral-900 hover:bg-neutral-800 disabled:opacity-50 text-white px-3 py-1.5 text-xs font-bold transition-colors cursor-pointer shrink-0"
-                              >
-                                Verify URL
+                                {isVerifyingBadge ? (
+                                  <>
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                    <span>Verifying…</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <ShieldCheck className="h-3.5 w-3.5 text-mint-400" />
+                                    <span>Verify Badge Now</span>
+                                  </>
+                                )}
                               </button>
                             </div>
                           </div>
                         )}
-
-                        {/* Manual Confirmation Fallback */}
-                        <div className="border-t border-neutral-200 pt-3 flex items-center justify-between gap-3">
-                          <p className="text-[11px] text-neutral-500">
-                            Behind Cloudflare, SPA, or private environment?
-                          </p>
-                          <button
-                            type="button"
-                            onClick={handleManualConfirmBadge}
-                            className="text-[11px] font-bold text-neutral-900 hover:text-mint-600 underline cursor-pointer shrink-0"
-                          >
-                            Confirm badge placement manually →
-                          </button>
-                        </div>
                       </div>
-                    ) : (
-                      <div className="rounded-2xl border border-neutral-200 bg-neutral-50/70 p-4 text-xs text-neutral-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
-                        <div className="space-y-0.5">
-                          <p className="font-bold text-neutral-900 text-xs">Ready to verify badge?</p>
-                          <p className="text-[11px] text-neutral-500">
-                            Paste the snippet into your website footer or homepage, then click verify.
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => handleVerifyBadge()}
-                            disabled={isVerifyingBadge}
-                            className="inline-flex items-center gap-1.5 rounded-xl bg-neutral-950 hover:bg-neutral-800 text-white px-4 py-2 text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95 disabled:opacity-60"
-                          >
-                            {isVerifyingBadge ? (
-                              <>
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                <span>Verifying…</span>
-                              </>
-                            ) : (
-                              <>
-                                <ShieldCheck className="h-3.5 w-3.5 text-mint-400" />
-                                <span>Verify Badge Now</span>
-                              </>
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -2999,7 +3208,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                     </>
                   )}
                 </button>
-              ) : !isBadgeVerified ? (
+              ) : freeVerificationMethod === 'badge' && !isBadgeVerified ? (
                 <button
                   type="button"
                   onClick={() => handleVerifyBadge()}
@@ -3017,6 +3226,17 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                       <span>Verify badge</span>
                     </>
                   )}
+                </button>
+              ) : freeVerificationMethod === 'upvote' && !isUpvoteRequirementMet ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    playSound('click', soundEnabled);
+                    setBanner(`Please upvote ${Math.max(0, 5 - upvotedCount)} more product${5 - upvotedCount === 1 ? '' : 's'} above to unlock free launch.`);
+                  }}
+                  className="rounded-xl border border-neutral-300 bg-neutral-100 text-neutral-700 px-5 py-2.5 text-xs font-bold cursor-pointer hover:bg-neutral-200 transition-colors shadow-2xs"
+                >
+                  <span>Upvote 5 products ({upvotedCount}/5)</span>
                 </button>
               ) : (
                 <button
@@ -3226,18 +3446,6 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
             </div>
           </div>
         )}
-        {/* Free Submission Community Upvote Gate Modal */}
-        <FreeSubmitUpvoteModal
-          isOpen={isFreeUpvoteModalOpen}
-          onClose={() => setIsFreeUpvoteModalOpen(false)}
-          onComplete={handleCompleteFreeSubmit}
-          products={allAvailableProducts}
-          candidateIds={freeUpvoteCandidateIds}
-          userUpvotes={userUpvotes}
-          onUpvote={onUpvote}
-          soundEnabled={soundEnabled}
-          isSubmitting={isSubmitting}
-        />
       </main>
     </div>
   );
