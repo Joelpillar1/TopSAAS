@@ -365,6 +365,23 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                     onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
                   />
                 </a>
+                <a
+                  href="https://www.codehype.ai/product/topsaas?utm_source=codehype_badge"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="transition-opacity hover:opacity-80 inline-flex items-center shrink-0"
+                >
+                  <img
+                    src="https://www.codehype.ai/badges/topsaas.svg?variant=find-us&v=20"
+                    alt="Featured on CodeHype"
+                    width={180}
+                    height={65}
+                    className="h-7.5 w-auto"
+                    loading="lazy"
+                    decoding="async"
+                    onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                  />
+                </a>
 
                 {/* Set 2 (for seamless infinite loop) */}
                 <a
@@ -657,6 +674,23 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                     height={58}
                     className="h-7.5 w-auto"
                     loading="lazy"
+                    onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                  />
+                </a>
+                <a
+                  href="https://www.codehype.ai/product/topsaas?utm_source=codehype_badge"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="transition-opacity hover:opacity-80 inline-flex items-center shrink-0"
+                >
+                  <img
+                    src="https://www.codehype.ai/badges/topsaas.svg?variant=find-us&v=20"
+                    alt="Featured on CodeHype"
+                    width={180}
+                    height={65}
+                    className="h-7.5 w-auto"
+                    loading="lazy"
+                    decoding="async"
                     onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
                   />
                 </a>
