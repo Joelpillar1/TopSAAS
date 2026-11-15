@@ -25,7 +25,19 @@ import {
   FileText,
   ArrowRight,
   AlertTriangle,
+  AlertCircle,
   Share2,
+  Eye,
+  Trophy,
+  BadgeCheck,
+  LayoutGrid,
+  Settings2,
+  Link2,
+  ArrowUpRight,
+  Rocket,
+  Users,
+  Twitter,
+  Linkedin,
 } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '../utils/supabase';
@@ -33,6 +45,7 @@ import { Category, PricingModel, Product, ProductSocial, SocialPlatform, SUBMISS
 import { getWebsiteFavicon } from '../utils/logo';
 import { mapDbProduct, mapDbSubmission, updateProductDirect, submissionToProduct, loadProductById } from '../utils/db';
 import { ProductLogo } from './ProductLogo';
+import { GridPattern } from './ui/grid-pattern';
 import { SkeletonRows } from './SkeletonCard';
 import { playSound } from '../utils/sound';
 import { EmbedBadgeModal } from './EmbedBadgeModal';
@@ -74,6 +87,14 @@ const LOOKING_FOR_OPTIONS = [
 ];
 
 const PRICING_OPTIONS: PricingModel[] = ['Free', 'Freemium', 'Paid', 'Open Source'];
+
+// Profile links are stored as typed, which means some values may omit the
+// protocol. Make sure every outbound link is absolute before rendering it.
+const withProtocol = (url: string) => {
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+};
 
 // Helper to process and compress images for logos and screenshots
 function processImageFile(
@@ -127,9 +148,20 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   const [products, setProducts] = useState<Product[]>([]);
   const [submissions, setSubmissions] = useState<WebsiteSubmission[]>([]);
   const [drafts, setDrafts] = useState<LaunchDraft[]>(() => getUserDrafts(user.id));
-  const [activeProfileTab, setActiveProfileTab] = useState<'live' | 'drafts' | 'pending' | 'profile'>('live');
+  const [activeProfileTab, setActiveProfileTab] = useState<'overview' | 'live' | 'drafts' | 'pending' | 'profile'>('overview');
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Custom Alert / Confirmation Modal for deleting product, pending submission, or draft
+  const [productToDelete, setProductToDelete] = useState<{
+    id: string;
+    name: string;
+    type: 'product' | 'pending' | 'draft';
+    logoUrl?: string;
+    tagline?: string;
+  } | null>(null);
+  const [isDeletingItem, setIsDeletingItem] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Profile Form States (matching user-provided design)
   const [username, setUsername] = useState<string>(() => {
@@ -487,14 +519,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
     }
   };
 
-  const handleDeleteDraft = (draftId: string) => {
-    if (window.confirm('Discard this saved launch draft?')) {
-      playSound('click', soundEnabled);
-      deleteLaunchDraft(draftId, user.id);
-      setDrafts(getUserDrafts(user.id));
-    }
-  };
-
   // Edit Modal State
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [activeEditTab, setActiveEditTab] = useState<'details' | 'media' | 'founder' | 'socials'>('details');
@@ -696,16 +720,120 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
     }
   };
 
-  const handleDelete = async (productId: string) => {
-    if (!window.confirm('Remove this product from the directory?')) return;
-    setDeletingId(productId);
+  const handleDeleteProductPrompt = (product: Product) => {
     playSound('click', soundEnabled);
+    setDeleteError(null);
+    setProductToDelete({
+      id: product.id,
+      name: product.name,
+      type: 'product',
+      logoUrl: product.logoUrl,
+      tagline: product.tagline,
+    });
+  };
+
+  const handleDeleteDraftPrompt = (draft: LaunchDraft) => {
+    playSound('click', soundEnabled);
+    setDeleteError(null);
+    const hasName = Boolean(draft.name?.trim());
+    const displayName = hasName
+      ? draft.name
+      : draft.url
+        ? draft.url.replace(/^https?:\/\//i, '').split('/')[0]
+        : 'Untitled SaaS Launch';
+
+    setProductToDelete({
+      id: draft.id,
+      name: displayName,
+      type: 'draft',
+      logoUrl: draft.logoDataUrl || (draft.url ? getWebsiteFavicon(draft.url) : ''),
+      tagline: draft.tagline,
+    });
+  };
+
+  const handleWithdrawPendingPrompt = (sub: WebsiteSubmission) => {
+    playSound('click', soundEnabled);
+    setDeleteError(null);
+    setProductToDelete({
+      id: sub.id,
+      name: sub.name,
+      type: 'pending',
+      logoUrl: sub.logoUrl || getWebsiteFavicon(sub.url),
+      tagline: sub.tagline,
+    });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!productToDelete) return;
+    setIsDeletingItem(true);
+    setDeleteError(null);
+    playSound('click', soundEnabled);
+
+    const { id, type, name } = productToDelete;
+    const rawId = id.replace(/^prod-/, '');
+
     try {
-      await supabase.from('products').delete().eq('id', productId);
-      setProducts((prev) => prev.filter((p) => p.id !== productId));
-      onDeleteProduct?.(productId);
-    } catch { }
-    setDeletingId(null);
+      if (type === 'draft') {
+        deleteLaunchDraft(id, user.id);
+        setDrafts(getUserDrafts(user.id));
+      } else if (type === 'pending') {
+        const cleanName = name?.trim();
+        const deleteTasks: PromiseLike<unknown>[] = [
+          supabase.from('submissions').delete().eq('id', id),
+          supabase.from('submissions').delete().eq('id', rawId),
+        ];
+        if (cleanName) {
+          deleteTasks.push(
+            supabase.from('submissions').delete().eq('submitted_by', user.id).ilike('name', cleanName)
+          );
+        }
+        await Promise.allSettled(deleteTasks);
+        setSubmissions((prev) => prev.filter((s) => s.id !== id && s.id !== rawId));
+      } else {
+        // Live Product deletion:
+        // Permanently removed from public.products AND public.submissions in database
+        const cleanName = name?.trim();
+        const deleteTasks: PromiseLike<unknown>[] = [
+          // 1. Delete from products table
+          supabase.from('products').delete().eq('id', id),
+          supabase.from('products').delete().eq('id', `prod-${rawId}`),
+          supabase.from('products').delete().eq('id', rawId),
+          // 2. Delete from submissions table
+          supabase.from('submissions').delete().eq('id', id),
+          supabase.from('submissions').delete().eq('id', rawId),
+          // 3. Delete associated upvotes, comments, sponsors
+          supabase.from('upvotes').delete().eq('product_id', id),
+          supabase.from('upvotes').delete().eq('product_id', rawId),
+          supabase.from('comments').delete().eq('product_id', id),
+          supabase.from('comments').delete().eq('product_id', rawId),
+          supabase.from('sponsors').delete().eq('product_id', id),
+          supabase.from('sponsors').delete().eq('product_id', rawId),
+        ];
+
+        if (cleanName) {
+          deleteTasks.push(
+            supabase.from('submissions').delete().eq('submitted_by', user.id).ilike('name', cleanName)
+          );
+        }
+
+        await Promise.allSettled(deleteTasks);
+
+        // Remove from local states
+        setProducts((prev) => prev.filter((p) => p.id !== id && p.id !== rawId && p.id !== `prod-${rawId}`));
+        setSubmissions((prev) => prev.filter((s) => s.id !== id && s.id !== rawId));
+
+        // Notify parent App component to update products, sync local storage, and delist
+        onDeleteProduct?.(id);
+      }
+
+      setProductToDelete(null);
+      playSound('success', soundEnabled);
+    } catch (err: any) {
+      console.error('Failed to delete item:', err);
+      setDeleteError(err?.message || 'Failed to remove from database. Please try again.');
+    } finally {
+      setIsDeletingItem(false);
+    }
   };
 
   const handleOpenEdit = (p: Product) => {
@@ -983,20 +1111,67 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
   const liveCount = products.length;
   const pendingSubmissions = submissions.filter((s) => s.status === 'under_review');
+  const totalUpvotes = products.reduce((sum, product) => sum + (product.upvotes ?? 0), 0);
+  const totalClicks = products.reduce((sum, product) => sum + (product.clicks ?? 0), 0);
+  const bestRank = products.length
+    ? Math.min(...products.map((product) => (product.rank && product.rank > 0 ? product.rank : 9999)))
+    : 0;
+  const topProduct = products.length
+    ? [...products].sort((a, b) => (a.rank || 9999) - (b.rank || 9999))[0]
+    : null;
+  const avatarSrc = avatarUrl || user.user_metadata?.avatar_url || '';
+  const profileChecks = [
+    { label: 'Profile photo', done: Boolean(avatarSrc) },
+    { label: 'Display name', done: Boolean(displayName.trim()) },
+    { label: 'Username', done: Boolean(username.trim()) },
+    { label: 'Short bio', done: bio.trim().length >= 20 },
+    { label: 'Website', done: Boolean(websiteUrl.trim()) },
+    { label: 'Social link', done: Boolean(twitterUrl.trim() || linkedinUrl.trim()) },
+  ];
+  const profileCompletion = Math.round(
+    (profileChecks.filter((item) => item.done).length / profileChecks.length) * 100
+  );
+  const planLabel =
+    !membershipTier || membershipTier === 'free'
+      ? 'Free plan'
+      : `${membershipTier.charAt(0).toUpperCase()}${membershipTier.slice(1)} plan`;
+  const joinedLabel = new Date(user.created_at).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  const profileLinks = [
+    { label: 'Website', href: websiteUrl, icon: Globe },
+    { label: 'X', href: twitterUrl, icon: Twitter },
+    { label: 'LinkedIn', href: linkedinUrl, icon: Linkedin },
+    { label: 'Book a call', href: bookingUrl, icon: Calendar },
+  ].filter((link) => link.href.trim());
 
   return (
-    <div className="min-h-screen bg-white text-neutral-900 font-sans w-full max-w-full overflow-x-hidden">
-      {/* Header */}
-      <div className="border-b border-neutral-200 bg-white">
-        <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3 sm:px-6">
+    <div className="min-h-screen bg-neutral-50 text-neutral-900 font-sans w-full max-w-full overflow-x-hidden">
+      {/* Top bar */}
+      <div className="sticky top-0 z-20 bg-white/90 backdrop-blur">
+        <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 py-3 sm:px-6">
           <button
             type="button"
             onClick={onBack}
+            aria-label="Back to directory"
             className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-all cursor-pointer shrink-0"
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
-          <h1 className="text-sm font-black text-neutral-950 flex-1 truncate">My Products</h1>
+          <h1 className="flex-1 truncate text-sm font-black text-neutral-950">Profile</h1>
+          <button
+            type="button"
+            onClick={() => {
+              playSound('click', soundEnabled);
+              setActiveProfileTab('profile');
+            }}
+            className="hidden items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:bg-neutral-50 transition-all cursor-pointer sm:flex"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+            Edit profile
+          </button>
           {onSignOut && (
             <button
               type="button"
@@ -1010,187 +1185,495 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         </div>
       </div>
 
-      <div className="mx-auto max-w-3xl px-3.5 sm:px-6 py-5 sm:py-6 space-y-5 sm:space-y-6">
-        {/* User Info Card (the way it was before) */}
-        <div className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-5 shadow-xs">
-          <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
-            {avatarUrl || user.user_metadata?.avatar_url ? (
-              <img
-                src={avatarUrl || user.user_metadata?.avatar_url}
-                alt={displayName || user.user_metadata?.full_name || 'User'}
-                className="h-12 w-12 sm:h-14 sm:w-14 rounded-full object-cover ring-2 ring-neutral-200 shadow-2xs shrink-0"
-              />
+      <div className="mx-auto max-w-4xl px-3.5 sm:px-6 py-5 sm:py-7 space-y-5 sm:space-y-6">
+        {/* Profile hero */}
+        <section className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-xs">
+          <div className="relative h-32 bg-gradient-to-br from-mint-600 via-mint-500 to-blue-600 sm:h-44">
+            <GridPattern width={26} height={26} className="fill-white/15 stroke-white/20" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/15 via-transparent to-transparent" />
+          </div>
+
+          <div className="px-4 pb-5 sm:px-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div className="flex min-w-0 items-end gap-3 sm:gap-4">
+                <div className="relative z-10 -mt-10 shrink-0 sm:-mt-12">
+                  {avatarSrc ? (
+                    <img
+                      src={avatarSrc}
+                      alt={displayName || 'Profile photo'}
+                      className="h-20 w-20 rounded-full object-cover ring-4 ring-white shadow-sm sm:h-24 sm:w-24"
+                    />
+                  ) : (
+                    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-mint-500 text-2xl font-black text-white ring-4 ring-white shadow-sm sm:h-24 sm:w-24 sm:text-3xl">
+                      {(displayName?.[0] || user.email?.[0] || 'U').toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0 pb-1">
+                  <div className="flex items-center gap-1.5">
+                    <h2 className="truncate text-lg font-black text-neutral-950 sm:text-2xl">
+                      {displayName || user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
+                    </h2>
+                    <BadgeCheck className="h-4 w-4 shrink-0 text-mint-500 sm:h-5 sm:w-5" aria-label="Verified founder" />
+                  </div>
+                  <p className="mt-0.5 truncate text-xs text-neutral-500 sm:text-sm">
+                    @{username || 'founder'}
+                    <span className="px-1.5 text-neutral-300">·</span>
+                    Founder
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 pb-1 sm:shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    playSound('click', soundEnabled);
+                    setActiveProfileTab('profile');
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-neutral-950 px-3.5 py-2 text-xs font-bold text-white hover:bg-neutral-800 transition-all cursor-pointer shadow-2xs sm:hidden"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  Edit profile
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    playSound('click', soundEnabled);
+                    setActiveProfileTab('profile');
+                  }}
+                  aria-label="Profile settings"
+                  title="Profile settings"
+                  className="hidden h-9 w-9 items-center justify-center rounded-xl border border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-950 transition-all cursor-pointer sm:flex"
+                >
+                  <Settings2 className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            {bio.trim() ? (
+              <p className="mt-3 max-w-2xl text-xs leading-relaxed text-neutral-600 sm:text-sm">{bio}</p>
             ) : (
-              <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full bg-mint-500 text-white text-base sm:text-lg font-black shadow-xs shrink-0">
-                {(displayName?.[0] || user.email?.[0] || 'U').toUpperCase()}
-              </div>
+              <p className="mt-3 max-w-2xl text-xs leading-relaxed text-neutral-400 sm:text-sm">
+                Add a short bio so founders and buyers know what you build.
+              </p>
             )}
-            <div className="space-y-0.5 min-w-0 flex-1">
-              <h2 className="text-sm sm:text-base font-black text-neutral-950 truncate">
-                {displayName || user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
-              </h2>
-              <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-neutral-400 min-w-0 truncate">
-                <Mail className="h-3 w-3 shrink-0" />
+
+            <div className="mt-3.5 flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] text-neutral-500 sm:text-xs">
+              <span className="inline-flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5 text-neutral-400" />
+                Joined {joinedLabel}
+              </span>
+              <span className="inline-flex min-w-0 items-center gap-1.5">
+                <Mail className="h-3.5 w-3.5 shrink-0 text-neutral-400" />
                 <span className="truncate">{user.email || 'No email'}</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-neutral-500">
-                <Calendar className="h-3 w-3 shrink-0" />
-                <span>Joined {new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-              </div>
+              </span>
+              {profileLinks.map((link) => (
+                <a
+                  key={link.label}
+                  href={withProtocol(link.href)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-2.5 py-1 font-semibold text-neutral-600 hover:border-neutral-300 hover:text-neutral-950 transition-colors"
+                >
+                  <link.icon className="h-3 w-3" />
+                  {link.label}
+                  <ArrowUpRight className="h-3 w-3 text-neutral-400" />
+                </a>
+              ))}
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* Stats & Quick Filter */}
-        <div className="grid grid-cols-3 gap-2 sm:gap-3">
-          <button
-            type="button"
-            onClick={() => {
-              playSound('click', soundEnabled);
-              setActiveProfileTab('live');
-            }}
-            className={`rounded-xl border p-2.5 sm:p-3.5 text-center transition-all cursor-pointer min-w-0 ${activeProfileTab === 'live'
-              ? 'border-neutral-900 bg-neutral-900 text-white shadow-xs'
-              : 'border-neutral-200 bg-white text-neutral-950 hover:border-neutral-300'
-              }`}
-          >
-            <div className={`text-lg sm:text-xl font-black ${activeProfileTab === 'live' ? 'text-white' : 'text-neutral-950'}`}>
-              {liveCount}
+        {/* Founder stats */}
+        <section className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3" aria-label="Founder stats">
+          <div className="rounded-xl border border-neutral-200 bg-white p-3.5 shadow-2xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Products</span>
+              <LayoutGrid className="h-3.5 w-3.5 text-neutral-300" />
             </div>
-            <div className={`text-[10px] sm:text-[11px] font-bold truncate ${activeProfileTab === 'live' ? 'text-neutral-300' : 'text-neutral-500'}`}>
-              Live Products
+            <div className="mt-1 text-xl font-black text-neutral-950 font-mono-num">{liveCount}</div>
+            <div className="text-[11px] text-neutral-500">{pendingSubmissions.length} pending</div>
+          </div>
+          <div className="rounded-xl border border-neutral-200 bg-white p-3.5 shadow-2xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Upvotes</span>
+              <ArrowUpRight className="h-3.5 w-3.5 text-neutral-300" />
             </div>
-          </button>
+            <div className="mt-1 text-xl font-black text-neutral-950 font-mono-num">{totalUpvotes.toLocaleString()}</div>
+            <div className="text-[11px] text-neutral-500">Across all launches</div>
+          </div>
+          <div className="rounded-xl border border-neutral-200 bg-white p-3.5 shadow-2xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Visits</span>
+              <Eye className="h-3.5 w-3.5 text-neutral-300" />
+            </div>
+            <div className="mt-1 text-xl font-black text-neutral-950 font-mono-num">{totalClicks.toLocaleString()}</div>
+            <div className="text-[11px] text-neutral-500">Directory traffic</div>
+          </div>
+          <div className="rounded-xl border border-neutral-200 bg-white p-3.5 shadow-2xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Best rank</span>
+              <Trophy className="h-3.5 w-3.5 text-neutral-300" />
+            </div>
+            <div className="mt-1 text-xl font-black text-neutral-950 font-mono-num">
+              {bestRank > 0 && bestRank < 9999 ? `#${bestRank}` : 'N/A'}
+            </div>
+            <div className="text-[11px] text-neutral-500">Top leaderboard spot</div>
+          </div>
+        </section>
 
-          <button
-            type="button"
-            onClick={() => {
-              playSound('click', soundEnabled);
-              setActiveProfileTab('drafts');
-            }}
-            className={`rounded-xl border p-2.5 sm:p-3.5 text-center transition-all cursor-pointer min-w-0 ${activeProfileTab === 'drafts'
-              ? 'border-blue-600 bg-blue-600 text-white shadow-xs'
-              : 'border-neutral-200 bg-white text-blue-600 hover:border-blue-300'
-              }`}
-          >
-            <div className={`text-lg sm:text-xl font-black ${activeProfileTab === 'drafts' ? 'text-white' : 'text-blue-600'}`}>
-              {drafts.length}
-            </div>
-            <div className={`text-[10px] sm:text-[11px] font-bold truncate ${activeProfileTab === 'drafts' ? 'text-blue-100' : 'text-neutral-500'}`}>
-              Saved Drafts
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              playSound('click', soundEnabled);
-              setActiveProfileTab('pending');
-            }}
-            className={`rounded-xl border p-2.5 sm:p-3.5 text-center transition-all cursor-pointer min-w-0 ${activeProfileTab === 'pending'
-              ? 'border-amber-600 bg-amber-600 text-white shadow-xs'
-              : 'border-neutral-200 bg-white text-amber-600 hover:border-amber-300'
-              }`}
-          >
-            <div className={`text-lg sm:text-xl font-black ${activeProfileTab === 'pending' ? 'text-white' : 'text-amber-600'}`}>
-              {pendingSubmissions.length}
-            </div>
-            <div className={`text-[10px] sm:text-[11px] font-bold truncate ${activeProfileTab === 'pending' ? 'text-amber-100' : 'text-neutral-500'}`}>
-              Pending Approval
-            </div>
-          </button>
-        </div>
-
-        {/* Profile Tabs Navigation */}
-        <div className="border-b border-neutral-200 -mx-3.5 px-3.5 sm:mx-0 sm:px-0">
-          <div className="flex items-center justify-between gap-2 overflow-x-auto no-scrollbar py-0.5">
-            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => {
-                  playSound('click', soundEnabled);
-                  setActiveProfileTab('live');
-                }}
-                className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 text-xs font-bold transition-all border-b-2 cursor-pointer whitespace-nowrap shrink-0 ${activeProfileTab === 'live'
-                  ? 'border-neutral-950 text-neutral-950 font-black'
-                  : 'border-transparent text-neutral-500 hover:text-neutral-950'
-                  }`}
-              >
-                <Globe className="h-3.5 w-3.5 shrink-0" />
-                <span>Live Products</span>
-                <span
-                  className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${activeProfileTab === 'live'
-                    ? 'bg-neutral-950 text-white'
-                    : 'bg-neutral-100 text-neutral-600'
+        {/* Profile tabs */}
+        <nav aria-label="Profile sections" className="rounded-2xl border border-neutral-200 bg-white p-1 shadow-2xs">
+          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
+            {[
+              { key: 'overview' as const, label: 'Overview', icon: UserIcon, count: 0 },
+              { key: 'live' as const, label: 'Products', icon: LayoutGrid, count: products.length },
+              { key: 'drafts' as const, label: 'Drafts', icon: FileText, count: drafts.length },
+              { key: 'pending' as const, label: 'Pending', icon: Clock, count: pendingSubmissions.length },
+              { key: 'profile' as const, label: 'Settings', icon: Settings2, count: 0 },
+            ].map((tab) => {
+              const active = activeProfileTab === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => {
+                    playSound('click', soundEnabled);
+                    setActiveProfileTab(tab.key);
+                  }}
+                  aria-current={active ? 'page' : undefined}
+                  className={`flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2.5 text-xs font-bold transition-all cursor-pointer ${active
+                    ? 'bg-neutral-950 text-white shadow-xs'
+                    : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-950'
                     }`}
                 >
-                  {products.length}
-                </span>
-              </button>
+                  <tab.icon className="h-3.5 w-3.5 shrink-0" />
+                  <span>{tab.label}</span>
+                  {tab.count > 0 && (
+                    <span
+                      className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${active ? 'bg-white/20 text-white' : 'bg-neutral-100 text-neutral-600'
+                        }`}
+                    >
+                      {tab.count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </nav>
 
-              <button
-                type="button"
-                onClick={() => {
-                  playSound('click', soundEnabled);
-                  setActiveProfileTab('drafts');
-                }}
-                className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 text-xs font-bold transition-all border-b-2 cursor-pointer whitespace-nowrap shrink-0 ${activeProfileTab === 'drafts'
-                  ? 'border-blue-600 text-blue-600 font-black'
-                  : 'border-transparent text-neutral-500 hover:text-neutral-950'
-                  }`}
-              >
-                <FileText className="h-3.5 w-3.5 shrink-0" />
-                <span>Drafts</span>
-                <span
-                  className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${activeProfileTab === 'drafts'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-neutral-100 text-neutral-600'
-                    }`}
-                >
-                  {drafts.length}
-                </span>
-              </button>
+        {/* Tab Content: Overview */}
+        {activeProfileTab === 'overview' && (
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+            {/* Left column */}
+            <div className="space-y-5 lg:col-span-2">
+              {/* About */}
+              <section className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-xs">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-sm font-black text-neutral-950">About</h3>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playSound('click', soundEnabled);
+                      setActiveProfileTab('profile');
+                    }}
+                    className="text-[11px] font-bold text-neutral-500 hover:text-neutral-950 transition-colors cursor-pointer"
+                  >
+                    Edit
+                  </button>
+                </div>
+                <p className={`mt-2 text-xs leading-relaxed sm:text-sm ${bio.trim() ? 'text-neutral-600' : 'text-neutral-400'}`}>
+                  {bio.trim() || 'Tell visitors what you build, who it is for, and what you are working on next.'}
+                </p>
+                {lookingFor.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {lookingFor.map((item) => (
+                      <span
+                        key={item}
+                        className="inline-flex items-center gap-1 rounded-full border border-mint-200 bg-mint-50 px-2.5 py-1 text-[11px] font-bold text-mint-700"
+                      >
+                        <Users className="h-3 w-3" />
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <dl className="mt-4 grid grid-cols-2 gap-3 border-t border-neutral-100 pt-3 text-[11px] sm:grid-cols-3">
+                  <div>
+                    <dt className="font-bold uppercase tracking-wider text-neutral-400">Plan</dt>
+                    <dd className="mt-0.5 font-bold text-neutral-900">{planLabel}</dd>
+                  </div>
+                  <div>
+                    <dt className="font-bold uppercase tracking-wider text-neutral-400">Joined</dt>
+                    <dd className="mt-0.5 font-bold text-neutral-900">{joinedLabel}</dd>
+                  </div>
+                  <div>
+                    <dt className="font-bold uppercase tracking-wider text-neutral-400">Focus</dt>
+                    <dd className="mt-0.5 font-bold text-neutral-900">
+                      {products[0]?.category?.split(',')[0]?.trim() || 'Building SaaS'}
+                    </dd>
+                  </div>
+                </dl>
+              </section>
 
-              <button
-                type="button"
-                onClick={() => {
-                  playSound('click', soundEnabled);
-                  setActiveProfileTab('pending');
-                }}
-                className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 text-xs font-bold transition-all border-b-2 cursor-pointer whitespace-nowrap shrink-0 ${activeProfileTab === 'pending'
-                  ? 'border-amber-600 text-amber-600 font-black'
-                  : 'border-transparent text-neutral-500 hover:text-neutral-950'
-                  }`}
-              >
-                <Clock className="h-3.5 w-3.5 shrink-0" />
-                <span>Pending</span>
-                <span
-                  className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${activeProfileTab === 'pending'
-                    ? 'bg-amber-600 text-white'
-                    : 'bg-neutral-100 text-neutral-600'
-                    }`}
-                >
-                  {pendingSubmissions.length}
-                </span>
-              </button>
+              {/* Featured product */}
+              <section className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-xs">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-sm font-black text-neutral-950">Featured product</h3>
+                  {products.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playSound('click', soundEnabled);
+                        setActiveProfileTab('live');
+                      }}
+                      className="inline-flex items-center gap-1 text-[11px] font-bold text-neutral-500 hover:text-neutral-950 transition-colors cursor-pointer"
+                    >
+                      All products
+                      <ArrowRight className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+                {topProduct ? (
+                  <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-start">
+                    <ProductLogo
+                      src={topProduct.logoUrl || getWebsiteFavicon(topProduct.url)}
+                      alt={topProduct.name}
+                      containerClassName="relative h-14 w-14 rounded-xl overflow-hidden border border-neutral-200 bg-white shrink-0 flex items-center justify-center shadow-2xs"
+                      iconClassName="h-6 w-6 text-neutral-500 shrink-0"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <h4 className="truncate text-base font-black text-neutral-950">{topProduct.name}</h4>
+                        {topProduct.rank > 0 && (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+                            <Trophy className="h-3 w-3" />
+                            #{topProduct.rank}
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-0.5 line-clamp-2 text-xs text-neutral-500">{topProduct.tagline}</p>
+                      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-neutral-500">
+                        <span className="inline-flex items-center gap-1">
+                          <ArrowUpRight className="h-3.5 w-3.5" />
+                          {(topProduct.upvotes ?? 0).toLocaleString()} upvotes
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <Eye className="h-3.5 w-3.5" />
+                          {(topProduct.clicks ?? 0).toLocaleString()} visits
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <Calendar className="h-3.5 w-3.5" />
+                          {topProduct.createdAt
+                            ? new Date(topProduct.createdAt).toLocaleDateString('en-US', {
+                                month: 'short',
+                                year: 'numeric',
+                              })
+                            : 'Recently'}
+                        </span>
+                      </div>
+                      <div className="mt-4 flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            playSound('click', soundEnabled);
+                            onSelectProduct?.(topProduct);
+                          }}
+                          className="btn-primary inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold cursor-pointer"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                          View product
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            playSound('click', soundEnabled);
+                            handleOpenEdit(topProduct);
+                          }}
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3.5 py-2 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:bg-neutral-50 transition-all cursor-pointer"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                          Edit
+                        </button>
+                        <a
+                          href={withProtocol(topProduct.url)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-[11px] font-bold text-neutral-500 hover:text-neutral-950 transition-colors"
+                        >
+                          Visit site
+                          <ArrowUpRight className="h-3 w-3" />
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-3 rounded-xl border border-dashed border-neutral-200 bg-neutral-50/60 p-5 text-center">
+                    <Rocket className="mx-auto h-6 w-6 text-neutral-300" />
+                    <p className="mt-2 text-xs font-bold text-neutral-800">No live product yet</p>
+                    <p className="mt-0.5 text-[11px] text-neutral-500">
+                      Submit your SaaS to get a crawlable profile and a shot at the weekly leaderboard.
+                    </p>
+                    {onOpenSubmit && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playSound('click', soundEnabled);
+                          onOpenSubmit();
+                        }}
+                        className="btn-primary mt-3 inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold cursor-pointer"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        Submit a product
+                      </button>
+                    )}
+                  </div>
+                )}
+              </section>
+            </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  playSound('click', soundEnabled);
-                  setActiveProfileTab('profile');
-                }}
-                className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 text-xs font-bold transition-all border-b-2 cursor-pointer whitespace-nowrap shrink-0 ${activeProfileTab === 'profile'
-                  ? 'border-neutral-950 text-neutral-950 font-black'
-                  : 'border-transparent text-neutral-500 hover:text-neutral-950'
-                  }`}
-              >
-                <UserIcon className="h-3.5 w-3.5 shrink-0" />
-                <span>Profile</span>
-              </button>
+            {/* Right column */}
+            <div className="space-y-5">
+              {/* Profile strength */}
+              <section className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-xs">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-sm font-black text-neutral-950">Profile strength</h3>
+                  <span className="text-xs font-black text-mint-600 font-mono-num">{profileCompletion}%</span>
+                </div>
+                <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-neutral-100">
+                  <div className="h-full rounded-full bg-mint-500 transition-all" style={{ width: `${profileCompletion}%` }} />
+                </div>
+                <ul className="mt-3 space-y-1.5">
+                  {profileChecks.map((item) => (
+                    <li key={item.label} className="flex items-center gap-2 text-[11px]">
+                      <span
+                        className={`flex h-4 w-4 items-center justify-center rounded-full ${item.done ? 'bg-emerald-100 text-emerald-600' : 'bg-neutral-100 text-neutral-400'
+                          }`}
+                      >
+                        {item.done ? <Check className="h-2.5 w-2.5 stroke-[3]" /> : <X className="h-2.5 w-2.5" />}
+                      </span>
+                      <span className={item.done ? 'text-neutral-400' : 'font-semibold text-neutral-800'}>
+                        {item.label}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                {profileCompletion < 100 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playSound('click', soundEnabled);
+                      setActiveProfileTab('profile');
+                    }}
+                    className="mt-3 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-800 hover:border-neutral-300 hover:bg-neutral-50 transition-all cursor-pointer"
+                  >
+                    Complete profile
+                  </button>
+                )}
+              </section>
+
+              {/* Account */}
+              <section className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-xs">
+                <h3 className="text-sm font-black text-neutral-950">Account</h3>
+                <dl className="mt-3 space-y-2.5 text-[11px]">
+                  <div className="flex items-center justify-between gap-3">
+                    <dt className="text-neutral-500">Plan</dt>
+                    <dd className="font-bold text-neutral-900">{planLabel}</dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <dt className="text-neutral-500">Member since</dt>
+                    <dd className="font-bold text-neutral-900">{joinedLabel}</dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <dt className="text-neutral-500">Status</dt>
+                    <dd className="inline-flex items-center gap-1 font-bold text-emerald-600">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                      Active
+                    </dd>
+                  </div>
+                </dl>
+              </section>
+
+              {/* Quick actions */}
+              <section className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-xs">
+                <h3 className="text-sm font-black text-neutral-950">Quick actions</h3>
+                <div className="mt-3 space-y-1.5">
+                  {onOpenSubmit && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playSound('click', soundEnabled);
+                        onOpenSubmit();
+                      }}
+                      className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-neutral-50 transition-colors cursor-pointer"
+                    >
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-mint-50 text-mint-600">
+                        <Rocket className="h-3.5 w-3.5" />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-xs font-bold text-neutral-900">Submit a product</span>
+                        <span className="block text-[10px] text-neutral-500">Free listing with AI prefill</span>
+                      </span>
+                      <ChevronRight className="h-3.5 w-3.5 shrink-0 text-neutral-400" />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playSound('click', soundEnabled);
+                      setActiveProfileTab('profile');
+                    }}
+                    className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-neutral-50 transition-colors cursor-pointer"
+                  >
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-neutral-100 text-neutral-600">
+                      <Pencil className="h-3.5 w-3.5" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-xs font-bold text-neutral-900">Edit profile</span>
+                      <span className="block text-[10px] text-neutral-500">Bio, links and photo</span>
+                    </span>
+                    <ChevronRight className="h-3.5 w-3.5 shrink-0 text-neutral-400" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playSound('click', soundEnabled);
+                      setActiveProfileTab('drafts');
+                    }}
+                    className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-neutral-50 transition-colors cursor-pointer"
+                  >
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                      <FileText className="h-3.5 w-3.5" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-xs font-bold text-neutral-900">Saved drafts</span>
+                      <span className="block text-[10px] text-neutral-500">{drafts.length} unfinished launch{drafts.length === 1 ? '' : 'es'}</span>
+                    </span>
+                    <ChevronRight className="h-3.5 w-3.5 shrink-0 text-neutral-400" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playSound('click', soundEnabled);
+                      setActiveProfileTab('pending');
+                    }}
+                    className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-neutral-50 transition-colors cursor-pointer"
+                  >
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+                      <Clock className="h-3.5 w-3.5" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-xs font-bold text-neutral-900">Pending review</span>
+                      <span className="block text-[10px] text-neutral-500">{pendingSubmissions.length} awaiting approval</span>
+                    </span>
+                    <ChevronRight className="h-3.5 w-3.5 shrink-0 text-neutral-400" />
+                  </button>
+                </div>
+              </section>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Tab Content: Live Products */}
         {activeProfileTab === 'live' && (
@@ -1213,7 +1696,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                       playSound('click', soundEnabled);
                       onOpenSubmit();
                     }}
-                    className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-neutral-950 px-4 py-2 text-xs font-bold text-white hover:bg-neutral-800 transition-all cursor-pointer shadow-2xs"
+                    className="btn-primary mt-4 inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-bold cursor-pointer"
                   >
                     <Plus className="h-3.5 w-3.5" />
                     Launch Your SaaS
@@ -1225,10 +1708,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                 {products.map((product) => {
                   const launchedDate = product.createdAt
                     ? new Date(product.createdAt).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                      })
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })
                     : 'Recently';
                   return (
                     <div
@@ -1270,15 +1753,16 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                               <div className="flex items-center gap-1.5 text-[11px] font-medium text-neutral-500 mt-0.5">
                                 <Calendar className="h-3 w-3 text-neutral-400 shrink-0" />
                                 <span>Launched {launchedDate}</span>
-                                <span className="text-neutral-300">·</span>
-                                <span className="truncate">{product.category.split(',')[0].trim()}</span>
                               </div>
                             </div>
                           </div>
 
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-[11px] font-bold text-emerald-700 shrink-0">
-                            <Check className="h-3 w-3 stroke-[2.75]" />
-                            Launched
+                          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/90 bg-emerald-50/80 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700 shrink-0 shadow-2xs">
+                            <span className="relative flex h-1.5 w-1.5">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                            </span>
+                            <span>Live</span>
                           </span>
                         </div>
 
@@ -1344,9 +1828,8 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                                 playSound('click', soundEnabled);
                                 setBadgeProduct(product);
                               }}
-                              className={`flex items-center justify-between gap-2 rounded-xl border border-neutral-200/90 bg-white px-3 py-2.5 text-left hover:border-emerald-300 hover:bg-emerald-50/40 transition-all cursor-pointer ${
-                                !onShareProduct ? 'col-span-2' : ''
-                              }`}
+                              className={`flex items-center justify-between gap-2 rounded-xl border border-neutral-200/90 bg-white px-3 py-2.5 text-left hover:border-emerald-300 hover:bg-emerald-50/40 transition-all cursor-pointer ${!onShareProduct ? 'col-span-2' : ''
+                                }`}
                             >
                               <div className="flex items-center gap-2 min-w-0">
                                 <Code2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
@@ -1374,7 +1857,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                                   playSound('click', soundEnabled);
                                   setRelaunchProduct(product);
                                 }}
-                                className="shrink-0 rounded-lg bg-blue-600 hover:bg-blue-700 px-3 py-1.5 text-[11px] font-black text-white shadow-2xs transition-all cursor-pointer"
+                                className="btn-primary shrink-0 px-3.5 py-1.5 text-xs font-bold rounded-lg cursor-pointer"
                               >
                                 Relaunch ($5)
                               </button>
@@ -1415,16 +1898,12 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
                         <button
                           type="button"
-                          onClick={() => handleDelete(product.id)}
-                          disabled={deletingId === product.id}
+                          onClick={() => handleDeleteProductPrompt(product)}
+                          disabled={isDeletingItem && productToDelete?.id === product.id}
                           className="inline-flex items-center gap-1 text-[11px] font-semibold text-neutral-400 hover:text-red-600 transition-colors cursor-pointer disabled:opacity-50"
                           title="Remove product"
                         >
-                          {deletingId === product.id ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-3 w-3" />
-                          )}
+                          <Trash2 className="h-3 w-3" />
                           <span>Remove</span>
                         </button>
                       </div>
@@ -1523,7 +2002,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                     <div className="flex items-center justify-end gap-2 pt-2 border-t border-neutral-100">
                       <button
                         type="button"
-                        onClick={() => handleDeleteDraft(draft.id)}
+                        onClick={() => handleDeleteDraftPrompt(draft)}
                         className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-neutral-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -1595,6 +2074,19 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                         <span className="text-[10px] text-neutral-500">
                           Submitted {new Date(sub.submittedAt).toLocaleDateString()}
                         </span>
+                      </div>
+
+                      <div className="flex items-center justify-end pt-2 border-t border-neutral-100 mt-2">
+                        <button
+                          type="button"
+                          onClick={() => handleWithdrawPendingPrompt(sub)}
+                          disabled={isDeletingItem && productToDelete?.id === sub.id}
+                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-neutral-400 hover:text-red-600 transition-colors cursor-pointer disabled:opacity-50"
+                          title="Withdraw submission"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                          <span>Withdraw Submission</span>
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -2779,6 +3271,114 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           </div>
         </div>
       )}
+      {/* ── Custom Alert / Delete Confirmation Modal ── */}
+      {productToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="w-full max-w-md rounded-2xl border border-neutral-200 bg-white p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150">
+            {/* Header with Red Warning Icon */}
+            <div className="flex items-center gap-3.5">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-100 text-red-600 shrink-0">
+                <Trash2 className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-base font-black text-neutral-950">
+                  {productToDelete.type === 'draft'
+                    ? 'Discard Launch Draft?'
+                    : productToDelete.type === 'pending'
+                      ? 'Withdraw Submission?'
+                      : 'Remove Product?'}
+                </h3>
+                <p className="text-xs text-neutral-500">
+                  This will permanently delete it from the database.
+                </p>
+              </div>
+            </div>
+
+            {/* Target Item Preview Card */}
+            <div className="flex items-center gap-3 rounded-xl border border-neutral-200/90 bg-neutral-50 p-3.5">
+              <ProductLogo
+                src={productToDelete.logoUrl}
+                alt={productToDelete.name}
+                containerClassName="relative h-10 w-10 rounded-lg overflow-hidden border border-neutral-200 bg-white shrink-0 flex items-center justify-center shadow-2xs"
+                iconClassName="h-5 w-5 text-neutral-400 shrink-0"
+              />
+              <div className="min-w-0 flex-1">
+                <h4 className="text-sm font-bold text-neutral-900 truncate">
+                  {productToDelete.name}
+                </h4>
+                {productToDelete.tagline && (
+                  <p className="text-xs text-neutral-500 truncate mt-0.5">
+                    {productToDelete.tagline}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Warning Message Box */}
+            <div className="rounded-xl border border-red-200/80 bg-red-50/70 p-3.5 text-xs text-red-700 leading-relaxed space-y-1">
+              <div className="flex items-center gap-1.5 font-bold text-red-800">
+                <AlertTriangle className="h-4 w-4 shrink-0" />
+                <span>Permanent Database Deletion</span>
+              </div>
+              <p>
+                {productToDelete.type === 'draft'
+                  ? 'Are you sure you want to discard this launch draft? All unsaved form data will be permanently cleared.'
+                  : productToDelete.type === 'pending'
+                    ? 'Are you sure you want to withdraw this submission? It will be removed from the review queue and the database.'
+                    : `Are you sure you want to remove "${productToDelete.name}"? It will be permanently deleted from the TopSAAS directory and the database, along with all associated upvotes, clicks, and comments. This action cannot be undone.`}
+              </p>
+            </div>
+
+            {deleteError && (
+              <div className="flex items-center gap-2 rounded-xl bg-red-100 border border-red-300 p-3 text-xs text-red-700 font-semibold">
+                <AlertCircle className="h-4 w-4 shrink-0 text-red-600" />
+                <span>{deleteError}</span>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  playSound('click', soundEnabled);
+                  setProductToDelete(null);
+                  setDeleteError(null);
+                }}
+                disabled={isDeletingItem}
+                className="px-4 py-2.5 rounded-xl border border-neutral-200 bg-white text-xs font-bold text-neutral-700 hover:bg-neutral-50 hover:text-neutral-950 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                disabled={isDeletingItem}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-600 text-xs font-bold text-white hover:bg-red-700 transition-all cursor-pointer shadow-sm shadow-red-600/20 disabled:opacity-50"
+              >
+                {isDeletingItem ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span>
+                      {productToDelete.type === 'draft'
+                        ? 'Yes, Discard Draft'
+                        : productToDelete.type === 'pending'
+                          ? 'Yes, Withdraw'
+                          : 'Yes, Delete from Database'}
+                    </span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Delete Account Confirmation Modal ── */}
       {isDeleteModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">

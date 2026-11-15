@@ -6,5 +6,7 @@ coverage/
 *.log
 .env*
 !.env.example
-scripts/
+scripts/*
+# Build-time prerenderer used by vite.config.ts, so it must be committed.
+!scripts/prerenderRepos.ts
 .freebuff/

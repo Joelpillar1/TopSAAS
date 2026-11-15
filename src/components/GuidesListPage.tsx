@@ -666,7 +666,7 @@ export const GuidesListPage: React.FC<GuidesListPageProps> = ({ soundEnabled }) 
             playSound('click', soundEnabled);
             navigateTo('/submit');
           }}
-          className="inline-flex shrink-0 items-center justify-center rounded-xl bg-neutral-950 px-4 py-2.5 text-xs font-bold text-white transition-colors hover:bg-neutral-800"
+          className="btn-primary inline-flex shrink-0 items-center justify-center rounded-xl px-4 py-2.5 text-xs font-bold text-white"
         >
           Submit your project
         </a>

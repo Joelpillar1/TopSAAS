@@ -1,12 +1,11 @@
 import React from 'react';
-import { ExternalLink, MessageCircle, Flame, ChevronUp } from 'lucide-react';
+import { MessageCircle, Flame, ChevronUp } from 'lucide-react';
 import { VerifiedBadge } from './VerifiedBadge';
 import { RankMedal } from './RankMedal';
 import { BorderBeam } from './BorderBeam';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
-import { openOutboundUrl } from '../utils/referral';
 
 interface ProductRowProps {
   product: Product;
@@ -83,21 +82,6 @@ export const ProductRow: React.FC<ProductRowProps> = ({
     return product.category.split(',').map((c) => c.trim()).filter(Boolean);
   }, [product.category]);
   const primaryCategory = categories[0] || product.category;
-
-  const handleVisit = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    playSound('click', soundEnabled);
-    if (product.url) {
-      openOutboundUrl(product.url, {
-        productId: product.id,
-        productName: product.name,
-        campaign: 'leaderboard_row',
-        onTrackClick,
-      });
-    } else {
-      handleOpen();
-    }
-  };
 
   const effectiveGradient: 'none' | 'blue' | 'amber' | 'purple' =
     gradientVariant !== 'none'
@@ -223,7 +207,7 @@ export const ProductRow: React.FC<ProductRowProps> = ({
         </div>
       </div>
 
-      {/* Actions: upvote · visit (vertically stacked on mobile like attached, only upvote & visit alone, maintaining size) */}
+      {/* Actions: upvote only */}
       <div className="flex flex-col sm:flex-row shrink-0 items-center gap-1.5 sm:gap-2.5 self-center">
         {onUpvote && (
           <button
@@ -239,15 +223,6 @@ export const ProductRow: React.FC<ProductRowProps> = ({
             <span className="text-xs font-black font-mono-num leading-tight">{product.upvotes ?? 0}</span>
           </button>
         )}
-
-        <button
-          type="button"
-          onClick={handleVisit}
-          title={`Visit ${product.name}`}
-          className="inline-flex w-11 h-8 sm:w-9 sm:h-9 items-center justify-center rounded-xl bg-neutral-950 text-white transition-all hover:bg-neutral-800 shrink-0 cursor-pointer shadow-2xs"
-        >
-          <ExternalLink className="h-4 w-4" />
-        </button>
       </div>
     </div>
   );

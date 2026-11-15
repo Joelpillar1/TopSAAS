@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import confetti from 'canvas-confetti';
-import { AlertCircle, Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, ExternalLink, Loader2, Search, Video, X, Tag, Percent, Gift, Sparkles, Trash2, GripVertical, Star, ShieldCheck, CheckCircle2, Lock, Copy, Zap } from 'lucide-react';
+import { AlertCircle, Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, ExternalLink, Loader2, Search, SlidersHorizontal, Video, X, Tag, Percent, Gift, Sparkles, Trash2, GripVertical, Star, ShieldCheck, CheckCircle2, Lock, Copy, Zap } from 'lucide-react';
 import { Category, PricingModel, Product, ProductSocial, SUBMISSION_CATEGORIES, SubmitProductDetails, WebsiteSubmission } from '../types';
 import { getWebsiteFavicon } from '../utils/logo';
 import { playSound } from '../utils/sound';
@@ -10,6 +10,7 @@ import { prepareRichText } from '../utils/richText';
 import { uploadScreenshotToStorage } from '../utils/storage';
 import { RichTextEditor } from './RichTextEditor';
 import { LaunchWeekSelector } from './LaunchWeekSelector';
+import { getWeekByNumber } from '../utils/weeks';
 import { autofillWithOpenAI, formatAutofillErrorMessage } from '../utils/autofill';
 import { redirectToCheckout, WHOP_LINKS } from '../utils/whop';
 import { appendTrackkitParams } from '../utils/trackkit';
@@ -465,27 +466,62 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
     return fallbackProducts;
   }, [products, fallbackProducts]);
 
+  // ── Public Live Directory Products (Excludes sponsors & queued future launches) ──
+  const livePublicProducts = useMemo(() => {
+    const now = Date.now();
+    return allAvailableProducts.filter((p) => {
+      if (isSponsorOnlyProduct(p)) return false;
+      // Exclude products queued for future launch weeks
+      if (p.scheduledLaunchWeek != null) {
+        const weekStart = getWeekByNumber(Number(p.scheduledLaunchWeek)).start;
+        if (weekStart > now) return false;
+      }
+      // Exclude products queued for future launch dates
+      if (p.scheduledLaunchDate != null) {
+        if (Number(p.scheduledLaunchDate) > now) return false;
+      }
+      // Exclude future createdAt
+      if (p.createdAt && Number(p.createdAt) > now) {
+        return false;
+      }
+      return true;
+    });
+  }, [allAvailableProducts]);
+
+  // Snapshot IDs the user had already upvoted prior to this session
+  const priorUpvotedIdsRef = useRef<Set<string> | null>(null);
+  if (priorUpvotedIdsRef.current === null && userUpvotes && userUpvotes.size > 0) {
+    priorUpvotedIdsRef.current = new Set(userUpvotes);
+  }
+
+  // Candidate products: Only show products the user has NOT upvoted in prior sessions
   const candidateProducts = useMemo(() => {
-    return [...allAvailableProducts]
-      .filter((p) => !isSponsorOnlyProduct(p))
+    const priorSet = priorUpvotedIdsRef.current;
+    return livePublicProducts
+      .filter((p) => {
+        if (priorSet && isProductUpvoted(p.id, priorSet)) return false;
+        return true;
+      })
       .sort((a, b) => {
-        const aUp = isProductUpvoted(a.id, userUpvotes) ? 1 : 0;
-        const bUp = isProductUpvoted(b.id, userUpvotes) ? 1 : 0;
-        if (aUp !== bUp) return aUp - bUp;
         const rankA = a.rank ?? 9999;
         const rankB = b.rank ?? 9999;
         if (rankA !== rankB) return rankA - rankB;
         return (b.upvotes ?? 0) - (a.upvotes ?? 0);
-      })
-      .slice(0, 10);
-  }, [allAvailableProducts, userUpvotes]);
+      });
+  }, [livePublicProducts]);
 
-  const upvotedCount = useMemo(() => {
-    if (!allAvailableProducts || allAvailableProducts.length === 0) return 0;
-    return allAvailableProducts.filter((p) => isProductUpvoted(p.id, userUpvotes)).length;
-  }, [allAvailableProducts, userUpvotes]);
+  // Total eligible unvoted products available on the platform for this user
+  const totalEligibleCount = candidateProducts.length;
 
-  const isUpvoteRequirementMet = allAvailableProducts.length === 0 || upvotedCount >= 5;
+  // Number of candidate products upvoted in this session
+  const sessionUpvotedCount = useMemo(() => {
+    if (candidateProducts.length === 0) return 0;
+    return candidateProducts.filter((p) => isProductUpvoted(p.id, userUpvotes)).length;
+  }, [candidateProducts, userUpvotes]);
+
+  // Target requirement: upvote 5 products, or all available if fewer than 5 exist on the platform
+  const requiredUpvotes = Math.min(5, totalEligibleCount);
+  const isUpvoteRequirementMet = sessionUpvotedCount >= requiredUpvotes;
 
   // ── Launch Tier & Verification States ──
   const [submissionPlan, setSubmissionPlan] = useState<'free' | 'paid_19'>(() => {
@@ -1025,7 +1061,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
 
     if (submissionPlan === 'free') {
       if (freeVerificationMethod === 'upvote' && !isUpvoteRequirementMet) {
-        setBanner(`Please upvote ${Math.max(0, 5 - upvotedCount)} more product${5 - upvotedCount === 1 ? '' : 's'} in Step 4 to unlock your free launch.`);
+        setBanner(`Please upvote ${Math.max(0, requiredUpvotes - sessionUpvotedCount)} more product${requiredUpvotes - sessionUpvotedCount === 1 ? '' : 's'} in Step 4 to unlock your free launch.`);
         setStep(3);
         requestAnimationFrame(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
         return;
@@ -1638,7 +1674,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                   >
                     <div className="flex items-center gap-2.5">
                       <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-white border border-neutral-200 shadow-2xs text-neutral-900 shrink-0">
-                        <Sparkles className="h-3.5 w-3.5 text-blue-600" />
+                        <SlidersHorizontal className="h-3.5 w-3.5 text-neutral-800" />
                       </div>
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
@@ -2621,7 +2657,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                         setSubmissionPlan('paid_19');
                         setAutoRelaunch(false);
                       }}
-                      className="w-full rounded-2xl bg-neutral-950 hover:bg-neutral-800 text-white py-3 px-4 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-neutral-950/20"
+                      className="btn-primary w-full rounded-2xl py-3 px-4 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       <span>{submissionPlan === 'paid_19' ? 'Selected ✓' : 'Get Verified Launch — $5 →'}</span>
                     </button>
@@ -2706,28 +2742,31 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                 /* ── Free Plan: Upvote 5 Products OR Embed Website Badge ── */
                 <div className="space-y-5 border-t border-neutral-200 pt-5">
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                       <p className="text-xs font-bold text-neutral-900">2. Free Verification Requirement</p>
                       <span className="text-[11px] font-semibold text-neutral-500">Choose one option below</span>
                     </div>
 
                     {/* Method Selector Tabs */}
-                    <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl border border-neutral-200 bg-neutral-100/70">
+                    <div className="grid grid-cols-2 gap-1.5 sm:gap-2 p-1 rounded-2xl border border-neutral-200 bg-neutral-100/70">
                       <button
                         type="button"
                         onClick={() => {
                           playSound('click', soundEnabled);
                           setFreeVerificationMethod('upvote');
                         }}
-                        className={`flex items-center justify-center gap-1.5 rounded-xl py-2 px-3 text-xs font-bold transition-all cursor-pointer ${
+                        className={`flex items-center justify-center gap-1.5 rounded-xl py-2.5 px-2 sm:px-3 text-[11px] sm:text-xs font-bold transition-all cursor-pointer ${
                           freeVerificationMethod === 'upvote'
                             ? 'bg-white text-neutral-950 shadow-sm'
                             : 'text-neutral-600 hover:text-neutral-950'
                         }`}
                       >
-                        <Sparkles className="h-3.5 w-3.5 text-blue-600" />
-                        <span>Upvote 5 Products</span>
-                        <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-blue-50 text-blue-700">Instant</span>
+                        <ChevronUp className="h-4 w-4 text-blue-600 stroke-[3] shrink-0" />
+                        <span className="truncate">
+                          {requiredUpvotes === 0
+                            ? 'All Upvoted'
+                            : `Upvote ${requiredUpvotes} Launch${requiredUpvotes === 1 ? '' : 'es'}`}
+                        </span>
                       </button>
 
                       <button
@@ -2736,36 +2775,41 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                           playSound('click', soundEnabled);
                           setFreeVerificationMethod('badge');
                         }}
-                        className={`flex items-center justify-center gap-1.5 rounded-xl py-2 px-3 text-xs font-bold transition-all cursor-pointer ${
+                        className={`flex items-center justify-center gap-1.5 rounded-xl py-2.5 px-2 sm:px-3 text-[11px] sm:text-xs font-bold transition-all cursor-pointer ${
                           freeVerificationMethod === 'badge'
                             ? 'bg-white text-neutral-950 shadow-sm'
                             : 'text-neutral-600 hover:text-neutral-950'
                         }`}
                       >
-                        <ShieldCheck className="h-3.5 w-3.5 text-mint-600" />
-                        <span>Embed Website Badge</span>
+                        <ShieldCheck className="h-3.5 w-3.5 text-mint-600 shrink-0" />
+                        <span className="truncate">Embed Website Badge</span>
                       </button>
                     </div>
                   </div>
 
                   {freeVerificationMethod === 'upvote' ? (
-                    /* ── In-Place 5 Upvote Section ── */
+                    /* ── In-Place Upvote Section ── */
                     <div className="space-y-4 animate-in fade-in-50 duration-150">
                       {/* Progress Tracker Card */}
-                      <div className="rounded-2xl border border-neutral-200/90 bg-neutral-50/80 p-4 shadow-2xs">
-                        <div className="flex items-center justify-between gap-2 text-xs">
-                          <span className="font-bold text-neutral-900">
-                            Community Upvote Progress
+                      <div className="rounded-2xl border border-neutral-200/90 bg-neutral-50/80 p-3.5 sm:p-4 shadow-2xs">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2 text-xs">
+                          <span className="font-bold text-neutral-900 text-xs sm:text-sm">
+                            {requiredUpvotes === 0 ? 'Upvote Progress' : `Upvote ${requiredUpvotes} Launch${requiredUpvotes === 1 ? '' : 'es'}`}
                           </span>
-                          {isUpvoteRequirementMet ? (
-                            <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full text-[11px] whitespace-nowrap">
+                          {requiredUpvotes === 0 ? (
+                            <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] self-start sm:self-auto whitespace-nowrap">
                               <Check className="h-3 w-3 stroke-[3]" />
-                              {upvotedCount}/5 upvoted — Free Launch Unlocked!
+                              All Products Upvoted — Free Launch Unlocked!
+                            </span>
+                          ) : isUpvoteRequirementMet ? (
+                            <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] self-start sm:self-auto whitespace-nowrap">
+                              <Check className="h-3 w-3 stroke-[3]" />
+                              {requiredUpvotes}/{requiredUpvotes} upvoted — Free Launch Unlocked!
                             </span>
                           ) : (
-                            <span className="font-bold text-neutral-700 text-[11px] bg-white border border-neutral-200 px-2.5 py-0.5 rounded-full shadow-2xs whitespace-nowrap">
-                              {upvotedCount}/5 upvoted ·{' '}
-                              <span className="text-blue-600 font-extrabold">{Math.max(0, 5 - upvotedCount)} left</span>
+                            <span className="font-bold text-neutral-700 text-[10px] sm:text-[11px] bg-white border border-neutral-200 px-2.5 py-0.5 rounded-full shadow-2xs self-start sm:self-auto whitespace-nowrap">
+                              {sessionUpvotedCount}/{requiredUpvotes} upvoted ·{' '}
+                              <span className="text-blue-600 font-extrabold">{Math.max(0, requiredUpvotes - sessionUpvotedCount)} left</span>
                             </span>
                           )}
                         </div>
@@ -2775,14 +2819,18 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                             className={`h-full rounded-full transition-all duration-300 ${
                               isUpvoteRequirementMet ? 'bg-emerald-500' : 'bg-blue-600'
                             }`}
-                            style={{ width: `${Math.min(100, Math.round((upvotedCount / 5) * 100))}%` }}
+                            style={{
+                              width: `${requiredUpvotes > 0 ? Math.min(100, Math.round((sessionUpvotedCount / requiredUpvotes) * 100)) : 100}%`
+                            }}
                           />
                         </div>
 
                         <p className="text-[11px] text-neutral-500 mt-2 leading-relaxed">
-                          {isUpvoteRequirementMet
-                            ? 'Great job! You have upvoted at least 5 products. You can now launch your product for free below.'
-                            : 'Click the ▲ button on any 5 products below to support community makers and unlock your free launch right here.'}
+                          {requiredUpvotes === 0
+                            ? "You've already supported all active launches on TopSAAS! Free launch unlocked below."
+                            : isUpvoteRequirementMet
+                              ? `Great job! You have upvoted ${requiredUpvotes === 5 ? '5' : `all ${requiredUpvotes}`} available launch${requiredUpvotes === 1 ? '' : 'es'}. You can now launch your product for free below.`
+                              : `Click the ▲ button on ${requiredUpvotes === 5 ? 'any 5 launches' : `all ${requiredUpvotes} available launch${requiredUpvotes === 1 ? '' : 'es'}`} below to support community makers and unlock your free launch right here.`}
                         </p>
                       </div>
 
@@ -2795,8 +2843,9 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
 
                         <div className="max-h-[340px] overflow-y-auto divide-y divide-neutral-100">
                           {candidateProducts.length === 0 ? (
-                            <div className="p-8 text-center text-xs text-neutral-400">
-                              No directory products available right now.
+                            <div className="p-8 text-center text-xs text-neutral-500 space-y-1">
+                              <p className="font-bold text-neutral-800">You've upvoted all available products!</p>
+                              <p className="text-[11px] text-neutral-400">There are no more unvoted products in the directory. Free launch pass granted ✓</p>
                             </div>
                           ) : (
                             candidateProducts.map((prod, index) => {
@@ -3009,7 +3058,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                                     type="button"
                                     onClick={() => handleVerifyBadge()}
                                     disabled={isVerifyingBadge}
-                                    className="inline-flex items-center gap-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white px-3.5 py-1.5 text-[11px] font-bold transition-colors cursor-pointer"
+                                    className="btn-primary inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-[11px] font-bold cursor-pointer"
                                   >
                                     {isVerifyingBadge ? <Loader2 className="h-3 w-3 animate-spin" /> : <ShieldCheck className="h-3 w-3" />}
                                     <span>Try verifying again</span>
@@ -3043,7 +3092,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                                     type="button"
                                     onClick={() => handleVerifyBadge(customBadgeUrl)}
                                     disabled={isVerifyingBadge || !customBadgeUrl.trim()}
-                                    className="rounded-lg bg-neutral-900 hover:bg-neutral-800 disabled:opacity-50 text-white px-3 py-1.5 text-xs font-bold transition-colors cursor-pointer shrink-0"
+                                    className="btn-primary rounded-lg px-3 py-1.5 text-xs font-bold cursor-pointer shrink-0"
                                   >
                                     Verify URL
                                   </button>
@@ -3078,7 +3127,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                                 type="button"
                                 onClick={() => handleVerifyBadge()}
                                 disabled={isVerifyingBadge}
-                                className="inline-flex items-center gap-1.5 rounded-xl bg-neutral-950 hover:bg-neutral-800 text-white px-4 py-2 text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95 disabled:opacity-60"
+                                className="btn-primary inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold cursor-pointer"
                               >
                                 {isVerifyingBadge ? (
                                   <>
@@ -3245,11 +3294,11 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                   type="button"
                   onClick={() => {
                     playSound('click', soundEnabled);
-                    setBanner(`Please upvote ${Math.max(0, 5 - upvotedCount)} more product${5 - upvotedCount === 1 ? '' : 's'} above to unlock free launch.`);
+                    setBanner(`Please upvote ${Math.max(0, requiredUpvotes - sessionUpvotedCount)} more launch${requiredUpvotes - sessionUpvotedCount === 1 ? '' : 'es'} above to unlock free launch.`);
                   }}
                   className="rounded-xl border border-neutral-300 bg-neutral-100 text-neutral-700 px-5 py-2.5 text-xs font-bold cursor-pointer hover:bg-neutral-200 transition-colors shadow-2xs"
                 >
-                  <span>Upvote 5 products ({upvotedCount}/5)</span>
+                  <span>Upvote {requiredUpvotes} launch{requiredUpvotes === 1 ? '' : 'es'} ({sessionUpvotedCount}/{requiredUpvotes})</span>
                 </button>
               ) : (
                 <button

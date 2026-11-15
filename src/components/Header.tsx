@@ -133,7 +133,7 @@ export const Header: React.FC<HeaderProps> = ({
               type="button"
               data-ml-goal="submit_nav_click"
               onClick={handleSubmitClick}
-              className="flex items-center gap-1.5 rounded-lg bg-neutral-950 px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs font-bold text-white hover:bg-neutral-800 transition-all cursor-pointer shadow-2xs active:scale-[0.98]"
+              className="btn-primary flex items-center gap-1.5 rounded-lg px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs font-bold text-white cursor-pointer"
             >
               <Plus className="h-3.5 w-3.5" />
               <span>Submit</span>

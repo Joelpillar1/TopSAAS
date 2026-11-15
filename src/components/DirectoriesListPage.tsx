@@ -266,7 +266,7 @@ export const DirectoriesListPage: React.FC<DirectoriesListPageProps> = ({
                   playSound('click', soundEnabled);
                   onOpenSubmit();
                 }}
-                className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-neutral-950 px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-neutral-800 sm:w-auto"
+                className="btn-primary inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold text-white sm:w-auto"
               >
                 Submit your SaaS to TopSAAS
                 <ArrowRight className="h-4 w-4" />
@@ -530,7 +530,7 @@ export const DirectoriesListPage: React.FC<DirectoriesListPageProps> = ({
               <button
                 type="button"
                 onClick={resetFilters}
-                className="mt-3 rounded-lg bg-neutral-950 px-3 py-2 text-xs font-bold text-white hover:bg-neutral-800"
+                className="btn-primary mt-3 rounded-lg px-3 py-2 text-xs font-bold text-white"
               >
                 Reset filters
               </button>
@@ -584,7 +584,7 @@ export const DirectoriesListPage: React.FC<DirectoriesListPageProps> = ({
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={trackOutbound}
-                  className="inline-flex min-h-[38px] flex-1 items-center justify-center gap-1 rounded-xl bg-neutral-950 px-3 text-xs font-bold text-white hover:bg-neutral-800"
+                  className="btn-primary inline-flex min-h-[38px] flex-1 items-center justify-center gap-1 rounded-xl px-3 text-xs font-bold text-white"
                 >
                   Submit
                   <ArrowUpRight className="h-3 w-3" />
@@ -599,7 +599,7 @@ export const DirectoriesListPage: React.FC<DirectoriesListPageProps> = ({
               <button
                 type="button"
                 onClick={resetFilters}
-                className="mt-3 rounded-lg bg-neutral-950 px-3 py-2 text-xs font-bold text-white hover:bg-neutral-800"
+                className="btn-primary mt-3 rounded-lg px-3 py-2 text-xs font-bold text-white"
               >
                 Reset filters
               </button>

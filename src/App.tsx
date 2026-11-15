@@ -259,7 +259,7 @@ export default function App() {
       if (path === '/submit' || hash === '#submit' || hash === '#/submit') {
         return '/submit';
       }
-      if (path === '/ideas' || hash === '#ideas' || hash === '#/ideas') {
+      if (path === '/ideas' || path === '/saas-ideas' || hash === '#ideas' || hash === '#/ideas' || hash === '#saas-ideas' || hash === '#/saas-ideas') {
         return '/ideas';
       }
       if (path === '/pricing' || hash === '#pricing' || hash === '#/pricing') {
@@ -791,7 +791,7 @@ export default function App() {
         setCurrentRoute('/profile');
       } else if (path === '/submit' || hash === '#submit' || hash === '#/submit') {
         setCurrentRoute('/submit');
-      } else if (path === '/ideas' || hash === '#ideas' || hash === '#/ideas') {
+      } else if (path === '/ideas' || path === '/saas-ideas' || hash === '#ideas' || hash === '#/ideas' || hash === '#saas-ideas' || hash === '#/saas-ideas') {
         setCurrentRoute('/ideas');
       } else if (path === '/mrr-calculator' || hash === '#mrr-calculator' || hash === '#/mrr-calculator') {
         setCurrentRoute('/mrr-calculator');
@@ -2236,37 +2236,24 @@ export default function App() {
     }
 
     try {
-      const { error } = await supabase.from('products').delete().eq('id', productId);
-      if (error) {
-        console.error('Error deleting product from DB:', error.message);
-        // Revert — put the product back since DB delete failed
-        if (targetProduct) {
-          setProducts((prev) => {
-            const restored = [...prev, targetProduct].sort((a, b) => (a.rank ?? 9999) - (b.rank ?? 9999));
-            try {
-              localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(restored));
-              localStorage.setItem('topsaas_products_cache_v2', JSON.stringify(restored));
-            } catch { }
-            return restored;
-          });
-        }
-        return;
-      }
-      // Listings are keyed by their deterministic id, so the delete above is the
-      // whole job — there are no duplicate rows to sweep up by URL.
+      const rawId = productId.replace(/^prod-/, '');
+      setSubmissions((prev) => prev.filter((s) => s.id !== productId && s.id !== rawId));
+      await Promise.allSettled([
+        supabase.from('products').delete().eq('id', productId),
+        supabase.from('products').delete().eq('id', `prod-${rawId}`),
+        supabase.from('products').delete().eq('id', rawId),
+        supabase.from('submissions').delete().eq('id', productId),
+        supabase.from('submissions').delete().eq('id', rawId),
+        targetProduct?.name ? supabase.from('submissions').delete().ilike('name', targetProduct.name.trim()) : Promise.resolve(),
+        supabase.from('upvotes').delete().eq('product_id', productId),
+        supabase.from('upvotes').delete().eq('product_id', rawId),
+        supabase.from('comments').delete().eq('product_id', productId),
+        supabase.from('comments').delete().eq('product_id', rawId),
+        supabase.from('sponsors').delete().eq('product_id', productId),
+        supabase.from('sponsors').delete().eq('product_id', rawId),
+      ]);
     } catch (err) {
-      console.error('Error deleting product from DB:', err);
-      // Revert on network error too
-      if (targetProduct) {
-        setProducts((prev) => {
-          const restored = [...prev, targetProduct].sort((a, b) => (a.rank ?? 9999) - (b.rank ?? 9999));
-          try {
-            localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(restored));
-            localStorage.setItem('topsaas_products_cache_v2', JSON.stringify(restored));
-          } catch { }
-          return restored;
-        });
-      }
+      console.warn('Note deleting product from DB:', err);
     }
   };
 
@@ -2980,7 +2967,7 @@ export default function App() {
               setFeaturedModalMode('sponsor');
               setIsFeaturedSpotModalOpen(true);
             }}
-            onDeleteProduct={(productId) => setProducts((prev) => prev.filter((p) => p.id !== productId))}
+            onDeleteProduct={handleDelistProduct}
             onUpdateProduct={handleUpdateProduct}
             onSelectProduct={handleOpenProduct}
             onShareProduct={(p) => setShareProduct(p)}
@@ -2996,6 +2983,17 @@ export default function App() {
         />
       </>
     );
+  }
+
+  // 1.04 CLIENT-SIDE OUTBOUND REDIRECT FALLBACK (/r)
+  if (typeof window !== 'undefined' && window.location.pathname.startsWith('/r')) {
+    const params = new URLSearchParams(window.location.search);
+    const targetUrl = params.get('url');
+    if (targetUrl) {
+      const sanitized = /^https?:\/\//i.test(targetUrl) ? targetUrl : `https://${targetUrl}`;
+      window.location.replace(sanitized);
+      return null;
+    }
   }
 
   // 1.0 STANDALONE SVG BADGE ROUTE (/badge/:id)
@@ -3216,10 +3214,11 @@ export default function App() {
   // 1.6 REPO DETAIL ROUTE (/repo/:owner/:name)
   if (currentRoute === 'repo') {
     const repoId = repoRouteId || '';
-    const backToHome = () => {
-      setCurrentRoute('/');
+    const backToSaaSIdeas = () => {
+      setCurrentRoute('/ideas');
+      setRepoRouteId(null);
       try {
-        window.history.pushState('', document.title, '/');
+        window.history.pushState({}, 'SaaS Ideas', '/ideas');
       } catch { }
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
@@ -3231,9 +3230,13 @@ export default function App() {
           <RepoDetailPage
             repoId={repoId}
             soundEnabled={soundEnabled}
-            onBack={backToHome}
+            onBack={backToSaaSIdeas}
             onSelectRepo={handleOpenRepo}
-            sponsors={activeRailSponsors}
+            allProducts={sortedByRankProducts.map((p, idx) => ({ ...markOwnership(p), rank: idx + 1 }))}
+            sponsors={sortSponsorsByOrder(
+              sponsors.filter((s) => isLiveSponsor(s)),
+              sponsorOrderIds
+            ).map(sponsorToDisplayProduct)}
             onSelectProduct={handleOpenProduct}
             onTrackClick={handleTrackClick}
             onOpenFeaturedSpotModal={() => {

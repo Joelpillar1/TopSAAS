@@ -58,9 +58,8 @@ export const RailCard: React.FC<RailCardProps> = ({ title, dot = 'neutral', chil
     <div className="rounded-2xl border border-neutral-200 bg-white overflow-hidden">
       <div className="flex items-center gap-2 border-b border-neutral-100 px-4 py-2.5">
         <span
-          className={`h-1.5 w-1.5 rounded-full ${
-            dot === 'red' ? 'bg-mint-500 animate-pulse' : 'bg-neutral-300'
-          }`}
+          className={`h-1.5 w-1.5 rounded-full ${dot === 'red' ? 'bg-mint-500 animate-pulse' : 'bg-neutral-300'
+            }`}
         />
         <h3 className="text-[10px] font-black  text-black">
           {title}
@@ -178,7 +177,7 @@ export const SponsoredCard: React.FC<SponsoredCardProps> = ({ product, soundEnab
             playSound('click', soundEnabled);
             onOpen(product);
           }}
-          className="shrink-0 rounded-lg bg-neutral-900 px-2.5 py-1.5 text-[10px] font-bold text-white transition-colors hover:bg-neutral-800 cursor-pointer"
+          className="btn-primary shrink-0 rounded-lg px-2.5 py-1.5 text-[10px] font-bold text-white cursor-pointer"
         >
           Visit ↗
         </button>
@@ -256,7 +255,7 @@ export const SponsoredLaunchBanner: React.FC<SponsoredLaunchBannerProps> = ({
           playSound('click', soundEnabled);
           trackOutboundClick(product.id, product.url, product.name, onTrackClick);
         }}
-        className="flex shrink-0 items-center gap-1 rounded-xl bg-neutral-900 px-3.5 py-2 text-[11px] font-bold text-white transition-colors hover:bg-neutral-800 self-center mr-3 cursor-pointer"
+        className="btn-primary flex shrink-0 items-center gap-1 rounded-xl px-3.5 py-2 text-[11px] font-bold text-white self-center mr-3 cursor-pointer"
       >
         Visit
         <ArrowUpRight className="h-3 w-3" />

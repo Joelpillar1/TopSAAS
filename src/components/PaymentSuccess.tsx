@@ -262,7 +262,7 @@ export const PaymentSuccess: React.FC<PaymentSuccessProps> = ({
                 playSound('click', soundEnabled);
                 onBackToDirectory();
               }}
-              className="w-full flex items-center justify-center gap-2 rounded-xl bg-neutral-950 py-3 px-4 text-sm font-bold text-white shadow-sm hover:bg-neutral-800 transition-all cursor-pointer"
+              className="btn-primary w-full flex items-center justify-center gap-2 rounded-xl py-3 px-4 text-sm font-bold text-white cursor-pointer"
             >
               <ArrowLeft className="h-4 w-4" />
               <span>Back to Home</span>

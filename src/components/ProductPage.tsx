@@ -48,7 +48,9 @@ import {
 } from 'lucide-react';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
+import { BorderBeam } from './BorderBeam';
 import { RichText } from './RichText';
+import { sanitizeRichText } from '../utils/richText';
 import { VerifiedBadge } from './VerifiedBadge';
 import { SponsoredPartnersSidebar } from './SponsoredPartnersSidebar';
 import { timeAgo } from './ProductRow';
@@ -961,12 +963,12 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex flex-wrap items-center gap-2 pt-2 sm:pt-0 shrink-0">
+                <div className="flex flex-nowrap items-center gap-1.5 sm:flex-wrap sm:gap-2 pt-2 sm:pt-0 w-full sm:w-auto sm:shrink-0">
                   {onUpvote ? (
                     <button
                       type="button"
                       onClick={() => onUpvote(product)}
-                      className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-3 text-xs font-bold transition-all cursor-pointer active:scale-95 border min-h-[44px] sm:min-h-[38px] ${
+                      className={`inline-flex items-center gap-1.5 rounded-xl px-2.5 sm:px-3.5 py-3 text-xs font-bold transition-all cursor-pointer active:scale-95 border min-h-[44px] sm:min-h-[38px] ${
                         isUpvoted
                           ? 'bg-mint-500 border-mint-400 text-white'
                           : 'bg-white border-neutral-200 text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50'
@@ -977,7 +979,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                       <span className="font-mono-num font-black text-sm">{(product.upvotes ?? 0).toLocaleString()}</span>
                     </button>
                   ) : (
-                    <div className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3.5 py-3 text-xs font-bold text-neutral-900 min-h-[44px] sm:min-h-[38px]">
+                    <div className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-2.5 sm:px-3.5 py-3 text-xs font-bold text-neutral-900 min-h-[44px] sm:min-h-[38px]">
                       <ChevronUp className="h-4 w-4 text-mint-600" />
                       <span className="font-mono-num font-black text-sm">{(product.upvotes ?? 0).toLocaleString()}</span>
                     </div>
@@ -989,7 +991,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                       const el = document.getElementById('product-discussion-section');
                       if (el) el.scrollIntoView({ behavior: 'smooth' });
                     }}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3.5 py-3 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-all cursor-pointer min-h-[44px] sm:min-h-[38px]"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-2.5 sm:px-3.5 py-3 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-all cursor-pointer min-h-[44px] sm:min-h-[38px]"
                     title="Jump to discussion"
                   >
                     <MessageCircle className="h-4 w-4 text-blue-600" />
@@ -1002,7 +1004,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                       playSound('click', soundEnabled);
                       onShare(product);
                     }}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3.5 py-3 text-xs font-bold text-neutral-700 hover:border-blue-300 hover:text-blue-700 hover:bg-blue-50/50 transition-all cursor-pointer min-h-[44px] sm:min-h-[38px]"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-2.5 sm:px-3.5 py-3 text-xs font-bold text-neutral-700 hover:border-blue-300 hover:text-blue-700 hover:bg-blue-50/50 transition-all cursor-pointer min-h-[44px] sm:min-h-[38px]"
                     title="Share & download social banner"
                   >
                     <Share2 className="h-4 w-4 text-blue-600" />
@@ -1017,7 +1019,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                       playSound('click', soundEnabled);
                       trackOutboundClick(product.id, product.url, product.name, onTrackClick);
                     }}
-                    className="btn-primary px-5 py-2.5 text-xs font-bold text-center min-h-[42px] sm:min-h-[38px]"
+                    className="btn-primary flex-1 sm:flex-none justify-center whitespace-nowrap px-3 sm:px-5 py-2.5 text-xs font-bold text-center min-h-[42px] sm:min-h-[38px]"
                   >
                     <span>Visit Website</span>
                     <ExternalLink className="h-3.5 w-3.5" />
@@ -1136,53 +1138,56 @@ export const ProductPage: React.FC<ProductPageProps> = ({
               <>
             {/* Founder Relaunch Banner (Owner only — shown when approaching next week or inactive) */}
             {shouldShowRelaunchBanner && (
-              <div className="rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50/90 via-sky-50/40 to-white p-4 sm:p-5 shadow-xs">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
-                  <div className="flex items-start gap-3 min-w-0">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-xs">
-                      <Rocket className="h-5 w-5" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs font-black text-blue-950">Founder Control</span>
-                        <span className="rounded-full bg-blue-100 text-blue-800 border border-blue-200 px-2 py-0.5 text-[10px] font-bold">
-                          Product Owner
-                        </span>
-                        {product.autoRelaunch ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold">
-                            <Check className="h-3 w-3" /> Auto-Relaunch Active ($5/wk)
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-800 border border-amber-200 px-2 py-0.5 text-[10px] font-bold">
-                            <Clock className="h-3 w-3" /> Round closes in {daysUntilNextRound === 1 ? '< 24h' : `${daysUntilNextRound} days`}
-                          </span>
-                        )}
+              <BorderBeam size="md" colorVariant="colorful" strength={0.85} className="w-full rounded-2xl">
+                <div className="rounded-2xl border border-neutral-200 bg-white p-3.5 sm:p-5 shadow-xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+                    <div className="flex items-center gap-3 min-w-0 w-full sm:w-auto">
+                      <div className="hidden sm:flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-neutral-900 text-white shadow-2xs">
+                        <Rocket className="h-4 w-4" />
                       </div>
-                      <p className="text-xs text-neutral-600 mt-1 leading-relaxed">
-                        {product.autoRelaunch
-                          ? `Your product is all set to automatically relaunch this Sunday at midnight into Week ${nextWeekNumber} with reset upvotes and fresh podium contention.`
-                          : `Week ${currentWeek.weekNumber} is wrapping up! Queue ${product.name} for Week ${nextWeekNumber} ($5) to start Monday morning with fresh voting power and get seen by potential users.`}
-                      </p>
+                      <div className="min-w-0 w-full space-y-1">
+                        <div className="flex items-center justify-between sm:justify-start gap-2">
+                          <span className="text-sm font-bold text-neutral-900 whitespace-nowrap">
+                            {product.autoRelaunch
+                              ? 'Auto-Relaunch Active'
+                              : `Relaunch for Week ${nextWeekNumber}`}
+                          </span>
+                          {product.autoRelaunch ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold shrink-0">
+                              <Check className="h-3 w-3" /> $5/wk
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 text-[10px] font-bold shrink-0">
+                              <Clock className="h-3 w-3" /> Round closes in {daysUntilNextRound === 1 ? '< 24h' : `${daysUntilNextRound}d`}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-neutral-500 leading-normal">
+                          {product.autoRelaunch
+                            ? 'Automatically re-enters the weekly leaderboard on Sunday at midnight.'
+                            : 'Re-enter the weekly leaderboard with fresh upvotes for $5.'}
+                        </p>
+                      </div>
                     </div>
-                  </div>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      playSound('click', soundEnabled);
-                      setIsRelaunchModalOpen(true);
-                    }}
-                    className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 text-xs font-black shadow-xs shadow-blue-600/25 transition-all cursor-pointer shrink-0 self-start sm:self-auto"
-                  >
-                    <RotateCw className="h-3.5 w-3.5" />
-                    <span>
-                      {product.autoRelaunch
-                        ? 'Manage Relaunch'
-                        : `Queue for Week ${nextWeekNumber} ($5)`}
-                    </span>
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playSound('click', soundEnabled);
+                        setIsRelaunchModalOpen(true);
+                      }}
+                      className="btn-primary w-full sm:w-auto px-4 py-2.5 text-xs font-bold shrink-0 justify-center"
+                    >
+                      <RotateCw className="h-3.5 w-3.5" />
+                      <span>
+                        {product.autoRelaunch
+                          ? 'Manage Relaunch'
+                          : `Queue for Week ${nextWeekNumber} ($5)`}
+                      </span>
+                    </button>
+                  </div>
                 </div>
-              </div>
+              </BorderBeam>
             )}
 
             {/* Product Media Gallery: Demo Video and Screenshots (from Step 1 of /submit) */}
@@ -1360,26 +1365,12 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                 return false;
               };
 
-              const cleanTagline = (product.tagline || '').trim().replace(/\.+$/, '');
-              const cleanAudience = (product.targetAudience || '').trim().replace(/\.+$/, '');
-              const displayDescription = isBoilerplateDesc(product.description) ? null : product.description;
+              const cleanDesc = sanitizeRichText(product.description);
+              const displayDescription = isBoilerplateDesc(cleanDesc) ? null : cleanDesc;
 
-              const richAboutFallback = (
-                <div className="space-y-3.5 text-sm sm:text-base leading-relaxed text-neutral-700 font-normal">
-                  <p>
-                    <strong className="font-bold text-neutral-950">{product.name}</strong>
-                    {cleanTagline ? ` — ${cleanTagline}.` : ` is a specialized SaaS platform designed for the ${product.category} ecosystem.`}
-                  </p>
-                  <p>
-                    {cleanAudience
-                      ? `Specially crafted for ${cleanAudience}, ${product.name} streamlines day-to-day operations, removes repetitive manual overhead, and accelerates team velocity with intuitive modern tooling.`
-                      : `Engineered for modern builders, teams, and creators, ${product.name} simplifies complex workflows in the ${product.category} domain by providing high-reliability features and a polished user experience.`}
-                  </p>
-                  <p>
-                    From initial setup to continuous daily usage, {product.name} focuses on delivering measurable performance, reliability, and immediate value right out of the box.
-                  </p>
-                </div>
-              );
+              if (!displayDescription && !product.featuredQuote) {
+                return null;
+              }
 
               return (
                 <div className="rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
@@ -1394,13 +1385,14 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                     </div>
                   </div>
 
-                  <div className="pt-1">
-                    <RichText
-                      html={displayDescription}
-                      className="text-sm sm:text-base leading-relaxed text-neutral-700 font-normal"
-                      fallback={richAboutFallback}
-                    />
-                  </div>
+                  {displayDescription && (
+                    <div className="pt-1">
+                      <RichText
+                        html={displayDescription}
+                        className="text-sm sm:text-base leading-relaxed text-neutral-700 font-normal"
+                      />
+                    </div>
+                  )}
 
                   {product.featuredQuote && (
                     <div className="rounded-xl border border-neutral-200 bg-neutral-50/70 p-4 flex items-start gap-3">
@@ -1415,85 +1407,76 @@ export const ProductPage: React.FC<ProductPageProps> = ({
             })()}
 
             {/* 2. Problem Section (from Step 2 of /submit: Problem it solves) */}
-            <div className="rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
-              <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
-                <div>
-                  <h2 className="text-base sm:text-lg font-bold text-neutral-950">
-                    Problem It Solves
-                  </h2>
-                  <p className="text-xs text-neutral-500 font-normal">
-                    The core challenges and pain points {product.name} addresses
-                  </p>
+            {Boolean(sanitizeRichText(product.problemItSolves)) && (
+              <div className="rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
+                <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
+                  <div>
+                    <h2 className="text-base sm:text-lg font-bold text-neutral-950">
+                      Problem It Solves
+                    </h2>
+                    <p className="text-xs text-neutral-500 font-normal">
+                      The core challenges and pain points {product.name} addresses
+                    </p>
+                  </div>
+                </div>
+
+                <div className="pt-1">
+                  <RichText
+                    html={product.problemItSolves}
+                    className="text-sm sm:text-base leading-relaxed text-neutral-700 font-normal"
+                  />
                 </div>
               </div>
-
-              <div className="pt-1">
-                <RichText
-                  html={product.problemItSolves}
-                  className="text-sm sm:text-base leading-relaxed text-neutral-700 font-normal"
-                  fallback={
-                    <p className="text-sm sm:text-base leading-relaxed text-neutral-700 font-normal">
-                      {`${product.name} addresses friction, fragmentation, and repetitive operational overhead encountered by teams and builders in the ${product.category} space.`}
-                    </p>
-                  }
-                />
-              </div>
-            </div>
+            )}
 
             {/* 3. Solution Section (from Step 2 of /submit: Your solution) */}
-            <div className="rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
-              <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
-                <div>
-                  <h2 className="text-base sm:text-lg font-bold text-neutral-950">
-                    The Solution
-                  </h2>
-                  <p className="text-xs text-neutral-500 font-normal">
-                    How {product.name} solves this problem
-                  </p>
+            {Boolean(sanitizeRichText(product.solution)) && (
+              <div className="rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
+                <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
+                  <div>
+                    <h2 className="text-base sm:text-lg font-bold text-neutral-950">
+                      The Solution
+                    </h2>
+                    <p className="text-xs text-neutral-500 font-normal">
+                      How {product.name} solves this problem
+                    </p>
+                  </div>
+                </div>
+
+                <div className="pt-1">
+                  <RichText
+                    html={product.solution}
+                    className="text-sm sm:text-base leading-relaxed text-neutral-700 font-normal"
+                  />
                 </div>
               </div>
-
-              <div className="pt-1">
-                <RichText
-                  html={product.solution}
-                  className="text-sm sm:text-base leading-relaxed text-neutral-700 font-normal"
-                  fallback={
-                    <p className="text-sm sm:text-base leading-relaxed text-neutral-700 font-normal">
-                      {`By unifying intuitive tooling with seamless performance, ${product.name} enables users to execute faster, automate tedious steps, and deliver superior results.`}
-                    </p>
-                  }
-                />
-              </div>
-            </div>
+            )}
 
             {/* 4. Why Different Section (from Step 2 of /submit: What makes it different) */}
-            <div className="rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
-              <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
-                <div>
-                  <h2 className="text-base sm:text-lg font-bold text-neutral-950">
-                    Why {product.name} is Different
-                  </h2>
-                  <p className="text-xs text-neutral-500 font-normal">
-                    Key differentiators and competitive advantage
-                  </p>
+            {Boolean(sanitizeRichText(product.uniqueSellingPoint)) && (
+              <div className="rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
+                <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
+                  <div>
+                    <h2 className="text-base sm:text-lg font-bold text-neutral-950">
+                      Why {product.name} is Different
+                    </h2>
+                    <p className="text-xs text-neutral-500 font-normal">
+                      Key differentiators and competitive advantage
+                    </p>
+                  </div>
+                </div>
+
+                <div className="pt-1">
+                  <RichText
+                    html={product.uniqueSellingPoint}
+                    className="text-sm sm:text-base leading-relaxed text-neutral-700 font-normal"
+                  />
                 </div>
               </div>
-
-              <div className="pt-1">
-                <RichText
-                  html={product.uniqueSellingPoint}
-                  className="text-sm sm:text-base leading-relaxed text-neutral-700 font-normal"
-                  fallback={
-                    <p className="text-sm sm:text-base leading-relaxed text-neutral-700 font-normal">
-                      {`Built with a focus on simplicity, modern architecture, and speed, ${product.name} provides a distinctive edge over conventional and fragmented alternatives.`}
-                    </p>
-                  }
-                />
-              </div>
-            </div>
+            )}
 
             {/* 5. Target Audience Section (if provided in Step 2) */}
-            {product.targetAudience && (
+            {Boolean(product.targetAudience && product.targetAudience.trim()) && (
               <div className="rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
                 <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
                   <div>

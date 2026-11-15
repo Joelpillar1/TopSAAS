@@ -168,7 +168,7 @@ export const DirectoryDetailPage: React.FC<DirectoryDetailPageProps> = ({
             event.preventDefault();
             navigateTo('/product-directory');
           }}
-          className="mt-5 inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-neutral-950 px-5 py-3 text-sm font-bold text-white hover:bg-neutral-800"
+          className="btn-primary mt-5 inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold text-white"
         >
           Back to all directories
           <ArrowRight className="h-4 w-4" />
@@ -263,7 +263,7 @@ export const DirectoryDetailPage: React.FC<DirectoryDetailPageProps> = ({
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => playSound('click', soundEnabled)}
-              className="mt-3 inline-flex min-h-[42px] w-full items-center justify-center gap-2 rounded-xl bg-neutral-950 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-neutral-800"
+              className="btn-primary mt-3 inline-flex min-h-[42px] w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-white"
             >
               Open {directory.name}
               <ArrowUpRight className="h-4 w-4" />

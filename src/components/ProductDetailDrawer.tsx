@@ -5,6 +5,7 @@ import { Product } from '../types';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
 import { RichText } from './RichText';
+import { sanitizeRichText } from '../utils/richText';
 import { formatOutboundUrl, trackOutboundClick } from '../utils/referral';
 
 interface ProductDetailDrawerProps {
@@ -132,31 +133,21 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
 
           {/* About */}
           {(() => {
-            const isBoilerplate = !product.description || /is a high-quality product in the .* ecosystem/i.test(product.description);
-            const cleanTagline = (product.tagline || '').trim().replace(/\.+$/, '');
-            const cleanAudience = (product.targetAudience || '').trim().replace(/\.+$/, '');
-            if (!isBoilerplate && product.description) {
+            const cleanDesc = sanitizeRichText(product.description);
+            const isBoilerplate = !cleanDesc || /is a high-quality product in the .* ecosystem/i.test(cleanDesc);
+            if (!isBoilerplate && cleanDesc) {
               return (
                 <div className="mt-4 rounded-xl border border-neutral-200 bg-neutral-50 p-3.5 space-y-1">
                   <h4 className="text-xs font-bold text-neutral-800">About</h4>
-                  <RichText html={product.description} className="text-xs text-neutral-600 leading-relaxed font-normal" />
+                  <RichText html={cleanDesc} className="text-xs text-neutral-600 leading-relaxed font-normal" />
                 </div>
               );
             }
-            return (
-              <div className="mt-4 rounded-xl border border-neutral-200 bg-neutral-50 p-3.5 space-y-1">
-                <h4 className="text-xs font-bold text-neutral-800">About</h4>
-                <p className="text-xs text-neutral-600 leading-relaxed font-normal">
-                  <strong className="font-semibold text-neutral-900">{product.name}</strong>
-                  {cleanTagline ? ` — ${cleanTagline}.` : ` is a specialized SaaS platform in the ${product.category} ecosystem.`}{' '}
-                  {cleanAudience ? `Specially crafted for ${cleanAudience}.` : `Designed to streamline team workflows and boost productivity.`}
-                </p>
-              </div>
-            );
+            return null;
           })()}
 
           {/* Problem */}
-          {product.problemItSolves && (
+          {Boolean(sanitizeRichText(product.problemItSolves)) && (
             <div className="mt-3 rounded-xl border border-neutral-200 bg-neutral-50 p-3.5 space-y-1">
               <h4 className="text-xs font-bold text-neutral-800">Problem It Solves</h4>
               <RichText html={product.problemItSolves} className="text-xs text-neutral-600 leading-relaxed font-normal" />
@@ -164,7 +155,7 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
           )}
 
           {/* Solution */}
-          {product.solution && (
+          {Boolean(sanitizeRichText(product.solution)) && (
             <div className="mt-3 rounded-xl border border-neutral-200 bg-neutral-50 p-3.5 space-y-1">
               <h4 className="text-xs font-bold text-neutral-800">The Solution</h4>
               <RichText html={product.solution} className="text-xs text-neutral-600 leading-relaxed font-normal" />
@@ -172,7 +163,7 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
           )}
 
           {/* Why Different */}
-          {product.uniqueSellingPoint && (
+          {Boolean(sanitizeRichText(product.uniqueSellingPoint)) && (
             <div className="mt-3 rounded-xl border border-neutral-200 bg-neutral-50 p-3.5 space-y-1">
               <h4 className="text-xs font-bold text-neutral-800">Why It's Different</h4>
               <RichText html={product.uniqueSellingPoint} className="text-xs text-neutral-600 leading-relaxed font-normal" />
@@ -190,7 +181,7 @@ export const ProductDetailDrawer: React.FC<ProductDetailDrawerProps> = ({
               playSound('click', soundEnabled);
               trackOutboundClick(product.id, product.url, product.name, onTrackClick);
             }}
-            className="w-full flex items-center justify-center gap-2 rounded-xl bg-black py-3 text-xs font-black text-white shadow-2xs hover:bg-neutral-800 active:scale-[0.98] transition-all cursor-pointer min-h-[44px]"
+            className="btn-primary w-full flex items-center justify-center gap-2 rounded-xl py-3 text-xs font-black text-white cursor-pointer min-h-[44px]"
           >
             <span>Visit Website</span>
             <ExternalLink className="h-4 w-4" />

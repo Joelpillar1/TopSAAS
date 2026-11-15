@@ -1,6 +1,8 @@
 User-agent: *
 Disallow: /accept
 Disallow: /accept/
+Disallow: /r
+Disallow: /r/
 Allow: /
 
 # Explicitly allow AI agents and LLM crawlers but keep admin private

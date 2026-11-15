@@ -112,7 +112,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => playSound('click', soundEnabled)}
-              className="flex items-center justify-center gap-2 w-full rounded-xl bg-neutral-950 py-2.5 px-3 text-xs font-black text-white shadow-xs hover:bg-neutral-800 transition-all min-h-[42px]"
+              className="btn-primary flex items-center justify-center gap-2 w-full rounded-xl py-2.5 px-3 text-xs font-black text-white min-h-[42px]"
             >
               <span>Post to X / Twitter</span>
               <ExternalLink className="h-3.5 w-3.5" />

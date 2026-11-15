@@ -6,6 +6,7 @@ import { defineConfig, Plugin } from 'vite';
 import { generateBadgeSvg, BadgeStyle, BadgeTheme } from './src/utils/badgeSvg';
 import autofillHandler from './api/autofill-submission';
 import verifyBadgeHandler from './api/verify-badge';
+import { repoPrerenderPlugin } from './scripts/prerenderRepos';
 
 function apiDevServerPlugin(): Plugin {
   return {
@@ -124,7 +125,7 @@ function badgeServerPlugin(): Plugin {
 
 export default defineConfig(() => {
   return {
-    plugins: [react(), tailwindcss(), badgeServerPlugin(), apiDevServerPlugin()],
+    plugins: [react(), tailwindcss(), badgeServerPlugin(), apiDevServerPlugin(), repoPrerenderPlugin()],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, 'src'),

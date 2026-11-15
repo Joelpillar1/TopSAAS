@@ -104,7 +104,7 @@ export const HowItWorksModal: React.FC<HowItWorksModalProps> = ({
               onClose();
               onOpenSubmit();
             }}
-            className="w-full flex items-center justify-center gap-2 rounded-xl bg-neutral-950 py-3 text-xs sm:text-sm font-black text-white shadow-2xs hover:bg-neutral-800 active:scale-[0.98] transition-all cursor-pointer min-h-[44px]"
+            className="btn-primary w-full flex items-center justify-center gap-2 rounded-xl py-3 text-xs sm:text-sm font-black text-white cursor-pointer min-h-[44px]"
           >
             <Sparkles className="h-4 w-4" />
             <span>List Your SaaS Now</span>

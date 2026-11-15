@@ -130,22 +130,6 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                     onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
                   />
                 </a>
-                <a
-                  href="https://www.scrolllaunch.com/products/topsaas?ref=badge"
-                  target="_blank"
-                  rel="noopener"
-                  className="transition-opacity hover:opacity-80 inline-flex items-center shrink-0"
-                >
-                  <img
-                    src="https://www.scrolllaunch.com/api/badge/topsaas?variant=launched&theme=light"
-                    alt="TopSAAS - Featured on ScrollLaunch"
-                    width={220}
-                    height={48}
-                    className="h-7.5 w-auto"
-                    loading="lazy"
-                    onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
-                  />
-                </a>
                 <span
                   style={{
                     display: 'inline-block',
@@ -217,36 +201,6 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                     src="https://builtbyindies.com/badge/82e153d0-3bf0-4245-95ad-d9d9f5174868.svg"
                     alt="BuiltByIndies"
                     height={60}
-                    className="h-7.5 w-auto"
-                    loading="lazy"
-                    onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
-                  />
-                </a>
-                <a
-                  href="https://submitmysaas.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="transition-opacity hover:opacity-80 inline-flex items-center shrink-0"
-                >
-                  <img
-                    src="https://submitmysaas.com/featured-badge.png"
-                    alt="Featured on SubmitMySaas"
-                    className="h-7.5 w-auto"
-                    loading="lazy"
-                    onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
-                  />
-                </a>
-                <a
-                  href="https://www.indietool.io"
-                  target="_blank"
-                  rel="noopener"
-                  className="transition-opacity hover:opacity-80 inline-flex items-center shrink-0"
-                >
-                  <img
-                    src="https://www.indietool.io/badge.svg"
-                    alt="Featured on IndieTool"
-                    width={236}
-                    height={54}
                     className="h-7.5 w-auto"
                     loading="lazy"
                     onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
@@ -442,22 +396,6 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                     onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
                   />
                 </a>
-                <a
-                  href="https://www.scrolllaunch.com/products/topsaas?ref=badge"
-                  target="_blank"
-                  rel="noopener"
-                  className="transition-opacity hover:opacity-80 inline-flex items-center shrink-0"
-                >
-                  <img
-                    src="https://www.scrolllaunch.com/api/badge/topsaas?variant=launched&theme=light"
-                    alt="TopSAAS - Featured on ScrollLaunch"
-                    width={220}
-                    height={48}
-                    className="h-7.5 w-auto"
-                    loading="lazy"
-                    onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
-                  />
-                </a>
                 <span
                   style={{
                     display: 'inline-block',
@@ -529,36 +467,6 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                     src="https://builtbyindies.com/badge/82e153d0-3bf0-4245-95ad-d9d9f5174868.svg"
                     alt="BuiltByIndies"
                     height={60}
-                    className="h-7.5 w-auto"
-                    loading="lazy"
-                    onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
-                  />
-                </a>
-                <a
-                  href="https://submitmysaas.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="transition-opacity hover:opacity-80 inline-flex items-center shrink-0"
-                >
-                  <img
-                    src="https://submitmysaas.com/featured-badge.png"
-                    alt="Featured on SubmitMySaas"
-                    className="h-7.5 w-auto"
-                    loading="lazy"
-                    onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
-                  />
-                </a>
-                <a
-                  href="https://www.indietool.io"
-                  target="_blank"
-                  rel="noopener"
-                  className="transition-opacity hover:opacity-80 inline-flex items-center shrink-0"
-                >
-                  <img
-                    src="https://www.indietool.io/badge.svg"
-                    alt="Featured on IndieTool"
-                    width={236}
-                    height={54}
                     className="h-7.5 w-auto"
                     loading="lazy"
                     onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}

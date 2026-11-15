@@ -3,7 +3,8 @@
  *
  * Ensures all outbound visitor clicks from TopSAAS to founders' websites:
  * 1. Pass `ref=topsaas` and standard UTM tags for tracking in Google Analytics / Plausible / PostHog.
- * 2. Retain the browser HTTP `Referer: https://topsaas.space/` header by using `rel="noopener"` (not `noreferrer`).
+ * 2. Route through a Product-Hunt-style redirect bridge (`/r?url=...`) with HTTP 302
+ *    and `Referrer-Policy: strict-origin-when-cross-origin` to guarantee `Referer: https://www.topsaas.space/`.
  * 3. Persist click metrics to the Supabase database and emit Trackkit goals.
  */
 
@@ -13,13 +14,14 @@ export interface OutboundOptions {
   campaign?: string; // 'directory' | 'featured' | 'sponsor_rail' | 'deal' | 'drawer'
   productId?: string;
   productName?: string;
+  refTag?: string;
   onTrackClick?: (productId: string, url: string) => void;
 }
 
 /**
  * Normalizes an external URL and appends `ref=topsaas` and standard directory UTM tags.
  */
-export function formatOutboundUrl(
+export function attachTrackingParams(
   rawUrl: string,
   options?: { campaign?: string; refTag?: string }
 ): string {
@@ -57,6 +59,36 @@ export function formatOutboundUrl(
     const separator = trimmed.includes('?') ? '&' : '?';
     return `${trimmed}${separator}ref=topsaas&utm_source=topsaas&utm_medium=directory`;
   }
+}
+
+/**
+ * Returns a Product-Hunt-style redirect bridge URL:
+ * `/r?url=...&id=...&campaign=...`
+ *
+ * When opened, the browser routes through TopSAAS's HTTP 302 redirect, ensuring:
+ * - The HTTP `Referer: https://www.topsaas.space/` header is passed to the destination
+ * - Clean `ref=topsaas` and standard UTM tags arrive on the target site
+ * - Works identically across all browsers and adblockers
+ */
+export function formatOutboundUrl(
+  rawUrl: string,
+  options?: { campaign?: string; refTag?: string; productId?: string; productName?: string }
+): string {
+  if (!rawUrl || typeof rawUrl !== 'string') return '';
+
+  const targetWithParams = attachTrackingParams(rawUrl, options);
+  if (!targetWithParams) return '';
+
+  const params = new URLSearchParams();
+  params.set('url', targetWithParams);
+  if (options?.productId) {
+    params.set('id', options.productId);
+  }
+  if (options?.campaign) {
+    params.set('campaign', options.campaign);
+  }
+
+  return `/r?${params.toString()}`;
 }
 
 /**
@@ -102,8 +134,9 @@ export function trackOutboundClick(
 }
 
 /**
- * Formats an outbound URL, tracks the click, and opens the external site in a new tab.
- * Uses `noopener` (WITHOUT `noreferrer`) so the destination site receives `Referer: https://topsaas.space/`.
+ * Formats an outbound URL, tracks the click, and opens the external site in a new tab
+ * via the Product-Hunt-style `/r?url=...` redirect bridge.
+ * Uses `noopener` (without `noreferrer`) to preserve browser HTTP Referer headers.
  */
 export function openOutboundUrl(
   rawUrl: string,
@@ -111,7 +144,12 @@ export function openOutboundUrl(
 ): void {
   if (!rawUrl) return;
 
-  const targetUrl = formatOutboundUrl(rawUrl, { campaign: options?.campaign });
+  const targetUrl = formatOutboundUrl(rawUrl, {
+    campaign: options?.campaign,
+    productId: options?.productId,
+    productName: options?.productName,
+    refTag: options?.refTag,
+  });
 
   if (options?.productId) {
     trackOutboundClick(

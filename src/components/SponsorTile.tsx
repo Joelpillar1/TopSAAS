@@ -152,7 +152,7 @@ export const SponsorTile: React.FC<SponsorTileProps> = ({
             e.stopPropagation();
             handleClick();
           }}
-          className="inline-flex items-center justify-center rounded-lg bg-neutral-950 px-3 py-1 text-[11px] font-bold text-white shadow-xs hover:bg-neutral-800 transition-all cursor-pointer active:scale-95"
+          className="btn-primary inline-flex items-center justify-center rounded-lg px-3 py-1 text-[11px] font-bold text-white cursor-pointer"
         >
           Reserve spot
         </button>

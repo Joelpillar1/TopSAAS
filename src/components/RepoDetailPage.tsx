@@ -20,11 +20,18 @@ import {
   Star,
   Tag,
 } from 'lucide-react';
-import { CURATED_REPOS, CuratedRepo, RepoCategory } from '../data/curatedRepos';
+import { CURATED_REPOS, CuratedRepo } from '../data/curatedRepos';
 import { Product } from '../types';
 import { SponsoredPartnersSidebar } from './SponsoredPartnersSidebar';
 import { formatStars } from '../utils/github';
 import { plainCopy } from '../utils/plainCopy';
+import {
+  buildRepoEditorial,
+  detectSelfHosted,
+  repoCanonicalUrl,
+  repoSeoDescription,
+  repoSeoTitle,
+} from '../utils/repoSeo';
 import { computeHealth } from '../utils/repoHealth';
 import { REPO_HEALTH, REPO_HEALTH_GENERATED_AT } from '../data/repoHealth';
 import { getGuideForRepo } from '../data/buildGuides';
@@ -62,6 +69,7 @@ interface RepoDetailPageProps {
   /** Opens the featured-spot flow (sign-in or reserve modal), like the homepage promo. */
   onOpenFeatured?: () => void;
   sponsors?: Product[];
+  allProducts?: Product[];
   onSelectProduct?: (product: Product) => void;
   onTrackClick?: (productId: string, url: string) => void;
   onOpenFeaturedSpotModal?: () => void;
@@ -99,268 +107,6 @@ const ghJson = <T,>(url: string): Promise<T | null> =>
     .then((r) => (r.ok ? (r.json() as Promise<T>) : null))
     .catch(() => null);
 
-/* ───────────────────────── editorial building blocks ───────────────────────── */
-
-/** What each category is *for*, as a phrase that reads "…when you're {phrase}." */
-const CATEGORY_USE: Partial<Record<RepoCategory, string>> = {
-  'SaaS Starters': 'shipping an MVP without rebuilding auth, billing and deploys',
-  'Auth & Identity': 'adding sign-in, accounts and permissions',
-  Databases: 'choosing the data layer your product runs on',
-  'AI & ML': 'wiring model-powered features into a real product',
-  'DevOps & Infra': 'running and shipping software reliably',
-  'UI Components': 'assembling a polished interface quickly',
-  'CMS & Content': 'letting editors publish without a deploy',
-  'Payments & Billing': 'charging customers without building a payment stack',
-  Analytics: 'understanding what users actually do',
-  'Email & Communication': 'sending transactional and lifecycle messages',
-  Deployment: 'putting apps online in minutes',
-  Mobile: 'shipping to phones and tablets',
-  'API & Backend': 'structuring the server side of a product',
-  Monitoring: 'knowing when something breaks before your users do',
-  'Forms & Surveys': 'collecting input from users',
-  Search: 'making content findable instantly',
-  'File Storage': 'handling uploads and files at scale',
-  'Design & UI': 'keeping the product visually consistent',
-  Productivity: 'organizing work and teams',
-  Utilities: 'solving the small plumbing problems every SaaS hits',
-  'Privacy & Security': 'keeping user data locked down',
-  Education: 'learning a stack by reading real code',
-  Lists: 'finding proven tools worth switching to',
-};
-
-/** Noun phrase for the category: "a working {noun}". */
-const CATEGORY_NOUN: Partial<Record<RepoCategory, string>> = {
-  'SaaS Starters': 'SaaS starter kit',
-  'Auth & Identity': 'authentication toolkit',
-  Databases: 'database layer',
-  'AI & ML': 'AI building block',
-  'DevOps & Infra': 'DevOps tool',
-  'UI Components': 'UI component library',
-  'CMS & Content': 'content management setup',
-  'Payments & Billing': 'payments & billing toolkit',
-  Analytics: 'analytics tool',
-  'Email & Communication': 'email & messaging tool',
-  Deployment: 'deployment tool',
-  Mobile: 'mobile app foundation',
-  'API & Backend': 'API & backend toolkit',
-  Monitoring: 'monitoring tool',
-  'Forms & Surveys': 'forms & surveys tool',
-  Search: 'search setup',
-  'File Storage': 'file storage layer',
-  'Design & UI': 'design system',
-  Productivity: 'productivity tool',
-  Utilities: 'developer utility',
-  'Privacy & Security': 'privacy & security tool',
-  Education: 'learning resource',
-  Lists: 'curated collection',
-};
-
-/**
- * Topic → capability line, as [topic key, title, continuation].
- * Reads as "**Title** continuation." Matched exactly first, then by substring.
- */
-const TOPIC_CAPABILITIES: [string, string, string][] = [
-  ['self-hosted', 'Self-hosting', 'runs on your own infrastructure: data, limits and cost stay under your control'],
-  ['selfhosting', 'Self-hosting', 'runs on your own infrastructure: data, limits and cost stay under your control'],
-  ['docker-compose', 'Docker Compose', 'spins up the whole stack from a single file'],
-  ['docker', 'Docker support', 'makes setup one command instead of an afternoon'],
-  ['kubernetes', 'Kubernetes', 'fits a scale-out production setup without rework'],
-  ['react', 'React frontend', 'matches the component model your team already knows'],
-  ['nextjs', 'Next.js', 'gives you routing and server rendering out of the box'],
-  ['vue', 'Vue frontend', 'keeps the UI approachable and quick to extend'],
-  ['svelte', 'Svelte frontend', 'keeps the bundle small and the updates fast'],
-  ['typescript', 'TypeScript', 'keeps refactors safe as the codebase grows'],
-  ['javascript', 'JavaScript', 'runs anywhere Node runs, with no build tooling to fight'],
-  ['graphql', 'GraphQL API', 'lets clients ask for exactly the data they need'],
-  ['rest-api', 'REST API', 'means any stack can call it without a special client'],
-  ['rest', 'REST API', 'means any stack can call it without a special client'],
-  ['api', 'Public API', 'lets you automate it from your own tools'],
-  ['webhooks', 'Webhooks', 'keep the rest of your stack in sync'],
-  ['webhook', 'Webhooks', 'keep the rest of your stack in sync'],
-  ['authentication', 'Sign-in', 'is handled in the box, so you never bolt on an auth provider'],
-  ['auth', 'Sign-in', 'is handled in the box, so you never bolt on an auth provider'],
-  ['oauth', 'OAuth', 'covers third-party sign-in and integrations'],
-  ['sso', 'Single sign-on', 'works with the identity provider your team already has'],
-  ['jwt', 'JWT sessions', 'stay stateless, so the app scales without sticky servers'],
-  ['admin-ui', 'Admin dashboard', 'covers day-to-day operations without you building one'],
-  ['admin', 'Admin dashboard', 'covers day-to-day operations without you building one'],
-  ['crud', 'CRUD flows', 'are already wired up, so you start from working code'],
-  ['ai', 'AI features', 'live in the core workflow instead of being bolted on'],
-  ['llm', 'LLM support', 'is designed for large-language-model workloads end to end'],
-  ['rag', 'RAG pipeline', 'answers from your own content instead of a generic model'],
-  ['vector', 'Vector search', 'matches by meaning, not just exact keywords'],
-  ['agent', 'Agent-ready', 'gives AI agents a real surface to act through, not just a demo'],
-  ['analytics', 'Usage analytics', 'come built in: no second tool to buy'],
-  ['dashboard', 'Dashboards', 'surface the numbers your team will actually open'],
-  ['charts', 'Charts', 'make the important metrics visible out of the box'],
-  ['chart', 'Charts', 'make the important metrics visible out of the box'],
-  ['payments', 'Billing', 'covers the primitives you would otherwise build from scratch'],
-  ['stripe', 'Stripe', 'handles subscriptions and one-off charges'],
-  ['billing', 'Subscriptions & invoices', 'are managed for you, including failed-payment retries'],
-  ['email', 'Transactional email', 'sends from inside the app, no third service required'],
-  ['newsletter', 'Newsletter tooling', 'covers signup and delivery workflows'],
-  ['smtp', 'SMTP support', 'talks to whatever mail server you already run'],
-  ['cms', 'Content management', 'lets editors publish without touching a deploy'],
-  ['markdown', 'Markdown', 'is a first-class format, from docs to comments'],
-  ['mobile', 'Mobile support', 'keeps the experience solid on phones and tablets'],
-  ['pwa', 'Installable PWA', 'runs from the home screen like a native app'],
-  ['realtime', 'Realtime updates', 'reach every connected client instantly'],
-  ['websocket', 'Websockets', 'keep clients in sync without constant polling'],
-  ['cli', 'CLI', 'makes everything scriptable from the terminal'],
-  ['sdk', 'SDK', 'lets you drop it into your app in minutes'],
-  ['plugins', 'Plugins', 'add features without forcing a fork'],
-  ['plugin', 'Plugins', 'add features without forcing a fork'],
-  ['extension', 'Extensions', 'add features while keeping upstream clean'],
-  ['automation', 'Automation', 'handles the repetitive work on triggers instead of by hand'],
-  ['workflow', 'Workflows', 'make your process auditable and rerunnable'],
-  ['scheduler', 'Scheduling', 'runs jobs for you without extra infrastructure'],
-  ['cron', 'Cron jobs', 'run natively, with no scheduler to operate'],
-  ['privacy', 'Privacy by design', 'means user data stays under your control'],
-  ['gdpr', 'GDPR-ready', 'covers consent, export and deletion from day one'],
-  ['postgres', 'PostgreSQL', 'stores data relationally with real durability guarantees'],
-  ['postgresql', 'PostgreSQL', 'stores data relationally with real durability guarantees'],
-  ['mysql', 'MySQL', 'uses the setup most hosts already provide'],
-  ['mongodb', 'MongoDB', 'fits flexible, document-shaped data'],
-  ['redis', 'Redis', 'handles caching and hot-path reads'],
-  ['sqlite', 'SQLite', 'gives you zero-config local storage'],
-  ['search', 'Search', 'is built in rather than left as an exercise'],
-  ['i18n', 'Internationalization', 'ships multilingual support from the first release'],
-  ['tailwind', 'Tailwind CSS', 'makes retheming a config change instead of a rewrite'],
-  ['monitoring', 'Monitoring', 'surfaces regressions before your users do'],
-  ['testing', 'Tests', 'are wired into the workflow from day one'],
-  ['export', 'Data export', 'leaves in open formats: no lock-in on the way out'],
-  ['import', 'Imports', 'bring data over from the tools you are leaving behind'],
-];
-
-interface Capability {
-  title: string;
-  body: string;
-}
-
-interface Editorial {
-  lead: string;
-  core: string;
-  capabilities: Capability[];
-  closing: string;
-}
-
-const ensurePeriod = (s: string): string => (/[.!?]$/.test(s.trim()) ? s.trim() : `${s.trim()}.`);
-
-/** Pull the strongest capability lines out of the repo's live topics. */
-const capabilitiesFromTopics = (topics: string[]): Capability[] => {
-  const lower = topics.map((t) => t.toLowerCase().trim());
-  const out: Capability[] = [];
-  const usedIdx = new Set<number>();
-
-  const collect = (mode: 'exact' | 'substring') => {
-    for (const [key, title, body] of TOPIC_CAPABILITIES) {
-      if (out.length >= 6) return;
-      if (out.some((c) => c.title === title)) continue;
-      const idx = lower.findIndex((t, i) => {
-        if (usedIdx.has(i)) return false;
-        return mode === 'exact' ? t === key : t.includes(key) || key.includes(t);
-      });
-      if (idx >= 0) {
-        usedIdx.add(idx);
-        out.push({ title, body });
-      }
-    }
-  };
-
-  collect('exact');
-  collect('substring');
-  return out;
-};
-
-/**
- * Repo blurbs come from curated data or the live GitHub API, so they can carry
- * emoji and em-dashes. Page copy stays plain: no emoji, no em-dashes — the
- * shared sanitizer lives in ../utils/plainCopy so every surface matches.
- */
-
-/**
- * The page's own write-up of the repo: editorial prose built from curated data
- * plus live GitHub signals. Never the README pasted back at the reader.
- */
-const buildEditorial = (
-  repo: CuratedRepo,
-  live: RepoLiveMeta | null,
-  ctx: { stars: number; forks: number; rank: number; peerCount: number; selfHosted: boolean }
-): Editorial => {
-  const usePhrase =
-    CATEGORY_USE[repo.category] ?? 'building the next version of your product';
-  const noun = CATEGORY_NOUN[repo.category] ?? 'open-source project';
-  const desc = ensurePeriod(plainCopy(repo.description) || `${repo.full_name} on GitHub.`);
-  const licenseBit = live?.license ? `, released under the ${live.license} license` : '';
-
-  const lead =
-    `${desc} ` +
-    `In our ${repo.category} collection it ranks #${ctx.rank} of ${ctx.peerCount} by stars` +
-    `${repo.language ? `, and most of the code is ${repo.language}` : ''}` +
-    `${licenseBit}. Maintained in the open by ${repo.owner.login}.`;
-
-  let core: string;
-  if (ctx.selfHosted) {
-    core =
-      `The core idea is ownership. ${repo.name} runs on your own hardware or cloud account, ` +
-      `so the data, the limits and the cost all stay yours: no per-seat bill, no vendor lock-in, ` +
-      `and no waiting on someone else's roadmap when you need a change.`;
-  } else if (repo.category === 'SaaS Starters') {
-    core =
-      `The core idea is leverage: fork a codebase that already handles the boring half of a SaaS, ` +
-      `such as auth, storage, deployments, and spend your time on the product itself instead of ` +
-      `rebuilding plumbing you have built before.`;
-  } else if (repo.category === 'AI & ML') {
-    core =
-      `The core idea is putting models to work. ${repo.name} provides the plumbing around AI: ` +
-      `data flow, inference, and guardrails, so you can ship model-powered features without standing ` +
-      `up a research team first.`;
-  } else {
-    core =
-      `The core idea is momentum. Instead of building ${noun} from a blank repository, you fork ` +
-      `${repo.name} and keep what fits: every file in there exists because someone needed it in ` +
-      `production, which is exactly what makes it a fast, low-risk place to start.`;
-  }
-
-  const capabilities: Capability[] = live ? capabilitiesFromTopics(live.topics) : [];
-  if (capabilities.length < 3) {
-    const fillers: Capability[] = [
-      {
-        title: 'Community-backed',
-        body: `${ctx.stars.toLocaleString()} stars and ${ctx.forks.toLocaleString()} forks: real production use, active issues and answers when you get stuck`,
-      },
-      ...(repo.language
-        ? [
-            {
-              title: `${repo.language} codebase`,
-              body: `the bulk of the project is ${repo.language}, so contributors can plug in without a stack switch`,
-            },
-          ]
-        : []),
-      {
-        title: 'Vetted on TopSAAS',
-        body: `hand-picked for our ${repo.category} set and verified against GitHub on October 5, 2026`,
-      },
-    ];
-    for (const f of fillers) {
-      if (capabilities.length >= 3) break;
-      capabilities.push(f);
-    }
-  }
-
-  const closingTail = ctx.selfHosted
-    ? 'and because it is self-hostable, the data and the limits stay yours'
-    : live?.license
-      ? `and the ${live.license} license means you can build on it freely`
-      : 'and its community keeps it maintained';
-
-  const closing =
-    `${repo.name} fits naturally into a stack when you're ${usePhrase}. ` +
-    `The numbers back it up: ${ctx.stars.toLocaleString()} stars and ${ctx.forks.toLocaleString()} forks, ${closingTail}.`;
-
-  return { lead, core, capabilities, closing };
-};
-
 /* ───────────────────────── misc helpers ───────────────────────── */
 
 const formatDate = (iso: string | null | undefined): string => {
@@ -389,20 +135,6 @@ const formatAge = (iso: string | null | undefined): string => {
   const rem = months % 12;
   return rem > 0 ? `${years} year${years === 1 ? '' : 's'} ${rem} mo` : `${years} years`;
 };
-
-const SELF_HOST_TERMS = new Set([
-  'self-hosted',
-  'selfhosted',
-  'self-hosting',
-  'self-hostable',
-  'selfhost',
-  'on-premise',
-  'onpremise',
-]);
-
-const detectSelfHosted = (topics: string[], description: string): boolean =>
-  topics.some((t) => SELF_HOST_TERMS.has(t.toLowerCase().replace(/\s+/g, '-'))) ||
-  /self[- ]host/i.test(description);
 
 const languageBreakdown = (languages: Record<string, number>) => {
   const entries = Object.entries(languages).sort((a, b) => b[1] - a[1]);
@@ -488,6 +220,7 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
   onSelectRepo,
   onOpenFeatured,
   sponsors = [],
+  allProducts = [],
   onSelectProduct = () => {},
   onTrackClick,
   onOpenFeaturedSpotModal,
@@ -506,7 +239,7 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
             onClick={onBack}
             className="mt-2 rounded-xl bg-white border border-neutral-300 text-black px-4 py-2 text-xs font-bold cursor-pointer hover:bg-neutral-50"
           >
-            Back to Home
+            Back to SaaS Ideas
           </button>
         </div>
       </div>
@@ -624,28 +357,28 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
   );
   const rank = Math.max(1, peers.findIndex((r) => r.full_name === repo.full_name) + 1);
 
-  const editorial = buildEditorial(repo, live, {
-    stars,
-    forks,
-    rank,
-    peerCount: peers.length,
-    selfHosted,
-  });
+  const editorial = buildRepoEditorial(
+    repo,
+    { topics: live?.topics, license: live?.license },
+    {
+      stars,
+      forks,
+      rank,
+      peerCount: peers.length,
+      selfHosted,
+    }
+  );
 
   // Reference-style SEO title: "Postiz: Open Source Alternative to …"
   // Also swaps canonical + OG/Twitter tags and injects per-repo JSON-LD so the
   // SPA ships full head metadata for crawlers and answer engines. All restored
   // on unmount so navigating away never leaks repo tags onto another route.
   useEffect(() => {
-    const SITE = 'https://www.topsaas.space';
-    const canonical = `${SITE}/repo/${repo.full_name}`;
-    const shortDesc = (description || '').replace(/\s+/g, ' ').trim().slice(0, 110);
-    const metaDesc = (description || '').replace(/\s+/g, ' ').trim().slice(0, 157);
+    const canonical = repoCanonicalUrl(repo.full_name);
+    const metaDesc = repoSeoDescription(repo);
 
     const prevTitle = document.title;
-    document.title = shortDesc
-      ? `${repo.name}: ${shortDesc} | TopSAAS`
-      : `${repo.full_name} | TopSAAS`;
+    document.title = repoSeoTitle(repo);
 
     type HeadPatch = { el: Element; attr: string; prev: string | null };
     const patches: HeadPatch[] = [];
@@ -665,7 +398,10 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
     setHead('meta[name="twitter:title"]', 'content', document.title);
     if (metaDesc) setHead('meta[name="twitter:description"]', 'content', metaDesc);
 
-    // SoftwareSourceCode structured data for the repo detail page.
+    // SoftwareSourceCode structured data for the repo detail page. The static
+    // HTML already ships a copy for crawlers that skip JS, so replace it rather
+    // than leaving two entities for the same URL.
+    document.getElementById('repo-jsonld')?.remove();
     const ld: Record<string, unknown> = {
       '@context': 'https://schema.org',
       '@type': 'SoftwareSourceCode',
@@ -1164,7 +900,7 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
         <aside className="lg:sticky lg:top-[68px] space-y-5 min-w-0">
           {/* 1. Sponsored Partners Sidebar (⚡ Sponsors placed at the very top, exactly like ProductPage) */}
           <SponsoredPartnersSidebar
-            sponsors={sponsors}
+            sponsors={sponsors && sponsors.length > 0 ? sponsors : allProducts.filter((p) => p.isSponsored)}
             soundEnabled={soundEnabled}
             onSelectProduct={onSelectProduct}
             onTrackClick={onTrackClick}
