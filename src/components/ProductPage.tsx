@@ -895,18 +895,20 @@ export const ProductPage: React.FC<ProductPageProps> = ({
 
                     {/* Built By Founder Hero Badge (from Step 3: Founder) */}
                     {(product.creatorName || product.creatorAvatar) && (
-                      <div className="flex items-center gap-2 pt-0.5">
-                        <div className="inline-flex items-center gap-1.5 rounded-lg bg-white border border-neutral-200 pl-1 pr-2 py-1 text-xs shadow-2xs">
+                      <div className="flex items-center gap-2 pt-0.5 min-w-0 max-w-full">
+                        <div className="inline-flex items-center gap-1.5 rounded-lg bg-white border border-neutral-200 pl-1.5 pr-2 py-1 text-xs shadow-2xs min-w-0 max-w-full">
                           <CommentAvatar
                             avatarUrl={product.creatorAvatar}
                             name={product.creatorName || 'Founder'}
                             className="h-5 w-5 shrink-0 rounded-full object-cover border border-neutral-200"
                             fallbackClassName="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-mint-500 text-[9px] font-black text-white"
                           />
-                          <span className="text-neutral-500 font-medium text-[11px]">Built by</span>
-                          <span className="font-bold text-neutral-900 text-[11px]">{product.creatorName}</span>
+                          <span className="text-neutral-500 font-medium text-[11px] whitespace-nowrap shrink-0">Built by</span>
+                          <span className="font-bold text-neutral-900 text-[11px] whitespace-nowrap truncate min-w-0 max-w-[120px] xs:max-w-[160px] sm:max-w-none">
+                            {product.creatorName}
+                          </span>
                           {product.creatorRole && (
-                            <span className="text-[9px] font-semibold text-mint-600 bg-mint-500/10 border border-mint-500/25 px-1.5 py-0.5 rounded-md">
+                            <span className="text-[9px] font-semibold text-mint-600 bg-mint-500/10 border border-mint-500/25 px-1.5 py-0.5 rounded-md whitespace-nowrap shrink-0">
                               {product.creatorRole}
                             </span>
                           )}
