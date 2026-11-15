@@ -42,19 +42,21 @@
       ]
     }
   ],
-  "redirects": [
+  "routes": [
     {
-      "source": "/directories",
-      "destination": "/product-directory",
-      "permanent": true
+      "src": "/directories",
+      "status": 308,
+      "headers": {
+        "Location": "/product-directory"
+      }
     },
     {
-      "source": "/directories/:path*",
-      "destination": "/product-directory/:path*",
-      "permanent": true
-    }
-  ],
-  "routes": [
+      "src": "/directories/(.*)",
+      "status": 308,
+      "headers": {
+        "Location": "/product-directory/$1"
+      }
+    },
     {
       "src": "/api/verify-badge",
       "dest": "/api/verify-badge"
