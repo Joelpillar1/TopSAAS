@@ -17,6 +17,7 @@ import {
   X,
 } from 'lucide-react';
 import { applyPageSeo } from '../utils/pageSeo';
+import { DIRECTORY_FAQS, directoryListJsonLd, directoryListSeo } from '../utils/directorySeo';
 import { navigateTo } from '../utils/nav';
 import { playSound } from '../utils/sound';
 import { GridPattern } from './ui/grid-pattern';
@@ -43,37 +44,6 @@ interface DirectoriesListPageProps {
 type SortKey = 'dr' | 'name' | 'price';
 
 const LAST_UPDATED = 'November 12, 2026';
-
-const FAQS = [
-  {
-    q: 'What is a product directory?',
-    a: 'A product directory is a website that lists software by category, use case, or launch date. A listing gives your SaaS a permanent profile, a backlink, and a place for buyers to discover it.',
-  },
-  {
-    q: 'Are these directories free?',
-    a: 'Many are. The table shows free, freemium, and paid listings separately. Freemium means a basic listing is free and faster review or featured placement costs money. Paid means the directory charges for a listing.',
-  },
-  {
-    q: 'What is Domain Rating?',
-    a: 'Domain Rating is Ahrefs\' 0 to 100 score for the strength of a website\'s backlink profile. A link from a higher DR site usually carries more SEO value, especially when the link is dofollow.',
-  },
-  {
-    q: 'What is the difference between dofollow and nofollow?',
-    a: 'A dofollow link passes ranking value to your site. A nofollow link can still send visitors and referrals, but search engines do not count it toward your rankings. Conditional means the link type depends on the plan or placement.',
-  },
-  {
-    q: 'How many directories should I submit to?',
-    a: 'Start with the free, high DR directories that fit your product, then add niche directories where your buyers already look. Ten to twenty well-matched listings usually beat a hundred irrelevant ones.',
-  },
-  {
-    q: 'How often is this list updated?',
-    a: 'The list is reviewed regularly. Domain Ratings, prices, and link types can change, so check the directory\'s own submission page before you pay for a placement. The last review date is shown on every page.',
-  },
-  {
-    q: 'How do I submit my SaaS to TopSAAS?',
-    a: 'Use the submit page to add your product to the TopSAAS directory. Submission is free, takes about 30 seconds with AI prefill, and gives you a crawlable product page plus a shot at the weekly leaderboard.',
-  },
-];
 
 const PRICE_STYLES: Record<DirectoryPrice, string> = {
   free: 'border-mint-200 bg-mint-50 text-mint-700',
@@ -162,74 +132,17 @@ export const DirectoriesListPage: React.FC<DirectoriesListPageProps> = ({
     setMinDr(0);
   };
 
-  const title = hub ? hub.title : `${DIRECTORIES.length} Product Directories Ranked by DR (2026)`;
-  const description = hub
-    ? hub.description
-    : `A ranked list of ${DIRECTORIES.length} SaaS directories and launch platforms, with Domain Rating, price, link type, and step-by-step submission pages.`;
+  const { title, description, canonical } = directoryListSeo(hub);
 
   useEffect(() => {
-    const url = hub ? `/product-directory/${hub.slug}` : '/product-directory';
     return applyPageSeo({
-      title: `${title} | TopSAAS`,
-      description: description.slice(0, 157),
-      canonical: url,
+      title,
+      description,
+      canonical,
       jsonLdId: 'directories-jsonld',
-      jsonLd: {
-        '@context': 'https://schema.org',
-        '@graph': [
-          {
-            '@type': 'CollectionPage',
-            '@id': `https://www.topsaas.space${url}#webpage`,
-            url: `https://www.topsaas.space${url}`,
-            name: title,
-            description,
-            inLanguage: 'en',
-            dateModified: '2026-11-12',
-            isPartOf: {
-              '@type': 'WebSite',
-              name: 'TopSAAS',
-              url: 'https://www.topsaas.space/',
-            },
-            publisher: {
-              '@type': 'Organization',
-              name: 'TopSAAS',
-              url: 'https://www.topsaas.space/',
-            },
-          },
-          {
-            '@type': 'ItemList',
-            name: title,
-            numberOfItems: baseDirectories.length,
-            itemListElement: baseDirectories.map((directory, index) => ({
-              '@type': 'ListItem',
-              position: index + 1,
-              name: directory.name,
-              url: `https://www.topsaas.space/product-directory/${directory.slug}`,
-              description: directory.description,
-            })),
-          },
-          {
-            '@type': 'FAQPage',
-            mainEntity: FAQS.map((faq) => ({
-              '@type': 'Question',
-              name: faq.q,
-              acceptedAnswer: { '@type': 'Answer', text: faq.a },
-            })),
-          },
-          {
-            '@type': 'BreadcrumbList',
-            itemListElement: [
-              { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.topsaas.space/' },
-              { '@type': 'ListItem', position: 2, name: 'Product Directory', item: 'https://www.topsaas.space/product-directory' },
-              ...(hub
-                ? [{ '@type': 'ListItem', position: 3, name: hub.label, item: `https://www.topsaas.space/product-directory/${hub.slug}` }]
-                : []),
-            ],
-          },
-        ],
-      },
+      jsonLd: directoryListJsonLd(hub, baseDirectories),
     });
-  }, [hub, title, description, baseDirectories]);
+  }, [hub, title, description, canonical, baseDirectories]);
 
   const openDirectory = (directory: DirectoryEntry) => {
     playSound('click', soundEnabled);
@@ -674,7 +587,7 @@ export const DirectoriesListPage: React.FC<DirectoriesListPageProps> = ({
         <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6 sm:py-14">
           <h2 className="text-2xl font-black tracking-tight text-neutral-950">Directory submission FAQ</h2>
           <div className="mt-5 space-y-4">
-            {FAQS.map((faq) => (
+            {DIRECTORY_FAQS.map((faq) => (
               <div key={faq.q} className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-5">
                 <h3 className="text-sm font-bold text-neutral-950 sm:text-base">{faq.q}</h3>
                 <p className="mt-1.5 text-xs font-medium leading-relaxed text-neutral-500 sm:text-sm">{faq.a}</p>

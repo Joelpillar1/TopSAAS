@@ -18,6 +18,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { applyPageSeo } from '../utils/pageSeo';
+import { directoryDetailJsonLd, directoryDetailSeo, directoryFaqs } from '../utils/directorySeo';
 import { navigateTo } from '../utils/nav';
 import { playSound } from '../utils/sound';
 import {
@@ -68,39 +69,7 @@ export const DirectoryDetailPage: React.FC<DirectoryDetailPageProps> = ({
   const directory = getDirectoryBySlug(slug);
   const related = useMemo(() => (directory ? getRelatedDirectories(directory) : []), [directory]);
 
-  const faqs = useMemo(() => {
-    if (!directory) return [];
-    const priceAnswer =
-      directory.price === 'free'
-        ? `Yes. ${directory.name} does not charge for a listing.`
-        : directory.price === 'freemium'
-          ? `${directory.name} has a free basic listing. Faster review, featured placement, or extra promotion may cost money.`
-          : `${directory.name} charges for a listing. Check the current price on its submission page before you start.`;
-    const linkAnswer =
-      directory.link === 'dofollow'
-        ? `Yes. ${directory.name} gives a dofollow link, so the listing can pass SEO value to your site.`
-        : directory.link === 'nofollow'
-          ? `No. ${directory.name} gives a nofollow link. It can still send visitors and referrals, but search engines do not count it toward your rankings.`
-          : directory.link === 'conditional'
-            ? `It depends. ${directory.name} uses conditional links, so the link type can change with the plan or placement you choose.`
-            : `It varies. ${directory.name} does not publish a consistent link type, so check the live listing after approval.`;
-    return [
-      { q: `Is ${directory.name} free?`, a: priceAnswer },
-      { q: `Does ${directory.name} give a dofollow link?`, a: linkAnswer },
-      {
-        q: `What is ${directory.name}'s Domain Rating?`,
-        a: `${directory.name} has an Ahrefs Domain Rating of ${directory.dr}. DR changes over time, so re-check it before you pay for a placement.`,
-      },
-      {
-        q: `How do I submit to ${directory.name}?`,
-        a: `${directory.steps[0]} ${directory.steps[1]} ${directory.steps[2]}`,
-      },
-      {
-        q: `How long does ${directory.name} take to approve a listing?`,
-        a: `${directory.approvalTime}. Review times vary with queue size and how complete your submission is.`,
-      },
-    ];
-  }, [directory]);
+  const faqs = useMemo(() => (directory ? directoryFaqs(directory) : []), [directory]);
 
   useEffect(() => {
     if (!directory) {
@@ -110,45 +79,13 @@ export const DirectoryDetailPage: React.FC<DirectoryDetailPageProps> = ({
         canonical: '/product-directory',
       });
     }
-    const url = `/product-directory/${directory.slug}`;
+    const seo = directoryDetailSeo(directory);
     return applyPageSeo({
-      title: `How to Submit to ${directory.name} (2026) | TopSAAS`,
-      description: `${directory.name}: Ahrefs DR ${directory.dr}, ${DIRECTORY_PRICE_LABELS[directory.price].toLowerCase()} listing, ${DIRECTORY_LINK_LABELS[directory.link].toLowerCase()} link. Step-by-step submission guide and requirements.`.slice(0, 157),
-      canonical: url,
+      title: seo.title,
+      description: seo.description,
+      canonical: seo.canonical,
       jsonLdId: 'directory-jsonld',
-      jsonLd: {
-        '@context': 'https://schema.org',
-        '@graph': [
-          {
-            '@type': 'HowTo',
-            name: `How to submit to ${directory.name}`,
-            description: directory.description,
-            totalTime: 'PT15M',
-            step: directory.steps.map((step, index) => ({
-              '@type': 'HowToStep',
-              position: index + 1,
-              name: `Step ${index + 1}`,
-              text: step,
-            })),
-          },
-          {
-            '@type': 'FAQPage',
-            mainEntity: faqs.map((faq) => ({
-              '@type': 'Question',
-              name: faq.q,
-              acceptedAnswer: { '@type': 'Answer', text: faq.a },
-            })),
-          },
-          {
-            '@type': 'BreadcrumbList',
-            itemListElement: [
-              { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.topsaas.space/' },
-              { '@type': 'ListItem', position: 2, name: 'Product Directory', item: 'https://www.topsaas.space/product-directory' },
-              { '@type': 'ListItem', position: 3, name: directory.name, item: `https://www.topsaas.space${url}` },
-            ],
-          },
-        ],
-      },
+      jsonLd: directoryDetailJsonLd(directory, faqs),
     });
   }, [directory, faqs]);
 

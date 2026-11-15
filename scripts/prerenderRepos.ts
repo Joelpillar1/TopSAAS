@@ -12,17 +12,36 @@ import {
   repoSeoDescription,
   repoSeoTitle,
 } from '../src/utils/repoSeo';
+import {
+  DIRECTORIES,
+  DIRECTORY_HUBS,
+  DIRECTORY_KIND_LABELS,
+  DIRECTORY_LINK_LABELS,
+  DIRECTORY_PRICE_LABELS,
+  getDirectoryStats,
+  getRelatedDirectories,
+  type DirectoryEntry,
+  type DirectoryHub,
+} from '../src/data/directories';
+import {
+  DIRECTORY_FAQS,
+  directoryDetailJsonLd,
+  directoryDetailSeo,
+  directoryFaqs,
+  directoryListJsonLd,
+  directoryListSeo,
+} from '../src/utils/directorySeo';
 
 /**
- * Static prerender for repo detail pages and the /ideas index.
+ * Static prerender for repo pages, the /ideas index, and the product directory.
  *
- * The app is a client-rendered SPA, so every /repo/:owner/:name request used to
- * receive the homepage shell: homepage title, homepage canonical, no H1. Search
- * crawlers that do not execute JS treated all 3,821 repo URLs as duplicates of
- * "/". This build step writes a real HTML file per repo (and one for /ideas)
- * with a unique title, description, H1, self-canonical, OG tags, structured
- * data and crawlable internal links. React still boots on top and replaces the
- * static markup, so the interactive page is unchanged.
+ * The app is a client-rendered SPA, so every /repo/:owner/:name and
+ * /product-directory/:slug request used to receive the homepage shell: homepage
+ * title, homepage canonical, no H1. Search crawlers that do not execute JS
+ * treated thousands of URLs as duplicates of "/". This build step writes a real
+ * HTML file per page with a unique title, description, H1, self-canonical, OG
+ * tags, structured data and crawlable internal links. React still boots on top
+ * and replaces the static markup, so the interactive page is unchanged.
  */
 
 const escapeHtml = (value: string): string =>
@@ -230,6 +249,121 @@ ${staticFooter}
     `;
 };
 
+/* ───────────────────────── product directory ───────────────────────── */
+
+const directoryHubLinks = (current: DirectoryHub | null): string =>
+  `<p style="margin:0 0 1rem">${DIRECTORY_HUBS.map((hub) =>
+    hub.slug === current?.slug
+      ? `<span style="font-weight:600">${escapeHtml(hub.label)}</span>`
+      : `<a href="/product-directory/${hub.slug}" style="${linkStyle}">${escapeHtml(hub.label)}</a>`
+  ).join(' · ')}</p>`;
+
+const directoryRow = (entry: DirectoryEntry): string =>
+  `            <li><a href="/product-directory/${escapeHtml(entry.slug)}" style="${linkStyle}">${escapeHtml(entry.name)}</a>: ${escapeHtml(plainCopy(entry.description))} (DR ${entry.dr}, ${escapeHtml(DIRECTORY_PRICE_LABELS[entry.price].toLowerCase())}, ${escapeHtml(DIRECTORY_LINK_LABELS[entry.link].toLowerCase())}, ${escapeHtml(DIRECTORY_KIND_LABELS[entry.kind].toLowerCase())})</li>`;
+
+const buildDirectoryListBody = (hub: DirectoryHub | null): string => {
+  const directories = hub ? DIRECTORIES.filter(hub.filter) : DIRECTORIES;
+  const stats = getDirectoryStats(directories);
+  const heading = hub ? hub.title.replace(' (2026)', '') : `${DIRECTORIES.length} product directories`;
+  const intro = hub
+    ? `${hub.description} We track ${directories.length} directories in this group, with Domain Rating, price, link type and submission steps for each one.`
+    : `A ranked list of ${DIRECTORIES.length} SaaS directories and launch platforms. Each entry shows Ahrefs Domain Rating, price, link type and a step-by-step submission guide, so you can decide where a listing is worth your time.`;
+
+  return `
+      <div style="${pageStyle}">
+        <nav aria-label="Breadcrumb" style="${mutedStyle}margin-bottom:1.25rem">
+          <a href="/" style="${linkStyle}">Home</a>
+          <span aria-hidden="true">/</span>
+          <a href="/product-directory" style="${linkStyle}">Product Directory</a>
+          ${hub ? `<span aria-hidden="true">/</span><span>${escapeHtml(hub.label)}</span>` : ''}
+        </nav>
+        <main>
+          <h1 style="font-size:2rem;line-height:1.15;margin:0 0 .5rem;letter-spacing:-.02em">${escapeHtml(heading)} ranked by Domain Rating</h1>
+          <p style="margin:0 0 1rem">${escapeHtml(intro)}</p>
+          <p style="margin:0 0 1rem">${stats.total.toLocaleString('en-US')} directories, ${stats.free} free, ${stats.freeToStart} free to start, ${stats.dofollow} dofollow, median DR ${stats.medianDr}. Last reviewed November 12, 2026.</p>
+          <h2 style="font-size:1.125rem;margin:1.75rem 0 .5rem">Browse by type</h2>
+          ${directoryHubLinks(hub)}
+          <h2 style="font-size:1.125rem;margin:1.75rem 0 .5rem">All ${directories.length.toLocaleString('en-US')} directories</h2>
+          <ul style="margin:0;padding-left:1.25rem">
+${directories.map(directoryRow).join('\n')}
+          </ul>
+          <h2 style="font-size:1.125rem;margin:1.75rem 0 .5rem">Directory submission FAQ</h2>
+          <dl style="margin:0">
+${DIRECTORY_FAQS.map(
+  (faq) =>
+    `            <dt style="font-weight:600;margin:.75rem 0 .25rem">${escapeHtml(faq.q)}</dt>\n            <dd style="margin:0 0 .5rem">${escapeHtml(faq.a)}</dd>`
+).join('\n')}
+          </dl>
+        </main>
+${staticFooter}
+      </div>
+    `;
+};
+
+const buildDirectoryDetailBody = (entry: DirectoryEntry): string => {
+  const related = getRelatedDirectories(entry, 6);
+  const faqs = directoryFaqs(entry);
+  const kindHub = DIRECTORY_HUBS.find(
+    (hub) => hub.slug === entry.kind || (entry.kind === 'launch' && hub.slug === 'launch-platforms')
+  );
+  const siteLabel = entry.siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
+
+  return `
+      <div style="${pageStyle}">
+        <nav aria-label="Breadcrumb" style="${mutedStyle}margin-bottom:1.25rem">
+          <a href="/" style="${linkStyle}">Home</a>
+          <span aria-hidden="true">/</span>
+          <a href="/product-directory" style="${linkStyle}">Product Directory</a>
+          <span aria-hidden="true">/</span>
+          <span>${escapeHtml(entry.name)}</span>
+        </nav>
+        <main>
+          <h1 style="font-size:2rem;line-height:1.15;margin:0 0 .5rem;letter-spacing:-.02em">How to submit to ${escapeHtml(entry.name)}</h1>
+          <p style="margin:0 0 1rem">${escapeHtml(plainCopy(entry.description))}</p>
+          <p style="margin:0 0 1rem">${escapeHtml(DIRECTORY_KIND_LABELS[entry.kind])} directory with an Ahrefs Domain Rating of ${entry.dr}. Listing cost: ${escapeHtml(DIRECTORY_PRICE_LABELS[entry.price].toLowerCase())}. Link type: ${escapeHtml(DIRECTORY_LINK_LABELS[entry.link].toLowerCase())}. Approval: ${escapeHtml(entry.approvalTime.toLowerCase())}. Last checked ${escapeHtml(entry.lastChecked)}.</p>
+          <p style="margin:0 0 1rem">Website: <a href="${escapeHtml(entry.siteUrl)}" rel="noopener" style="${linkStyle}">${escapeHtml(siteLabel)}</a> · Submission page: <a href="${escapeHtml(entry.submitUrl)}" rel="noopener" style="${linkStyle}">open ${escapeHtml(entry.name)}</a></p>
+          <h2 style="font-size:1.125rem;margin:1.75rem 0 .5rem">Submit your product, step by step</h2>
+          <ol style="margin:0 0 1rem;padding-left:1.25rem">
+${entry.steps.map((step) => `            <li style="margin-bottom:.5rem">${escapeHtml(plainCopy(step))}</li>`).join('\n')}
+          </ol>
+          <h2 style="font-size:1.125rem;margin:1.75rem 0 .5rem">What you need</h2>
+          <ul style="margin:0 0 1rem;padding-left:1.25rem">
+${entry.requirements.map((item) => `            <li>${escapeHtml(plainCopy(item))}</li>`).join('\n')}
+          </ul>
+          <h2 style="font-size:1.125rem;margin:1.75rem 0 .5rem">Before you submit</h2>
+          <ul style="margin:0 0 1rem;padding-left:1.25rem">
+            <li>Confirm the current price and link type on ${escapeHtml(entry.name)} before you pay for anything.</li>
+            <li>Use a live product URL with a clear landing page. Directories reject broken or placeholder sites.</li>
+            <li>Watch your inbox for a verification email. Many listings stay pending until the address is confirmed.</li>
+            <li>Pick the closest category and use the same description you use on other directories.</li>
+          </ul>
+          <h2 style="font-size:1.125rem;margin:1.75rem 0 .5rem">${escapeHtml(entry.name)} FAQ</h2>
+          <dl style="margin:0">
+${faqs.map(
+  (faq) =>
+    `            <dt style="font-weight:600;margin:.75rem 0 .25rem">${escapeHtml(faq.q)}</dt>\n            <dd style="margin:0 0 .5rem">${escapeHtml(faq.a)}</dd>`
+).join('\n')}
+          </dl>
+          <h2 style="font-size:1.125rem;margin:1.75rem 0 .5rem">Directories like ${escapeHtml(entry.name)}</h2>
+          <ul style="margin:0 0 1rem;padding-left:1.25rem">
+${related
+  .map(
+    (item) =>
+      `            <li><a href="/product-directory/${escapeHtml(item.slug)}" style="${linkStyle}">${escapeHtml(item.name)}</a>: ${escapeHtml(plainCopy(item.description))} (DR ${item.dr})</li>`
+  )
+  .join('\n')}
+          </ul>
+          <p style="margin:1.5rem 0 0">More <a href="/product-directory" style="${linkStyle}">product directories ranked by Domain Rating</a>${
+            kindHub
+              ? `, including <a href="/product-directory/${kindHub.slug}" style="${linkStyle}">${escapeHtml(kindHub.label.toLowerCase())}</a>`
+              : ''
+          }.</p>
+        </main>
+${staticFooter}
+      </div>
+    `;
+};
+
 interface PageHead {
   title: string;
   description: string;
@@ -329,7 +463,52 @@ export function repoPrerenderPlugin(): Plugin {
         })
       );
 
-      console.log(`[repo-prerender] wrote ${uniqueRepos.length} repo pages and /ideas`);
+      for (const entry of DIRECTORIES) {
+        const seo = directoryDetailSeo(entry);
+        writePage(
+          distDir,
+          ['product-directory', entry.slug],
+          renderPage(template, {
+            title: seo.title,
+            description: seo.description,
+            canonical: seo.canonical,
+            body: buildDirectoryDetailBody(entry),
+            jsonLd: escapeJson(directoryDetailJsonLd(entry, directoryFaqs(entry))),
+          })
+        );
+      }
+
+      for (const hub of DIRECTORY_HUBS) {
+        const seo = directoryListSeo(hub);
+        writePage(
+          distDir,
+          ['product-directory', hub.slug],
+          renderPage(template, {
+            title: seo.title,
+            description: seo.description,
+            canonical: seo.canonical,
+            body: buildDirectoryListBody(hub),
+            jsonLd: escapeJson(directoryListJsonLd(hub, DIRECTORIES.filter(hub.filter))),
+          })
+        );
+      }
+
+      const listSeo = directoryListSeo(null);
+      writePage(
+        distDir,
+        ['product-directory'],
+        renderPage(template, {
+          title: listSeo.title,
+          description: listSeo.description,
+          canonical: listSeo.canonical,
+          body: buildDirectoryListBody(null),
+          jsonLd: escapeJson(directoryListJsonLd(null, DIRECTORIES)),
+        })
+      );
+
+      console.log(
+        `[seo-prerender] wrote ${uniqueRepos.length} repo pages, ${DIRECTORIES.length} directory pages, ${DIRECTORY_HUBS.length} directory hubs and /ideas`
+      );
     },
   };
 }

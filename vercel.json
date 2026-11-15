@@ -99,6 +99,14 @@
       "dest": "/ideas/index.html"
     },
     {
+      "src": "/product-directory",
+      "dest": "/product-directory/index.html"
+    },
+    {
+      "src": "/product-directory/(.*)",
+      "dest": "/product-directory/$1/index.html"
+    },
+    {
       "src": "/(.*)",
       "dest": "/index.html"
     }
