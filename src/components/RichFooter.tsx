@@ -353,6 +353,22 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                     onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
                   />
                 </a>
+                <a
+                  href="https://nicklaunches.com/products/topsaas/"
+                  target="_blank"
+                  rel="noopener"
+                  className="transition-opacity hover:opacity-80 inline-flex items-center shrink-0"
+                >
+                  <img
+                    src="https://nicklaunches.com/badges/featured.png"
+                    alt="TopSAAS on Nick Launches"
+                    width={244}
+                    height={56}
+                    className="h-7.5 w-auto"
+                    loading="lazy"
+                    onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                  />
+                </a>
 
                 {/* Set 2 (for seamless infinite loop) */}
                 <a
@@ -633,6 +649,22 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                     className="h-7.5 w-auto"
                     loading="lazy"
                     decoding="async"
+                    onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                  />
+                </a>
+                <a
+                  href="https://nicklaunches.com/products/topsaas/"
+                  target="_blank"
+                  rel="noopener"
+                  className="transition-opacity hover:opacity-80 inline-flex items-center shrink-0"
+                >
+                  <img
+                    src="https://nicklaunches.com/badges/featured.png"
+                    alt="TopSAAS on Nick Launches"
+                    width={244}
+                    height={56}
+                    className="h-7.5 w-auto"
+                    loading="lazy"
                     onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
                   />
                 </a>
