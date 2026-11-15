@@ -206,6 +206,23 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                     onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
                   />
                 </a>
+                <a
+                  href="https://alterbase.co/"
+                  target="_blank"
+                  rel="noopener"
+                  title="Listed on AlterBase"
+                  className="transition-opacity hover:opacity-80 inline-flex items-center shrink-0"
+                >
+                  <img
+                    src="https://alterbase.co/badge/alterbase-v1-light.svg"
+                    alt="Listed on AlterBase"
+                    width={200}
+                    height={50}
+                    className="h-7.5 w-auto"
+                    loading="lazy"
+                    onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                  />
+                </a>
                 <div className="inline-flex items-center shrink-0 transition-opacity hover:opacity-80 [&_img]:h-8 [&_img]:w-auto [&_img]:max-w-full">
                   <a href="https://daniellaunches.com" target="_blank">
                     <img src="https://daniellaunches.com/badge-light.svg" alt="Featured on DanielLaunches" width="220" height="48" />
@@ -467,6 +484,23 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                     src="https://builtbyindies.com/badge/82e153d0-3bf0-4245-95ad-d9d9f5174868.svg"
                     alt="BuiltByIndies"
                     height={60}
+                    className="h-7.5 w-auto"
+                    loading="lazy"
+                    onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                  />
+                </a>
+                <a
+                  href="https://alterbase.co/"
+                  target="_blank"
+                  rel="noopener"
+                  title="Listed on AlterBase"
+                  className="transition-opacity hover:opacity-80 inline-flex items-center shrink-0"
+                >
+                  <img
+                    src="https://alterbase.co/badge/alterbase-v1-light.svg"
+                    alt="Listed on AlterBase"
+                    width={200}
+                    height={50}
                     className="h-7.5 w-auto"
                     loading="lazy"
                     onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
