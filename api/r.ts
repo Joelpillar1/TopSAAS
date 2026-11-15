@@ -114,7 +114,12 @@ export default async function handler(req: any, res: any) {
 
       if (supabaseUrl && supabaseKey && supabaseUrl !== 'https://placeholder.supabase.co') {
         const supabase = createClient(supabaseUrl, supabaseKey);
-        supabase.rpc('increment_product_clicks', { p_product_id: resolvedProductId }).catch(() => {});
+        supabase
+          .rpc('increment_product_clicks', { p_product_id: resolvedProductId })
+          .then(
+            () => {},
+            () => {}
+          );
       }
     } catch {
       // Non-blocking — never delay redirect

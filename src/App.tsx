@@ -3253,6 +3253,16 @@ export default function App() {
             }}
           />
         </React.Suspense>
+        <RichFooter
+          totalProducts={directoryProducts.length}
+          soundEnabled={soundEnabled}
+          onOpenSubmit={handleOpenSubmit}
+          onSelectCategory={setSelectedCategory}
+          onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
+          onOpenPrivacy={() => handleNavigateLegal('privacy')}
+          onOpenTerms={() => handleNavigateLegal('terms')}
+          onOpenPricing={handleOpenPricing}
+        />
         {globalModals}
       </div>
     );

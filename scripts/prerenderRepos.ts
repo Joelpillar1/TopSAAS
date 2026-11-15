@@ -77,6 +77,22 @@ const pageStyle =
 const linkStyle = 'color:#047857;text-decoration:underline;';
 const mutedStyle = 'color:#737373;font-size:.875rem;';
 
+/** Static footer for crawlers and no-JS visitors; React renders the full footer. */
+const staticFooter = `
+        <footer style="margin-top:2.5rem;border-top:1px solid #e5e5e5;padding-top:1.25rem;${mutedStyle}">
+          <p style="margin:0 0 .5rem">TopSAAS is a curated directory of modern SaaS products, AI tools and open-source projects.</p>
+          <nav aria-label="Footer">
+            <a href="/" style="${linkStyle}">Directory</a> ·
+            <a href="/product-directory" style="${linkStyle}">Product Directory</a> ·
+            <a href="/ideas" style="${linkStyle}">SaaS Ideas</a> ·
+            <a href="/mrr-calculator" style="${linkStyle}">MRR Calculator</a> ·
+            <a href="/submit" style="${linkStyle}">Submit</a> ·
+            <a href="/pricing" style="${linkStyle}">Pricing</a> ·
+            <a href="/privacy" style="${linkStyle}">Privacy</a> ·
+            <a href="/terms" style="${linkStyle}">Terms</a>
+          </nav>
+        </footer>`;
+
 const buildRepoBody = (repo: CuratedRepo): string => {
   const peers = reposByCategory.get(repo.category) ?? [];
   const rank = Math.max(1, peers.findIndex((r) => r.full_name === repo.full_name) + 1);
@@ -138,6 +154,7 @@ ${related
           </ul>
           <p style="margin:1.5rem 0 0">Browse the full <a href="/ideas" style="${linkStyle}">open-source SaaS ideas</a> list, or explore <a href="/product-directory" style="${linkStyle}">the product directory</a> for launched SaaS tools.</p>
         </main>
+${staticFooter}
       </div>
     `;
 };
@@ -208,6 +225,7 @@ ${repos
   )
   .join('\n')}
         </main>
+${staticFooter}
       </div>
     `;
 };
