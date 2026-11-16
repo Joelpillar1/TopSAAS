@@ -446,7 +446,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
   const [draftSaved, setDraftSaved] = useState(false);
 
   const [launched, setLaunched] = useState<{ id: string; name: string } | null>(null);
-  const [freeVerificationMethod, setFreeVerificationMethod] = useState<'upvote' | 'badge'>('upvote');
+  const [freeVerificationMethod, setFreeVerificationMethod] = useState<'badge' | 'upvote'>('badge');
   const [showAdvancedDetails, setShowAdvancedDetails] = useState<boolean>(() => {
     return Boolean(form.problemItSolves || form.solution || form.uniqueSellingPoint);
   });
@@ -2752,6 +2752,22 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                         type="button"
                         onClick={() => {
                           playSound('click', soundEnabled);
+                          setFreeVerificationMethod('badge');
+                        }}
+                        className={`flex items-center justify-center gap-1.5 rounded-xl py-2.5 px-2 sm:px-3 text-[11px] sm:text-xs font-bold transition-all cursor-pointer ${
+                          freeVerificationMethod === 'badge'
+                            ? 'bg-white text-neutral-950 shadow-sm'
+                            : 'text-neutral-600 hover:text-neutral-950'
+                        }`}
+                      >
+                        <ShieldCheck className="h-3.5 w-3.5 text-mint-600 shrink-0" />
+                        <span className="truncate">Embed Website Badge</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playSound('click', soundEnabled);
                           setFreeVerificationMethod('upvote');
                         }}
                         className={`flex items-center justify-center gap-1.5 rounded-xl py-2.5 px-2 sm:px-3 text-[11px] sm:text-xs font-bold transition-all cursor-pointer ${
@@ -2767,173 +2783,10 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                             : `Upvote ${requiredUpvotes} Launch${requiredUpvotes === 1 ? '' : 'es'}`}
                         </span>
                       </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          playSound('click', soundEnabled);
-                          setFreeVerificationMethod('badge');
-                        }}
-                        className={`flex items-center justify-center gap-1.5 rounded-xl py-2.5 px-2 sm:px-3 text-[11px] sm:text-xs font-bold transition-all cursor-pointer ${
-                          freeVerificationMethod === 'badge'
-                            ? 'bg-white text-neutral-950 shadow-sm'
-                            : 'text-neutral-600 hover:text-neutral-950'
-                        }`}
-                      >
-                        <ShieldCheck className="h-3.5 w-3.5 text-mint-600 shrink-0" />
-                        <span className="truncate">Embed Website Badge</span>
-                      </button>
                     </div>
                   </div>
 
-                  {freeVerificationMethod === 'upvote' ? (
-                    /* ── In-Place Upvote Section ── */
-                    <div className="space-y-4 animate-in fade-in-50 duration-150">
-                      {/* Progress Tracker Card */}
-                      <div className="rounded-2xl border border-neutral-200/90 bg-neutral-50/80 p-3.5 sm:p-4 shadow-2xs">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2 text-xs">
-                          <span className="font-bold text-neutral-900 text-xs sm:text-sm">
-                            {requiredUpvotes === 0 ? 'Upvote Progress' : `Upvote ${requiredUpvotes} Launch${requiredUpvotes === 1 ? '' : 'es'}`}
-                          </span>
-                          {requiredUpvotes === 0 ? (
-                            <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] self-start sm:self-auto whitespace-nowrap">
-                              <Check className="h-3 w-3 stroke-[3]" />
-                              All Products Upvoted — Free Launch Unlocked!
-                            </span>
-                          ) : isUpvoteRequirementMet ? (
-                            <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] self-start sm:self-auto whitespace-nowrap">
-                              <Check className="h-3 w-3 stroke-[3]" />
-                              {requiredUpvotes}/{requiredUpvotes} upvoted — Free Launch Unlocked!
-                            </span>
-                          ) : (
-                            <span className="font-bold text-neutral-700 text-[10px] sm:text-[11px] bg-white border border-neutral-200 px-2.5 py-0.5 rounded-full shadow-2xs self-start sm:self-auto whitespace-nowrap">
-                              {sessionUpvotedCount}/{requiredUpvotes} upvoted ·{' '}
-                              <span className="text-blue-600 font-extrabold">{Math.max(0, requiredUpvotes - sessionUpvotedCount)} left</span>
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="w-full bg-neutral-200 rounded-full h-2.5 overflow-hidden mt-2.5">
-                          <div
-                            className={`h-full rounded-full transition-all duration-300 ${
-                              isUpvoteRequirementMet ? 'bg-emerald-500' : 'bg-blue-600'
-                            }`}
-                            style={{
-                              width: `${requiredUpvotes > 0 ? Math.min(100, Math.round((sessionUpvotedCount / requiredUpvotes) * 100)) : 100}%`
-                            }}
-                          />
-                        </div>
-
-                        <p className="text-[11px] text-neutral-500 mt-2 leading-relaxed">
-                          {requiredUpvotes === 0
-                            ? "You've already supported all active launches on TopSAAS! Free launch unlocked below."
-                            : isUpvoteRequirementMet
-                              ? `Great job! You have upvoted ${requiredUpvotes === 5 ? '5' : `all ${requiredUpvotes}`} available launch${requiredUpvotes === 1 ? '' : 'es'}. You can now launch your product for free below.`
-                              : `Click the ▲ button on ${requiredUpvotes === 5 ? 'any 5 launches' : `all ${requiredUpvotes} available launch${requiredUpvotes === 1 ? '' : 'es'}`} below to support community makers and unlock your free launch right here.`}
-                        </p>
-                      </div>
-
-                      {/* Embedded Live Directory Products List */}
-                      <div className="border border-neutral-200 rounded-2xl overflow-hidden shadow-2xs bg-white">
-                        <div className="bg-neutral-100/70 border-b border-neutral-200 px-3.5 py-2 text-[11px] font-bold text-neutral-600 flex items-center justify-between gap-2">
-                          <span>Pick apps to upvote</span>
-                          <span>Click ▲ to upvote</span>
-                        </div>
-
-                        <div className="max-h-[340px] overflow-y-auto divide-y divide-neutral-100">
-                          {candidateProducts.length === 0 ? (
-                            <div className="p-8 text-center text-xs text-neutral-500 space-y-1">
-                              <p className="font-bold text-neutral-800">You've upvoted all available products!</p>
-                              <p className="text-[11px] text-neutral-400">There are no more unvoted products in the directory. Free launch pass granted ✓</p>
-                            </div>
-                          ) : (
-                            candidateProducts.map((prod, index) => {
-                              const upvoted = isProductUpvoted(prod.id, userUpvotes);
-                              const logoSrc = prod.logoUrl || getWebsiteFavicon(prod.url);
-
-                              return (
-                                <div
-                                  key={prod.id}
-                                  className={`flex items-center gap-3 p-3 transition-colors ${
-                                    upvoted ? 'bg-mint-50/25' : 'hover:bg-neutral-50/70'
-                                  }`}
-                                >
-                                  {/* Directory Rank */}
-                                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-neutral-100 text-[11px] font-black text-neutral-600 font-mono-num">
-                                    #{prod.rank ?? index + 1}
-                                  </div>
-
-                                  {/* Product Logo */}
-                                  <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-2xs">
-                                    <ProductLogo
-                                      src={logoSrc}
-                                      alt={prod.name}
-                                      containerClassName="h-full w-full flex items-center justify-center"
-                                      iconClassName="h-4 w-4 text-neutral-400"
-                                    />
-                                  </div>
-
-                                  {/* Product Info */}
-                                  <div className="min-w-0 flex-1">
-                                    <div className="flex items-center gap-1.5 flex-wrap">
-                                      <span className="font-bold text-xs sm:text-sm text-neutral-950 truncate">
-                                        {prod.name}
-                                      </span>
-                                      {prod.url && (
-                                        <a
-                                          href={prod.url}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          onClick={(e) => e.stopPropagation()}
-                                          className="text-neutral-400 hover:text-neutral-700 transition-colors p-0.5"
-                                          title="Visit website"
-                                        >
-                                          <ExternalLink className="h-3 w-3" />
-                                        </a>
-                                      )}
-                                      {prod.category && (
-                                        <span className="hidden sm:inline-flex text-[9px] font-semibold px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-600 border border-neutral-200/60 truncate max-w-[100px]">
-                                          {prod.category.split(',')[0].trim()}
-                                        </span>
-                                      )}
-                                    </div>
-                                    <p className="text-[11px] text-neutral-500 truncate mt-0.5">
-                                      {prod.tagline}
-                                    </p>
-                                  </div>
-
-                                  {/* Upvote Button */}
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      onUpvote?.(prod);
-                                    }}
-                                    title={upvoted ? 'Remove upvote' : 'Upvote this product'}
-                                    className={`flex flex-col items-center justify-center rounded-xl border py-1 px-2.5 min-w-[46px] transition-all cursor-pointer active:scale-95 shrink-0 ${
-                                      upvoted
-                                        ? 'border-mint-500 bg-mint-500 text-white shadow-2xs'
-                                        : 'border-neutral-200 bg-white text-neutral-800 hover:border-neutral-400 hover:bg-neutral-50 shadow-2xs'
-                                    }`}
-                                  >
-                                    <ChevronUp
-                                      className={`h-4 w-4 ${
-                                        upvoted ? 'text-white' : 'text-neutral-900 fill-neutral-900'
-                                      }`}
-                                    />
-                                    <span className="text-[10px] font-mono-num font-bold">
-                                      {prod.upvotes ?? 0}
-                                    </span>
-                                  </button>
-                                </div>
-                              );
-                            })
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
+                  {freeVerificationMethod === 'badge' ? (
                     /* ── Embed Website Badge Section ── */
                     <div className="space-y-5 animate-in fade-in-50 duration-150">
                       {/* Badge Picker */}
@@ -3143,6 +2996,153 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                             </div>
                           </div>
                         )}
+                      </div>
+                    </div>
+                  ) : (
+                    /* ── In-Place Upvote Section ── */
+                    <div className="space-y-4 animate-in fade-in-50 duration-150">
+                      {/* Progress Tracker Card */}
+                      <div className="rounded-2xl border border-neutral-200/90 bg-neutral-50/80 p-3.5 sm:p-4 shadow-2xs">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2 text-xs">
+                          <span className="font-bold text-neutral-900 text-xs sm:text-sm">
+                            {requiredUpvotes === 0 ? 'Upvote Progress' : `Upvote ${requiredUpvotes} Launch${requiredUpvotes === 1 ? '' : 'es'}`}
+                          </span>
+                          {requiredUpvotes === 0 ? (
+                            <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] self-start sm:self-auto whitespace-nowrap">
+                              <Check className="h-3 w-3 stroke-[3]" />
+                              All Products Upvoted — Free Launch Unlocked!
+                            </span>
+                          ) : isUpvoteRequirementMet ? (
+                            <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] self-start sm:self-auto whitespace-nowrap">
+                              <Check className="h-3 w-3 stroke-[3]" />
+                              {requiredUpvotes}/{requiredUpvotes} upvoted — Free Launch Unlocked!
+                            </span>
+                          ) : (
+                            <span className="font-bold text-neutral-700 text-[10px] sm:text-[11px] bg-white border border-neutral-200 px-2.5 py-0.5 rounded-full shadow-2xs self-start sm:self-auto whitespace-nowrap">
+                              {sessionUpvotedCount}/{requiredUpvotes} upvoted ·{' '}
+                              <span className="text-blue-600 font-extrabold">{Math.max(0, requiredUpvotes - sessionUpvotedCount)} left</span>
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="w-full bg-neutral-200 rounded-full h-2.5 overflow-hidden mt-2.5">
+                          <div
+                            className={`h-full rounded-full transition-all duration-300 ${
+                              isUpvoteRequirementMet ? 'bg-emerald-500' : 'bg-blue-600'
+                            }`}
+                            style={{
+                              width: `${requiredUpvotes > 0 ? Math.min(100, Math.round((sessionUpvotedCount / requiredUpvotes) * 100)) : 100}%`
+                            }}
+                          />
+                        </div>
+
+                        <p className="text-[11px] text-neutral-500 mt-2 leading-relaxed">
+                          {requiredUpvotes === 0
+                            ? "You've already supported all active launches on TopSAAS! Free launch unlocked below."
+                            : isUpvoteRequirementMet
+                              ? `Great job! You have upvoted ${requiredUpvotes === 5 ? '5' : `all ${requiredUpvotes}`} available launch${requiredUpvotes === 1 ? '' : 'es'}. You can now launch your product for free below.`
+                              : `Click the ▲ button on ${requiredUpvotes === 5 ? 'any 5 launches' : `all ${requiredUpvotes} available launch${requiredUpvotes === 1 ? '' : 'es'}`} below to support community makers and unlock your free launch right here.`}
+                        </p>
+                      </div>
+
+                      {/* Embedded Live Directory Products List */}
+                      <div className="border border-neutral-200 rounded-2xl overflow-hidden shadow-2xs bg-white">
+                        <div className="bg-neutral-100/70 border-b border-neutral-200 px-3.5 py-2 text-[11px] font-bold text-neutral-600 flex items-center justify-between gap-2">
+                          <span>Pick apps to upvote</span>
+                          <span>Click ▲ to upvote</span>
+                        </div>
+
+                        <div className="max-h-[340px] overflow-y-auto divide-y divide-neutral-100">
+                          {candidateProducts.length === 0 ? (
+                            <div className="p-8 text-center text-xs text-neutral-500 space-y-1">
+                              <p className="font-bold text-neutral-800">You've upvoted all available products!</p>
+                              <p className="text-[11px] text-neutral-400">There are no more unvoted products in the directory. Free launch pass granted ✓</p>
+                            </div>
+                          ) : (
+                            candidateProducts.map((prod, index) => {
+                              const upvoted = isProductUpvoted(prod.id, userUpvotes);
+                              const logoSrc = prod.logoUrl || getWebsiteFavicon(prod.url);
+
+                              return (
+                                <div
+                                  key={prod.id}
+                                  className={`flex items-center gap-3 p-3 transition-colors ${
+                                    upvoted ? 'bg-mint-50/25' : 'hover:bg-neutral-50/70'
+                                  }`}
+                                >
+                                  {/* Directory Rank */}
+                                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-neutral-100 text-[11px] font-black text-neutral-600 font-mono-num">
+                                    #{prod.rank ?? index + 1}
+                                  </div>
+
+                                  {/* Product Logo */}
+                                  <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-2xs">
+                                    <ProductLogo
+                                      src={logoSrc}
+                                      alt={prod.name}
+                                      containerClassName="h-full w-full flex items-center justify-center"
+                                      iconClassName="h-4 w-4 text-neutral-400"
+                                    />
+                                  </div>
+
+                                  {/* Product Info */}
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <span className="font-bold text-xs sm:text-sm text-neutral-950 truncate">
+                                        {prod.name}
+                                      </span>
+                                      {prod.url && (
+                                        <a
+                                          href={prod.url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          onClick={(e) => e.stopPropagation()}
+                                          className="text-neutral-400 hover:text-neutral-700 transition-colors p-0.5"
+                                          title="Visit website"
+                                        >
+                                          <ExternalLink className="h-3 w-3" />
+                                        </a>
+                                      )}
+                                      {prod.category && (
+                                        <span className="hidden sm:inline-flex text-[9px] font-semibold px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-600 border border-neutral-200/60 truncate max-w-[100px]">
+                                          {prod.category.split(',')[0].trim()}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-[11px] text-neutral-500 truncate mt-0.5">
+                                      {prod.tagline}
+                                    </p>
+                                  </div>
+
+                                  {/* Upvote Button */}
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      onUpvote?.(prod);
+                                    }}
+                                    title={upvoted ? 'Remove upvote' : 'Upvote this product'}
+                                    className={`flex flex-col items-center justify-center rounded-xl border py-1 px-2.5 min-w-[46px] transition-all cursor-pointer active:scale-95 shrink-0 ${
+                                      upvoted
+                                        ? 'border-mint-500 bg-mint-500 text-white shadow-2xs'
+                                        : 'border-neutral-200 bg-white text-neutral-800 hover:border-neutral-400 hover:bg-neutral-50 shadow-2xs'
+                                    }`}
+                                  >
+                                    <ChevronUp
+                                      className={`h-4 w-4 ${
+                                        upvoted ? 'text-white' : 'text-neutral-900 fill-neutral-900'
+                                      }`}
+                                    />
+                                    <span className="text-[10px] font-mono-num font-bold">
+                                      {prod.upvotes ?? 0}
+                                    </span>
+                                  </button>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
                       </div>
                     </div>
                   )}

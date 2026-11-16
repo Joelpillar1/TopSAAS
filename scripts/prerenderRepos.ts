@@ -413,6 +413,8 @@ interface PageHead {
   robots?: string;
   /** drop the template JSON-LD instead of keeping it */
   dropJsonLd?: boolean;
+  /** if true, don't wrap body in <noscript> (for pure static pages like 404) */
+  staticOnly?: boolean;
 }
 
 const renderPage = (template: string, page: PageHead): string => {
@@ -469,7 +471,8 @@ const renderPage = (template: string, page: PageHead): string => {
     html = html.replace(/<script type="application\/ld\+json"[^>]*>[\s\S]*?<\/script>\s*/, '');
   }
 
-  html = html.replace('<div id="root"></div>', `<div id="root">${page.body}</div>`);
+  const bodyContent = page.staticOnly ? page.body : `<noscript>${page.body}</noscript>`;
+  html = html.replace('<div id="root"></div>', `<div id="root">${bodyContent}</div>`);
   return html;
 };
 
@@ -1717,6 +1720,7 @@ ${products
         body: buildNotFoundBody(),
         robots: 'noindex, follow',
         dropJsonLd: true,
+        staticOnly: true,
       })
         // Keep the static 404 page: without the SPA bundle React would mount on
         // an unknown path and render the homepage in place of this message.
