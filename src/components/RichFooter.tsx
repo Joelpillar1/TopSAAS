@@ -727,6 +727,15 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                 </a>
               </li>
               <li>
+                <a
+                  href="/blog"
+                  onClick={(e) => { e.preventDefault(); playSound('click', soundEnabled); navigateTo('/blog'); }}
+                  className="text-xs text-neutral-600 hover:text-neutral-950 transition-colors cursor-pointer flex items-center gap-1.5"
+                >
+                  Founder Blog
+                </a>
+              </li>
+              <li>
                 <button
                   type="button"
                   onClick={() => { playSound('click', soundEnabled); onOpenPrivacy?.(); }}

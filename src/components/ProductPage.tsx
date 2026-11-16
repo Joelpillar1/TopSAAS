@@ -55,6 +55,7 @@ import { VerifiedBadge } from './VerifiedBadge';
 import { SponsoredPartnersSidebar } from './SponsoredPartnersSidebar';
 import { timeAgo } from './ProductRow';
 import { applyPageSeo } from '../utils/pageSeo';
+import { productSeo } from '../utils/coreSeo';
 import { formatOutboundUrl, trackOutboundClick } from '../utils/referral';
 import { redirectToCheckout } from '../utils/whop';
 import { getWeekInfo, getWeekByNumber, formatWeekDateRange, isInWeek } from '../utils/weeks';
@@ -651,18 +652,6 @@ export const ProductPage: React.FC<ProductPageProps> = ({
 
   // Dynamic SEO & SoftwareApplication JSON-LD schema for AEO / GEO
   useEffect(() => {
-    const rawTagline = (product.tagline || '').trim();
-    const cleanDesc = (product.description || product.tagline || `${product.name} is a modern SaaS tool listed on TopSAAS.`)
-      .replace(/\s+/g, ' ')
-      .trim()
-      .slice(0, 160);
-
-    const title = rawTagline
-      ? `${product.name} — ${rawTagline} | TopSAAS`
-      : `${product.name} — Modern SaaS & AI Tool | TopSAAS`;
-
-    const canonical = `https://www.topsaas.space/products/${getProductSlug(product)}`;
-
     // Schema.org SoftwareApplication JSON-LD
     const jsonLd: Record<string, unknown> = {
       '@context': 'https://schema.org',
@@ -703,9 +692,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
     }
 
     return applyPageSeo({
-      title,
-      description: cleanDesc,
-      canonical,
+      ...productSeo(product),
       jsonLd,
       jsonLdId: `product-jsonld-${product.id}`,
     });

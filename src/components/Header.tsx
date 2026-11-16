@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Trophy, Menu, X, User as UserIcon, Zap, TrendingUp, BookOpen, Plus } from 'lucide-react';
+import { Trophy, Menu, X, User as UserIcon, Zap, TrendingUp, BookOpen, Plus, Newspaper } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 import { navigateTo } from '../utils/nav';
 
-export type DirectoryTab = 'directory' | 'product-directory' | 'saas-ideas' | 'mrr-calculator' | 'pricing';
+export type DirectoryTab = 'directory' | 'product-directory' | 'saas-ideas' | 'mrr-calculator' | 'pricing' | 'blog';
 
 interface HeaderProps {
   onGoHome?: () => void;
@@ -21,11 +21,12 @@ interface TabSwitcherProps {
   onTabChange: (tab: DirectoryTab) => void;
 }
 
-// Top-level sections in the top bar.
-const TABS: { key: DirectoryTab; label: string }[] = [
-  { key: 'directory', label: 'Directory' },
-  { key: 'saas-ideas', label: 'SaaS Ideas' },
-  { key: 'mrr-calculator', label: 'MRR Calculator' },
+// Top-level sections in the top bar with real URLs for copyable links & SEO
+const TABS: { key: DirectoryTab; label: string; href: string }[] = [
+  { key: 'directory', label: 'Directory', href: '/' },
+  { key: 'saas-ideas', label: 'SaaS Ideas', href: '/ideas' },
+  { key: 'mrr-calculator', label: 'MRR Calculator', href: '/mrr-calculator' },
+  { key: 'blog', label: 'Blog', href: '/blog' },
 ];
 
 const TabSwitcher: React.FC<TabSwitcherProps> = ({ activeTab, onTabChange }) => {
@@ -34,10 +35,14 @@ const TabSwitcher: React.FC<TabSwitcherProps> = ({ activeTab, onTabChange }) => 
       {TABS.map((t) => {
         const active = activeTab === t.key;
         return (
-          <button
+          <a
             key={t.key}
-            type="button"
-            onClick={() => onTabChange(t.key)}
+            href={t.href}
+            onClick={(e) => {
+              if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+              e.preventDefault();
+              onTabChange(t.key);
+            }}
             aria-current={active ? 'page' : undefined}
             className={`relative py-1 text-[13px] transition-colors cursor-pointer ${active
               ? 'font-bold text-neutral-950'
@@ -50,7 +55,7 @@ const TabSwitcher: React.FC<TabSwitcherProps> = ({ activeTab, onTabChange }) => 
               className={`absolute inset-x-0 -bottom-0.5 h-0.5 rounded-full bg-neutral-950 transition-opacity ${active ? 'opacity-100' : 'opacity-0'
                 }`}
             />
-          </button>
+          </a>
         );
       })}
     </nav>
@@ -104,9 +109,13 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="mx-auto max-w-7xl px-4 py-2.5 sm:px-6">
         <div className="flex items-center justify-between gap-3">
           {/* Left: Logo */}
-          <button
-            type="button"
-            onClick={onGoHome}
+          <a
+            href="/"
+            onClick={(e) => {
+              if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+              e.preventDefault();
+              onGoHome?.();
+            }}
             className="flex items-center gap-2.5 cursor-pointer group shrink-0"
           >
             <img
@@ -117,7 +126,7 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="font-black text-lg sm:text-xl tracking-tight text-neutral-950 whitespace-nowrap inline-block shrink-0">
               TopSAAS
             </span>
-          </button>
+          </a>
 
           {/* Center: Top-nav sections (desktop only — mobile lives in the hamburger menu) */}
           {onTabChange && (
@@ -129,25 +138,34 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Right: Actions */}
           <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
             {/* Submit Button - always takes founder directly to /submit */}
-            <button
-              type="button"
+            <a
+              href="/submit"
               data-ml-goal="submit_nav_click"
-              onClick={handleSubmitClick}
+              onClick={(e) => {
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                e.preventDefault();
+                handleSubmitClick();
+              }}
               className="btn-primary flex items-center gap-1.5 rounded-lg px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs font-bold text-white cursor-pointer"
             >
               <Plus className="h-3.5 w-3.5" />
               <span>Submit</span>
-            </button>
+            </a>
 
             {/* Auth: Sign in or User Avatar (desktop only — mobile lives in the hamburger menu) */}
             <div className="hidden md:flex items-center gap-2">
               {user ? (
                 /* User Avatar — click to view profile */
-                <button
-                  type="button"
-                  onClick={onGoToProfile}
-                  className="flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 shadow-2xs hover:border-neutral-300 hover:bg-neutral-50 transition-all cursor-pointer"
-                  title="My submissions"
+                <a
+                  href="/profile"
+                  onClick={(e) => {
+                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                    e.preventDefault();
+                    onGoToProfile?.();
+                  }}
+                  className="flex items-center justify-center rounded-lg border border-neutral-200 bg-white p-1.5 shadow-2xs hover:border-neutral-300 hover:bg-neutral-50 transition-all cursor-pointer"
+                  title={user.user_metadata?.full_name ? `Profile (${user.user_metadata.full_name})` : "My profile"}
+                  aria-label="My profile"
                 >
                   {user.user_metadata?.avatar_url ? (
                     <img
@@ -160,10 +178,7 @@ export const Header: React.FC<HeaderProps> = ({
                       {(user.email?.[0] || 'U').toUpperCase()}
                     </div>
                   )}
-                  <span className="hidden lg:inline text-xs font-bold text-neutral-900 truncate max-w-[120px]">
-                    {user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
-                  </span>
-                </button>
+                </a>
               ) : (
                 /* Sign in with Google */
                 <button
@@ -209,73 +224,96 @@ export const Header: React.FC<HeaderProps> = ({
                       {TABS.map((t) => {
                         const active = activeTab === t.key;
                         return (
-                          <button
+                          <a
                             key={t.key}
-                            type="button"
-                            onClick={() => {
+                            href={t.href}
+                            onClick={(e) => {
+                              if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                              e.preventDefault();
                               onTabChange(t.key);
                               closeMenu();
                             }}
                             aria-current={active ? 'page' : undefined}
-                            className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] transition-colors cursor-pointer ${active
+                            className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] transition-colors ${active
                               ? 'bg-neutral-100 font-bold text-neutral-950'
                               : 'font-semibold text-neutral-700 hover:bg-neutral-100 hover:text-neutral-950'
                               }`}
                           >
                             <span>{t.label}</span>
-                          </button>
+                          </a>
                         );
                       })}
                       <div className="my-1.5 border-t border-neutral-200" />
                     </>
                   )}
-                  <button
-                    type="button"
+                  <a
+                    href="/submit"
                     data-ml-goal="submit_nav_click"
-                    onClick={() => {
+                    onClick={(e) => {
+                      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                      e.preventDefault();
                       handleSubmitClick();
                       closeMenu();
                     }}
-                    className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-bold text-neutral-950 hover:bg-neutral-100 transition-colors cursor-pointer"
+                    className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-bold text-neutral-950 hover:bg-neutral-100 transition-colors"
                   >
                     <Plus className="h-3.5 w-3.5 text-mint-500" />
                     <span>Submit a SaaS</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
+                  </a>
+                  <a
+                    href="/trending"
+                    onClick={(e) => {
+                      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                      e.preventDefault();
                       navigateTo('/trending');
                       closeMenu();
                     }}
-                    className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-semibold text-neutral-700 hover:bg-neutral-100 hover:text-neutral-950 transition-colors cursor-pointer"
+                    className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-semibold text-neutral-700 hover:bg-neutral-100 hover:text-neutral-950 transition-colors"
                   >
                     <TrendingUp className="h-3.5 w-3.5 text-mint-500" />
                     <span>Trending</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
+                  </a>
+                  <a
+                    href="/guides"
+                    onClick={(e) => {
+                      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                      e.preventDefault();
                       navigateTo('/guides');
                       closeMenu();
                     }}
-                    className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-semibold text-neutral-700 hover:bg-neutral-100 hover:text-neutral-950 transition-colors cursor-pointer"
+                    className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-semibold text-neutral-700 hover:bg-neutral-100 hover:text-neutral-950 transition-colors"
                   >
                     <BookOpen className="h-3.5 w-3.5 text-mint-500" />
                     <span>Build Guides</span>
-                  </button>
+                  </a>
+                  <a
+                    href="/blog"
+                    onClick={(e) => {
+                      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                      e.preventDefault();
+                      navigateTo('/blog');
+                      closeMenu();
+                    }}
+                    className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-semibold text-neutral-700 hover:bg-neutral-100 hover:text-neutral-950 transition-colors"
+                  >
+                    <Newspaper className="h-3.5 w-3.5 text-mint-500" />
+                    <span>Founder Blog</span>
+                  </a>
                   <div className="my-1 border-t border-neutral-200" />
                   {user ? (
-                    <button
-                      type="button"
-                      onClick={() => {
+                    <a
+                      href="/profile"
+                      onClick={(e) => {
+                        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                        e.preventDefault();
                         onGoToProfile?.();
                         closeMenu();
                       }}
-                      className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-semibold text-neutral-700 hover:bg-neutral-100 hover:text-neutral-950 transition-colors cursor-pointer"
+                      className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-semibold text-neutral-700 hover:bg-neutral-100 hover:text-neutral-950 transition-colors"
                     >
                       <UserIcon className="h-3.5 w-3.5 text-mint-500" />
                       <span>My Profile</span>
-                    </button>
+                    </a>
                   ) : (
                     <button
                       type="button"

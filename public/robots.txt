@@ -68,3 +68,4 @@ Allow: /
 
 Sitemap: https://www.topsaas.space/sitemap.xml
 Sitemap: https://www.topsaas.space/sitemap/repos.xml
+Sitemap: https://www.topsaas.space/sitemap/products.xml

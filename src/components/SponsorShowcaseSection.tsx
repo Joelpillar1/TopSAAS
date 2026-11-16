@@ -24,8 +24,13 @@ export const SponsorShowcaseSection: React.FC<SponsorShowcaseSectionProps> = ({
     <div className="w-full rounded-3xl border border-neutral-200/80 bg-white p-6 sm:p-10 shadow-sm font-sans">
       {/* ── Section Header ── */}
       <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-10">
-        <div className="inline-flex items-center rounded-full border border-neutral-200 bg-neutral-50/80 px-3.5 py-1 text-xs font-semibold text-neutral-800 shadow-2xs">
-          <span>Sidebar Rails</span>
+        <div className="inline-flex items-center gap-2 rounded-full border border-blue-200/70 bg-blue-50/40 p-1 pr-3.5 text-xs shadow-2xs">
+          <span className="rounded-full bg-blue-600 px-2.5 py-0.5 text-[11px] font-bold text-white shadow-xs">
+            Sponsors
+          </span>
+          <span className="font-semibold text-neutral-800 text-[12px]">
+            Sticky desktop sidebar showcase rails
+          </span>
         </div>
         <h2 className="text-2xl sm:text-3xl font-extrabold text-neutral-950 tracking-tight mt-3">
           Spotlight on TopSAAS Sidebars

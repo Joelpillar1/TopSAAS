@@ -4,6 +4,7 @@ import { CURATED_REPOS } from '../data/curatedRepos';
 import { getHealth } from '../utils/repoHealth';
 import { HealthScore } from './HealthScore';
 import { applyPageSeo } from '../utils/pageSeo';
+import { guidesSeo } from '../utils/coreSeo';
 import { navigateTo } from '../utils/nav';
 import { playSound } from '../utils/sound';
 import { formatStars } from '../utils/github';
@@ -184,10 +185,7 @@ export const GuidesListPage: React.FC<GuidesListPageProps> = ({ soundEnabled }) 
 
   useEffect(() => {
     return applyPageSeo({
-      title: 'Build Guides: Ship Real SaaS on Open-Source Projects | TopSAAS',
-      description:
-        'Original step-by-step build guides for refine, n8n, and create-t3-app. Copy-paste commands, production checklists, repo health scores, and a clear path to launch.',
-      canonical: '/guides',
+      ...guidesSeo(),
       jsonLdId: 'guides-jsonld',
       jsonLd: {
         '@context': 'https://schema.org',
@@ -305,6 +303,14 @@ export const GuidesListPage: React.FC<GuidesListPageProps> = ({ soundEnabled }) 
           )}
         />
         <div className="relative z-10 mx-auto max-w-3xl text-center">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-blue-200/70 bg-blue-50/40 p-1 pr-3.5 text-xs shadow-2xs">
+            <span className="rounded-full bg-blue-600 px-2.5 py-0.5 text-[11px] font-bold text-white shadow-xs">
+              Guides
+            </span>
+            <span className="font-semibold text-neutral-800 text-[12px]">
+              Step-by-step production walkthroughs
+            </span>
+          </div>
           <h1
             id="guides-heading"
             className="text-3xl font-black leading-[1.1] tracking-tight text-neutral-950 sm:text-4xl"

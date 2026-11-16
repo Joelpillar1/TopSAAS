@@ -9,12 +9,14 @@ import {
   Globe2,
   Layers,
   Link2,
-  Rocket,
   Search,
   ShieldCheck,
   Sparkles,
   TrendingUp,
   X,
+  LayoutGrid,
+  List as ListIcon,
+  CheckCircle2,
 } from 'lucide-react';
 import { applyPageSeo } from '../utils/pageSeo';
 import { DIRECTORY_FAQS, directoryListJsonLd, directoryListSeo } from '../utils/directorySeo';
@@ -42,13 +44,14 @@ interface DirectoriesListPageProps {
 }
 
 type SortKey = 'dr' | 'name' | 'price';
+type ViewMode = 'table' | 'cards';
 
-const LAST_UPDATED = 'November 12, 2026';
+const LAST_UPDATED = 'November 15, 2026';
 
 const PRICE_STYLES: Record<DirectoryPrice, string> = {
-  free: 'border-mint-200 bg-mint-50 text-mint-700',
-  freemium: 'border-amber-200 bg-amber-50 text-amber-700',
-  paid: 'border-neutral-200 bg-neutral-100 text-neutral-700',
+  free: 'border-neutral-200 bg-neutral-50 text-neutral-600',
+  freemium: 'border-neutral-200 bg-neutral-50 text-neutral-600',
+  paid: 'border-neutral-200 bg-neutral-50 text-neutral-600',
 };
 
 const LINK_STYLES: Record<DirectoryLink, string> = {
@@ -59,16 +62,16 @@ const LINK_STYLES: Record<DirectoryLink, string> = {
 };
 
 const KIND_STYLES: Record<DirectoryKind, string> = {
-  saas: 'border-sky-200 bg-sky-50 text-sky-700',
-  startup: 'border-violet-200 bg-violet-50 text-violet-700',
-  ai: 'border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700',
-  launch: 'border-orange-200 bg-orange-50 text-orange-700',
+  saas: 'border-neutral-200 bg-neutral-50 text-neutral-600',
+  startup: 'border-neutral-200 bg-neutral-50 text-neutral-600',
+  ai: 'border-neutral-200 bg-neutral-50 text-neutral-600',
+  launch: 'border-neutral-200 bg-neutral-50 text-neutral-600',
 };
 
 const priceRank: Record<DirectoryPrice, number> = { free: 0, freemium: 1, paid: 2 };
 
 const Badge: React.FC<{ children: React.ReactNode; className: string }> = ({ children, className }) => (
-  <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${className}`}>
+  <span className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${className}`}>
     {children}
   </span>
 );
@@ -91,6 +94,7 @@ export const DirectoriesListPage: React.FC<DirectoriesListPageProps> = ({
   const [kind, setKind] = useState<'all' | DirectoryKind>('all');
   const [minDr, setMinDr] = useState<0 | 50 | 70 | 80>(0);
   const [sort, setSort] = useState<SortKey>('dr');
+  const [viewMode, setViewMode] = useState<ViewMode>('table');
 
   useEffect(() => {
     setQuery('');
@@ -123,7 +127,13 @@ export const DirectoriesListPage: React.FC<DirectoriesListPageProps> = ({
     });
   }, [baseDirectories, query, price, link, kind, minDr, sort]);
 
-  const hasFilters = query.trim() !== '' || price !== 'all' || link !== 'all' || kind !== 'all' || minDr !== 0;
+  const hasFilters =
+    query.trim() !== '' ||
+    price !== 'all' ||
+    link !== 'all' ||
+    kind !== 'all' ||
+    minDr !== 0;
+
   const resetFilters = () => {
     setQuery('');
     setPrice('all');
@@ -139,10 +149,10 @@ export const DirectoriesListPage: React.FC<DirectoriesListPageProps> = ({
       title,
       description,
       canonical,
-      jsonLdId: 'directories-jsonld',
-      jsonLd: directoryListJsonLd(hub, baseDirectories),
+      jsonLd: directoryListJsonLd(hub, filtered),
+      jsonLdId: 'directory-list-jsonld',
     });
-  }, [hub, title, description, canonical, baseDirectories]);
+  }, [title, description, canonical, hub, filtered]);
 
   const openDirectory = (directory: DirectoryEntry) => {
     playSound('click', soundEnabled);
@@ -154,49 +164,45 @@ export const DirectoriesListPage: React.FC<DirectoriesListPageProps> = ({
   };
 
   return (
-    <main className="bg-white">
+    <div className="min-h-screen bg-white">
       {/* Hero */}
-      <section className="relative overflow-hidden border-b border-neutral-200 bg-white">
-        <GridPattern width={48} height={48} className="opacity-40 [mask-image:radial-gradient(ellipse_at_top,black,transparent_75%)]" />
-        <div className="relative mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
-          <div className="mx-auto max-w-3xl text-center">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-mint-200 bg-mint-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-mint-700">
-              <Rocket className="h-3.5 w-3.5" />
-              Launch distribution
-            </span>
-            <h1 className="mt-4 text-3xl font-black tracking-tight text-neutral-950 sm:text-5xl">
-              {hub ? hub.title.replace(' (2026)', '') : `${DIRECTORIES.length} product directories`}
-              <span className="block text-mint-600">ranked by Domain Rating</span>
-            </h1>
-            <p className="mx-auto mt-4 max-w-2xl text-sm font-medium leading-relaxed text-neutral-600 sm:text-base">
-              {description} Use the filters to find free, dofollow, and niche listings that fit your product.
-            </p>
-
-            <div className="mt-7 flex flex-col items-center justify-center gap-2.5 sm:flex-row">
-              <button
-                type="button"
-                onClick={() => {
-                  playSound('click', soundEnabled);
-                  onOpenSubmit();
-                }}
-                className="btn-primary inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold text-white sm:w-auto"
-              >
-                Submit your SaaS to TopSAAS
-                <ArrowRight className="h-4 w-4" />
-              </button>
-              <a
-                href="#all-directories"
-                onClick={() => playSound('click', soundEnabled)}
-                className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white px-5 py-3 text-sm font-bold text-neutral-800 transition-colors hover:border-neutral-300 hover:bg-neutral-50 sm:w-auto"
-              >
-                Browse the list
-                <ChevronDown className="h-4 w-4" />
-              </a>
+      <section className="relative overflow-hidden border-b border-neutral-200 bg-gradient-to-b from-neutral-50 via-white to-white py-12 sm:py-16">
+        <GridPattern className="opacity-35" />
+        <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-2xl space-y-3">
+              <div className="inline-flex items-center gap-2 rounded-full border border-blue-200/70 bg-blue-50/40 p-1 pr-3.5 text-xs shadow-2xs">
+                <span className="rounded-full bg-blue-600 px-2.5 py-0.5 text-[11px] font-bold text-white shadow-xs">
+                  Directory
+                </span>
+                <span className="font-semibold text-neutral-800 text-[12px]">
+                  Verified 2026 Launch Index
+                </span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-neutral-950">
+                {hub ? hub.title : `${baseDirectories.length}+ Best Startup Launch Directories`}
+              </h1>
+              <p className="text-sm sm:text-base text-neutral-600 leading-relaxed">
+                {hub
+                  ? hub.description
+                  : 'Curated list of verified launch directories, review platforms, and communities to submit your software for dofollow backlinks, initial traffic, and domain rating.'}
+              </p>
+              <div className="flex flex-wrap items-center gap-4 pt-1 text-xs text-neutral-500">
+                <span className="flex items-center gap-1.5 font-medium">
+                  <CalendarDays className="h-3.5 w-3.5 text-neutral-400" />
+                  Checked {LAST_UPDATED}
+                </span>
+                <span className="flex items-center gap-1.5 font-medium">
+                  <ShieldCheck className="h-3.5 w-3.5 text-mint-600" />
+                  Tested submission URLs
+                </span>
+              </div>
             </div>
 
-            <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {/* Metric pill counter cards */}
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {[
-                { label: 'Directories', value: stats.total, icon: Layers },
+                { label: 'Total Directories', value: stats.total, icon: Globe2 },
                 { label: 'Free to list', value: stats.freeToStart, icon: DollarSign },
                 { label: 'Dofollow', value: stats.dofollow, icon: Link2 },
                 { label: 'Median DR', value: stats.medianDr, icon: TrendingUp },
@@ -249,10 +255,11 @@ export const DirectoriesListPage: React.FC<DirectoriesListPageProps> = ({
         </div>
       </section>
 
-      {/* Filters + list */}
+      {/* Filters + List / Cards View */}
       <section id="all-directories" className="mx-auto w-full max-w-6xl scroll-mt-20 px-4 py-8 sm:px-6 sm:py-10">
         <div className="rounded-2xl border border-neutral-200 bg-white p-3 shadow-2xs sm:p-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+            {/* Search */}
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
               <input
@@ -268,13 +275,14 @@ export const DirectoriesListPage: React.FC<DirectoriesListPageProps> = ({
                   type="button"
                   onClick={() => setQuery('')}
                   aria-label="Clear search"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 cursor-pointer"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
               )}
             </div>
 
+            {/* Filter Dropdowns */}
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:flex">
               <label className="flex h-11 items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-2.5 text-xs font-semibold text-neutral-600">
                 <Filter className="h-3.5 w-3.5 shrink-0 text-neutral-400" />
@@ -282,7 +290,7 @@ export const DirectoriesListPage: React.FC<DirectoriesListPageProps> = ({
                   value={price}
                   onChange={(event) => setPrice(event.target.value as 'all' | DirectoryPrice)}
                   aria-label="Filter by price"
-                  className="w-full bg-transparent text-xs font-semibold text-neutral-800 outline-none"
+                  className="w-full bg-transparent text-xs font-semibold text-neutral-800 outline-none cursor-pointer"
                 >
                   <option value="all">Any price</option>
                   <option value="free">Free</option>
@@ -297,7 +305,7 @@ export const DirectoriesListPage: React.FC<DirectoriesListPageProps> = ({
                   value={link}
                   onChange={(event) => setLink(event.target.value as 'all' | DirectoryLink)}
                   aria-label="Filter by link type"
-                  className="w-full bg-transparent text-xs font-semibold text-neutral-800 outline-none"
+                  className="w-full bg-transparent text-xs font-semibold text-neutral-800 outline-none cursor-pointer"
                 >
                   <option value="all">Any link</option>
                   <option value="dofollow">Dofollow</option>
@@ -313,7 +321,7 @@ export const DirectoriesListPage: React.FC<DirectoriesListPageProps> = ({
                   value={kind}
                   onChange={(event) => setKind(event.target.value as 'all' | DirectoryKind)}
                   aria-label="Filter by directory type"
-                  className="w-full bg-transparent text-xs font-semibold text-neutral-800 outline-none"
+                  className="w-full bg-transparent text-xs font-semibold text-neutral-800 outline-none cursor-pointer"
                 >
                   <option value="all">Any type</option>
                   <option value="saas">SaaS directory</option>
@@ -329,7 +337,7 @@ export const DirectoriesListPage: React.FC<DirectoriesListPageProps> = ({
                   value={minDr}
                   onChange={(event) => setMinDr(Number(event.target.value) as 0 | 50 | 70 | 80)}
                   aria-label="Filter by Domain Rating"
-                  className="w-full bg-transparent text-xs font-semibold text-neutral-800 outline-none"
+                  className="w-full bg-transparent text-xs font-semibold text-neutral-800 outline-none cursor-pointer"
                 >
                   <option value={0}>Any DR</option>
                   <option value={50}>DR 50+</option>
@@ -340,27 +348,66 @@ export const DirectoriesListPage: React.FC<DirectoriesListPageProps> = ({
             </div>
           </div>
 
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-neutral-100 pt-3">
+          {/* Subheader: Results count, reset filters, View mode toggle, Sort */}
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-neutral-100 pt-3">
             <p className="text-xs font-medium text-neutral-500">
               Showing <span className="font-bold text-neutral-900">{filtered.length}</span> of {baseDirectories.length} directories
             </p>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-3">
               {hasFilters && (
                 <button
                   type="button"
                   onClick={resetFilters}
-                  className="rounded-lg px-2 py-1 text-xs font-bold text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800"
+                  className="rounded-lg px-2 py-1 text-xs font-bold text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 cursor-pointer"
                 >
                   Reset filters
                 </button>
               )}
+
+              {/* View Switcher: List vs Cards (Desktop) */}
+              <div className="hidden sm:flex items-center rounded-lg border border-neutral-200 bg-neutral-100 p-0.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    playSound('click', soundEnabled);
+                    setViewMode('table');
+                  }}
+                  className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-bold transition-all cursor-pointer ${
+                    viewMode === 'table'
+                      ? 'bg-white text-neutral-950 shadow-2xs'
+                      : 'text-neutral-600 hover:text-neutral-900'
+                  }`}
+                  title="Table view"
+                >
+                  <ListIcon className="h-3.5 w-3.5" />
+                  <span>List</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    playSound('click', soundEnabled);
+                    setViewMode('cards');
+                  }}
+                  className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-bold transition-all cursor-pointer ${
+                    viewMode === 'cards'
+                      ? 'bg-white text-neutral-950 shadow-2xs'
+                      : 'text-neutral-600 hover:text-neutral-900'
+                  }`}
+                  title="Cards view"
+                >
+                  <LayoutGrid className="h-3.5 w-3.5" />
+                  <span>Cards</span>
+                </button>
+              </div>
+
+              {/* Sort Dropdown */}
               <label className="flex items-center gap-1.5 text-xs font-semibold text-neutral-500">
                 Sort
                 <select
                   value={sort}
                   onChange={(event) => setSort(event.target.value as SortKey)}
                   aria-label="Sort directories"
-                  className="rounded-lg border border-neutral-200 bg-white px-2 py-1.5 text-xs font-bold text-neutral-800 outline-none"
+                  className="rounded-lg border border-neutral-200 bg-white px-2 py-1.5 text-xs font-bold text-neutral-800 outline-none cursor-pointer"
                 >
                   <option value="dr">Domain Rating</option>
                   <option value="name">Name A to Z</option>
@@ -371,133 +418,151 @@ export const DirectoriesListPage: React.FC<DirectoriesListPageProps> = ({
           </div>
         </div>
 
-        {/* Desktop table */}
-        <div className="mt-4 hidden overflow-x-auto rounded-2xl border border-neutral-200 bg-white shadow-2xs md:block">
-          <table className="min-w-full text-left text-sm">
-            <thead className="border-b border-neutral-200 bg-neutral-50 text-[10px] font-bold uppercase tracking-wider text-neutral-500">
-              <tr>
-                <th scope="col" className="px-3 py-3 text-center">#</th>
-                <th scope="col" className="px-3 py-3">Directory</th>
-                <th scope="col" className="px-3 py-3 text-center">DR</th>
-                <th scope="col" className="px-3 py-3">Price</th>
-                <th scope="col" className="px-3 py-3">Link</th>
-                <th scope="col" className="px-3 py-3">Type</th>
-                <th scope="col" className="px-3 py-3 text-right">Submit</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-100">
-              {filtered.map((directory) => (
-                <tr key={directory.slug} className="group transition-colors hover:bg-neutral-50/70">
-                  <td className="px-3 py-3 text-center text-xs font-bold font-mono-num text-neutral-400">{directory.rank}</td>
-                  <td className="max-w-xs px-3 py-3">
-                    <a
-                      href={`/product-directory/${directory.slug}`}
-                      onClick={(event) => {
-                        event.preventDefault();
-                        openDirectory(directory);
-                      }}
-                      className="block"
-                    >
-                      <span className="text-sm font-bold text-neutral-950 transition-colors group-hover:text-mint-700">
-                        {directory.name}
-                      </span>
-                      <span className="mt-0.5 block text-xs font-medium leading-relaxed text-neutral-500 line-clamp-1">
-                        {directory.description}
-                      </span>
-                    </a>
-                  </td>
-                  <td className="px-3 py-3 text-center">
-                    <span className="inline-flex h-8 min-w-9 items-center justify-center rounded-lg border border-neutral-200 bg-white px-1.5 text-xs font-black font-mono-num text-neutral-900">
-                      {directory.dr}
-                    </span>
-                  </td>
-                  <td className="px-3 py-3">
-                    <Badge className={PRICE_STYLES[directory.price]}>{DIRECTORY_PRICE_LABELS[directory.price]}</Badge>
-                  </td>
-                  <td className="px-3 py-3">
-                    <Badge className={LINK_STYLES[directory.link]}>{DIRECTORY_LINK_LABELS[directory.link]}</Badge>
-                  </td>
-                  <td className="px-3 py-3">
-                    <Badge className={KIND_STYLES[directory.kind]}>{DIRECTORY_KIND_LABELS[directory.kind]}</Badge>
-                  </td>
-                  <td className="px-3 py-3 text-right">
-                    <a
-                      href={directory.submitUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={trackOutbound}
-                      className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-xs font-bold text-neutral-800 transition-colors hover:border-neutral-400 hover:bg-neutral-50"
-                    >
-                      Visit
-                      <ArrowUpRight className="h-3 w-3" />
-                    </a>
-                  </td>
+        {/* View Mode: Table (Desktop) */}
+        {viewMode === 'table' && (
+          <div className="mt-4 hidden overflow-x-auto rounded-2xl border border-neutral-200 bg-white shadow-2xs md:block">
+            <table className="min-w-full text-left text-sm">
+              <thead className="border-b border-neutral-200 bg-neutral-50 text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+                <tr>
+                  <th scope="col" className="px-3 py-3 text-center">#</th>
+                  <th scope="col" className="px-3 py-3">Directory</th>
+                  <th scope="col" className="px-3 py-3 text-center">DR</th>
+                  <th scope="col" className="px-3 py-3">Link</th>
+                  <th scope="col" className="px-3 py-3">Price</th>
+                  <th scope="col" className="px-3 py-3">Type</th>
+                  <th scope="col" className="px-3 py-3 text-right">Action</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          {filtered.length === 0 && (
-            <div className="px-6 py-12 text-center">
-              <p className="text-sm font-bold text-neutral-900">No directories match those filters.</p>
-              <p className="mt-1 text-xs text-neutral-500">Try a broader search or reset the filters.</p>
-              <button
-                type="button"
-                onClick={resetFilters}
-                className="btn-primary mt-3 rounded-lg px-3 py-2 text-xs font-bold text-white"
-              >
-                Reset filters
-              </button>
-            </div>
-          )}
-        </div>
+              </thead>
+              <tbody className="divide-y divide-neutral-100">
+                {filtered.map((directory) => (
+                  <tr key={directory.slug} className="group transition-colors hover:bg-neutral-50/70">
+                    <td className="px-3 py-3 text-center text-xs font-bold font-mono-num text-neutral-400">
+                      {directory.rank}
+                    </td>
+                    <td className="max-w-xs px-3 py-3">
+                      <a
+                        href={`/product-directory/${directory.slug}`}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          openDirectory(directory);
+                        }}
+                        className="block"
+                      >
+                        <span className="text-sm font-bold text-neutral-950 transition-colors group-hover:text-mint-700">
+                          {directory.name}
+                        </span>
+                        <span className="mt-0.5 block text-xs font-medium leading-relaxed text-neutral-500 line-clamp-1">
+                          {directory.description}
+                        </span>
+                      </a>
+                    </td>
+                    <td className="px-3 py-3 text-center">
+                      <span className="inline-flex h-8 min-w-9 items-center justify-center rounded-lg border border-neutral-200 bg-white px-1.5 text-xs font-black font-mono-num text-neutral-900 shadow-2xs">
+                        {directory.dr}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3">
+                      <Badge className={LINK_STYLES[directory.link]}>
+                        {DIRECTORY_LINK_LABELS[directory.link]}
+                      </Badge>
+                    </td>
+                    <td className="px-3 py-3">
+                      <Badge className={PRICE_STYLES[directory.price]}>
+                        {DIRECTORY_PRICE_LABELS[directory.price]}
+                      </Badge>
+                    </td>
+                    <td className="px-3 py-3">
+                      <Badge className={KIND_STYLES[directory.kind]}>
+                        {DIRECTORY_KIND_LABELS[directory.kind]}
+                      </Badge>
+                    </td>
+                    <td className="px-3 py-3 text-right">
+                      <a
+                        href={directory.submitUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={trackOutbound}
+                        className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-xs font-bold text-neutral-800 transition-colors hover:border-neutral-400 hover:bg-neutral-50 shadow-2xs"
+                      >
+                        Submit
+                        <ArrowUpRight className="h-3 w-3" />
+                      </a>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {filtered.length === 0 && (
+              <div className="px-6 py-12 text-center">
+                <p className="text-sm font-bold text-neutral-900">No directories match those filters.</p>
+                <p className="mt-1 text-xs text-neutral-500">Try a broader search or reset the filters.</p>
+                <button
+                  type="button"
+                  onClick={resetFilters}
+                  className="btn-primary mt-3 rounded-lg px-3 py-2 text-xs font-bold text-white cursor-pointer"
+                >
+                  Reset filters
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
-        {/* Mobile cards */}
-        <div className="mt-4 space-y-3 md:hidden">
+        {/* View Mode: Cards (Desktop and Mobile) */}
+        <div className={`mt-4 ${viewMode === 'cards' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'space-y-3 md:hidden'}`}>
           {filtered.map((directory) => (
-            <article key={directory.slug} className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-2xs">
-              <div className="flex items-start justify-between gap-3">
-                <a
-                  href={`/product-directory/${directory.slug}`}
-                  onClick={(event) => {
-                    event.preventDefault();
-                    openDirectory(directory);
-                  }}
-                  className="min-w-0 flex-1"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold font-mono-num text-neutral-400">#{directory.rank}</span>
-                    <h3 className="truncate text-sm font-bold text-neutral-950">{directory.name}</h3>
+            <article key={directory.slug} className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-5 shadow-2xs flex flex-col justify-between hover:border-neutral-300 transition-all">
+              <div>
+                <div className="flex items-start justify-between gap-3">
+                  <a
+                    href={`/product-directory/${directory.slug}`}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      openDirectory(directory);
+                    }}
+                    className="min-w-0 flex-1 group"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold font-mono-num text-neutral-400">#{directory.rank}</span>
+                      <h3 className="truncate text-sm sm:text-base font-bold text-neutral-950 group-hover:text-blue-600 transition-colors">
+                        {directory.name}
+                      </h3>
+                    </div>
+                    <p className="mt-1.5 line-clamp-2 text-xs font-medium leading-relaxed text-neutral-500">
+                      {directory.description}
+                    </p>
+                  </a>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <span className="inline-flex h-8 min-w-9 items-center justify-center rounded-lg border border-neutral-200 bg-white px-1.5 text-xs font-black font-mono-num text-neutral-900 shadow-2xs">
+                      DR {directory.dr}
+                    </span>
                   </div>
-                  <p className="mt-1 line-clamp-2 text-xs font-medium leading-relaxed text-neutral-500">
-                    {directory.description}
-                  </p>
-                </a>
-                <span className="inline-flex h-9 min-w-10 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-white px-1.5 text-sm font-black font-mono-num text-neutral-900">
-                  {directory.dr}
-                </span>
+                </div>
+
+                <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                  <Badge className={PRICE_STYLES[directory.price]}>{DIRECTORY_PRICE_LABELS[directory.price]}</Badge>
+                  <Badge className={LINK_STYLES[directory.link]}>{DIRECTORY_LINK_LABELS[directory.link]}</Badge>
+                  <Badge className={KIND_STYLES[directory.kind]}>{DIRECTORY_KIND_LABELS[directory.kind]}</Badge>
+                </div>
               </div>
-              <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                <Badge className={PRICE_STYLES[directory.price]}>{DIRECTORY_PRICE_LABELS[directory.price]}</Badge>
-                <Badge className={LINK_STYLES[directory.link]}>{DIRECTORY_LINK_LABELS[directory.link]}</Badge>
-                <Badge className={KIND_STYLES[directory.kind]}>{DIRECTORY_KIND_LABELS[directory.kind]}</Badge>
-              </div>
-              <div className="mt-3 flex items-center gap-2">
+
+              <div className="mt-4 flex items-center gap-2 pt-3 border-t border-neutral-100">
                 <a
                   href={`/product-directory/${directory.slug}`}
                   onClick={(event) => {
                     event.preventDefault();
                     openDirectory(directory);
                   }}
-                  className="inline-flex min-h-[38px] flex-1 items-center justify-center rounded-xl border border-neutral-200 bg-white px-3 text-xs font-bold text-neutral-800 hover:bg-neutral-50"
+                  className="inline-flex min-h-[36px] flex-1 items-center justify-center rounded-xl border border-neutral-200 bg-white px-3 text-xs font-bold text-neutral-800 hover:bg-neutral-50 transition-colors cursor-pointer"
                 >
-                  Submission guide
+                  Submission Guide
                 </a>
                 <a
                   href={directory.submitUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={trackOutbound}
-                  className="btn-primary inline-flex min-h-[38px] flex-1 items-center justify-center gap-1 rounded-xl px-3 text-xs font-bold text-white"
+                  className="btn-primary inline-flex min-h-[36px] flex-1 items-center justify-center gap-1 rounded-xl px-3 text-xs font-bold text-white transition-colors cursor-pointer shadow-2xs"
                 >
                   Submit
                   <ArrowUpRight className="h-3 w-3" />
@@ -506,13 +571,13 @@ export const DirectoriesListPage: React.FC<DirectoriesListPageProps> = ({
             </article>
           ))}
           {filtered.length === 0 && (
-            <div className="rounded-2xl border border-neutral-200 bg-white px-5 py-10 text-center">
+            <div className="col-span-full rounded-2xl border border-neutral-200 bg-white px-5 py-10 text-center">
               <p className="text-sm font-bold text-neutral-900">No directories match those filters.</p>
               <p className="mt-1 text-xs text-neutral-500">Try a broader search or reset the filters.</p>
               <button
                 type="button"
                 onClick={resetFilters}
-                className="btn-primary mt-3 rounded-lg px-3 py-2 text-xs font-bold text-white"
+                className="btn-primary mt-3 rounded-lg px-3 py-2 text-xs font-bold text-white cursor-pointer"
               >
                 Reset filters
               </button>
@@ -521,158 +586,27 @@ export const DirectoriesListPage: React.FC<DirectoriesListPageProps> = ({
         </div>
       </section>
 
-      {/* How to use */}
-      <section className="border-y border-neutral-200 bg-neutral-50/60">
-        <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
-          <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-2xl font-black tracking-tight text-neutral-950 sm:text-3xl">How to use this list</h2>
-            <p className="mt-2 text-sm font-medium leading-relaxed text-neutral-600">
-              A directory listing is only useful when it reaches the right buyer. Work through the list in this order.
+      {/* FAQs */}
+      <section className="border-t border-neutral-200 bg-neutral-50/60 py-12 sm:py-16">
+        <div className="mx-auto max-w-4xl px-4 sm:px-6">
+          <div className="text-center">
+            <h2 className="text-xl sm:text-2xl font-black text-neutral-950">
+              Frequently Asked Questions
+            </h2>
+            <p className="mt-1 text-xs sm:text-sm text-neutral-500">
+              Common questions about submitting software to curated product directories.
             </p>
           </div>
-          <div className="mt-7 grid gap-3 sm:grid-cols-3">
-            {[
-              {
-                title: 'Filter for fit first',
-                body: 'Use the price, link, and type filters to find directories that accept your product. A niche AI directory can outperform a general SaaS directory with a higher DR.',
-                icon: Filter,
-              },
-              {
-                title: 'Prepare one listing kit',
-                body: 'Use the same name, tagline, description, logo, and screenshots everywhere. Consistency makes approvals faster and keeps your brand recognizable across directories.',
-                icon: Sparkles,
-              },
-              {
-                title: 'Track what goes live',
-                body: 'Open the submission guide for each directory, follow the steps, and record the date and status. Revisit listings that need verification or a follow-up email.',
-                icon: ShieldCheck,
-              },
-            ].map(({ title: cardTitle, body, icon: Icon }) => (
-              <div key={cardTitle} className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-2xs">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-mint-50 text-mint-700">
-                  <Icon className="h-4 w-4" />
-                </div>
-                <h3 className="mt-3 text-sm font-bold text-neutral-950">{cardTitle}</h3>
-                <p className="mt-1.5 text-xs font-medium leading-relaxed text-neutral-500">{body}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Methodology */}
-      <section className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6 sm:py-14">
-        <h2 className="text-2xl font-black tracking-tight text-neutral-950">How we rank these directories</h2>
-        <div className="mt-4 space-y-3 text-sm font-medium leading-relaxed text-neutral-600">
-          <p>
-            The list is sorted by <strong className="text-neutral-900">Ahrefs Domain Rating</strong>, the 0 to 100
-            score for the strength of a site&apos;s backlink profile. DR is a useful shortcut, but it is not the only
-            signal. A lower DR directory that your buyers actually read can send better traffic than a high DR site
-            that nobody visits.
-          </p>
-          <p>
-            Price and link type come from each directory&apos;s public submission page and can change without notice.
-            The last review date is <strong className="text-neutral-900">{LAST_UPDATED}</strong>. Always confirm the
-            current terms on the directory before you pay for a placement.
-          </p>
-          <p>
-            We do not accept payment for a position in this list. Directory names and Domain Ratings are shown for
-            research, and every link goes to the directory&apos;s own site.
-          </p>
-        </div>
-      </section>
-
-      {/* FAQ */}
-      <section className="border-t border-neutral-200 bg-neutral-50/60">
-        <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6 sm:py-14">
-          <h2 className="text-2xl font-black tracking-tight text-neutral-950">Directory submission FAQ</h2>
-          <div className="mt-5 space-y-4">
+          <div className="mt-8 space-y-4">
             {DIRECTORY_FAQS.map((faq) => (
-              <div key={faq.q} className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-5">
-                <h3 className="text-sm font-bold text-neutral-950 sm:text-base">{faq.q}</h3>
-                <p className="mt-1.5 text-xs font-medium leading-relaxed text-neutral-500 sm:text-sm">{faq.a}</p>
+              <div key={faq.q} className="rounded-xl border border-neutral-200 bg-white p-5 shadow-2xs">
+                <h3 className="text-sm font-bold text-neutral-950">{faq.q}</h3>
+                <p className="mt-2 text-xs sm:text-sm leading-relaxed text-neutral-600 font-normal">{faq.a}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
-
-      {/* Related */}
-      <section className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
-        <h2 className="text-2xl font-black tracking-tight text-neutral-950">Keep building</h2>
-        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {[
-            { title: 'SaaS ideas', body: 'Browse open-source starter projects with health scores.', href: '/ideas' },
-            { title: 'Build guides', body: 'Ship a real product on a curated open-source repo.', href: '/guides' },
-            { title: 'MRR calculator', body: 'Model monthly recurring revenue and ARR.', href: '/mrr-calculator' },
-            { title: 'Submit your SaaS', body: 'Get a free listing on the TopSAAS directory.', href: '/submit' },
-          ].map((item) => (
-            <a
-              key={item.title}
-              href={item.href}
-              onClick={(event) => {
-                event.preventDefault();
-                playSound('click', soundEnabled);
-                if (item.href === '/submit') {
-                  onOpenSubmit();
-                } else {
-                  navigateTo(item.href);
-                }
-              }}
-              className="group rounded-2xl border border-neutral-200 bg-white p-4 transition-colors hover:border-neutral-300 hover:bg-neutral-50"
-            >
-              <span className="flex items-center justify-between gap-2 text-sm font-bold text-neutral-950">
-                {item.title}
-                <ArrowUpRight className="h-3.5 w-3.5 text-neutral-400 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-              </span>
-              <span className="mt-1 block text-xs font-medium leading-relaxed text-neutral-500">{item.body}</span>
-            </a>
-          ))}
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="mx-auto w-full max-w-6xl px-4 pb-14 sm:px-6">
-        <div className="relative overflow-hidden rounded-3xl bg-neutral-950 px-6 py-10 text-center sm:px-10 sm:py-14">
-          <GridPattern width={44} height={44} className="opacity-10 [mask-image:radial-gradient(ellipse_at_center,black,transparent_75%)]" />
-          <div className="relative mx-auto max-w-2xl">
-            <h2 className="text-2xl font-black tracking-tight text-white sm:text-3xl">Start with the directory that sends buyers</h2>
-            <p className="mt-2 text-sm font-medium leading-relaxed text-neutral-300">
-              Submit your SaaS to TopSAAS for free. You get a crawlable product page, a spot in the weekly
-              leaderboard, and a listing that real founders and buyers can upvote.
-            </p>
-            <div className="mt-6 flex flex-col items-center justify-center gap-2.5 sm:flex-row">
-              <button
-                type="button"
-                onClick={() => {
-                  playSound('click', soundEnabled);
-                  onOpenSubmit();
-                }}
-                className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-mint-500 px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-mint-600 sm:w-auto"
-              >
-                Submit your SaaS
-                <ArrowRight className="h-4 w-4" />
-              </button>
-              <a
-                href="/product-directory"
-                onClick={(event) => {
-                  event.preventDefault();
-                  playSound('click', soundEnabled);
-                  navigateTo('/product-directory');
-                }}
-                className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-white/20 px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-white/10 sm:w-auto"
-              >
-                Compare all directories
-                <Globe2 className="h-4 w-4" />
-              </a>
-            </div>
-            <p className="mt-4 flex items-center justify-center gap-1.5 text-[11px] font-semibold text-neutral-400">
-              <CalendarDays className="h-3 w-3" />
-              Last reviewed {LAST_UPDATED}
-            </p>
-          </div>
-        </div>
-      </section>
-    </main>
+    </div>
   );
 };

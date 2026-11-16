@@ -16,6 +16,7 @@ import { CURATED_REPOS, CuratedRepo } from '../data/curatedRepos';
 import { getHealth } from '../utils/repoHealth';
 import { HealthScore } from './HealthScore';
 import { applyPageSeo } from '../utils/pageSeo';
+import { guideSeo } from '../utils/coreSeo';
 import { navigateTo } from '../utils/nav';
 import { playSound } from '../utils/sound';
 import { formatStars } from '../utils/github';
@@ -76,9 +77,7 @@ export const GuideDetailPage: React.FC<GuideDetailPageProps> = ({
       })),
     };
     return applyPageSeo({
-      title: `${guide.title} | TopSAAS Build Guide`,
-      description: guide.tagline.slice(0, 157),
-      canonical: `/guides/${guide.slug}`,
+      ...guideSeo(guide),
       jsonLdId: 'guide-jsonld',
       jsonLd: { '@context': 'https://schema.org', '@graph': [howTo, faq] },
     });

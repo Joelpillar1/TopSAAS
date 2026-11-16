@@ -39,9 +39,9 @@ interface DirectoryDetailPageProps {
 }
 
 const PRICE_STYLES: Record<DirectoryPrice, string> = {
-  free: 'border-mint-200 bg-mint-50 text-mint-700',
-  freemium: 'border-amber-200 bg-amber-50 text-amber-700',
-  paid: 'border-neutral-200 bg-neutral-100 text-neutral-700',
+  free: 'border-neutral-200 bg-neutral-50 text-neutral-600',
+  freemium: 'border-neutral-200 bg-neutral-50 text-neutral-600',
+  paid: 'border-neutral-200 bg-neutral-50 text-neutral-600',
 };
 
 const LINK_STYLES: Record<DirectoryLink, string> = {
@@ -52,7 +52,7 @@ const LINK_STYLES: Record<DirectoryLink, string> = {
 };
 
 const Badge: React.FC<{ children: React.ReactNode; className: string }> = ({ children, className }) => (
-  <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide ${className}`}>
+  <span className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide ${className}`}>
     {children}
   </span>
 );
@@ -159,7 +159,7 @@ export const DirectoryDetailPage: React.FC<DirectoryDetailPageProps> = ({
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge className="border-mint-200 bg-mint-50 text-mint-700">{DIRECTORY_KIND_LABELS[directory.kind]}</Badge>
+              <Badge className="border-neutral-200 bg-neutral-50 text-neutral-600">{DIRECTORY_KIND_LABELS[directory.kind]}</Badge>
               <Badge className={PRICE_STYLES[directory.price]}>{DIRECTORY_PRICE_LABELS[directory.price]}</Badge>
               <Badge className={LINK_STYLES[directory.link]}>{DIRECTORY_LINK_LABELS[directory.link]}</Badge>
             </div>

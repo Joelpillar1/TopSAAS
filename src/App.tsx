@@ -39,6 +39,8 @@ const GuideDetailPage = React.lazy(() => import('./components/GuideDetailPage').
 const DirectoriesListPage = React.lazy(() => import('./components/DirectoriesListPage').then((m) => ({ default: m.DirectoriesListPage })));
 const DirectoryDetailPage = React.lazy(() => import('./components/DirectoryDetailPage').then((m) => ({ default: m.DirectoryDetailPage })));
 const MrrCalculatorPage = React.lazy(() => import('./components/MrrCalculatorPage').then((m) => ({ default: m.MrrCalculatorPage })));
+const BlogListPage = React.lazy(() => import('./components/BlogListPage').then((m) => ({ default: m.BlogListPage })));
+const BlogDetailPage = React.lazy(() => import('./components/BlogDetailPage').then((m) => ({ default: m.BlogDetailPage })));
 const LegalPage = React.lazy(() => import('./components/LegalPage').then((m) => ({ default: m.LegalPage })));
 const PricingPage = React.lazy(() => import('./components/PricingPage').then((m) => ({ default: m.PricingPage })));
 const RepoDetailPage = React.lazy(() => import('./components/RepoDetailPage').then((m) => ({ default: m.RepoDetailPage })));
@@ -223,11 +225,17 @@ export default function App() {
       if (/^\/repo\//.test(path)) {
         return 'repo';
       }
-      if (/^\/product\//.test(path)) {
+      if (/^\/(?:products?)\//.test(path)) {
         return 'product';
       }
       if (/^\/guides\//.test(path)) {
         return 'guide';
+      }
+      if (/^\/blog\//.test(path)) {
+        return 'blog-post';
+      }
+      if (path === '/blog' || hash === '#blog' || hash === '#/blog') {
+        return 'blog';
       }
       if (path === '/product-directory' || path === '/directories') {
         return '/product-directory';
@@ -584,7 +592,9 @@ export default function App() {
           ? 'saas-ideas'
           : currentRoute === '/mrr-calculator'
             ? 'mrr-calculator'
-            : null;
+            : currentRoute === 'blog' || currentRoute === '/blog' || currentRoute === 'blog-post' || currentRoute === '/blog-post'
+              ? 'blog'
+              : null;
 
   // View layout — single-column row list (the bento grid was retired)
   // Search and Category filtering state
@@ -700,6 +710,14 @@ export default function App() {
     }
     return null;
   });
+  // Blog route state — resolved from /blog/:slug
+  const [blogSlug, setBlogSlug] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      const m = window.location.pathname.match(/^\/blog\/(.+)$/);
+      if (m) return decodeURIComponent(m[1]);
+    }
+    return null;
+  });
   // Directory routes — /product-directory, /product-directory/:hub, and /product-directory/:slug
   const [directoryHubSlug, setDirectoryHubSlug] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
@@ -767,6 +785,13 @@ export default function App() {
         const gm = path.match(/^\/guides\/(.+)$/);
         setCurrentRoute('guide');
         setGuideSlug(gm ? decodeURIComponent(gm[1]) : null);
+      } else if (path === '/blog' || hash === '#blog' || hash === '#/blog') {
+        setCurrentRoute('blog');
+        setBlogSlug(null);
+      } else if (/^\/blog\//.test(path)) {
+        const bm = path.match(/^\/blog\/(.+)$/);
+        setCurrentRoute('blog-post');
+        setBlogSlug(bm ? decodeURIComponent(bm[1]) : null);
       } else if (path === '/product-directory' || path === '/directories' || hash === '#product-directory' || hash === '#/product-directory') {
         setCurrentRoute('/product-directory');
         setDirectoryHubSlug(null);
@@ -2709,7 +2734,9 @@ export default function App() {
             ? '/ideas'
             : tab === 'mrr-calculator'
               ? '/mrr-calculator'
-              : '/pricing';
+              : tab === 'blog'
+                ? '/blog'
+                : '/pricing';
     const pageTitle =
       tab === 'directory'
         ? 'Directory'
@@ -2717,10 +2744,17 @@ export default function App() {
           ? 'Product Directory'
           : tab === 'pricing'
             ? 'Pricing'
-            : tab === 'saas-ideas'
-              ? 'SaaS Ideas'
-              : 'SaaS MRR Calculator';
-    setCurrentRoute(nextRoute);
+            : tab === 'blog'
+              ? 'Blog'
+              : tab === 'saas-ideas'
+                ? 'SaaS Ideas'
+                : 'SaaS MRR Calculator';
+    if (tab === 'blog') {
+      setBlogSlug(null);
+      setCurrentRoute('blog');
+    } else {
+      setCurrentRoute(nextRoute);
+    }
     try {
       window.history.pushState({}, pageTitle, nextRoute);
     } catch { }
@@ -3528,6 +3562,16 @@ export default function App() {
   // 1.10 SAAS MRR CALCULATOR ROUTE (/mrr-calculator)
   if (currentRoute === '/mrr-calculator') {
     return routeChrome(<MrrCalculatorPage soundEnabled={soundEnabled} />);
+  }
+
+  // 1.11 BLOG LIST ROUTE (/blog)
+  if (currentRoute === 'blog' || currentRoute === '/blog') {
+    return routeChrome(<BlogListPage soundEnabled={soundEnabled} />);
+  }
+
+  // 1.12 BLOG DETAIL ROUTE (/blog/:slug)
+  if (currentRoute === 'blog-post' || currentRoute === '/blog-post') {
+    return routeChrome(<BlogDetailPage slug={blogSlug} soundEnabled={soundEnabled} />);
   }
 
   // 2. MAIN DIRECTORY HOMEPAGE ROUTE

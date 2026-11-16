@@ -39,9 +39,13 @@ export function applyPageSeo(seo: PageSeo): () => void {
 
   let ldEl: HTMLScriptElement | null = null;
   if (seo.jsonLd !== undefined) {
+    const id = seo.jsonLdId || 'page-jsonld';
+    // Prerendered HTML already carries a JSON-LD block with this id. Replace it
+    // instead of appending a duplicate graph.
+    document.getElementById(id)?.remove();
     ldEl = document.createElement('script');
     ldEl.type = 'application/ld+json';
-    ldEl.id = seo.jsonLdId || 'page-jsonld';
+    ldEl.id = id;
     ldEl.textContent = JSON.stringify(seo.jsonLd);
     document.head.appendChild(ldEl);
   }

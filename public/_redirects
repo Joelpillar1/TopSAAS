@@ -12,4 +12,13 @@
 # Hashed build assets must never fall back to the SPA shell. Existing files are
 # served before redirects, so this only catches missing ones and returns 404.
 /assets/*          /404.html          404
-/*                 /index.html        200
+# Client-rendered routes that intentionally have no static HTML.
+/privacy           /index.html        200
+/terms             /index.html        200
+/profile           /index.html        200
+/payment-success   /index.html        200
+/payment/success   /index.html        200
+/accept            /index.html        200
+/accept/*          /index.html        200
+# Everything else is a real 404 so unknown URLs never become homepage duplicates.
+/*                 /404.html          404

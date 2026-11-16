@@ -17,6 +17,7 @@ import { appendTrackkitParams } from '../utils/trackkit';
 import { getProductSlug } from '../utils/slug';
 import { VerifiedBadge } from './VerifiedBadge';
 import { applyPageSeo } from '../utils/pageSeo';
+import { submitSeo } from '../utils/coreSeo';
 import { ProductLogo } from './ProductLogo';
 import { loadProducts, isProductUpvoted, isSponsorOnlyProduct } from '../utils/db';
 import {
@@ -304,9 +305,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
 }) => {
   useEffect(() => {
     return applyPageSeo({
-      title: 'Submit & Launch Your Product | TopSAAS',
-      description: 'Launch your SaaS product or AI tool on TopSAAS. Instant AI auto-fill, verified community leaderboard, high-authority dofollow backlinks, and weekly spotlights.',
-      canonical: 'https://www.topsaas.space/submit',
+      ...submitSeo(),
       jsonLd: {
         '@context': 'https://schema.org',
         '@type': 'WebPage',

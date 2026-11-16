@@ -6,6 +6,8 @@ import {
   Wallet,
 } from 'lucide-react';
 import { applyPageSeo } from '../utils/pageSeo';
+import { mrrSeo } from '../utils/coreSeo';
+import { MRR_FAQS, MRR_HOW_TO_STEPS, MRR_KEY_TAKEAWAYS } from '../data/corePageContent';
 import { navigateTo } from '../utils/nav';
 import { playSound } from '../utils/sound';
 
@@ -37,35 +39,9 @@ const CURRENCIES = [
   { code: 'AUD', symbol: 'A$', label: 'AUD (A$)' },
 ] as const;
 
-const KEY_TAKEAWAYS = [
-  'MRR is the predictable monthly subscription revenue from active paying customers.',
-  'The core formula is average revenue per customer multiplied by the number of paying customers.',
-  'Annual and quarterly plans must be converted to a monthly equivalent before they are added to MRR.',
-  'One-time fees, taxes, refunds, and free or trial users do not belong in MRR.',
-];
+const KEY_TAKEAWAYS = MRR_KEY_TAKEAWAYS;
 
-const HOW_TO_STEPS = [
-  {
-    title: 'Choose a period',
-    body: 'Use a calendar month so every calculation compares the same window. Most teams report MRR at the end of the month or on the first day of the next month.',
-  },
-  {
-    title: 'List active paying customers',
-    body: 'Count every customer who is currently billed on a recurring basis. Exclude trials, freemium accounts, and customers who have cancelled before the period ends.',
-  },
-  {
-    title: 'Normalize every plan to monthly',
-    body: 'Monthly plans count as billed. Annual plans are divided by 12. Quarterly plans are divided by 3. Usage and add-on revenue counts only when it repeats every month.',
-  },
-  {
-    title: 'Add the recurring revenue together',
-    body: 'Total the monthly value of every active subscription. This sum is your MRR before discounts, taxes, and one-time charges are considered.',
-  },
-  {
-    title: 'Divide by customers to get ARPA',
-    body: 'Average revenue per account (ARPA) is MRR divided by active paying customers. It tells you how much the average customer contributes each month.',
-  },
-];
+const HOW_TO_STEPS = MRR_HOW_TO_STEPS;
 
 const MRR_COMPONENTS = [
   {
@@ -240,65 +216,6 @@ const GROWTH_LEVERS = [
   },
 ];
 
-const MRR_FAQS = [
-  {
-    q: 'What is MRR?',
-    a: 'Monthly recurring revenue (MRR) is the predictable subscription revenue a SaaS business earns from active paying customers in a month, normalized to a monthly figure.',
-  },
-  {
-    q: 'How is MRR calculated?',
-    a: 'MRR = average revenue per customer × number of active paying customers. For multiple plans, add each plan price multiplied by its customer count, then divide by total customers to get the blended average used in this calculator.',
-  },
-  {
-    q: 'What should I include in MRR?',
-    a: 'Include recurring subscription fees, recurring seat charges, recurring add-ons, and recurring usage charges. Include the monthly equivalent of annual and quarterly plans at the amount actually billed after discounts.',
-  },
-  {
-    q: 'What should I exclude from MRR?',
-    a: 'Exclude one-time setup fees, professional services, consulting, taxes, refunds, hardware, and non-recurring sales. Do not count free users, trials, or cash collected in advance for a future period.',
-  },
-  {
-    q: 'How do annual plans count toward MRR?',
-    a: 'Divide the annual price by 12 to get the monthly equivalent. An annual plan billed at $1,200 contributes $100 to MRR each month, even though the cash arrives once.',
-  },
-  {
-    q: 'What is the difference between MRR and ARR?',
-    a: 'ARR is the annualized run rate: MRR × 12. It shows what the business would bill over a year at the current monthly pace. It is not the same as cash collected or recognized annual revenue.',
-  },
-  {
-    q: 'What is ARPA and how is it different from MRR?',
-    a: 'Average revenue per account (ARPA) is MRR divided by active paying customers. MRR measures the size of the recurring revenue base; ARPA measures how much the average customer contributes each month.',
-  },
-  {
-    q: 'What is net new MRR?',
-    a: 'Net new MRR is new MRR plus expansion MRR plus reactivation MRR, minus contraction MRR and churned MRR. It is the amount your recurring revenue base grew or shrank during the period.',
-  },
-  {
-    q: 'Do free users and trials count toward MRR?',
-    a: 'No. Only customers who are currently paying count toward MRR. Trials, freemium users, and cancelled accounts are excluded until billing starts.',
-  },
-  {
-    q: 'Is MRR the same as revenue or cash?',
-    a: 'No. Total revenue can include one-time payments, services, and other non-recurring income. Cash is what actually arrives, which can include annual prepayments. MRR focuses only on recurring revenue earned in the month.',
-  },
-  {
-    q: 'How do discounts and coupons affect MRR?',
-    a: 'Record MRR at the amount the customer is actually billed. A $99 plan with a permanent 20% discount contributes $79.20 to MRR. Temporary discounts can be reflected while they are active.',
-  },
-  {
-    q: 'How do I calculate MRR for usage-based pricing?',
-    a: 'Use the recurring portion of usage revenue. If usage is billed every month and is predictable enough to forecast, include a normalized monthly amount. Exclude one-off overages that will not repeat.',
-  },
-  {
-    q: 'How often should I calculate MRR?',
-    a: 'Calculate MRR at least once a month, on the same date each period. Most teams report it monthly and review the components, new, expansion, contraction, and churn, alongside the total.',
-  },
-  {
-    q: 'What is a good MRR growth rate?',
-    a: 'There is no universal number. Early-stage SaaS can grow quickly from a small base, while larger companies grow more slowly in percentage terms. Compare growth with your own previous months, your stage, and your churn rate rather than a single benchmark.',
-  },
-];
-
 const TOC = [
   { id: 'calculator', label: 'MRR calculator' },
   { id: 'what-is-mrr', label: 'What is MRR?' },
@@ -423,10 +340,7 @@ export const MrrCalculatorPage: React.FC<MrrCalculatorPageProps> = ({ soundEnabl
 
   useEffect(() => {
     return applyPageSeo({
-      title: 'SaaS MRR Calculator: Free Monthly Recurring Revenue Tool | TopSAAS',
-      description:
-        'Calculate SaaS MRR and ARR instantly from average revenue per customer and paying customers. Includes formulas, worked examples, annual plan conversion, and an MRR FAQ.',
-      canonical: '/mrr-calculator',
+      ...mrrSeo(),
       jsonLdId: 'mrr-calculator-jsonld',
       jsonLd: {
         '@context': 'https://schema.org',
@@ -567,6 +481,14 @@ export const MrrCalculatorPage: React.FC<MrrCalculatorPageProps> = ({ soundEnabl
 
       {/* Hero */}
       <header className="mx-auto mt-6 max-w-3xl text-center">
+        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-blue-200/70 bg-blue-50/40 p-1 pr-3.5 text-xs shadow-2xs">
+          <span className="rounded-full bg-blue-600 px-2.5 py-0.5 text-[11px] font-bold text-white shadow-xs">
+            Calculator
+          </span>
+          <span className="font-semibold text-neutral-800 text-[12px]">
+            Free SaaS MRR & ARR forecasting
+          </span>
+        </div>
         <h1 className="text-3xl font-black leading-[1.1] tracking-tight text-neutral-950 sm:text-4xl">
           SaaS MRR Calculator
         </h1>

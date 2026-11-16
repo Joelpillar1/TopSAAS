@@ -6,6 +6,7 @@ import { HealthScore } from './HealthScore';
 import { formatStars } from '../utils/github';
 import { plainCopy } from '../utils/plainCopy';
 import { applyPageSeo } from '../utils/pageSeo';
+import { trendingSeo } from '../utils/coreSeo';
 import { navigateTo } from '../utils/nav';
 import { playSound } from '../utils/sound';
 import { GridPattern } from '@/components/ui/grid-pattern';
@@ -257,10 +258,7 @@ export const TrendingPage: React.FC<TrendingPageProps> = ({ soundEnabled, onOpen
   // Per-route head swap so /trending is indexable with its own title/OG/JSON-LD.
   useEffect(() => {
     return applyPageSeo({
-      title: 'Trending Open Source Projects: Fastest-Growing Repos | TopSAAS',
-      description:
-        'See which open-source projects are trending now. Ranked by star velocity and recent GitHub activity across 23 categories, with health scores and repo details.',
-      canonical: '/trending',
+      ...trendingSeo(),
       jsonLdId: 'trending-jsonld',
       jsonLd: {
         '@context': 'https://schema.org',
@@ -379,6 +377,14 @@ export const TrendingPage: React.FC<TrendingPageProps> = ({ soundEnabled, onOpen
           )}
         />
         <div className="relative z-10 mx-auto max-w-3xl text-center">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-blue-200/70 bg-blue-50/40 p-1 pr-3.5 text-xs shadow-2xs">
+            <span className="rounded-full bg-blue-600 px-2.5 py-0.5 text-[11px] font-bold text-white shadow-xs">
+              Trending
+            </span>
+            <span className="font-semibold text-neutral-800 text-[12px]">
+              Real-time open source star momentum
+            </span>
+          </div>
           <h1
             id="trending-heading"
             className="text-3xl font-black leading-[1.1] tracking-tight text-neutral-950 sm:text-4xl"

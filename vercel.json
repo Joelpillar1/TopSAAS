@@ -107,8 +107,77 @@
       "dest": "/product-directory/$1/index.html"
     },
     {
-      "src": "/(.*)",
+      "src": "/products/(.*)",
+      "dest": "/products/$1/index.html"
+    },
+    {
+      "src": "/product/(.*)",
+      "dest": "/product/$1/index.html"
+    },
+    {
+      "src": "/trending",
+      "dest": "/trending/index.html"
+    },
+    {
+      "src": "/guides",
+      "dest": "/guides/index.html"
+    },
+    {
+      "src": "/guides/(.*)",
+      "dest": "/guides/$1/index.html"
+    },
+    {
+      "src": "/blog",
+      "dest": "/blog/index.html"
+    },
+    {
+      "src": "/blog/(.*)",
+      "dest": "/blog/$1/index.html"
+    },
+    {
+      "src": "/mrr-calculator",
+      "dest": "/mrr-calculator/index.html"
+    },
+    {
+      "src": "/submit",
+      "dest": "/submit/index.html"
+    },
+    {
+      "src": "/pricing",
+      "dest": "/pricing/index.html"
+    },
+    {
+      "src": "/privacy",
       "dest": "/index.html"
+    },
+    {
+      "src": "/terms",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/profile",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/payment-success",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/payment/success",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/accept",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/accept/(.*)",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/404.html",
+      "status": 404
     }
   ]
 }

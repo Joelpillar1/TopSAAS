@@ -13,8 +13,11 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
 }) => {
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-neutral-200 bg-white/95 backdrop-blur-lg px-3.5 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:hidden shadow-lg">
-      <button
-        onClick={() => {
+      <a
+        href="/submit"
+        onClick={(e) => {
+          if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+          e.preventDefault();
           playSound('click', soundEnabled);
           onOpenSubmit();
         }}
@@ -22,7 +25,7 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
       >
         <Plus className="h-4 w-4 stroke-[2.5]" />
         <span>New Launch</span>
-      </button>
+      </a>
     </div>
   );
 };

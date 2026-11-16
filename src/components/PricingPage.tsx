@@ -7,6 +7,8 @@ import { playSound } from '../utils/sound';
 import { WHOP_LINKS } from '../utils/whop';
 import { appendTrackkitParams } from '../utils/trackkit';
 import { applyPageSeo } from '../utils/pageSeo';
+import { pricingSeo } from '../utils/coreSeo';
+import { PRICING_FAQS } from '../data/corePageContent';
 
 interface PricingPageProps {
   onOpenSubmit: (plan?: 'free' | 'free_relaunch' | 'verified_launch' | 'lifetime' | 'monthly_pro') => void;
@@ -16,32 +18,7 @@ interface PricingPageProps {
   soundEnabled: boolean;
 }
 
-const faqs = [
-  {
-    q: 'What is the difference between Free and the $5 Verified Launch?',
-    a: 'Free submissions enter a manual queue that takes 7–14 days, with a standard nofollow backlink. The $5 Verified Launch gives you fast-track review within 24 hours, permanent high-authority DoFollow backlink, official Verified Mint Badge on card & profile, category top-3 pinned spot (7 Days), a dedicated 1,000+ word story on /blog, and /llms.txt AI search inclusion (ChatGPT, Perplexity and more).',
-  },
-  {
-    q: 'Is the $5 Verified Launch a recurring subscription?',
-    a: 'No! The Verified Launch is a simple one-time payment of $5 per product. You get permanent lifetime directory listing, verified badge, and dofollow backlink with zero recurring subscription fees.',
-  },
-  {
-    q: 'What is the difference between Featured Spot and Sidebar Sponsor?',
-    a: 'Featured Spot ($15/week or $39/month) pins your product card directly at the top of the main product feed above normal listings for maximum visibility while visitors browse and upvote. Sidebar Sponsor ($10/week or $29/month) places your product on the 24/7 sticky side rails across the Homepage and Product Details pages for sustained peripheral awareness.',
-  },
-  {
-    q: 'What is a DoFollow backlink?',
-    a: 'Free listings receive a nofollow link. Paid plans receive a permanent dofollow link, passing search engine authority from TopSAAS to your website to help your domain rank higher in Google over time.',
-  },
-  {
-    q: 'How does the llms.txt / AI ingestion work?',
-    a: 'Verified listings are indexed in our /llms.txt file with structured JSON metadata. When AI tools like ChatGPT, Perplexity, Claude, and emergent AI agents crawl TopSAAS for software recommendations, your product is directly readable by their engines.',
-  },
-  {
-    q: 'What is the verified badge?',
-    a: 'Verified listings receive a mint rosette badge on the TopSAAS directory card and details page. You also get embeddable SVG code to display your verified TopSAAS status on your landing page.',
-  },
-];
+const faqs = PRICING_FAQS;
 
 const comparisonRows: Array<{
   feature: string;
@@ -73,9 +50,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({
 
   useEffect(() => {
     return applyPageSeo({
-      title: 'Pricing & Launch Plans | TopSAAS',
-      description: 'Explore launch plans on TopSAAS. From free standard submissions to the $5 Verified Launch with permanent dofollow backlink, verified badge, and AI search inclusion.',
-      canonical: 'https://www.topsaas.space/pricing',
+      ...pricingSeo(),
       jsonLd: {
         '@context': 'https://schema.org',
         '@type': 'Product',
@@ -126,8 +101,13 @@ export const PricingPage: React.FC<PricingPageProps> = ({
       <div className="w-full rounded-3xl border border-neutral-200/80 bg-white p-6 sm:p-10 shadow-sm relative">
         {/* Header */}
         <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-10">
-          <div className="inline-flex items-center rounded-full border border-neutral-200 bg-neutral-50/80 px-3.5 py-1 text-xs font-semibold text-neutral-800 shadow-2xs">
-            <span>Pricing Plan</span>
+          <div className="inline-flex items-center gap-2 rounded-full border border-blue-200/70 bg-blue-50/40 p-1 pr-3.5 text-xs shadow-2xs">
+            <span className="rounded-full bg-blue-600 px-2.5 py-0.5 text-[11px] font-bold text-white shadow-xs">
+              Pricing
+            </span>
+            <span className="font-semibold text-neutral-800 text-[12px]">
+              Plans for every launch stage
+            </span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-neutral-950 tracking-tight mt-3">
             Get started for free
@@ -432,8 +412,13 @@ export const PricingPage: React.FC<PricingPageProps> = ({
       <div className="w-full rounded-3xl border border-neutral-200/80 bg-white p-6 sm:p-10 shadow-sm relative">
         {/* Header */}
         <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-10">
-          <div className="inline-flex items-center rounded-full border border-neutral-200 bg-neutral-50/80 px-3.5 py-1 text-xs font-semibold text-neutral-800 shadow-2xs">
-            <span>Featured Spotlight</span>
+          <div className="inline-flex items-center gap-2 rounded-full border border-blue-200/70 bg-blue-50/40 p-1 pr-3.5 text-xs shadow-2xs">
+            <span className="rounded-full bg-blue-600 px-2.5 py-0.5 text-[11px] font-bold text-white shadow-xs">
+              Spotlight
+            </span>
+            <span className="font-semibold text-neutral-800 text-[12px]">
+              Top-of-feed homepage placements
+            </span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-extrabold text-neutral-950 tracking-tight mt-3">
             Pin Your Product Above Directory Cards
