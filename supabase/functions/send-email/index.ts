@@ -453,36 +453,108 @@ function buildEmailContent(
       const rank = Number(data.rank || 0);
       const upvotes = Number(data.upvotes || 0);
       const clicks = Number(data.clicks || 0);
-      const weekNumber = Number(data.weekNumber || 1);
-      return {
-        subject: `Weekly TopSAAS Progress: ${productName} (#${rank || "—"})`,
-        html: wrapLayout({
-          preheader: `Week ${weekNumber} stats for ${productName}: ${upvotes} upvotes, ${clicks} clicks.`,
-          badge: `Week ${weekNumber} Recap`,
-          tone: "blue",
-          heading: `Your weekly progress for ${productName}`,
-          bodyHtml: `<p style="margin:0 0 14px;">Here is how <strong>${escapeHtml(productName)}</strong> is performing on TopSAAS:</p>
-            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" class="stat-box" style="margin:0 0 14px;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;background-color:#f8fafc;">
-              <tr>
-                <td class="stat-cell" style="padding:12px;text-align:center;border-right:1px solid #e2e8f0;">
-                  <div class="stat-label" style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;">Rank</div>
-                  <div class="stat-value" style="font-size:20px;font-weight:800;color:#0b0f19;margin-top:2px;">#${rank || "—"}</div>
-                </td>
-                <td class="stat-cell" style="padding:12px;text-align:center;border-right:1px solid #e2e8f0;">
-                  <div class="stat-label" style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;">Upvotes</div>
-                  <div class="stat-value" style="font-size:20px;font-weight:800;color:#0b0f19;margin-top:2px;">${upvotes}</div>
-                </td>
-                <td style="padding:12px;text-align:center;">
-                  <div class="stat-label" style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;">Clicks</div>
-                  <div class="stat-value" style="font-size:20px;font-weight:800;color:#0b0f19;margin-top:2px;">${clicks}</div>
-                </td>
-              </tr>
+      const pastWeekNumber = Number(data.pastWeekNumber || data.weekNumber || 1);
+      const exactLaunchCount = Number(data.exactLaunchCount || 0);
+      const topWinners = Array.isArray(data.topWinners) ? data.topWinners : [];
+      const isSubscribed = Boolean(data.isSubscribed);
+
+      const countLead = exactLaunchCount > 0
+        ? `<strong>${exactLaunchCount}</strong> SaaS and AI products launched on TopSAAS in Week ${pastWeekNumber}.`
+        : `Here are the top community favorites from Week ${pastWeekNumber}:`;
+
+      const medals = ["🥇", "🥈", "🥉"];
+
+      const winnersHtml = topWinners.length > 0
+        ? `<div style="margin:16px 0 20px;">
+            <p style="margin:0 0 10px;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.04em;">Top Launches of Week ${pastWeekNumber}</p>
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:separate;border-spacing:0 8px;">
+              ${topWinners.map((w: any, idx: number) => `
+                <tr>
+                  <td style="padding:12px 14px;background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td style="vertical-align:middle;">
+                          <div style="font-size:14px;font-weight:800;color:#0b0f19;">
+                            <span style="margin-right:6px;">${medals[idx] || `#${idx+1}`}</span>
+                            <a href="${SITE_URL}/products/${escapeHtml(String(w.slug || ''))}" style="color:#0b0f19;text-decoration:none;">${escapeHtml(String(w.name || ''))}</a>
+                            ${w.category ? `<span style="font-size:10px;font-weight:600;color:#2563eb;background:#eff6ff;padding:2px 7px;border-radius:99px;margin-left:6px;border:1px solid #dbeafe;">${escapeHtml(String(w.category).split(',')[0].trim())}</span>` : ''}
+                          </div>
+                          ${w.tagline ? `<div style="font-size:12px;color:#64748b;margin-top:3px;line-height:1.4;">${escapeHtml(String(w.tagline))}</div>` : ''}
+                        </td>
+                        <td align="right" style="vertical-align:middle;padding-left:12px;white-space:nowrap;">
+                          <span style="display:inline-block;padding:4px 10px;background:#ffffff;border:1px solid #cbd5e1;border-radius:8px;font-size:12px;font-weight:800;color:#0b0f19;">
+                            ▲ ${Number(w.upvotes || 0)}
+                          </span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              `).join('')}
             </table>
-            <p style="margin:0;">Want to climb higher this week? Share your listing or activate Auto Weekly Relaunch ($5/week).</p>`,
-          ctaLabel: `View ${productName}`,
+          </div>`
+        : "";
+
+      const proPitchHtml = !isSubscribed
+        ? `<div style="margin:22px 0 10px;padding:18px;background:linear-gradient(135deg, #f0fdf4 0%, #eff6ff 100%);border:1px solid #bbf7d0;border-radius:12px;">
+            <div style="font-size:11px;font-weight:800;color:#15803d;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Founder Spotlight</div>
+            <div style="font-size:15px;font-weight:800;color:#0f172a;margin-bottom:8px;line-height:1.3;">
+              Want your product featured in next week's top cohort?
+            </div>
+            <p style="font-size:12.5px;color:#334155;margin:0 0 12px;line-height:1.5;">
+              You are currently in our standard free queue. Upgrade to <strong>Verified Launch</strong> to unlock:
+            </p>
+            <ul style="margin:0 0 16px;padding-left:18px;font-size:12.5px;color:#1e293b;line-height:1.6;">
+              <li><strong>24-Hour Express Review</strong> — go live without waiting</li>
+              <li><strong>Permanent Dofollow Backlink</strong> to boost your domain authority</li>
+              <li><strong>AI-Search &amp; LLM Grounding</strong> in <code>/llms.txt</code> for ChatGPT, Perplexity &amp; Claude</li>
+              <li><strong>Priority Weekly Spotlight</strong> in the upcoming launch round</li>
+              <li><strong>Official Verified Badge</strong> on your card &amp; profile</li>
+            </ul>
+            <a href="${SITE_URL}/submit" style="display:inline-block;background-color:#0f172a;color:#ffffff;text-decoration:none;font-weight:700;font-size:13px;padding:10px 18px;border-radius:8px;">
+              Claim Next Week's Spotlight ($5 One-Time) &rarr;
+            </a>
+          </div>`
+        : `<p style="margin:16px 0 0;font-size:12px;color:#64748b;">Keep sharing your TopSAAS listing to earn more community upvotes and climb the leaderboard!</p>`;
+
+      const winnersText = topWinners.length > 0
+        ? `\nTop Launches of Week ${pastWeekNumber}:\n` +
+          topWinners.map((w: any, idx: number) => `${idx + 1}. ${w.name} (${w.upvotes} upvotes) - ${w.tagline}`).join('\n') + '\n\n'
+        : '';
+
+      return {
+        subject: `Week ${pastWeekNumber} Recap: Top Launches on TopSAAS 🚀`,
+        html: wrapLayout({
+          preheader: `Week ${pastWeekNumber} recap: ${exactLaunchCount} products launched. See the top 3 and your performance.`,
+          badge: `Week ${pastWeekNumber} Recap`,
+          tone: "blue",
+          heading: `Top Launches of Week ${pastWeekNumber}`,
+          bodyHtml: `<p style="margin:0 0 12px;color:#334155;line-height:1.5;">${countLead}</p>
+            ${winnersHtml}
+            <div style="margin:20px 0 14px;border-top:1px solid #e2e8f0;padding-top:16px;">
+              <p style="margin:0 0 10px;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.04em;">Your Listing Status: ${escapeHtml(productName)}</p>
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" class="stat-box" style="margin:0 0 14px;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;background-color:#f8fafc;">
+                <tr>
+                  <td class="stat-cell" style="padding:12px;text-align:center;border-right:1px solid #e2e8f0;">
+                    <div class="stat-label" style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;">Rank</div>
+                    <div class="stat-value" style="font-size:20px;font-weight:800;color:#0b0f19;margin-top:2px;">#${rank || "—"}</div>
+                  </td>
+                  <td class="stat-cell" style="padding:12px;text-align:center;border-right:1px solid #e2e8f0;">
+                    <div class="stat-label" style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;">Upvotes</div>
+                    <div class="stat-value" style="font-size:20px;font-weight:800;color:#0b0f19;margin-top:2px;">${upvotes}</div>
+                  </td>
+                  <td style="padding:12px;text-align:center;">
+                    <div class="stat-label" style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;">Clicks</div>
+                    <div class="stat-value" style="font-size:20px;font-weight:800;color:#0b0f19;margin-top:2px;">${clicks}</div>
+                  </td>
+                </tr>
+              </table>
+            </div>
+            ${proPitchHtml}`,
+          ctaLabel: `View ${productName} on TopSAAS`,
           ctaUrl: productUrl,
         }),
-        text: `Week ${weekNumber} progress for ${productName} on TopSAAS:\n- Rank: #${rank || "—"}\n- Upvotes: ${upvotes}\n- Clicks: ${clicks}\n\nView listing: ${productUrl}`,
+        text: `TopSAAS Week ${pastWeekNumber} Recap:\n\n${exactLaunchCount} products launched last week.${winnersText}Your product (${productName}):\n- Rank: #${rank || "—"}\n- Upvotes: ${upvotes}\n- Clicks: ${clicks}\n\nView listing: ${productUrl}\n\n${!isSubscribed ? `Want your product featured in next week's top cohort? Upgrade to Verified Launch at ${SITE_URL}/submit\n` : ''}`,
       };
     }
 

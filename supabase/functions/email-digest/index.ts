@@ -179,13 +179,41 @@ Deno.serve(async (req: Request) => {
 
     // ── 2. Weekly progress digest ──
     if (mode === "weekly" || mode === "all") {
-      const weekNumber = getCurrentWeekNumber(now);
+      const currentWeekNumber = getCurrentWeekNumber(now);
+      const pastWeekNumber = Math.max(1, currentWeekNumber - 1);
+      const pastWeekStart = LAUNCH_EPOCH_START + (pastWeekNumber - 1) * WEEK_MS;
+      const pastWeekEnd = pastWeekStart + WEEK_MS;
+
       const { data: liveProducts } = await supabase
         .from("products")
-        .select("id, name, slug, rank, upvotes, clicks, submitted_by, sponsor_contact_email, is_sponsor_only")
-        .order("rank", { ascending: true });
+        .select("id, name, slug, rank, upvotes, clicks, submitted_by, sponsor_contact_email, is_sponsor_only, scheduled_launch_week, created_at, tagline, url, logo_url, category, verified, is_sponsored, sponsor_tier")
+        .order("upvotes", { ascending: false });
 
       const directoryProducts = (liveProducts || []).filter((p) => !p.is_sponsor_only);
+
+      // Filter products that launched in the past week (either by explicit scheduled_launch_week or created_at)
+      const pastWeekProducts = directoryProducts.filter((p) => {
+        if (p.scheduled_launch_week != null) {
+          return Number(p.scheduled_launch_week) === pastWeekNumber;
+        }
+        const t = Number(p.created_at);
+        return t >= pastWeekStart && t < pastWeekEnd;
+      });
+
+      const exactLaunchCount = pastWeekProducts.length;
+
+      // Extract top 3 winners for the past week by upvotes
+      const sortedPastWeek = [...pastWeekProducts].sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0));
+      const topWinners = sortedPastWeek.slice(0, 3).map((w, idx) => ({
+        rank: idx + 1,
+        name: w.name,
+        tagline: w.tagline || "",
+        category: w.category || "",
+        upvotes: w.upvotes || 0,
+        url: w.url || "",
+        slug: w.slug || w.id,
+      }));
+
       const ownerIds = [...new Set(directoryProducts.map((p) => p.submitted_by).filter(Boolean))];
 
       const [{ data: ownerProfiles }, { data: ownerSubs }] = await Promise.all([
@@ -212,17 +240,26 @@ Deno.serve(async (req: Request) => {
           prod.sponsor_contact_email;
         if (!to) continue;
 
+        const isSubscribed = Boolean(
+          prod.verified ||
+          prod.is_sponsored ||
+          (prod.sponsor_tier && prod.sponsor_tier !== "none")
+        );
+
         const ok = await triggerSendEmail(supabaseUrl, serviceKey, {
           type: "weekly_digest",
           to,
-          idempotencyKey: `weekly_digest:W${weekNumber}:${prod.id}`,
+          idempotencyKey: `weekly_digest:W${pastWeekNumber}:${prod.id}`,
           data: {
             productName: prod.name,
             slug: prod.slug || prod.id,
             rank: prod.rank || 0,
             upvotes: prod.upvotes || 0,
             clicks: prod.clicks || 0,
-            weekNumber,
+            pastWeekNumber,
+            exactLaunchCount,
+            topWinners,
+            isSubscribed,
           },
         });
         if (ok) summary.weeklyDigests++;

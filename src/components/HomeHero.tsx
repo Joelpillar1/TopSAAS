@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Globe, Flame } from 'lucide-react';
+import { Globe, Flame, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { GridPattern } from '@/components/ui/grid-pattern';
 import { playSound } from '../utils/sound';
@@ -63,6 +63,12 @@ export const HomeHero: React.FC<HomeHeroProps> = ({
         )}
       />
       <div className="relative z-10 mx-auto flex max-w-2xl flex-col items-center text-center">
+        {/* AI & Search Positioning Badge */}
+        <div className="mb-3.5 inline-flex items-center gap-1.5 rounded-full border border-blue-200/80 bg-blue-50/80 px-3 py-1 text-[11px] sm:text-xs font-semibold text-blue-900 shadow-2xs backdrop-blur-xs">
+          <Sparkles className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+          <span>Built for Google, Perplexity &amp; ChatGPT Search</span>
+        </div>
+
         {/* Headline */}
         <h1 className="text-3xl font-black leading-[1.05] tracking-tight text-neutral-950 sm:text-5xl">
           <span className="whitespace-nowrap">Find the best SaaS.</span>
@@ -71,7 +77,7 @@ export const HomeHero: React.FC<HomeHeroProps> = ({
         </h1>
 
         <p className="mt-3.5 text-xs sm:text-sm font-medium text-neutral-500 max-w-lg">
-          Free to submit. Get discovered by thousands of founders & users on autopilot.
+          Get discovered by early adopters and indexed by AI search models on autopilot. Free to submit.
         </p>
 
         {/* Launch Now input and button */}

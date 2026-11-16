@@ -2636,7 +2636,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                             <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200/90 text-emerald-600 mt-0.5">
                               <Check className="h-3 w-3 stroke-[3]" />
                             </div>
-                            <span>Indexed in <strong>/llms.txt</strong> for AI search (ChatGPT, Perplexity and more)</span>
+                            <span>Indexed in <strong>/llms.txt &amp; Schema.org</strong> for AI search (ChatGPT, Perplexity &amp; Claude)</span>
                           </li>
                           <li className="flex items-start gap-2.5 leading-snug">
                             <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200/90 text-emerald-600 mt-0.5">
