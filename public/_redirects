@@ -7,14 +7,15 @@
 /products.json     /products.json     200
 /sitemap.xml       /sitemap.xml       200
 /robots.txt        /robots.txt        200
-/directories       /product-directory 301
-/directories/*     /product-directory/:splat 301
+/directories       /product-directory 308
+/directories/*     /product-directory/:splat 308
 # Hashed build assets must never fall back to the SPA shell. Existing files are
 # served before redirects, so this only catches missing ones and returns 404.
 /assets/*          /404.html          404
+# Prerendered legal pages.
+/privacy           /privacy/index.html 200
+/terms             /terms/index.html   200
 # Client-rendered routes that intentionally have no static HTML.
-/privacy           /index.html        200
-/terms             /index.html        200
 /profile           /index.html        200
 /payment-success   /index.html        200
 /payment/success   /index.html        200

@@ -837,17 +837,25 @@ export default function App() {
     };
   }, []);
 
-  // Ensure /accept is strictly unindexed and private from all search engines & crawlers
+  // Keep private and transactional routes out of search indexes. The matching
+  // X-Robots-Tag headers in vercel.json cover crawlers that never run React.
   useEffect(() => {
+    const noindex =
+      currentRoute === '/accept' ||
+      currentRoute === '/profile' ||
+      currentRoute === '/payment-success' ||
+      currentRoute === 'badge';
     let metaRobots = document.querySelector('meta[name="robots"]') as HTMLMetaElement | null;
-    if (currentRoute === '/accept') {
+    if (noindex) {
       if (!metaRobots) {
         metaRobots = document.createElement('meta');
         metaRobots.name = 'robots';
         document.head.appendChild(metaRobots);
       }
       metaRobots.content = 'noindex, nofollow, noarchive, nosnippet';
-      document.title = 'Admin Portal · TopSAAS';
+      if (currentRoute === '/accept') {
+        document.title = 'Admin Portal · TopSAAS';
+      }
     } else {
       if (metaRobots) {
         metaRobots.content = 'index, follow';

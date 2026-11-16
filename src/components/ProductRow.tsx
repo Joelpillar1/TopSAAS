@@ -6,6 +6,7 @@ import { BorderBeam } from './BorderBeam';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
+import { getProductSlug } from '../utils/slug';
 
 interface ProductRowProps {
   product: Product;
@@ -142,7 +143,19 @@ export const ProductRow: React.FC<ProductRowProps> = ({
       <div className="min-w-0 flex-1 py-0.5">
         <div className="flex items-center gap-2">
           <h3 className="truncate text-[15px] font-bold tracking-tight text-neutral-950 sm:text-base group-hover:text-black transition-colors">
-            {product.name}
+            {/* Real anchor: crawlers that render JS still see a link to the product page. */}
+            <a
+              href={`/products/${getProductSlug(product)}`}
+              onClick={(e) => {
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                e.preventDefault();
+                e.stopPropagation();
+                handleOpen();
+              }}
+              className="hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 rounded-sm"
+            >
+              {product.name}
+            </a>
           </h3>
           {showVerified && product.verified && (
             <VerifiedBadge className="h-4 w-4 shrink-0" title="Verified Startup" />

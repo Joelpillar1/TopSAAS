@@ -13,12 +13,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.topsaas.space/profile</loc>
-    <lastmod>2026-09-06T18:00:00.000Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
     <loc>https://www.topsaas.space/privacy</loc>
     <lastmod>2026-09-06T18:00:00.000Z</lastmod>
     <changefreq>monthly</changefreq>

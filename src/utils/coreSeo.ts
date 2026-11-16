@@ -97,3 +97,17 @@ export const blogPostSeo = (post: BlogPost): SeoCopy =>
     post.tagline.slice(0, 158),
     `${SITE_URL}/blog/${post.slug}`
   );
+
+export const privacySeo = (): SeoCopy =>
+  copy(
+    'Privacy Policy | TopSAAS',
+    'How TopSAAS collects, uses, stores, and protects your data, including account, submission, payment, and local storage information, plus your deletion rights.',
+    `${SITE_URL}/privacy`
+  );
+
+export const termsSeo = (): SeoCopy =>
+  copy(
+    'Terms of Service | TopSAAS',
+    'The rules for using TopSAAS: directory submission guidelines, fair play and anti-cheat policy, featured spot terms, intellectual property, and liability.',
+    `${SITE_URL}/terms`
+  );

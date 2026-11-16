@@ -223,6 +223,23 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                     onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
                   />
                 </a>
+                <a
+                  href="https://larklaunch.com/?ref=badge"
+                  target="_blank"
+                  rel="noopener"
+                  title="Featured on LarkLaunch"
+                  className="transition-opacity hover:opacity-80 inline-flex items-center shrink-0"
+                >
+                  <img
+                    src="https://larklaunch.com/badge/light.svg"
+                    alt="Featured on LarkLaunch"
+                    width={180}
+                    height={52}
+                    className="h-7.5 w-auto"
+                    loading="lazy"
+                    onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                  />
+                </a>
                 <div className="inline-flex items-center shrink-0 transition-opacity hover:opacity-80 [&_img]:h-8 [&_img]:w-auto [&_img]:max-w-full">
                   <a href="https://daniellaunches.com" target="_blank">
                     <img src="https://daniellaunches.com/badge-light.svg" alt="Featured on DanielLaunches" width="220" height="48" />
@@ -517,6 +534,23 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                     alt="Listed on AlterBase"
                     width={200}
                     height={50}
+                    className="h-7.5 w-auto"
+                    loading="lazy"
+                    onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                  />
+                </a>
+                <a
+                  href="https://larklaunch.com/?ref=badge"
+                  target="_blank"
+                  rel="noopener"
+                  title="Featured on LarkLaunch"
+                  className="transition-opacity hover:opacity-80 inline-flex items-center shrink-0"
+                >
+                  <img
+                    src="https://larklaunch.com/badge/light.svg"
+                    alt="Featured on LarkLaunch"
+                    width={180}
+                    height={52}
                     className="h-7.5 w-auto"
                     loading="lazy"
                     onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}

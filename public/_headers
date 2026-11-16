@@ -1,0 +1,27 @@
+# Header parity for Netlify / Cloudflare Pages hosts.
+# Mirrors the header routes in vercel.json so noindex, security, and cache
+# behaviour do not depend on which host serves the build.
+
+/*
+  X-Content-Type-Options: nosniff
+  Cache-Control: public, max-age=0, must-revalidate
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/accept
+  X-Robots-Tag: noindex, nofollow, noarchive, nosnippet
+/accept/*
+  X-Robots-Tag: noindex, nofollow, noarchive, nosnippet
+
+/profile
+  X-Robots-Tag: noindex, nofollow, noarchive, nosnippet
+
+/payment-success
+  X-Robots-Tag: noindex, nofollow, noarchive, nosnippet
+
+/payment/success
+  X-Robots-Tag: noindex, nofollow, noarchive, nosnippet
+
+/badge/*
+  X-Robots-Tag: noindex, nofollow, noarchive, nosnippet

@@ -41,6 +41,7 @@ import {
 } from '../src/data/corePageContent';
 import { INITIAL_PRODUCTS } from '../src/data/initialProducts';
 import { BLOG_POSTS, type BlogPost } from '../src/data/blogPosts';
+import { LEGAL_EFFECTIVE, PRIVACY_SECTIONS, TERMS_SECTIONS, type LegalSection } from '../src/data/legalContent';
 import { getProductSlug } from '../src/utils/slug';
 import {
   blogPostSeo,
@@ -50,8 +51,10 @@ import {
   homeSeo,
   mrrSeo,
   pricingSeo,
+  privacySeo,
   productSeo,
   submitSeo,
+  termsSeo,
   trendingSeo,
 } from '../src/utils/coreSeo';
 import type { Product } from '../src/types';
@@ -116,7 +119,7 @@ const relatedRepos = (repo: CuratedRepo): CuratedRepo[] => {
 };
 
 const pageStyle =
-  'max-width:52rem;margin:0 auto;padding:2rem 1.25rem 3rem;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color:#171717;line-height:1.65;';
+  "max-width:52rem;margin:0 auto;padding:2rem 1.25rem 3rem;font-family:ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;color:#171717;line-height:1.65;";
 const linkStyle = 'color:#047857;text-decoration:underline;';
 const mutedStyle = 'color:#737373;font-size:.875rem;';
 
@@ -494,6 +497,10 @@ const siteJsonLd = () => [
     name: 'TopSAAS',
     url: `${SITE_URL}/`,
     logo: `${SITE_URL}/logo/TopSAAS%20-%20blue.png`,
+    sameAs: [
+      'https://x.com/topsaas_space',
+      'https://github.com/Joelpillar1/TopSAAS',
+    ],
   },
 ];
 
@@ -678,27 +685,84 @@ const buildProductJsonLd = (product: Product): string => {
 
 /* ── homepage ── */
 
-const buildHomeBody = (products: Product[]): string => `
+const HOME_FAQS = [
+  {
+    q: 'What is TopSAAS?',
+    a: 'TopSAAS is a curated directory and community leaderboard for modern SaaS products, AI tools, and open-source software starters. Listings are ranked by verified community upvotes rather than paid placement.',
+  },
+  {
+    q: 'Is listing a product on TopSAAS free?',
+    a: 'Yes. A standard listing is free forever and goes through manual review in 7 to 14 days. The optional $5 Verified Launch adds a 24-hour review, a permanent dofollow backlink, a verified badge, category placement, and /llms.txt AI search inclusion.',
+  },
+  {
+    q: 'How are products ranked on the homepage?',
+    a: 'The homepage leaderboard is ordered by real community upvotes for the current weekly cohort. Every verified upvote moves a product up the list, and sponsored placements are labelled separately.',
+  },
+  {
+    q: 'What are the open-source SaaS ideas?',
+    a: 'The /ideas catalog lists thousands of curated open-source repositories that can serve as the foundation for a SaaS product, grouped by category with stars, forks, license, health score, and a self-hosting verdict.',
+  },
+  {
+    q: 'Does TopSAAS offer a free MRR calculator?',
+    a: 'Yes. The /mrr-calculator page calculates monthly recurring revenue and annual run rate entirely in the browser from average revenue per customer and the number of paying customers.',
+  },
+  {
+    q: 'How do I get my product featured?',
+    a: 'Submit the product, then choose the free listing or the $5 Verified Launch. Featured Spot and Sidebar Sponsor placements are available for additional weekly or monthly visibility.',
+  },
+];
+
+const buildHomeBody = (products: Product[]): string => {
+  const starters = topRepos.slice(0, 20);
+  return `
       <div style="${pageStyle}">
         <main>
           <h1 style="${h1Style}">Find the best SaaS. Or get yours found.</h1>
           <p style="margin:0 0 1rem">TopSAAS is a curated directory of modern SaaS products and AI tools. Every listing is ranked by real community upvotes, with verified launches, weekly spotlights, and an open-source starter catalog for builders.</p>
-          <p style="margin:0 0 1.5rem">Browse <a href="/product-directory" style="${linkStyle}">the product directory</a>, explore <a href="/ideas" style="${linkStyle}">open-source SaaS ideas</a>, see <a href="/trending" style="${linkStyle}">trending projects</a>, read <a href="/guides" style="${linkStyle}">build guides</a>, or estimate revenue with the <a href="/mrr-calculator" style="${linkStyle}">MRR calculator</a>.</p>
+          <p style="margin:0 0 1rem">Browse <a href="/product-directory" style="${linkStyle}">the product directory</a>, explore <a href="/ideas" style="${linkStyle}">open-source SaaS ideas</a>, see <a href="/trending" style="${linkStyle}">trending projects</a>, read <a href="/guides" style="${linkStyle}">build guides</a>, or estimate revenue with the <a href="/mrr-calculator" style="${linkStyle}">MRR calculator</a>.</p>
           <h2 style="${h2Style}">Top SaaS products this week</h2>
           <ul style="margin:0 0 1rem;padding-left:1.25rem">
 ${products
   .map(
     (product) =>
-      `            <li><a href="/products/${escapeHtml(getProductSlug(product))}" style="${linkStyle}">${escapeHtml(product.name)}</a>: ${escapeHtml(product.tagline || '')}</li>`
+      `            <li><a href="/products/${escapeHtml(getProductSlug(product))}" style="${linkStyle}">${escapeHtml(product.name)}</a>: ${escapeHtml(product.tagline || '')}${product.category ? ` (${escapeHtml(product.category)})` : ''}</li>`
   )
   .join('\n')}
           </ul>
+          <h2 style="${h2Style}">Open-source SaaS starters to build on</h2>
+          <p style="margin:0 0 1rem">The <a href="/ideas" style="${linkStyle}">SaaS Ideas catalog</a> turns open-source repositories into launchable products. Here are some of the most popular foundations:</p>
+          <ul style="margin:0 0 1rem;padding-left:1.25rem">
+${starters
+  .map(
+    (repo) =>
+      `            <li><a href="/repo/${escapeHtml(repo.full_name)}" style="${linkStyle}">${escapeHtml(repo.name)}</a>: ${escapeHtml(plainCopy(repo.description || ''))} (${repo.stargazers_count.toLocaleString('en-US')} stars, ${escapeHtml(repo.language || 'multi-language')})</li>`
+  )
+  .join('\n')}
+          </ul>
+          <h2 style="${h2Style}">Build guides</h2>
+          <ul style="margin:0 0 1rem;padding-left:1.25rem">
+${BUILD_GUIDES.map(
+  (guide) =>
+    `            <li><a href="/guides/${escapeHtml(guide.slug)}" style="${linkStyle}">${escapeHtml(guide.title)}</a>: ${escapeHtml(guide.tagline)}</li>`
+).join('\n')}
+          </ul>
+          <h2 style="${h2Style}">Latest from the TopSAAS blog</h2>
+          <ul style="margin:0 0 1rem;padding-left:1.25rem">
+${BLOG_POSTS.map(
+  (post) =>
+    `            <li><a href="/blog/${escapeHtml(post.slug)}" style="${linkStyle}">${escapeHtml(post.title)}</a>: ${escapeHtml(post.tagline)}</li>`
+).join('\n')}
+          </ul>
+          <h2 style="${h2Style}">Frequently asked questions</h2>
+          ${faqList(HOME_FAQS)}
           <h2 style="${h2Style}">List your product</h2>
           <p style="margin:0 0 1rem">Submissions are free and take about 30 seconds. The $5 Verified Launch adds a permanent dofollow backlink, a verified badge, and a fast-track review. <a href="/submit" style="${linkStyle}">Submit your product</a> or compare <a href="/pricing" style="${linkStyle}">launch plans</a>.</p>
+          <p style="margin:0 0 1rem">TopSAAS is operated independently. Read our <a href="/privacy" style="${linkStyle}">privacy policy</a> and <a href="/terms" style="${linkStyle}">terms of service</a>.</p>
         </main>
 ${staticFooter}
       </div>
     `;
+};
 
 const buildHomeJsonLd = (products: Product[]): string =>
   escapeJson({
@@ -723,6 +787,10 @@ const buildHomeJsonLd = (products: Product[]): string =>
         name: 'TopSAAS',
         url: `${SITE_URL}/`,
         logo: `${SITE_URL}/logo/TopSAAS%20-%20blue.png`,
+        sameAs: [
+          'https://x.com/topsaas_space',
+          'https://github.com/Joelpillar1/TopSAAS',
+        ],
       },
       {
         '@type': 'CollectionPage',
@@ -743,6 +811,18 @@ const buildHomeJsonLd = (products: Product[]): string =>
           position: index + 1,
           name: product.name,
           url: `${SITE_URL}/products/${getProductSlug(product)}`,
+        })),
+      },
+      faqJsonLd(HOME_FAQS),
+      {
+        '@type': 'ItemList',
+        name: 'TopSAAS build guides',
+        numberOfItems: BUILD_GUIDES.length,
+        itemListElement: BUILD_GUIDES.map((guide, index) => ({
+          '@type': 'ListItem',
+          position: index + 1,
+          name: guide.title,
+          url: `${SITE_URL}/guides/${guide.slug}`,
         })),
       },
     ],
@@ -1111,6 +1191,72 @@ const buildPricingJsonLd = (): string =>
       ]),
     ],
   });
+
+/* ── legal ── */
+
+const buildLegalBody = (doc: 'privacy' | 'terms'): string => {
+  const title = doc === 'privacy' ? 'Privacy Policy' : 'Terms of Service';
+  const sections = doc === 'privacy' ? PRIVACY_SECTIONS : TERMS_SECTIONS;
+  const otherDoc = doc === 'privacy' ? 'terms' : 'privacy';
+  const otherLabel = doc === 'privacy' ? 'Terms of Service' : 'Privacy Policy';
+
+  const renderSection = (section: LegalSection): string => `          <section style="margin:0 0 1.5rem">
+            <h2 style="${h2Style}">${escapeHtml(section.heading)}</h2>
+${(section.paragraphs || [])
+  .map((paragraph) => `            <p style="margin:0 0 .75rem">${escapeHtml(paragraph)}</p>`)
+  .join('\n')}
+${(section.definitions || [])
+  .map(
+    (definition) =>
+      `            <p style="margin:0 0 .5rem"><strong>${escapeHtml(definition.label)}</strong> ${escapeHtml(definition.body)}</p>`
+  )
+  .join('\n')}
+${section.bullets ? `            <ul style="margin:0 0 .75rem;padding-left:1.25rem">\n${section.bullets.map((bullet) => `              <li>${escapeHtml(bullet)}</li>`).join('\n')}\n            </ul>` : ''}
+${section.note ? `            <p style="margin:0 0 .75rem;padding:.75rem;background:#f5f5f5;border-left:3px solid #a3a3a3"><strong>${escapeHtml(section.note)}</strong></p>` : ''}
+          </section>`;
+
+  return `
+      <div style="${pageStyle}">
+        <nav aria-label="Breadcrumb" style="${mutedStyle}margin-bottom:1.25rem">
+          <a href="/" style="${linkStyle}">Directory</a>
+          <span aria-hidden="true">/</span>
+          <span>${escapeHtml(title)}</span>
+        </nav>
+        <main>
+          <h1 style="${h1Style}">${escapeHtml(title)}</h1>
+          <p style="${mutedStyle}margin:0 0 1.5rem">Official Terms &amp; Policies · Effective ${escapeHtml(LEGAL_EFFECTIVE)}</p>
+${sections.map(renderSection).join('\n')}
+          <p style="margin:1.5rem 0 0">Read the <a href="/${otherDoc}" style="${linkStyle}">${escapeHtml(otherLabel)}</a>, or go back to the <a href="/" style="${linkStyle}">TopSAAS directory</a>.</p>
+        </main>
+${staticFooter}
+      </div>
+    `;
+};
+
+const buildLegalJsonLd = (doc: 'privacy' | 'terms'): string => {
+  const seo = doc === 'privacy' ? privacySeo() : termsSeo();
+  const title = doc === 'privacy' ? 'Privacy Policy' : 'Terms of Service';
+  return escapeJson({
+    '@context': 'https://schema.org',
+    '@graph': [
+      ...siteJsonLd(),
+      {
+        '@type': 'WebPage',
+        '@id': `${seo.canonical}#webpage`,
+        url: seo.canonical,
+        name: seo.title,
+        description: seo.description,
+        inLanguage: 'en',
+        isPartOf: { '@id': `${SITE_URL}/#website` },
+        about: { '@id': `${SITE_URL}/#organization` },
+      },
+      breadcrumbJsonLd([
+        ['Directory', `${SITE_URL}/`],
+        [title, seo.canonical],
+      ]),
+    ],
+  });
+};
 
 /* ── 404 ── */
 
@@ -1501,6 +1647,35 @@ ${products
         })
       );
 
+      // ── legal pages, each with its own canonical ──
+      const privacy = privacySeo();
+      writePage(
+        distDir,
+        ['privacy'],
+        renderPage(template, {
+          title: privacy.title,
+          description: privacy.description,
+          canonical: privacy.canonical,
+          body: buildLegalBody('privacy'),
+          jsonLd: buildLegalJsonLd('privacy'),
+          jsonLdId: 'privacy-jsonld',
+        })
+      );
+
+      const terms = termsSeo();
+      writePage(
+        distDir,
+        ['terms'],
+        renderPage(template, {
+          title: terms.title,
+          description: terms.description,
+          canonical: terms.canonical,
+          body: buildLegalBody('terms'),
+          jsonLd: buildLegalJsonLd('terms'),
+          jsonLdId: 'terms-jsonld',
+        })
+      );
+
       // ── blog ──
       const blog = blogSeo();
       writePage(
@@ -1566,7 +1741,7 @@ ${products
       );
 
       console.log(
-        `[seo-prerender] wrote ${uniqueRepos.length} repo pages, ${DIRECTORIES.length} directory pages, ${DIRECTORY_HUBS.length} directory hubs, ${products.length} product pages, 3 guides, 7 core pages and /ideas`
+        `[seo-prerender] wrote ${uniqueRepos.length} repo pages, ${DIRECTORIES.length} directory pages, ${DIRECTORY_HUBS.length} directory hubs, ${products.length} product pages, 3 guides, 5 blog posts, 2 legal pages, 9 core pages and /ideas`
       );
     },
   };

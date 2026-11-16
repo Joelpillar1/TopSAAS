@@ -2,9 +2,9 @@
   "platform": "TopSAAS",
   "name": "TopSAAS — The Curated SaaS Directory",
   "url": "https://www.topsaas.space",
-  "generated_at": "2026-10-06T00:00:00Z",
-  "version": "2.1.0",
-  "summary": "Find your SaaS idea: open-source starter repos across multiple categories with per-repo editorial detail pages, plus the curated leaderboard for SaaS products, AI tools, and developer utilities.",
+  "generated_at": "2026-11-16T08:55:00Z",
+  "version": "2.2.0",
+  "summary": "Discover and launch modern SaaS products: a weekly community leaderboard for SaaS tools and AI products (ranked by real upvotes), an open-source starter repo catalog with per-repo editorial detail pages, build guides, a blog, an MRR calculator, and a curated directory of 300+ submission platforms ranked by Domain Rating.",
   "statistics": {
     "categories_count": 28,
     "primary_categories": [
@@ -15,7 +15,11 @@
       "SaaS & Indie",
       "Crypto & Web3",
       "Marketing & SEO",
-      "Analytics & Data"
+      "Analytics & Data",
+      "Finance & Fintech",
+      "Health & Wellness",
+      "Security & Privacy",
+      "Education & Learning"
     ],
     "pricing_models": [
       "Free",
@@ -23,26 +27,69 @@
       "Paid",
       "Open Source"
     ],
+    "weekly_launch_rounds": {
+      "description": "Products are grouped into weekly launch cohorts starting Nov 2, 2026. Each week has up to 25 slots. Current week: 3 (Nov 16–22, 2026).",
+      "current_week": 3,
+      "week_url_pattern": "https://www.topsaas.space/?week={weekNumber}"
+    },
+    "product_directory": {
+      "description": "300+ submission directories and launch platforms ranked by Ahrefs Domain Rating, with price, link type, and step-by-step submission guides.",
+      "url": "https://www.topsaas.space/product-directory"
+    },
     "repo_catalog": {
       "detail_url_pattern": "https://www.topsaas.space/repo/{owner}/{name}",
       "examples": [
         "https://www.topsaas.space/repo/refinedev/refine",
-        "https://www.topsaas.space/repo/t3-oss/create-t3-app"
+        "https://www.topsaas.space/repo/t3-oss/create-t3-app",
+        "https://www.topsaas.space/repo/steven-tey/dub"
+      ]
+    },
+    "blog": {
+      "description": "Original articles for SaaS founders: launch checklists, backlink strategies, bootstrapping, MRR growth, and more.",
+      "url": "https://www.topsaas.space/blog",
+      "post_url_pattern": "https://www.topsaas.space/blog/{slug}"
+    },
+    "build_guides": {
+      "description": "Step-by-step walkthroughs for shipping real SaaS products on open-source foundations.",
+      "url": "https://www.topsaas.space/guides",
+      "examples": [
+        "https://www.topsaas.space/guides/refine-admin-dashboard",
+        "https://www.topsaas.space/guides/n8n-automation-mvp",
+        "https://www.topsaas.space/guides/create-t3-app-fullstack-saas"
       ]
     },
     "features_supported": [
-      "Real-time Leaderboard",
+      "Weekly Launch Leaderboard (community upvotes, 25 products/week)",
       "Open-Source SaaS Starter Catalog",
       "Repo Health Scores (0-100, transparent formula)",
       "Trending Index (star velocity + recency)",
       "Build Guides (HowTo + FAQ structured data)",
       "Per-Repo Detail Pages with Editorial Write-ups",
+      "Blog (SaaS founder content)",
       "Upvoting System",
+      "Verified Launch Badge & Dofollow Backlink",
       "Founder Offers & Coupons",
       "Demo Videos",
       "Screenshot Galleries",
-      "SaaS Startup Ideas Hub"
+      "SaaS Startup Ideas Hub",
+      "MRR Calculator",
+      "300+ Submission Directory Ranked by DR",
+      "JSON-LD Structured Data (SoftwareApplication, CollectionPage, HowTo, FAQPage)"
     ]
+  },
+  "pages": {
+    "homepage": "https://www.topsaas.space/",
+    "leaderboard": "https://www.topsaas.space/",
+    "trending": "https://www.topsaas.space/trending",
+    "ideas": "https://www.topsaas.space/ideas",
+    "guides": "https://www.topsaas.space/guides",
+    "blog": "https://www.topsaas.space/blog",
+    "mrr_calculator": "https://www.topsaas.space/mrr-calculator",
+    "submit": "https://www.topsaas.space/submit",
+    "pricing": "https://www.topsaas.space/pricing",
+    "product_directory": "https://www.topsaas.space/product-directory",
+    "privacy": "https://www.topsaas.space/privacy",
+    "terms": "https://www.topsaas.space/terms"
   },
   "endpoints": {
     "llms_overview": "https://www.topsaas.space/llms.txt",
@@ -53,7 +100,12 @@
     "public_rest_feed": "https://www.topsaas.space/products.json",
     "sitemap_xml": "https://www.topsaas.space/sitemap.xml",
     "repo_sitemap_xml": "https://www.topsaas.space/sitemap/repos.xml",
+    "products_sitemap_xml": "https://www.topsaas.space/sitemap/products.xml",
     "robots_txt": "https://www.topsaas.space/robots.txt"
+  },
+  "social": {
+    "x": "https://x.com/topsaas_space",
+    "github": "https://github.com/Joelpillar1/TopSAAS"
   },
   "citation": {
     "name": "TopSAAS Directory",

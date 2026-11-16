@@ -20,6 +20,34 @@
       "continue": true
     },
     {
+      "src": "/profile",
+      "headers": {
+        "X-Robots-Tag": "noindex, nofollow, noarchive, nosnippet"
+      },
+      "continue": true
+    },
+    {
+      "src": "/payment-success",
+      "headers": {
+        "X-Robots-Tag": "noindex, nofollow, noarchive, nosnippet"
+      },
+      "continue": true
+    },
+    {
+      "src": "/payment/success",
+      "headers": {
+        "X-Robots-Tag": "noindex, nofollow, noarchive, nosnippet"
+      },
+      "continue": true
+    },
+    {
+      "src": "/badge/(.*)",
+      "headers": {
+        "X-Robots-Tag": "noindex, nofollow, noarchive, nosnippet"
+      },
+      "continue": true
+    },
+    {
       "src": "/assets/(.*)",
       "headers": {
         "Cache-Control": "public, max-age=31536000, immutable"
@@ -148,11 +176,11 @@
     },
     {
       "src": "/privacy",
-      "dest": "/index.html"
+      "dest": "/privacy/index.html"
     },
     {
       "src": "/terms",
-      "dest": "/index.html"
+      "dest": "/terms/index.html"
     },
     {
       "src": "/profile",

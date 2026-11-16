@@ -211,7 +211,18 @@ export const BlogListPage: React.FC<BlogListPageProps> = ({ soundEnabled = false
 
                   <div className="relative z-10 my-6">
                     <h3 className="text-xl sm:text-2xl font-black text-white leading-tight">
-                      {featuredPost.title}
+                      <a
+                        href={`/blog/${featuredPost.slug}`}
+                        onClick={(e) => {
+                          if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleOpenPost(featuredPost.slug);
+                        }}
+                        className="hover:underline"
+                      >
+                        {featuredPost.title}
+                      </a>
                     </h3>
                   </div>
 
@@ -342,7 +353,18 @@ export const BlogListPage: React.FC<BlogListPageProps> = ({ soundEnabled = false
 
                     {/* Title */}
                     <h3 className="text-base sm:text-lg font-black text-neutral-950 group-hover:text-blue-600 transition-colors leading-snug">
-                      {post.title}
+                      <a
+                        href={`/blog/${post.slug}`}
+                        onClick={(e) => {
+                          if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleOpenPost(post.slug);
+                        }}
+                        className="hover:underline"
+                      >
+                        {post.title}
+                      </a>
                     </h3>
 
                     {/* Tagline */}

@@ -6,6 +6,7 @@ import { ProductLogo } from './ProductLogo';
 import { getWebsiteFavicon } from '../utils/logo';
 import { openOutboundUrl } from '../utils/referral';
 import { GridPattern } from './ui/grid-pattern';
+import { getProductSlug } from '../utils/slug';
 
 interface SponsorTileProps {
   soundEnabled: boolean;
@@ -105,7 +106,18 @@ export const SponsorTile: React.FC<SponsorTileProps> = ({
           {/* Name & Tagline */}
           <div className="min-w-0 flex-1">
             <h3 className="truncate text-[15px] sm:text-base font-bold tracking-tight text-neutral-950 group-hover:text-blue-600 transition-colors">
-              {product.name}
+              <a
+                href={`/products/${getProductSlug(product)}`}
+                onClick={(e) => {
+                  if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleClick();
+                }}
+                className="hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 rounded-sm"
+              >
+                {product.name}
+              </a>
             </h3>
             <p className="mt-0.5 truncate text-[12.5px] sm:text-[13px] font-normal text-neutral-600 group-hover:text-neutral-700 transition-colors">
               {product.tagline}
