@@ -3663,8 +3663,29 @@ export default function App() {
               />
 
               {/* ── Directory board: centered ranked list within sponsor rails ── */}
-              <section id="leaderboard-section" className="w-full pt-2">
-                <div className="w-full space-y-3.5">
+              <section
+                id="leaderboard-section"
+                className="w-full rounded-3xl border border-neutral-200/90 bg-white p-4 sm:p-6 shadow-xs mt-4"
+              >
+                <div className="w-full space-y-4">
+                  {/* Header row: title + subtitle */}
+                  <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
+                    <div>
+                      <h2 className="text-base font-extrabold tracking-tight text-neutral-950 sm:text-lg">
+                        {selectedWeek
+                          ? selectedWeek.isCurrent
+                            ? "This Week's Launches"
+                            : `${selectedWeek.label} Launches`
+                          : 'All-Time Leaderboard'}
+                      </h2>
+                      <p className="text-xs font-medium text-neutral-500 mt-0.5">
+                        {selectedWeek
+                          ? `${formatWeekDateRange(selectedWeek, 'to')} · Ranked by engagement ${selectedWeek.isCurrent ? 'this week' : `in ${selectedWeek.label}`}`
+                          : 'Ranked by community upvotes & early adopter visits'}
+                      </p>
+                    </div>
+                  </div>
+
                   {/* Category bar + Steals Only toggle on the same line (right-side edge) */}
                   <div className="flex items-center justify-between gap-2.5">
                     {/* Category chips */}
@@ -4079,7 +4100,7 @@ export default function App() {
               </section>
 
               {/* ── Period highlights ── */}
-              <div className="w-full space-y-4 pb-2 pt-6">
+              <div className="w-full space-y-6 pb-2 pt-6">
                 <BestOfSection
                   id="last-week-best"
                   title="Last Week's Best"

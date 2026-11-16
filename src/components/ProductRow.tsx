@@ -6,6 +6,7 @@ import { BorderBeam } from './BorderBeam';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
+import { CardShimmer } from './CardShimmer';
 import { getProductSlug } from '../utils/slug';
 
 interface ProductRowProps {
@@ -97,6 +98,8 @@ export const ProductRow: React.FC<ProductRowProps> = ({
     purple: 'border-purple-200/90 bg-gradient-to-r from-purple-100/70 via-violet-50/50 to-white/95 shadow-[0_2px_12px_rgba(168,85,247,0.06)] hover:border-purple-300 hover:shadow-[0_4px_18px_rgba(168,85,247,0.12)]',
   };
 
+  const isShimmerTarget = (rank >= 1 && rank <= 3) || featuredFrame || !!product.featured || !!product.isSponsored;
+
   const row = (
     <div
       role="button"
@@ -108,7 +111,7 @@ export const ProductRow: React.FC<ProductRowProps> = ({
           handleOpen();
         }
       }}
-      className={`group relative flex w-full items-center gap-3.5 rounded-2xl border p-4 text-left transition-all duration-200 ease-out cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 sm:gap-4 ${
+      className={`group relative flex w-full flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-4 rounded-2xl border p-3.5 sm:p-4 text-left transition-all duration-200 ease-out cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 overflow-hidden ${
         effectiveGradient !== 'none'
           ? gradientStyles[effectiveGradient]
           : featuredFrame
@@ -116,126 +119,230 @@ export const ProductRow: React.FC<ProductRowProps> = ({
           : 'border-neutral-200/80 bg-white shadow-2xs hover:border-neutral-300 hover:bg-neutral-50/70'
       }`}
     >
-      {/* Rank medal / number */}
-      {rank !== undefined && rank > 0 && (
-        <div className="flex shrink-0 items-center justify-center">
-          {rank === 1 || rank === 2 || rank === 3 ? (
-            <RankMedal rank={rank as 1 | 2 | 3} className="h-8 w-8 sm:h-9 sm:w-9" variant="coin" />
-          ) : (
-            <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border border-neutral-200/90 bg-neutral-100/90 font-mono-num text-[11px] sm:text-xs font-black text-neutral-500 shadow-2xs">
-              {rank}
-            </div>
-          )}
-        </div>
+      {/* Top 3, Featured & Sponsored Left-to-Right Interval Shimmer */}
+      {isShimmerTarget && (
+        <CardShimmer delay={rank === 1 ? 1 : rank === 2 ? 2 : rank === 3 ? 3 : 'sponsor'} />
       )}
 
-      {/* Icon tile */}
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-neutral-100 bg-white transition-colors group-hover:border-neutral-200 sm:h-14 sm:w-14 shadow-2xs">
-        <ProductLogo
-          src={product.logoUrl}
-          alt={product.name}
-          containerClassName="flex h-full w-full items-center justify-center bg-transparent relative"
-          iconClassName="h-5 w-5 text-neutral-400 shrink-0"
-        />
-      </div>
+      {/* ─── MOBILE VIEW (< sm): Stacked layout with 100% full-width tagline ─── */}
+      <div className="flex sm:hidden flex-col w-full gap-2">
+        {/* Top bar: Rank + Logo + Name + Upvote */}
+        <div className="flex items-center justify-between gap-2 min-w-0 w-full">
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            {/* Rank medal / number */}
+            {rank !== undefined && rank > 0 && (
+              <div className="flex shrink-0 items-center justify-center">
+                {rank === 1 || rank === 2 || rank === 3 ? (
+                  <RankMedal rank={rank as 1 | 2 | 3} className="h-7 w-7" variant="coin" />
+                ) : (
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full border border-neutral-200/90 bg-neutral-100/90 font-mono-num text-[11px] font-black text-neutral-500 shadow-2xs">
+                    {rank}
+                  </div>
+                )}
+              </div>
+            )}
 
-      {/* Copy — name, byline, tagline */}
-      <div className="min-w-0 flex-1 py-0.5">
-        <div className="flex items-center gap-2">
-          <h3 className="truncate text-[15px] font-bold tracking-tight text-neutral-950 sm:text-base group-hover:text-black transition-colors">
-            {/* Real anchor: crawlers that render JS still see a link to the product page. */}
-            <a
-              href={`/products/${getProductSlug(product)}`}
-              onClick={(e) => {
-                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
-                e.preventDefault();
-                e.stopPropagation();
-                handleOpen();
-              }}
-              className="hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 rounded-sm"
+            {/* Logo */}
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-neutral-100 bg-white shadow-2xs">
+              <ProductLogo
+                src={product.logoUrl}
+                alt={product.name}
+                containerClassName="flex h-full w-full items-center justify-center bg-transparent relative"
+                iconClassName="h-4 w-4 text-neutral-400 shrink-0"
+              />
+            </div>
+
+            {/* Product Name & Badges */}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <h3 className="truncate text-sm font-bold tracking-tight text-neutral-950">
+                  <a
+                    href={`/products/${getProductSlug(product)}`}
+                    onClick={(e) => {
+                      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleOpen();
+                    }}
+                    className="hover:underline"
+                  >
+                    {product.name}
+                  </a>
+                </h3>
+                {showVerified && product.verified && (
+                  <VerifiedBadge className="h-3.5 w-3.5 shrink-0" title="Verified Startup" />
+                )}
+
+                {product.offerDiscount && (
+                  <span className="inline-flex shrink-0 items-center gap-0.5 rounded bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 px-1.5 py-0.5 text-[9px] font-black text-white shadow-xs select-none">
+                    <Flame className="h-2 w-2 fill-white stroke-white shrink-0" />
+                    <span>{product.offerDiscount}</span>
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Upvote Button (Mobile Top-Right) */}
+          {onUpvote && (
+            <button
+              type="button"
+              onClick={handleUpvote}
+              title={upvoted ? 'Remove your upvote' : 'Upvote this product'}
+              className={`flex flex-col items-center justify-center rounded-xl border py-1 w-10 shrink-0 transition-all cursor-pointer active:scale-95 ${
+                upvoted
+                  ? 'border-mint-500 bg-mint-500 text-white shadow-2xs'
+                  : 'border-neutral-200 bg-white text-neutral-800 hover:border-neutral-400 shadow-2xs'
+              }`}
             >
-              {product.name}
-            </a>
-          </h3>
-          {showVerified && product.verified && (
-            <VerifiedBadge className="h-4 w-4 shrink-0" title="Verified Startup" />
-          )}
-          {product.isSponsored && (
-            <span
-              className="inline-flex shrink-0 items-center gap-1 text-[11px] font-medium text-neutral-400 select-none"
-              title="Golden Verified Sponsor"
-            >
-              <VerifiedBadge variant="gold" className="h-3.5 w-3.5 shrink-0" />
-              <span>Sponsored</span>
-            </span>
-          )}
-          {(product.autoRelaunch || product.isRelaunched) && !product.isSponsored && (
-            <span
-              className="inline-flex shrink-0 items-center gap-1 rounded-md bg-blue-50 border border-blue-200/80 px-1.5 py-0.5 text-[10px] font-bold text-blue-700 shadow-2xs select-none"
-              title="Relaunched tool in this weekly round"
-            >
-              <span>🚀</span>
-              <span>Relaunched</span>
-            </span>
-          )}
-          {product.offerDiscount && (
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 px-2 py-0.5 text-[10px] font-black tracking-tight text-white shadow-xs shadow-orange-500/25 transition-transform hover:scale-105 select-none">
-              <Flame className="h-2.5 w-2.5 fill-white stroke-white shrink-0" />
-              <span>{product.offerDiscount}</span>
-            </span>
+              <ChevronUp className={`h-3.5 w-3.5 ${upvoted ? 'text-white' : 'text-neutral-900 fill-neutral-900'}`} />
+              <span className="text-[11px] font-black font-mono-num leading-tight">{product.upvotes ?? 0}</span>
+            </button>
           )}
         </div>
-        <p className="mt-1 truncate text-[12.5px] font-medium leading-relaxed text-neutral-600 sm:text-[13px]">
+
+        {/* Full-width Tagline on Mobile (2 lines max, never truncated to 2-3 words) */}
+        <p className="text-[12px] font-medium leading-relaxed text-neutral-600 line-clamp-2 pt-0.5">
           {product.tagline}
         </p>
-        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-500">
-          <span className="inline-flex items-center gap-1 font-medium text-neutral-400">
-            <MessageCircle className="h-3.5 w-3.5" />
+
+        {/* Bottom Metadata: Comments + Category */}
+        <div className="flex items-center gap-2 text-xs text-neutral-500 pt-0.5">
+          <span className="inline-flex items-center gap-1 font-medium text-neutral-400 text-[11px]">
+            <MessageCircle className="h-3 w-3" />
             <span className="font-mono-num">{commentCount ?? 0}</span>
           </span>
-          {byline && (
-            <span className="truncate text-[11px] font-medium text-neutral-400 hidden sm:inline">
-              · {byline}
-            </span>
-          )}
-          {/* Mobile view: only show one of the categories */}
           {primaryCategory && (
-            <span className="inline-flex sm:hidden shrink-0 items-center rounded-full border border-neutral-200/80 bg-neutral-100/70 px-2 py-0.5 text-[10px] font-semibold text-neutral-600 truncate max-w-[120px]">
+            <span className="inline-flex shrink-0 items-center rounded-full border border-neutral-200/80 bg-neutral-100/70 px-2 py-0.5 text-[10px] font-semibold text-neutral-600">
               {primaryCategory}
             </span>
           )}
-          {/* Desktop view: show all categories */}
-          {categories.length > 0 && (
-            <span className="hidden sm:inline-flex items-center gap-1.5 flex-wrap">
-              {categories.map((cat, idx) => (
-                <span
-                  key={idx}
-                  className="inline-flex shrink-0 items-center rounded-full border border-neutral-200/80 bg-neutral-100/70 px-2 py-0.5 text-[10px] font-semibold text-neutral-600"
-                >
-                  {cat}
-                </span>
-              ))}
-            </span>
-          )}
         </div>
       </div>
 
-      {/* Actions: upvote only */}
-      <div className="flex flex-col sm:flex-row shrink-0 items-center gap-1.5 sm:gap-2.5 self-center">
-        {onUpvote && (
-          <button
-            type="button"
-            onClick={handleUpvote}
-            title={upvoted ? 'Remove your upvote' : 'Upvote this product'}
-            className={`flex flex-col items-center justify-center rounded-xl sm:rounded-2xl border py-1 sm:py-1.5 w-11 transition-all cursor-pointer active:scale-95 ${upvoted
-              ? 'border-mint-500 bg-mint-500 text-white shadow-2xs'
-              : 'border-neutral-200 bg-white text-neutral-800 hover:border-neutral-400 shadow-2xs'
-              }`}
-          >
-            <ChevronUp className={`h-4 w-4 ${upvoted ? 'text-white' : 'text-neutral-900 fill-neutral-900'}`} />
-            <span className="text-xs font-black font-mono-num leading-tight">{product.upvotes ?? 0}</span>
-          </button>
+      {/* ─── DESKTOP VIEW (sm:): Clean horizontal 1-row layout ─── */}
+      <div className="hidden sm:flex sm:items-center sm:gap-4 sm:w-full sm:min-w-0">
+        {/* Rank medal / number */}
+        {rank !== undefined && rank > 0 && (
+          <div className="flex shrink-0 items-center justify-center">
+            {rank === 1 || rank === 2 || rank === 3 ? (
+              <RankMedal rank={rank as 1 | 2 | 3} className="h-8 w-8 sm:h-9 sm:w-9" variant="coin" />
+            ) : (
+              <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border border-neutral-200/90 bg-neutral-100/90 font-mono-num text-[11px] sm:text-xs font-black text-neutral-500 shadow-2xs">
+                {rank}
+              </div>
+            )}
+          </div>
         )}
+
+        {/* Icon tile */}
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-neutral-100 bg-white transition-colors group-hover:border-neutral-200 sm:h-14 sm:w-14 shadow-2xs">
+          <ProductLogo
+            src={product.logoUrl}
+            alt={product.name}
+            containerClassName="flex h-full w-full items-center justify-center bg-transparent relative"
+            iconClassName="h-5 w-5 text-neutral-400 shrink-0"
+          />
+        </div>
+
+        {/* Copy — name, byline, tagline */}
+        <div className="min-w-0 flex-1 py-0.5">
+          <div className="flex items-center gap-2">
+            <h3 className="truncate text-[15px] font-bold tracking-tight text-neutral-950 sm:text-base group-hover:text-black transition-colors">
+              {/* Real anchor: crawlers that render JS still see a link to the product page. */}
+              <a
+                href={`/products/${getProductSlug(product)}`}
+                onClick={(e) => {
+                  if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleOpen();
+                }}
+                className="hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 rounded-sm"
+              >
+                {product.name}
+              </a>
+            </h3>
+            {showVerified && product.verified && (
+              <VerifiedBadge className="h-4 w-4 shrink-0" title="Verified Startup" />
+            )}
+            {product.isSponsored && (
+              <span
+                className="inline-flex shrink-0 items-center gap-1 text-[11px] font-medium text-neutral-400 select-none"
+                title="Golden Verified Sponsor"
+              >
+                <VerifiedBadge variant="gold" className="h-3.5 w-3.5 shrink-0" />
+                <span>Sponsored</span>
+              </span>
+            )}
+            {(product.autoRelaunch || product.isRelaunched) && !product.isSponsored && (
+              <span
+                className="inline-flex shrink-0 items-center gap-1 rounded-md bg-blue-50 border border-blue-200/80 px-1.5 py-0.5 text-[10px] font-bold text-blue-700 shadow-2xs select-none"
+                title="Relaunched tool in this weekly round"
+              >
+                <span>🚀</span>
+                <span>Relaunched</span>
+              </span>
+            )}
+            {product.offerDiscount && (
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 px-2 py-0.5 text-[10px] font-black tracking-tight text-white shadow-xs shadow-orange-500/25 transition-transform hover:scale-105 select-none">
+                <Flame className="h-2.5 w-2.5 fill-white stroke-white shrink-0" />
+                <span>{product.offerDiscount}</span>
+              </span>
+            )}
+          </div>
+          <p className="mt-1 truncate text-[12.5px] font-medium leading-relaxed text-neutral-600 sm:text-[13px]">
+            {product.tagline}
+          </p>
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-500">
+            <span className="inline-flex items-center gap-1 font-medium text-neutral-400">
+              <MessageCircle className="h-3.5 w-3.5" />
+              <span className="font-mono-num">{commentCount ?? 0}</span>
+            </span>
+            {byline && (
+              <span className="truncate text-[11px] font-medium text-neutral-400 hidden sm:inline">
+                · {byline}
+              </span>
+            )}
+            {/* Mobile view: only show one of the categories */}
+            {primaryCategory && (
+              <span className="inline-flex sm:hidden shrink-0 items-center rounded-full border border-neutral-200/80 bg-neutral-100/70 px-2 py-0.5 text-[10px] font-semibold text-neutral-600 truncate max-w-[120px]">
+                {primaryCategory}
+              </span>
+            )}
+            {/* Desktop view: show all categories */}
+            {categories.length > 0 && (
+              <span className="hidden sm:inline-flex items-center gap-1.5 flex-wrap">
+                {categories.map((cat, idx) => (
+                  <span
+                    key={idx}
+                    className="inline-flex shrink-0 items-center rounded-full border border-neutral-200/80 bg-neutral-100/70 px-2 py-0.5 text-[10px] font-semibold text-neutral-600"
+                  >
+                    {cat}
+                  </span>
+                ))}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Actions: upvote only */}
+        <div className="flex flex-col sm:flex-row shrink-0 items-center gap-1.5 sm:gap-2.5 self-center">
+          {onUpvote && (
+            <button
+              type="button"
+              onClick={handleUpvote}
+              title={upvoted ? 'Remove your upvote' : 'Upvote this product'}
+              className={`flex flex-col items-center justify-center rounded-xl sm:rounded-2xl border py-1 sm:py-1.5 w-11 transition-all cursor-pointer active:scale-95 ${upvoted
+                ? 'border-mint-500 bg-mint-500 text-white shadow-2xs'
+                : 'border-neutral-200 bg-white text-neutral-800 hover:border-neutral-400 shadow-2xs'
+                }`}
+            >
+              <ChevronUp className={`h-4 w-4 ${upvoted ? 'text-white' : 'text-neutral-900 fill-neutral-900'}`} />
+              <span className="text-xs font-black font-mono-num leading-tight">{product.upvotes ?? 0}</span>
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

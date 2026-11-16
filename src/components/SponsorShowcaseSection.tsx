@@ -1,6 +1,7 @@
 import React from 'react';
 import { Check, ArrowRight } from 'lucide-react';
 import { playSound } from '../utils/sound';
+import { CardShimmer } from './CardShimmer';
 import { WHOP_LINKS } from '../utils/whop';
 import { appendTrackkitParams } from '../utils/trackkit';
 
@@ -116,7 +117,8 @@ export const SponsorShowcaseSection: React.FC<SponsorShowcaseSectionProps> = ({
            ══════════════════════════════════════════════════════════ */}
         <div className="flex flex-col">
           {/* Top Pod (Elevated) */}
-          <div className="rounded-2xl border border-neutral-300/80 bg-white p-5 sm:p-6 shadow-[0_12px_30px_-8px_rgba(0,0,0,0.12)] ring-1 ring-black/5 flex flex-col justify-between min-h-[220px] relative">
+          <div className="rounded-2xl border border-neutral-300/80 bg-white p-5 sm:p-6 shadow-[0_12px_30px_-8px_rgba(0,0,0,0.12)] ring-1 ring-black/5 flex flex-col justify-between min-h-[220px] relative overflow-hidden">
+            <CardShimmer delay="sponsor" />
             <div>
               <div className="min-h-7 flex items-center justify-between gap-2">
                 <h3 className="text-base sm:text-lg font-bold text-neutral-900 tracking-tight whitespace-nowrap">1-Month Sponsor</h3>

@@ -3,6 +3,7 @@ import { ArrowUpRight, Star } from 'lucide-react';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
+import { CardShimmer } from './CardShimmer';
 import { getWebsiteFavicon } from '../utils/logo';
 import { openOutboundUrl } from '../utils/referral';
 import { GridPattern } from './ui/grid-pattern';
@@ -60,6 +61,9 @@ export const SponsorTile: React.FC<SponsorTileProps> = ({
         }}
         className="group relative flex w-full flex-col overflow-hidden rounded-2xl border border-neutral-300/80 bg-gradient-to-b from-neutral-100/90 via-neutral-50/50 to-neutral-100/80 p-4 sm:p-5 text-left transition-all duration-300 ease-out cursor-pointer hover:border-neutral-400 hover:shadow-[0_8px_28px_rgba(0,0,0,0.06)] focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 shadow-[0_1px_4px_rgba(0,0,0,0.03)]"
       >
+        {/* Featured/Sponsor Card Left-to-Right Interval Shimmer */}
+        <CardShimmer delay="sponsor" />
+
         {/* Subtle Background Grid */}
         <GridPattern
           width={20}

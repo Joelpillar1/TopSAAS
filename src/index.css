@@ -208,6 +208,76 @@
   }
 }
 
+/* ── Apple / Linear Style AI Text Shimmer ── */
+@keyframes shimmer-sweep {
+  0%, 15% {
+    background-position: 140% 0;
+  }
+  70%, 100% {
+    background-position: -140% 0;
+  }
+}
+
+.shimmer-text-ai {
+  background: linear-gradient(
+    110deg,
+    #374151 30%,
+    #2563eb 46%,
+    #06b6d4 50%,
+    #8b5cf6 54%,
+    #374151 70%
+  );
+  background-size: 260% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer-sweep 5.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* ── Card Left-to-Right Shimmer Sweep with Interval ── */
+@keyframes card-shimmer-sweep {
+  0% {
+    transform: translateX(-150%) skewX(-20deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  35% {
+    transform: translateX(260%) skewX(-20deg);
+    opacity: 1;
+  }
+  36%, 100% {
+    transform: translateX(260%) skewX(-20deg);
+    opacity: 0;
+  }
+}
+
+.card-shimmer-beam {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 55%;
+  left: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(37, 99, 235, 0.06) 30%,
+    rgba(255, 255, 255, 0.55) 50%,
+    rgba(37, 99, 235, 0.06) 70%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  animation: card-shimmer-sweep 6.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-shimmer-beam {
+    animation: none;
+    display: none;
+  }
+}
+
 /* ── Bento Grid Tile Hover System (Anthropic Light Mode) ── */
 .bento-tile {
   position: relative;

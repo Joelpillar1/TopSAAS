@@ -1,8 +1,33 @@
-import React, { useRef, useState } from 'react';
-import { Globe, Flame, Sparkles } from 'lucide-react';
+import React, { useRef, useState, useEffect } from 'react';
+import { Globe, Flame } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { GridPattern } from '@/components/ui/grid-pattern';
 import { playSound } from '../utils/sound';
+import grokPng from '../assets/llms/grok.png';
+import claudePng from '../assets/llms/claude.png';
+import chatgptPng from '../assets/llms/chatgpt.png';
+import geminiPng from '../assets/llms/gemini.png';
+import googlePng from '../assets/llms/google.png';
+import bingPng from '../assets/llms/bing.png';
+import perplexityPng from '../assets/llms/perplexity.png';
+
+const PLACEHOLDERS = [
+  'https://yourstartup.com',
+  'https://formbot.ai',
+  'https://devmetrics.io',
+  'https://saasflow.app',
+  'https://promptengine.co',
+];
+
+const AI_LOGOS = [
+  { name: 'Grok', src: grokPng, isSquircle: true },
+  { name: 'Claude', src: claudePng },
+  { name: 'ChatGPT', src: chatgptPng },
+  { name: 'Gemini', src: geminiPng },
+  { name: 'Google', src: googlePng },
+  { name: 'Bing', src: bingPng },
+  { name: 'Perplexity', src: perplexityPng },
+];
 
 interface HomeHeroProps {
   totalProducts: number;
@@ -25,7 +50,55 @@ export const HomeHero: React.FC<HomeHeroProps> = ({
   onToggleSteals,
 }) => {
   const [launchUrl, setLaunchUrl] = useState('');
+  const [placeholderText, setPlaceholderText] = useState('https://yourstartup.com');
+  const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isFocused || launchUrl) return;
+
+    let wordIdx = 0;
+    let charIdx = 0;
+    let isDeleting = false;
+    let timeoutId: ReturnType<typeof setTimeout>;
+
+    const tick = () => {
+      const currentWord = PLACEHOLDERS[wordIdx];
+
+      if (isDeleting) {
+        setPlaceholderText(currentWord.substring(0, charIdx - 1));
+        charIdx--;
+      } else {
+        setPlaceholderText(currentWord.substring(0, charIdx + 1));
+        charIdx++;
+      }
+
+      let speed = isDeleting ? 35 : 70;
+
+      if (!isDeleting && charIdx === currentWord.length) {
+        speed = 2200;
+        isDeleting = true;
+      } else if (isDeleting && charIdx === 0) {
+        isDeleting = false;
+        wordIdx = (wordIdx + 1) % PLACEHOLDERS.length;
+        speed = 350;
+      }
+
+      timeoutId = setTimeout(tick, speed);
+    };
+
+    timeoutId = setTimeout(tick, 1000);
+    return () => clearTimeout(timeoutId);
+  }, [isFocused, launchUrl]);
+
+  const [activeLogoIdx, setActiveLogoIdx] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveLogoIdx((prev) => (prev + 1) % AI_LOGOS.length);
+    }, 1800);
+    return () => clearInterval(timer);
+  }, []);
 
   const handleSubmitLaunch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,21 +136,45 @@ export const HomeHero: React.FC<HomeHeroProps> = ({
         )}
       />
       <div className="relative z-10 mx-auto flex max-w-2xl flex-col items-center text-center">
-        {/* AI & Search Positioning Badge */}
-        <div className="mb-3.5 inline-flex items-center gap-1.5 rounded-full border border-blue-200/80 bg-blue-50/80 px-3 py-1 text-[11px] sm:text-xs font-semibold text-blue-900 shadow-2xs backdrop-blur-xs">
-          <Sparkles className="h-3.5 w-3.5 text-blue-600 shrink-0" />
-          <span>Built for Google, Perplexity &amp; ChatGPT Search</span>
+        {/* Top AI & Search Models Badge */}
+        <div className="mb-4 inline-flex items-center gap-2.5 rounded-full border border-neutral-200/90 bg-white/95 px-3.5 py-1.5 shadow-2xs backdrop-blur-xs">
+          <span className="flex items-center gap-1.5 text-[11px] font-semibold text-neutral-500 tracking-tight">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            Get cited by
+          </span>
+          <div className="flex items-center gap-2.5">
+            {AI_LOGOS.map((logo, idx) => {
+              const isActive = activeLogoIdx === idx;
+              return (
+                <img
+                  key={logo.name}
+                  src={logo.src}
+                  alt={logo.name}
+                  title={logo.name}
+                  className={cn(
+                    'h-[18px] w-[18px] object-contain transition-all duration-500',
+                    logo.isSquircle && 'rounded-[3px]',
+                    isActive
+                      ? 'scale-125 -translate-y-0.5 drop-shadow-[0_2px_8px_rgba(37,99,235,0.4)] brightness-110'
+                      : 'opacity-80 hover:opacity-100 hover:scale-110'
+                  )}
+                />
+              );
+            })}
+          </div>
         </div>
 
-        {/* Headline */}
-        <h1 className="text-3xl font-black leading-[1.05] tracking-tight text-neutral-950 sm:text-5xl">
-          <span className="whitespace-nowrap">Find the best SaaS.</span>
-          <br />
-          <span className="text-neutral-500">Or get yours found.</span>
+        {/* Headline: strictly 2 lines on mobile and desktop */}
+        <h1 className="text-[25px] min-[390px]:text-[28px] sm:text-5xl font-black leading-[1.14] sm:leading-[1.08] tracking-tight text-neutral-950">
+          <span className="block">The Launchpad Built</span>
+          <span className="block whitespace-nowrap shimmer-text-ai">For Humans &amp; AI Search.</span>
         </h1>
 
         <p className="mt-3.5 text-xs sm:text-sm font-medium text-neutral-500 max-w-lg">
-          Get discovered by early adopters and indexed by AI search models on autopilot. Free to submit.
+          Get your startup discovered by early adopters and indexed by Google, Bing, AI search, and LLMs.
         </p>
 
         {/* Launch Now input and button */}
@@ -93,7 +190,9 @@ export const HomeHero: React.FC<HomeHeroProps> = ({
             type="text"
             value={launchUrl}
             onChange={(e) => setLaunchUrl(e.target.value)}
-            placeholder="https://yourtool.com"
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            placeholder={placeholderText}
             aria-label="Your SaaS website URL"
             required
             className="w-full bg-transparent py-2.5 text-sm font-semibold text-neutral-900 placeholder-neutral-400 outline-none"
@@ -130,9 +229,8 @@ export const HomeHero: React.FC<HomeHeroProps> = ({
                   const section = document.getElementById('leaderboard-section');
                   if (section) section.scrollIntoView({ behavior: 'smooth' });
                 }}
-                className={`inline-flex items-center gap-1.5 text-[11px] font-semibold transition-colors cursor-pointer ${
-                  stealsOnly ? 'text-amber-700 font-bold' : 'text-neutral-600 hover:text-amber-600'
-                }`}
+                className={`inline-flex items-center gap-1.5 text-[11px] font-semibold transition-colors cursor-pointer ${stealsOnly ? 'text-amber-700 font-bold' : 'text-neutral-600 hover:text-amber-600'
+                  }`}
                 title={stealsOnly ? 'Turn off Steals Only filter' : 'Show only tools with exclusive discounts'}
               >
                 <Flame className={`h-3.5 w-3.5 ${stealsOnly ? 'text-amber-600 fill-amber-500/30 animate-pulse' : 'text-amber-500'}`} />

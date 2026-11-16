@@ -3,6 +3,7 @@ import { Megaphone } from 'lucide-react';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
 import { BorderBeam } from './BorderBeam';
+import { CardShimmer } from './CardShimmer';
 import { ProductLogo } from './ProductLogo';
 import { VerifiedBadge } from './VerifiedBadge';
 import { openOutboundUrl } from '../utils/referral';
@@ -117,6 +118,9 @@ const ActiveSponsorCard: React.FC<{
       }}
       className="group relative flex w-full flex-col justify-between rounded-2xl border border-blue-100/90 bg-gradient-to-br from-white via-white to-blue-50/50 p-3.5 xl:p-4 text-left shadow-2xs transition-all duration-200 hover:border-blue-300 hover:shadow-xs cursor-pointer overflow-hidden min-h-[112px] xl:min-h-[120px] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
     >
+      {/* Sponsored Card Left-to-Right Shimmer Sweep */}
+      <CardShimmer delay="sponsor" />
+
       {/* Subtle ambient corner glow */}
       <div className="pointer-events-none absolute -top-10 -right-10 h-24 w-24 rounded-full bg-gradient-to-br from-blue-400/12 via-indigo-400/8 to-transparent blur-xl transition-opacity group-hover:opacity-100" />
 

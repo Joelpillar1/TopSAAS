@@ -5,6 +5,7 @@ import { Product } from '../types';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
 import { RankMedal } from './RankMedal';
+import { CardShimmer } from './CardShimmer';
 import { formatOutboundUrl, trackOutboundClick } from '../utils/referral';
 
 interface ProductCardProps {
@@ -55,8 +56,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       </div>
     );
 
+  const isShimmerTarget = (rank >= 1 && rank <= 3) || !!product.featured || !!product.isSponsored;
+
   const cardBody = (
     <>
+      {isShimmerTarget && (
+        <CardShimmer delay={rank === 1 ? 1 : rank === 2 ? 2 : rank === 3 ? 3 : 'sponsor'} />
+      )}
       {/* Top row: rank + logo + name */}
       <div className="flex items-center gap-2.5 min-w-0">
         {rankBadge}
@@ -87,7 +93,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               </span>
             )}
           </div>
-          <p className="text-[11px] text-neutral-600 group-hover:text-neutral-800 font-medium line-clamp-1 transition-colors">
+          <p className="text-[11.5px] text-neutral-600 group-hover:text-neutral-800 font-medium line-clamp-2 leading-relaxed transition-colors mt-0.5">
             {product.tagline}
           </p>
         </div>
@@ -128,7 +134,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     </>
   );
 
-  const sharedClass = `group flex flex-col justify-between rounded-xl border bg-white p-3.5 transition-all duration-300 ease-out cursor-pointer h-full w-full hover:bg-neutral-100 hover:border-neutral-300 hover:shadow-md hover:-translate-y-0.5 ${cardHighlightClass}`;
+  const sharedClass = `group relative overflow-hidden flex flex-col justify-between rounded-xl border bg-white p-3.5 transition-all duration-300 ease-out cursor-pointer h-full w-full hover:bg-neutral-100 hover:border-neutral-300 hover:shadow-md hover:-translate-y-0.5 ${cardHighlightClass}`;
 
   if (onOpenDetail) {
     return (

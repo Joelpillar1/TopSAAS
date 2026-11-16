@@ -5,6 +5,7 @@ import { Product } from '../types';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
 import { RankMedal } from './RankMedal';
+import { CardShimmer } from './CardShimmer';
 
 interface ProductTileProps {
   product: Product;
@@ -28,6 +29,7 @@ export const ProductTile: React.FC<ProductTileProps> = ({
   upvoted = false,
 }) => {
   const isWinner = rank === 1;
+  const isShimmerTarget = (rank >= 1 && rank <= 3) || !!product.featured || !!product.isSponsored;
 
   const handleOpen = () => {
     playSound('click', soundEnabled);
@@ -50,12 +52,15 @@ export const ProductTile: React.FC<ProductTileProps> = ({
           handleOpen();
         }
       }}
-      className={`group relative flex flex-col bg-white p-5 text-left transition-all duration-300 ease-out cursor-pointer hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-mint-500/60 rounded-xl border ${
+      className={`group relative overflow-hidden flex flex-col bg-white p-5 text-left transition-all duration-300 ease-out cursor-pointer hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-mint-500/60 rounded-xl border ${
         isWinner
           ? 'border-mint-500/40 hover:border-mint-500 hover:bg-neutral-100 shadow-2xs hover:shadow-md'
           : 'border-neutral-200 hover:border-neutral-300 hover:bg-neutral-100 shadow-2xs hover:shadow-md'
       }`}
     >
+      {isShimmerTarget && (
+        <CardShimmer delay={rank === 1 ? 1 : rank === 2 ? 2 : rank === 3 ? 3 : 'sponsor'} />
+      )}
       {/* Icon + rank */}
       <div className="flex items-start justify-between">
         <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-lg border border-neutral-200 bg-neutral-100 transition-all duration-200 group-hover:border-neutral-300 group-hover:scale-105 group-hover:shadow-xs">
