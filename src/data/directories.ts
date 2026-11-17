@@ -114,7 +114,7 @@ const ROWS: Row[] = [
   ["scrolllaunch", "ScrollLaunch", "https://www.scrolllaunch.com", "https://www.scrolllaunch.com/dashboard/products/new", 74, "freemium", "dofollow", "launch", "A launch platform for new products with daily listings and upvotes.", 406, true],
   ["webwiki", "Webwiki", "https://www.webwiki.com/", "https://www.webwiki.com/", 74, "free", "dofollow", "saas", "Webwiki is a website search engine offering user reviews and ratings", 25, false],
   ["dofollow-tools", "Dofollow.Tools", "https://dofollow.tools", "https://dofollow.tools", 74, "freemium", "dofollow", "ai", "A curated directory of AI tools and SaaS solutions for creators and businesses", 4, false],
-  ["futurepedia", "Futurepedia", "https://www.futurepedia.io", "https://www.futurepedia.io/submit-tool", 73, "paid", "dofollow", "ai", "An AI tools directory with categories, pricing details, and weekly featured launches.", 90039, false],
+  ["futurepedia", "Futurepedia", "https://www.futurepedia.io", "https://www.futurepedia.io/", 73, "paid", "dofollow", "ai", "An AI tools directory with categories, pricing details, and weekly featured launches.", 90039, false],
   ["trustmrr", "TrustMRR", "https://trustmrr.com", "https://trustmrr.com", 73, "freemium", "dofollow", "startup", "A startup directory focused on revenue transparency, MRR benchmarks, and product listings.", 10068, false],
   ["deeplaunch", "DeepLaunch", "https://deeplaunch.io", "https://deeplaunch.io", 73, "freemium", "unknown", "startup", "A startup directory that lists new products with categories and launch details.", 0, false],
   ["toolify", "Toolify", "https://www.toolify.ai/", "https://www.toolify.ai/", 73, "freemium", "dofollow", "ai", "Directory of 30,000+ AI tools across 459 categories, updated daily.", 132257, false],
@@ -252,7 +252,6 @@ const ROWS: Row[] = [
   ["hunt0", "HUNT0", "https://hunt0.com", "https://hunt0.com", 36, "freemium", "dofollow", "ai", "Tracks the best new AI and SaaS products across daily, weekly, and monthly leaderboards.", 99, false],
   ["osssoftware", "Osssoftware", "https://osssoftware.org/", "https://osssoftware.org/", 32, "free", "dofollow", "saas", "Osssoftware is a directory of open source software projects and resources", 388, false],
   ["indieascent", "IndieAscent", "https://indieascent.com", "https://indieascent.com", 31, "free", "dofollow", "saas", "A distribution command center for indie SaaS, with a community attached.", 19, true],
-  ["launched", "Launched!", "https://launched.io", "https://launched.io", 31, "free", "dofollow", "ai", "A daily catalog of newly launched products", 1001, false],
   ["udonboost", "UdonBoost", "https://udonboost.com/", "https://udonboost.com/", 30, "free", "dofollow", "saas", "Directory of independent apps for iPhone, iPad and Mac.", 0, false],
   ["toolscout", "ToolScout", "https://toolscout.ai/", "https://toolscout.ai/", 30, "free", "dofollow", "ai", "Free AI tool directory with category and pricing feeds.", 1160, false],
   ["aibloggenerators", "AIBloggenerators", "https://aibloggenerators.com/", "https://aibloggenerators.com/", 30, "free", "dofollow", "ai", "A curated directory of AI blog and text generators", 5, false],
@@ -334,8 +333,15 @@ export const DIRECTORIES: DirectoryEntry[] = [...ROWS]
     };
   });
 
-export const getDirectoryBySlug = (slug: string | null): DirectoryEntry | null =>
-  DIRECTORIES.find((directory) => directory.slug === slug) ?? null;
+const SLUG_ALIASES: Record<string, string> = {
+  theresanaiforthat: 'theres-an-ai-for-that',
+};
+
+export const getDirectoryBySlug = (slug: string | null): DirectoryEntry | null => {
+  if (!slug) return null;
+  const canonicalSlug = SLUG_ALIASES[slug] || slug;
+  return DIRECTORIES.find((directory) => directory.slug === canonicalSlug) ?? null;
+};
 
 export const getRelatedDirectories = (directory: DirectoryEntry, limit = 6): DirectoryEntry[] =>
   DIRECTORIES.filter((item) => item.slug !== directory.slug)

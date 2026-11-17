@@ -9,6 +9,7 @@
 /robots.txt        /robots.txt        200
 /directories       /product-directory 308
 /directories/*     /product-directory/:splat 308
+/product-directory/theresanaiforthat /product-directory/theres-an-ai-for-that 301
 # Hashed build assets must never fall back to the SPA shell. Existing files are
 # served before redirects, so this only catches missing ones and returns 404.
 /assets/*          /404.html          404

@@ -204,21 +204,6 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                   />
                 </a>
                 <a
-                  href="https://builtbyindies.com/products/topsaas?utm_source=badge&utm_medium=embed&utm_campaign=live"
-                  target="_blank"
-                  rel="noopener"
-                  className="transition-opacity hover:opacity-80 inline-flex items-center shrink-0"
-                >
-                  <img
-                    src="https://builtbyindies.com/badge/82e153d0-3bf0-4245-95ad-d9d9f5174868.svg"
-                    alt="BuiltByIndies"
-                    height={60}
-                    className="h-7.5 w-auto"
-                    loading="lazy"
-                    onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
-                  />
-                </a>
-                <a
                   href="https://alterbase.co/"
                   target="_blank"
                   rel="noopener"
@@ -514,21 +499,6 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                     alt="Listed on GetBannerBid"
                     width={200}
                     height={54}
-                    className="h-7.5 w-auto"
-                    loading="lazy"
-                    onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
-                  />
-                </a>
-                <a
-                  href="https://builtbyindies.com/products/topsaas?utm_source=badge&utm_medium=embed&utm_campaign=live"
-                  target="_blank"
-                  rel="noopener"
-                  className="transition-opacity hover:opacity-80 inline-flex items-center shrink-0"
-                >
-                  <img
-                    src="https://builtbyindies.com/badge/82e153d0-3bf0-4245-95ad-d9d9f5174868.svg"
-                    alt="BuiltByIndies"
-                    height={60}
                     className="h-7.5 w-auto"
                     loading="lazy"
                     onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}

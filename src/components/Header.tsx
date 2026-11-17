@@ -185,7 +185,7 @@ export const Header: React.FC<HeaderProps> = ({
                   type="button"
                   data-ml-goal="signup_click"
                   onClick={onSignIn}
-                  className="flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3.5 py-2 text-xs font-bold text-neutral-800 hover:border-neutral-300 hover:bg-neutral-50 transition-all cursor-pointer shadow-2xs active:scale-[0.98]"
+                  className="btn-secondary flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3.5 py-2 text-xs font-bold text-neutral-800 hover:border-neutral-300 hover:bg-neutral-50 transition-all cursor-pointer shadow-2xs active:scale-[0.98]"
                 >
                   {/* Google "G" logo */}
                   <svg className="h-4 w-4" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
