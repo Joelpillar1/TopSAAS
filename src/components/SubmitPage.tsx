@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import confetti from 'canvas-confetti';
-import { AlertCircle, Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, ExternalLink, Loader2, Search, SlidersHorizontal, Video, X, Tag, Percent, Gift, Sparkles, Trash2, GripVertical, Star, ShieldCheck, CheckCircle2, Lock, Copy, Zap } from 'lucide-react';
+import { AlertCircle, Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, ExternalLink, Loader2, Search, SlidersHorizontal, Video, X, Tag, Percent, Gift, Sparkles, Trash2, GripVertical, Star, ShieldCheck, CheckCircle2, Lock, Copy, Zap, Flame, Globe, Award, FileText, TrendingUp, ArrowRight } from 'lucide-react';
 import { Category, PricingModel, Product, ProductSocial, SUBMISSION_CATEGORIES, SubmitProductDetails, WebsiteSubmission } from '../types';
 import { getWebsiteFavicon } from '../utils/logo';
 import { playSound } from '../utils/sound';
@@ -16,6 +16,7 @@ import { redirectToCheckout, WHOP_LINKS } from '../utils/whop';
 import { appendTrackkitParams } from '../utils/trackkit';
 import { getProductSlug } from '../utils/slug';
 import { VerifiedBadge } from './VerifiedBadge';
+import { BorderBeam } from './BorderBeam';
 import { applyPageSeo } from '../utils/pageSeo';
 import { submitSeo } from '../utils/coreSeo';
 import { ProductLogo } from './ProductLogo';
@@ -446,6 +447,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
   const [draftSaved, setDraftSaved] = useState(false);
 
   const [launched, setLaunched] = useState<{ id: string; name: string } | null>(null);
+  const [isUpgrading, setIsUpgrading] = useState(false);
   const [freeVerificationMethod, setFreeVerificationMethod] = useState<'badge' | 'upvote'>('badge');
   const [showAdvancedDetails, setShowAdvancedDetails] = useState<boolean>(() => {
     return Boolean(form.problemItSolves || form.solution || form.uniqueSellingPoint);
@@ -1245,54 +1247,209 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
     }
   }, [launched]);
 
-  // ── Success (Under Review) ──
+  const handleUpgradeToVerified = async () => {
+    if (!launched) return;
+    setIsUpgrading(true);
+    playSound('click', soundEnabled);
+    try {
+      localStorage.setItem(
+        'topsaas_pending_paid_submission',
+        JSON.stringify({
+          id: launched.id,
+          name: launched.name,
+          plan: 'onetime',
+        })
+      );
+
+      await redirectToCheckout({
+        planType: 'onetime',
+        productName: launched.name,
+        targetProductId: launched.id,
+        customerEmail: form.creatorXHandle || undefined,
+      });
+    } catch (err: any) {
+      console.error('Fast-Track upgrade checkout error:', err);
+      setBanner(err?.message || 'Failed to start checkout. Please try again.');
+      setIsUpgrading(false);
+    }
+  };
+
+  // ── Success (Under Review & Verified Launch Upsell) ──
   if (launched) {
     return (
-      <div className="min-h-screen bg-white text-neutral-900 font-sans">
-        <div className="mx-auto flex max-w-xl flex-col items-center px-4 py-10 sm:py-16 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-mint-50 border border-mint-200 text-mint-600 shadow-xs">
-            <Clock className="h-8 w-8" strokeWidth={2.5} />
+      <div className="min-h-screen bg-neutral-50/50 text-neutral-900 font-sans py-6 sm:py-10 px-3.5 sm:px-6 flex items-center justify-center">
+        <div className="w-full max-w-xl">
+          {/* ── 1. Compact Reassurance Header ── */}
+          <div className="text-center space-y-1 mb-5">
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200/90 px-3 py-0.5 text-[11px] font-bold text-emerald-700 shadow-2xs">
+              <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Submission Received · Free Queue</span>
+            </div>
+
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-neutral-950">
+              {launched.name} is submitted!
+            </h1>
+            <p className="max-w-md mx-auto text-xs text-neutral-500 leading-relaxed">
+              Your free launch is queued for community review. Upgrade below to skip the backlog and get verified day-one traction.
+            </p>
           </div>
 
-          <div className="mt-6 inline-flex items-center gap-1.5 rounded-full bg-mint-50 border border-mint-200 px-3 py-1 text-xs font-bold text-mint-700">
-            <span className="h-2 w-2 rounded-full bg-mint-500 animate-pulse" />
-            Pending Approval
-          </div>
-
-          <h1 className="mt-3 text-2xl sm:text-3xl font-black tracking-tight text-neutral-950">{launched.name} is submitted</h1>
-          <p className="mt-2 max-w-md text-xs sm:text-sm leading-relaxed text-neutral-500">
-            Your launch has been received and under review queue. Once approved your product will automatically appear live in the directory.
-          </p>
-
-          <div className="mt-6 w-full rounded-2xl border border-neutral-200 bg-white p-4 text-left space-y-2.5 shadow-2xs">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-neutral-500">Review status</span>
-              <span className="font-bold text-mint-700 flex items-center gap-1">
-                <Clock className="h-3.5 w-3.5" /> Pending Approval
+          {/* ── 2. The Premium $5 Verified Launch Upsell Card ── */}
+          <div className="relative rounded-3xl border border-blue-600 bg-gradient-to-b from-blue-50/60 via-slate-50/40 to-white p-5 sm:p-6 shadow-xl shadow-blue-500/10 ring-2 ring-blue-600">
+            {/* Overlapping Top Badge */}
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10 whitespace-nowrap">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-600 bg-blue-600 px-3.5 py-0.5 text-[10px] font-bold text-white shadow-sm shadow-blue-600/25">
+                <Sparkles className="h-3 w-3 fill-white/20" />
+                <span>Most Popular · $5 Fast-Track</span>
               </span>
             </div>
-            <div className="flex items-center justify-between text-xs border-t border-neutral-200 pt-2.5">
-              <span className="text-neutral-500">Turnaround time</span>
-              <span className="font-bold text-neutral-950">Usually reviewed within 24 hours</span>
+
+            {/* Header: Title & Pricing */}
+            <div className="flex items-start justify-between gap-3 pt-1 pb-3.5 border-b border-blue-100/80">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-1.5">
+                  <h2 className="text-lg sm:text-xl font-black text-neutral-950 tracking-tight">
+                    Verified Launch
+                  </h2>
+                  <VerifiedBadge className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
+                </div>
+                <p className="text-[11px] sm:text-xs text-neutral-600">
+                  Skip the free backlog, unlock permanent SEO &amp; launch live in &lt; 24h.
+                </p>
+              </div>
+
+              <div className="text-right shrink-0">
+                <div className="flex items-baseline gap-1 justify-end">
+                  <span className="text-2xl sm:text-3xl font-black text-neutral-950 tracking-tight font-sans">$5.00</span>
+                  <span className="text-[11px] font-bold text-neutral-500 font-sans">one-time</span>
+                </div>
+                <p className="text-[10px] font-bold text-blue-700">Lifetime listing</p>
+              </div>
             </div>
-            <div className="flex items-center justify-between text-xs border-t border-neutral-200 pt-2.5">
-              <span className="text-neutral-500">Submitted URL</span>
-              <span className="font-bold text-neutral-900 truncate max-w-[240px]">{form.url || launched.name}</span>
+
+            {/* Compact 2-Column Perks List (Directly on Gradient, All Theme Color SVGs) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2.5 py-3.5 border-b border-blue-100/80">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-50 border border-blue-200/90 text-blue-600">
+                  <Clock className="h-3 w-3 stroke-[2.5]" />
+                </div>
+                <span className="text-xs text-neutral-800 leading-tight">
+                  <strong className="text-neutral-950 font-bold">Live in &lt; 24 hours</strong> (skip 14d queue)
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-50 border border-blue-200/90 text-blue-600">
+                  <Globe className="h-3 w-3 stroke-[2.5]" />
+                </div>
+                <span className="text-xs text-neutral-800 leading-tight">
+                  <strong className="text-neutral-950 font-bold">DoFollow Backlink</strong> (permanent SEO)
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-50 border border-blue-200/90 text-blue-600">
+                  <ShieldCheck className="h-3 w-3 stroke-[2.5]" />
+                </div>
+                <span className="text-xs text-neutral-800 leading-tight">
+                  <strong className="text-neutral-950 font-bold">Verified Mint Badge</strong> on card &amp; profile
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-50 border border-blue-200/90 text-blue-600">
+                  <Award className="h-3 w-3 stroke-[2.5]" />
+                </div>
+                <span className="text-xs text-neutral-800 leading-tight">
+                  <strong className="text-neutral-950 font-bold">Category Top 3</strong> spotlight (7 days)
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-50 border border-blue-200/90 text-blue-600">
+                  <FileText className="h-3 w-3 stroke-[2.5]" />
+                </div>
+                <span className="text-xs text-neutral-800 leading-tight">
+                  <strong className="text-neutral-950 font-bold">1,000+ Word Story</strong> on /blog
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-50 border border-blue-200/90 text-blue-600">
+                  <Sparkles className="h-3 w-3 stroke-[2.5]" />
+                </div>
+                <span className="text-xs text-neutral-800 leading-tight">
+                  <strong className="text-neutral-950 font-bold">AI Search Indexed</strong> (/llms.txt &amp; Schema)
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-50 border border-blue-200/90 text-blue-600">
+                  <Check className="h-3 w-3 stroke-[3]" />
+                </div>
+                <span className="text-xs text-neutral-800 leading-tight">
+                  <strong className="text-neutral-950 font-bold">No Badge Required</strong> on your site
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-50 border border-blue-200/90 text-blue-600">
+                  <Check className="h-3 w-3 stroke-[3]" />
+                </div>
+                <span className="text-xs text-neutral-800 leading-tight">
+                  <strong className="text-neutral-950 font-bold">Lifetime Listing</strong> (zero recurring)
+                </span>
+              </div>
+            </div>
+
+            {/* 1-Click Upgrade CTA */}
+            <div className="pt-3.5 space-y-2">
+              <button
+                type="button"
+                onClick={handleUpgradeToVerified}
+                disabled={isUpgrading}
+                className="btn-primary w-full py-3 px-5 rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 shadow-md shadow-blue-600/25 active:scale-[0.98] transition-all cursor-pointer group"
+              >
+                {isUpgrading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Connecting to checkout…</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Upgrade {launched.name} to Verified — $5</span>
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                  </>
+                )}
+              </button>
+
+              <div className="flex items-center justify-center gap-2 text-[10px] sm:text-[11px] text-neutral-500 font-medium">
+                <span className="inline-flex items-center gap-1">
+                  <ShieldCheck className="h-3 w-3 text-blue-600 shrink-0" />
+                  1-Click instant checkout
+                </span>
+                <span>·</span>
+                <span>Details prefilled</span>
+                <span>·</span>
+                <span>Zero recurring fees</span>
+              </div>
             </div>
           </div>
 
-          <div className="mt-7 flex flex-col w-full sm:w-auto sm:flex-row gap-2.5">
+          {/* ── 3. Secondary Navigation Links ── */}
+          <div className="mt-4 flex items-center justify-center gap-3 text-xs">
             <button
               type="button"
               onClick={onBack}
-              className="btn-primary px-6 py-3 text-xs font-bold"
+              className="text-neutral-500 hover:text-neutral-900 font-bold py-1.5 px-3 transition-colors cursor-pointer"
             >
-              Back to directory
+              Keep Free & Return to Directory →
             </button>
+            <span className="text-neutral-300">·</span>
             <button
               type="button"
               onClick={handleStartOver}
-              className="rounded-xl border border-neutral-200 bg-neutral-100 px-5 py-3 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 active:scale-[0.98] transition-all cursor-pointer"
+              className="text-neutral-500 hover:text-neutral-900 font-bold py-1.5 px-3 transition-colors cursor-pointer"
             >
               Submit another website
             </button>
