@@ -157,6 +157,8 @@ export interface Product {
   isUserOwned?: boolean;
   submittedBy?: string; // user ID of who submitted this product
   featuredQuote?: string;
+  /** True when the product is currently occupying a featured spotlight slot */
+  featured?: boolean;
   verified?: boolean;
   isSponsored?: boolean;
   /** True if this item is only an ad sponsor and was NOT submitted to the directory */
