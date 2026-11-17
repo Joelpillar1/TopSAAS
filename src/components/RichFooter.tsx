@@ -11,6 +11,18 @@ import { playSound } from '../utils/sound';
 import { navigateTo } from '../utils/nav';
 import { AiAgentsSection } from './AiAgentsSection';
 
+/** Machine-readable endpoints shown as their own footer column. */
+const MACHINE_FILES = [
+  { label: 'llms.txt', href: '/llms.txt', title: 'Machine-readable overview for LLMs (AEO/GEO standard)' },
+  { label: 'llms-full.txt', href: '/llms-full.txt', title: 'Comprehensive LLM documentation & directory schema' },
+  { label: 'ai.txt', href: '/ai.txt', title: 'AI agent crawler directives and citations' },
+  { label: 'ai-snapshot.json', href: '/ai-snapshot.json', title: 'Real-time JSON metadata snapshot' },
+  { label: 'catalog.md', href: '/catalog.md', title: 'Clean markdown directory table for LLM context' },
+  { label: 'openapi.json', href: '/openapi.json', title: 'OpenAPI 3.1 REST API specification' },
+  { label: 'products.json', href: '/products.json', title: 'Public REST feed of directory products' },
+  { label: 'robots.txt', href: '/robots.txt', title: 'Crawler access directives' },
+];
+
 interface RichFooterProps {
   totalProducts: number;
   soundEnabled: boolean;
@@ -50,7 +62,7 @@ export const RichFooter: React.FC<RichFooterProps> = ({
   return (
     <footer className={footerClassName}>
       <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-12 pb-8">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-8 lg:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-8 lg:gap-6">
           {/* Brand Column */}
           <div className="col-span-2 sm:col-span-3 lg:col-span-2 space-y-4">
             <div className="flex items-center gap-2.5">
@@ -824,6 +836,27 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                   Growth Hack by Jack Friks
                 </a>
               </li>
+            </ul>
+          </div>
+
+          {/* Machine-readable Files Column */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-bold text-neutral-900">Machine-readable</h4>
+            <ul className="space-y-2.5">
+              {MACHINE_FILES.map((file) => (
+                <li key={file.label}>
+                  <a
+                    href={file.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={file.title}
+                    onClick={() => playSound('click', soundEnabled)}
+                    className="text-xs font-mono text-neutral-600 hover:text-neutral-950 transition-colors cursor-pointer"
+                  >
+                    {file.label}
+                  </a>
+                </li>
+              ))}
             </ul>
           </div>
         </div>
