@@ -140,6 +140,17 @@ const staticFooter = `
             <a href="/privacy" style="${linkStyle}">Privacy</a> ·
             <a href="/terms" style="${linkStyle}">Terms</a>
           </nav>
+          <nav aria-label="Machine-readable files" style="margin-top:.85rem">
+            <span style="display:block;font-weight:600;color:#404040;margin-bottom:.35rem">Machine-readable files</span>
+            <a href="/llms.txt" style="${linkStyle}">llms.txt</a> ·
+            <a href="/llms-full.txt" style="${linkStyle}">llms-full.txt</a> ·
+            <a href="/ai.txt" style="${linkStyle}">ai.txt</a> ·
+            <a href="/ai-snapshot.json" style="${linkStyle}">ai-snapshot.json</a> ·
+            <a href="/catalog.md" style="${linkStyle}">catalog.md</a> ·
+            <a href="/openapi.json" style="${linkStyle}">openapi.json</a> ·
+            <a href="/products.json" style="${linkStyle}">products.json</a> ·
+            <a href="/robots.txt" style="${linkStyle}">robots.txt</a>
+          </nav>
         </footer>`;
 
 const buildRepoBody = (repo: CuratedRepo): string => {

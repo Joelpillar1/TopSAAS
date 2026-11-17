@@ -18,14 +18,54 @@ export const AiAgentsSection: React.FC<AiAgentsSectionProps> = ({ soundEnabled =
   ];
 
   const agentLinks = [
-    { label: 'llms.txt', href: '/llms.txt', title: 'Machine-readable overview for LLMs (AEO/GEO standard)' },
-    { label: 'llms-full.txt', href: '/llms-full.txt', title: 'Comprehensive LLM documentation & directory schema' },
-    { label: 'ai.txt', href: '/ai.txt', title: 'AI agent crawler directives and citations' },
-    { label: 'AI snapshot', href: '/ai-snapshot.json', title: 'Real-time JSON metadata snapshot' },
-    { label: 'Markdown catalog', href: '/catalog.md', title: 'Clean markdown directory table for LLM context' },
-    { label: 'OpenAPI', href: '/openapi.json', title: 'OpenAPI 3.1 REST API specification' },
-    { label: 'Public REST', href: '/products.json', title: 'Public REST feed of directory products' },
-    { label: 'robots.txt', href: '/robots.txt', title: 'Crawler access directives' },
+    {
+      label: 'llms.txt',
+      href: '/llms.txt',
+      title: 'Machine-readable overview for LLMs (AEO/GEO standard)',
+      description: 'LLM overview (AEO/GEO standard)',
+    },
+    {
+      label: 'llms-full.txt',
+      href: '/llms-full.txt',
+      title: 'Comprehensive LLM documentation & directory schema',
+      description: 'Full LLM documentation and schema',
+    },
+    {
+      label: 'ai.txt',
+      href: '/ai.txt',
+      title: 'AI agent crawler directives and citations',
+      description: 'AI crawler directives and citations',
+    },
+    {
+      label: 'ai-snapshot.json',
+      href: '/ai-snapshot.json',
+      title: 'Real-time JSON metadata snapshot',
+      description: 'Real-time JSON metadata snapshot',
+    },
+    {
+      label: 'catalog.md',
+      href: '/catalog.md',
+      title: 'Clean markdown directory table for LLM context',
+      description: 'Markdown directory table for LLM context',
+    },
+    {
+      label: 'openapi.json',
+      href: '/openapi.json',
+      title: 'OpenAPI 3.1 REST API specification',
+      description: 'OpenAPI 3.1 REST API specification',
+    },
+    {
+      label: 'products.json',
+      href: '/products.json',
+      title: 'Public REST feed of directory products',
+      description: 'Public REST feed of directory products',
+    },
+    {
+      label: 'robots.txt',
+      href: '/robots.txt',
+      title: 'Crawler access directives',
+      description: 'Crawler access directives',
+    },
   ];
 
   return (
@@ -52,28 +92,28 @@ export const AiAgentsSection: React.FC<AiAgentsSectionProps> = ({ soundEnabled =
         </div>
       </div>
 
-      {/* Straight divider line */}
-      <div className="border-t border-neutral-200/80 my-3" />
-
-      {/* Bottom row: Machine-readable agent links */}
-      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-xs text-neutral-500 py-1">
-        {agentLinks.map((link, idx) => (
-          <React.Fragment key={link.label}>
-            <a
-              href={link.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              title={link.title}
-              onClick={() => playSound('click', soundEnabled)}
-              className="hover:text-neutral-950 hover:underline underline-offset-4 transition-colors font-mono text-[11.5px] text-neutral-600"
-            >
-              {link.label}
-            </a>
-            {idx < agentLinks.length - 1 && (
-              <span className="text-neutral-300 select-none">·</span>
-            )}
-          </React.Fragment>
-        ))}
+      {/* Machine-readable files: their own labelled category list */}
+      <div className="border-t border-neutral-200/80 pt-5 mt-2">
+        <h4 className="text-xs font-bold text-neutral-900">Machine-readable files</h4>
+        <ul className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-3">
+          {agentLinks.map((link) => (
+            <li key={link.label}>
+              <a
+                href={link.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={link.title}
+                onClick={() => playSound('click', soundEnabled)}
+                className="group block"
+              >
+                <span className="block font-mono text-[11.5px] text-neutral-700 group-hover:text-neutral-950 group-hover:underline underline-offset-4 transition-colors">
+                  {link.label}
+                </span>
+                <span className="block text-[11px] leading-snug text-neutral-500">{link.description}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );
