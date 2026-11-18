@@ -10,7 +10,7 @@ const corsHeaders = {
 
 const SITE_URL = "https://www.topsaas.space";
 const LOGO_URL = "https://www.topsaas.space/logo/TopSAAS%20-%20blue.png";
-const DEFAULT_FROM = "TopSAAS <notifications@topsaas.space>";
+const DEFAULT_FROM = "TopSAAS <hello@topsaas.space>";
 const DEFAULT_REPLY_TO = "hello@topsaas.space";
 
 export type EmailType =

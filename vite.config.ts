@@ -7,6 +7,7 @@ import { generateBadgeSvg, BadgeStyle, BadgeTheme } from './src/utils/badgeSvg';
 import autofillHandler from './api/autofill-submission';
 import verifyBadgeHandler from './api/verify-badge';
 import { repoPrerenderPlugin } from './scripts/prerenderRepos';
+import { machineFilesPlugin } from './scripts/machineFiles';
 
 function apiDevServerPlugin(): Plugin {
   return {
@@ -125,7 +126,7 @@ function badgeServerPlugin(): Plugin {
 
 export default defineConfig(() => {
   return {
-    plugins: [react(), tailwindcss(), badgeServerPlugin(), apiDevServerPlugin(), repoPrerenderPlugin()],
+    plugins: [react(), tailwindcss(), badgeServerPlugin(), apiDevServerPlugin(), repoPrerenderPlugin(), machineFilesPlugin()],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, 'src'),

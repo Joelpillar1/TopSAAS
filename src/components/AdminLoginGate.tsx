@@ -92,7 +92,7 @@ export const AdminLoginGate: React.FC<AdminLoginGateProps> = ({
                   autoFocus
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@topsaas.co"
+                  placeholder="hello@topsaas.space"
                   className="w-full bg-transparent py-2.5 pl-9 pr-3 text-xs font-medium text-neutral-900 placeholder:text-neutral-400 outline-none"
                 />
               </div>

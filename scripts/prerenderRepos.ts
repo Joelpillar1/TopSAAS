@@ -642,7 +642,7 @@ const dedupeProducts = (products: Product[]): Product[] => {
   return [...bySlug.values()].sort((a, b) => a.rank - b.rank);
 };
 
-const loadPrerenderProducts = async (): Promise<Product[]> => {
+export const loadPrerenderProducts = async (): Promise<Product[]> => {
   const fallback = dedupeProducts(INITIAL_PRODUCTS);
   const url =
     process.env.VITE_SUPABASE_URL ||
