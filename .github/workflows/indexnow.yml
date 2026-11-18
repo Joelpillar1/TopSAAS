@@ -1,0 +1,28 @@
+name: IndexNow
+
+on:
+  deployment_status:
+  workflow_dispatch:
+
+concurrency:
+  group: indexnow-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  submit:
+    # deployment_status fires for every state, so only run after a successful deploy.
+    if: github.event_name == 'workflow_dispatch' || github.event.deployment_status.state == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Submit sitemap URLs to IndexNow
+        env:
+          SITE_URL: https://www.topsaas.space
+        run: node scripts/indexnow.mjs
