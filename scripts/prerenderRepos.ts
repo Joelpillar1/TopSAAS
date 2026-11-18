@@ -3,8 +3,7 @@ import path from 'node:path';
 import type { Plugin } from 'vite';
 import { CURATED_REPOS } from '../src/data/curatedRepos';
 import type { CuratedRepo, RepoCategory } from '../src/data/curatedRepos';
-import { plainCopy } from '../src/utils/plainCopy';
-import {
+import { firstSentences, plainCopy, stripMarkup } from '../src/utils/plainCopy';import {
   SITE_URL,
   buildRepoEditorial,
   detectSelfHosted,
@@ -43,6 +42,7 @@ import { INITIAL_PRODUCTS } from '../src/data/initialProducts';
 import { BLOG_POSTS, type BlogPost } from '../src/data/blogPosts';
 import { LEGAL_EFFECTIVE, PRIVACY_SECTIONS, TERMS_SECTIONS, type LegalSection } from '../src/data/legalContent';
 import { getProductSlug } from '../src/utils/slug';
+import { productFaqs } from '../src/utils/productFaqs';
 import {
   blogPostSeo,
   blogSeo,
@@ -493,6 +493,70 @@ const writePage = (distDir: string, segments: string[], html: string): void => {
   fs.writeFileSync(path.join(dir, 'index.html'), html, 'utf8');
 };
 
+/* ── sitemaps ── */
+
+type SitemapEntry = {
+  loc: string;
+  changefreq: 'daily' | 'weekly' | 'monthly';
+  priority: string;
+};
+
+type SitemapSection = 'pages' | 'repos' | 'products' | 'directories' | 'guides' | 'blog';
+
+const SITEMAP_SECTIONS: SitemapSection[] = [
+  'pages',
+  'repos',
+  'products',
+  'directories',
+  'guides',
+  'blog',
+];
+
+/**
+ * Writes a real sitemap index at /sitemap.xml plus one child sitemap per
+ * section. Entries are built from the same data arrays that generate the
+ * pages, so the sitemap can never drift from what the build actually wrote.
+ */
+const writeSitemaps = (
+  distDir: string,
+  sections: Record<SitemapSection, SitemapEntry[]>,
+  lastmod: string
+): void => {
+  const sitemapDir = path.join(distDir, 'sitemap');
+  fs.mkdirSync(sitemapDir, { recursive: true });
+
+  for (const section of SITEMAP_SECTIONS) {
+    const entries = sections[section];
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${entries
+  .map(
+    (entry) => `  <url>
+    <loc>${entry.loc}</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>${entry.changefreq}</changefreq>
+    <priority>${entry.priority}</priority>
+  </url>`
+  )
+  .join('\n')}
+</urlset>
+`;
+    fs.writeFileSync(path.join(sitemapDir, `${section}.xml`), xml, 'utf8');
+  }
+
+  const index = `<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${SITEMAP_SECTIONS.map(
+  (section) => `  <sitemap>
+    <loc>${SITE_URL}/sitemap/${section}.xml</loc>
+    <lastmod>${lastmod}</lastmod>
+  </sitemap>`
+).join('\n')}
+</sitemapindex>
+`;
+  fs.writeFileSync(path.join(distDir, 'sitemap.xml'), index, 'utf8');
+};
+
 /* ───────────────────────── core SPA pages ───────────────────────── */
 
 const h1Style = 'font-size:2rem;line-height:1.15;margin:0 0 .5rem;letter-spacing:-.02em';
@@ -609,15 +673,18 @@ const loadPrerenderProducts = async (): Promise<Product[]> => {
   }
 };
 
-const productDescription = (product: Product): string =>
-  (product.description || product.tagline || `${product.name} is a modern SaaS tool listed on TopSAAS.`)
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 160);
+const productIntro = (product: Product): string =>
+  firstSentences(
+    stripMarkup(product.description || '') ||
+      stripMarkup(product.tagline || '') ||
+      `${product.name} is a modern SaaS tool listed on TopSAAS.`,
+    480
+  );
 
 const buildProductBody = (product: Product, siblings: Product[]): string => {
   const slug = getProductSlug(product);
   const related = siblings.filter((p) => getProductSlug(p) !== slug).slice(0, 6);
+  const faqs = productFaqs(product);
   const facts = [
     product.category ? `Category: ${escapeHtml(product.category)}` : '',
     product.pricingModel ? `Pricing: ${escapeHtml(product.pricingModel)}` : '',
@@ -638,11 +705,13 @@ const buildProductBody = (product: Product, siblings: Product[]): string => {
         <main>
           <h1 style="${h1Style}">${escapeHtml(product.name)}</h1>
           ${product.tagline ? `<p style="font-size:1.0625rem;font-weight:500;margin:0 0 1rem">${escapeHtml(product.tagline)}</p>` : ''}
-          <p style="margin:0 0 1rem">${escapeHtml(productDescription(product))}</p>
+          <p style="margin:0 0 1rem">${escapeHtml(productIntro(product))}</p>
           <ul style="margin:0 0 1rem;padding-left:1.25rem">
 ${facts.map((fact) => `            <li>${fact}</li>`).join('\n')}
           </ul>
           <p style="margin:0 0 1rem">Website: <a href="${escapeHtml(product.url)}" rel="noopener" style="${linkStyle}">${escapeHtml(product.url.replace(/^https?:\/\//, '').replace(/\/$/, ''))}</a></p>
+          <h2 style="${h2Style}">Frequently asked questions about ${escapeHtml(product.name)}</h2>
+${faqList(faqs)}
           <h2 style="${h2Style}">More SaaS products on TopSAAS</h2>
           <ul style="margin:0 0 1rem;padding-left:1.25rem">
 ${related
@@ -664,7 +733,10 @@ const buildProductJsonLd = (product: Product): string => {
   const app: Record<string, unknown> = {
     '@type': 'SoftwareApplication',
     name: product.name,
-    description: product.description || product.tagline || `Discover ${product.name} on TopSAAS`,
+    description:
+      stripMarkup(product.description || '') ||
+      stripMarkup(product.tagline || '') ||
+      `Discover ${product.name} on TopSAAS`,
     url: product.url,
     applicationCategory: product.category || 'BusinessApplication',
     operatingSystem: 'All',
@@ -689,6 +761,7 @@ const buildProductJsonLd = (product: Product): string => {
     '@context': 'https://schema.org',
     '@graph': [...siteJsonLd(), 
       app,
+      faqJsonLd(productFaqs(product)),
       breadcrumbJsonLd([
         ['Directory', `${SITE_URL}/`],
         [product.name, canonical],
@@ -1557,23 +1630,6 @@ export function repoPrerenderPlugin(): Plugin {
         }
       }
 
-      // ── product sitemap (real slugs, regenerated from live data) ──
-      const productSitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${products
-  .map(
-    (product) => `  <url>
-    <loc>${SITE_URL}/products/${getProductSlug(product)}</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>`
-  )
-  .join('\n')}
-</urlset>
-`;
-      fs.mkdirSync(path.join(distDir, 'sitemap'), { recursive: true });
-      fs.writeFileSync(path.join(distDir, 'sitemap', 'products.xml'), productSitemap, 'utf8');
-
       // ── core SPA pages ──
       const trending = trendingSeo();
       writePage(
@@ -1753,6 +1809,71 @@ ${products
           jsonLdId: 'home-jsonld',
         }),
         'utf8'
+      );
+
+      // ── sitemap index plus complete child sitemaps ──
+      const sitemapLastmod = new Date().toISOString();
+      const corePages: SitemapEntry[] = [
+        { loc: `${SITE_URL}/`, changefreq: 'daily', priority: '1.0' },
+        { loc: `${SITE_URL}/ideas`, changefreq: 'daily', priority: '0.9' },
+        { loc: `${SITE_URL}/trending`, changefreq: 'daily', priority: '0.9' },
+        { loc: `${SITE_URL}/product-directory`, changefreq: 'weekly', priority: '0.9' },
+        { loc: `${SITE_URL}/guides`, changefreq: 'weekly', priority: '0.8' },
+        { loc: `${SITE_URL}/blog`, changefreq: 'weekly', priority: '0.8' },
+        { loc: `${SITE_URL}/mrr-calculator`, changefreq: 'monthly', priority: '0.7' },
+        { loc: `${SITE_URL}/submit`, changefreq: 'monthly', priority: '0.7' },
+        { loc: `${SITE_URL}/pricing`, changefreq: 'monthly', priority: '0.7' },
+        { loc: `${SITE_URL}/privacy`, changefreq: 'monthly', priority: '0.3' },
+        { loc: `${SITE_URL}/terms`, changefreq: 'monthly', priority: '0.3' },
+      ];
+
+      const directoryPages: SitemapEntry[] = [
+        { loc: `${SITE_URL}/product-directory`, changefreq: 'weekly', priority: '0.9' },
+        ...DIRECTORY_HUBS.map((hub) => ({
+          loc: `${SITE_URL}/product-directory/${hub.slug}`,
+          changefreq: 'weekly' as const,
+          priority: '0.8',
+        })),
+        ...DIRECTORIES.map((entry) => ({
+          loc: `${SITE_URL}/product-directory/${entry.slug}`,
+          changefreq: 'monthly' as const,
+          priority: '0.6',
+        })),
+      ];
+
+      writeSitemaps(
+        distDir,
+        {
+          pages: corePages,
+          repos: uniqueRepos.map((repo) => ({
+            loc: repoCanonicalUrl(repo.full_name),
+            changefreq: 'weekly' as const,
+            priority: '0.6',
+          })),
+          products: products.map((product) => ({
+            loc: `${SITE_URL}/products/${getProductSlug(product)}`,
+            changefreq: 'weekly' as const,
+            priority: '0.7',
+          })),
+          directories: directoryPages,
+          guides: [
+            { loc: `${SITE_URL}/guides`, changefreq: 'weekly', priority: '0.8' },
+            ...BUILD_GUIDES.map((guide) => ({
+              loc: `${SITE_URL}/guides/${guide.slug}`,
+              changefreq: 'monthly' as const,
+              priority: '0.7',
+            })),
+          ],
+          blog: [
+            { loc: `${SITE_URL}/blog`, changefreq: 'weekly', priority: '0.8' },
+            ...BLOG_POSTS.map((post) => ({
+              loc: `${SITE_URL}/blog/${post.slug}`,
+              changefreq: 'monthly' as const,
+              priority: '0.7',
+            })),
+          ],
+        },
+        sitemapLastmod
       );
 
       console.log(

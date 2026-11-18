@@ -154,6 +154,8 @@ export const HomeHero: React.FC<HomeHeroProps> = ({
                   src={logo.src}
                   alt={logo.name}
                   title={logo.name}
+                  width={18}
+                  height={18}
                   className={cn(
                     'h-[18px] w-[18px] object-contain transition-all duration-500',
                     logo.isSquircle && 'rounded-[3px]',

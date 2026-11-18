@@ -2,6 +2,7 @@ import type { Product } from '../types';
 import type { BuildGuide } from '../data/buildGuides';
 import type { BlogPost } from '../data/blogPosts';
 import { getProductSlug } from './slug';
+import { stripMarkup } from './plainCopy';
 
 /**
  * Head metadata for the hand-built SPA routes. Both the React pages and the
@@ -72,11 +73,12 @@ export const pricingSeo = (): SeoCopy =>
   );
 
 export const productSeo = (product: Product): SeoCopy => {
-  const tagline = (product.tagline || '').trim();
-  const description = (product.description || product.tagline || `${product.name} is a modern SaaS tool listed on TopSAAS.`)
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 160);
+  const tagline = stripMarkup(product.tagline || '');
+  const description = stripMarkup(
+    product.description || product.tagline || `${product.name} is a modern SaaS tool listed on TopSAAS.`
+  )
+    .slice(0, 160)
+    .trim();
   return copy(
     tagline ? `${product.name} — ${tagline} | TopSAAS` : `${product.name} — Modern SaaS & AI Tool | TopSAAS`,
     description,

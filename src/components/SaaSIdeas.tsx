@@ -491,6 +491,8 @@ export const SaaSIdeas: React.FC<SaaSIdeasProps> = ({
                             <img
                               src={repo.owner.avatar_url}
                               alt={repo.owner.login}
+                              width={28}
+                              height={28}
                               className="h-7 w-7 rounded-lg object-cover shrink-0 border border-neutral-200 shadow-2xs transition-all duration-200 group-hover:border-neutral-600 group-hover:scale-110"
                               referrerPolicy="no-referrer"
                             />
@@ -665,6 +667,8 @@ const RepoCard: React.FC<{
           <img
             src={repo.owner.avatar_url}
             alt={repo.owner.login}
+            width={24}
+            height={24}
             className="h-full w-full object-cover"
             referrerPolicy="no-referrer"
           />

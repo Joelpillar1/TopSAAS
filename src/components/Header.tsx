@@ -121,6 +121,8 @@ export const Header: React.FC<HeaderProps> = ({
             <img
               src="/logo/TopSAAS%20-%20blue.png"
               alt="TopSAAS"
+              width={32}
+              height={32}
               className="h-8 w-8 shrink-0 rounded-lg object-contain transition-transform group-hover:scale-105"
             />
             <span className="font-black text-lg sm:text-xl tracking-tight text-neutral-950 whitespace-nowrap inline-block shrink-0">
@@ -171,6 +173,8 @@ export const Header: React.FC<HeaderProps> = ({
                     <img
                       src={user.user_metadata.avatar_url}
                       alt={user.user_metadata?.full_name || 'User'}
+                      width={24}
+                      height={24}
                       className="h-6 w-6 rounded-full object-cover"
                     />
                   ) : (

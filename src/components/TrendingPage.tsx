@@ -502,6 +502,8 @@ export const TrendingPage: React.FC<TrendingPageProps> = ({ soundEnabled, onOpen
                     <img
                       src={row.repo.owner.avatar_url}
                       alt=""
+                      width={24}
+                      height={24}
                       className="h-full w-full object-cover"
                       referrerPolicy="no-referrer"
                     />

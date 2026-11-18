@@ -605,6 +605,23 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
       </div>
 
       {/* Main: editorial column + sticky stats sidebar */}
+      <nav
+        aria-label="Breadcrumb"
+        className="mx-auto w-full max-w-6xl px-3.5 pt-4 sm:px-6 sm:pt-5"
+      >
+        <div className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-neutral-500">
+          <a href="/" className="transition-colors hover:text-neutral-950">
+            Directory
+          </a>
+          <span className="text-neutral-300">/</span>
+          <a href="/ideas" className="transition-colors hover:text-neutral-950">
+            SaaS Ideas
+          </a>
+          <span className="text-neutral-300">/</span>
+          <span className="text-neutral-900">{repo.name}</span>
+        </div>
+      </nav>
+
       <main className="mx-auto w-full max-w-6xl px-3.5 py-5 sm:px-6 sm:py-8 space-y-6 flex-1">
         {/* Row 1: editorial + sticky stats (wrapper bounds the sticky range) */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8 items-start">
@@ -617,6 +634,8 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
                 <img
                   src={repo.owner.avatar_url}
                   alt={repo.owner.login}
+                  width={64}
+                  height={64}
                   className="h-full w-full object-cover"
                   referrerPolicy="no-referrer"
                 />
@@ -989,6 +1008,8 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
                     <img
                       src={r.owner.avatar_url}
                       alt={r.owner.login}
+                      width={24}
+                      height={24}
                       className="h-full w-full object-cover"
                       referrerPolicy="no-referrer"
                     />

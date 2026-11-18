@@ -55,7 +55,9 @@ import { VerifiedBadge } from './VerifiedBadge';
 import { SponsoredPartnersSidebar } from './SponsoredPartnersSidebar';
 import { timeAgo } from './ProductRow';
 import { applyPageSeo } from '../utils/pageSeo';
-import { productSeo } from '../utils/coreSeo';
+import { stripMarkup } from '../utils/plainCopy';
+import { productSeo, SITE_URL } from '../utils/coreSeo';
+import { productFaqs } from '../utils/productFaqs';
 import { formatOutboundUrl, trackOutboundClick } from '../utils/referral';
 import { redirectToCheckout } from '../utils/whop';
 import { getWeekInfo, getWeekByNumber, formatWeekDateRange, isInWeek } from '../utils/weeks';
@@ -135,6 +137,8 @@ const CommentAvatar: React.FC<{
       <img
         src={avatarUrl}
         alt={name}
+        width={40}
+        height={40}
         className={className}
         onError={() => setHasError(true)}
       />
@@ -653,11 +657,13 @@ export const ProductPage: React.FC<ProductPageProps> = ({
   // Dynamic SEO & SoftwareApplication JSON-LD schema for AEO / GEO
   useEffect(() => {
     // Schema.org SoftwareApplication JSON-LD
-    const jsonLd: Record<string, unknown> = {
-      '@context': 'https://schema.org',
+    const app: Record<string, unknown> = {
       '@type': 'SoftwareApplication',
       name: product.name,
-      description: product.description || product.tagline || `Discover ${product.name} on TopSAAS`,
+      description:
+        stripMarkup(product.description || '') ||
+        stripMarkup(product.tagline || '') ||
+        `Discover ${product.name} on TopSAAS`,
       url: product.url,
       applicationCategory: product.category || 'BusinessApplication',
       operatingSystem: 'All',
@@ -670,19 +676,19 @@ export const ProductPage: React.FC<ProductPageProps> = ({
     };
 
     if (product.logoUrl) {
-      jsonLd.image = product.logoUrl;
+      app.image = product.logoUrl;
     }
     if (product.screenshots && product.screenshots.length > 0) {
-      jsonLd.screenshot = product.screenshots[0];
+      app.screenshot = product.screenshots[0];
     }
     if (product.creatorName) {
-      jsonLd.author = {
+      app.author = {
         '@type': 'Person',
         name: product.creatorName,
       };
     }
     if (typeof product.upvotes === 'number' && product.upvotes > 0) {
-      jsonLd.aggregateRating = {
+      app.aggregateRating = {
         '@type': 'AggregateRating',
         ratingValue: '4.8',
         reviewCount: Math.max(1, product.upvotes),
@@ -691,9 +697,32 @@ export const ProductPage: React.FC<ProductPageProps> = ({
       };
     }
 
+    const seo = productSeo(product);
+    const faqs = productFaqs(product);
+
     return applyPageSeo({
-      ...productSeo(product),
-      jsonLd,
+      ...seo,
+      jsonLd: {
+        '@context': 'https://schema.org',
+        '@graph': [
+          app,
+          {
+            '@type': 'FAQPage',
+            mainEntity: faqs.map((faq) => ({
+              '@type': 'Question',
+              name: faq.q,
+              acceptedAnswer: { '@type': 'Answer', text: faq.a },
+            })),
+          },
+          {
+            '@type': 'BreadcrumbList',
+            itemListElement: [
+              { '@type': 'ListItem', position: 1, name: 'Directory', item: `${SITE_URL}/` },
+              { '@type': 'ListItem', position: 2, name: product.name, item: seo.canonical },
+            ],
+          },
+        ],
+      },
       jsonLdId: `product-jsonld-${product.id}`,
     });
   }, [product]);
@@ -748,6 +777,8 @@ export const ProductPage: React.FC<ProductPageProps> = ({
   const relatedProducts = allProducts
     .filter((p) => p.id !== product.id && (p.category === product.category || Math.abs(p.rank - product.rank) <= 2))
     .slice(0, 3);
+
+  const faqs = useMemo(() => productFaqs(product), [product]);
 
   // Media gallery (demo video + screenshots unified horizontally)
   const galleryRef = useRef<HTMLDivElement>(null);
@@ -821,7 +852,9 @@ export const ProductPage: React.FC<ProductPageProps> = ({
             <span>Back</span>
           </button>
           <div className="flex items-center gap-2 text-neutral-400 text-[11px] truncate">
-            <span className="hidden sm:inline">Directory</span>
+            <a href="/" className="hidden sm:inline hover:text-neutral-900 hover:underline">
+              Directory
+            </a>
             <span className="hidden sm:inline">/</span>
             <span className="text-neutral-600 font-semibold">{product.category}</span>
             <span>/</span>
@@ -1304,6 +1337,8 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                         <img
                           src={src}
                           alt={`${product.name} screenshot ${i + 1}`}
+                          width={1280}
+                          height={720}
                           loading="lazy"
                           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
                         />
@@ -1709,6 +1744,23 @@ export const ProductPage: React.FC<ProductPageProps> = ({
               </div>
             </div>
 
+            {/* FAQ */}
+            <section className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs space-y-4">
+              <h2 className="text-sm font-bold text-neutral-950">
+                Frequently asked questions about {product.name}
+              </h2>
+              <dl className="space-y-4">
+                {faqs.map((faq) => (
+                  <div key={faq.q}>
+                    <dt className="text-sm font-bold text-neutral-900">{faq.q}</dt>
+                    <dd className="mt-1 text-xs font-medium leading-relaxed text-neutral-500 sm:text-sm">
+                      {faq.a}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+
             {/* Explore Related Websites */}
             {relatedProducts.length > 0 && (
               <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs space-y-4">
@@ -1740,7 +1792,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                         <div className="flex items-center gap-2">
                           <div className="h-8 w-8 rounded-lg overflow-hidden border border-neutral-200 bg-white flex items-center justify-center shrink-0 shadow-2xs">
                             {rel.logoUrl ? (
-                              <img src={rel.logoUrl} alt={rel.name} className="h-full w-full object-cover" />
+                              <img src={rel.logoUrl} alt={rel.name} width={40} height={40} className="h-full w-full object-cover" />
                             ) : (
                               <span className="text-xs font-black text-white">{rel.name.slice(0, 2)}</span>
                             )}

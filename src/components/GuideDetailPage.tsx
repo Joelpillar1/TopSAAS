@@ -145,7 +145,7 @@ export const GuideDetailPage: React.FC<GuideDetailPageProps> = ({
         <div className="flex flex-wrap items-center gap-3 rounded-xl border border-neutral-200 bg-white p-4">
           {repo && (
             <span className="h-10 w-10 shrink-0 overflow-hidden rounded-md border border-neutral-200 bg-white">
-              <img src={repo.owner.avatar_url} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+              <img src={repo.owner.avatar_url} alt="" width={24} height={24} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
             </span>
           )}
           <span className="min-w-0 flex-1">
@@ -311,7 +311,7 @@ export const GuideDetailPage: React.FC<GuideDetailPageProps> = ({
                   className="group flex items-center gap-3 rounded-xl border border-neutral-200 bg-white p-3.5 text-left transition-all hover:border-neutral-200 hover:bg-neutral-100 cursor-pointer"
                 >
                   <span className="h-9 w-9 shrink-0 overflow-hidden rounded-md border border-neutral-200 bg-white">
-                    <img src={r.owner.avatar_url} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                    <img src={r.owner.avatar_url} alt="" width={24} height={24} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-bold text-neutral-950 group-hover:text-mint-600 transition-colors">

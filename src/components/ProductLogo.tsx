@@ -8,6 +8,9 @@ interface ProductLogoProps {
   iconClassName?: string;
   containerClassName?: string;
   badge?: React.ReactNode;
+  /** Intrinsic size hints so the browser reserves space before the image loads. */
+  width?: number;
+  height?: number;
 }
 
 export const ProductLogo: React.FC<ProductLogoProps> = ({
@@ -17,6 +20,8 @@ export const ProductLogo: React.FC<ProductLogoProps> = ({
   iconClassName = 'h-3.5 w-3.5 text-black shrink-0',
   containerClassName = 'relative flex items-center justify-center overflow-hidden rounded-md border border-neutral-200 bg-white shadow-2xs',
   badge,
+  width = 64,
+  height = 64,
 }) => {
   const [hasError, setHasError] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -34,6 +39,8 @@ export const ProductLogo: React.FC<ProductLogoProps> = ({
         <img
           src={src}
           alt={alt}
+          width={width}
+          height={height}
           onLoad={() => setIsLoaded(true)}
           onError={() => setHasError(true)}
           className={`${className} relative z-10 ${isLoaded ? 'opacity-100' : 'opacity-0'} transition-opacity duration-150`}

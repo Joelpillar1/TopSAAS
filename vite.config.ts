@@ -147,6 +147,12 @@ export default defineConfig(() => {
       rollupOptions: {
         output: {
           manualChunks(id) {
+            const normalized = id.replace(/\\/g, '/');
+            // The repo catalog and health signals are large JSON-shaped modules.
+            // Keeping them in their own chunks lets pages that need only one of
+            // them avoid downloading the other.
+            if (normalized.includes('/src/data/curatedRepos')) return 'data-curated-repos';
+            if (normalized.includes('/src/data/repoHealth')) return 'data-repo-health';
             if (id.includes('node_modules')) {
               if (id.includes('react') || id.includes('react-dom')) return 'vendor-react';
               if (id.includes('@supabase')) return 'vendor-supabase';

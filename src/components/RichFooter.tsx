@@ -69,6 +69,8 @@ export const RichFooter: React.FC<RichFooterProps> = ({
               <img
                 src="/logo/TopSAAS%20-%20blue.png"
                 alt="TopSAAS"
+                width={36}
+                height={36}
                 className="h-9 w-9 shrink-0 rounded-xl object-contain"
               />
               <span className="font-black text-xl text-neutral-950 tracking-tight">TopSAAS</span>
@@ -93,7 +95,8 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                   <img
                     src="https://topsaas.space/Share%20Badge/TopSAAS%20Type%202%20-%20light.png"
                     alt="Featured on TopSAAS"
-                    height={32}
+                    width={624}
+                    height={153}
                     className="h-8 w-auto"
                     loading="lazy"
                   />
@@ -107,6 +110,8 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                   <img
                     src="https://spacerrapps.com/badge/topsaas.svg?v=2&theme=light"
                     alt="TopSAAS is featured on Spacerr"
+                    width={234}
+                    height={54}
                     className="h-7.5 w-auto"
                     loading="lazy"
                     onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
@@ -121,6 +126,8 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                   <img
                     src="https://launchit.fast/img/launching.svg"
                     alt="Featured on LaunchIt"
+                    width={200}
+                    height={54}
                     className="h-7.5 w-auto"
                     loading="lazy"
                     onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
@@ -283,7 +290,8 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                   <img
                     src="https://fazier.com/api/v1//public/badges/launch_badges.svg?badge_type=featured&theme=neutral"
                     alt="Fazier badge"
-                    width={250}
+                    width={182}
+                    height={43}
                     className="h-7.5 w-auto"
                     loading="lazy"
                     onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
@@ -314,6 +322,8 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                   <img
                     src="/badges/toolpilot.png"
                     alt="Featured on ToolPilot"
+                    width={300}
+                    height={83}
                     className="h-7.5 w-auto"
                     loading="lazy"
                     onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
@@ -328,6 +338,8 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                   <img
                     src="https://img.turbo0.com/badge-listed-light.svg"
                     alt="Listed on Turbo0"
+                    width={482}
+                    height={161}
                     className="h-7.5 w-auto"
                     loading="lazy"
                     onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
@@ -394,7 +406,8 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                   <img
                     src="https://topsaas.space/Share%20Badge/TopSAAS%20Type%202%20-%20light.png"
                     alt="Featured on TopSAAS"
-                    height={32}
+                    width={624}
+                    height={153}
                     className="h-8 w-auto"
                     loading="lazy"
                   />
@@ -408,6 +421,8 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                   <img
                     src="https://spacerrapps.com/badge/topsaas.svg?v=2&theme=light"
                     alt="TopSAAS is featured on Spacerr"
+                    width={234}
+                    height={54}
                     className="h-7.5 w-auto"
                     loading="lazy"
                     onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
@@ -422,6 +437,8 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                   <img
                     src="https://launchit.fast/img/launching.svg"
                     alt="Featured on LaunchIt"
+                    width={200}
+                    height={54}
                     className="h-7.5 w-auto"
                     loading="lazy"
                     onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
@@ -584,7 +601,8 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                   <img
                     src="https://fazier.com/api/v1//public/badges/launch_badges.svg?badge_type=featured&theme=neutral"
                     alt="Fazier badge"
-                    width={250}
+                    width={182}
+                    height={43}
                     className="h-7.5 w-auto"
                     loading="lazy"
                     onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
@@ -615,6 +633,8 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                   <img
                     src="/badges/toolpilot.png"
                     alt="Featured on ToolPilot"
+                    width={300}
+                    height={83}
                     className="h-7.5 w-auto"
                     loading="lazy"
                     onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
@@ -629,6 +649,8 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                   <img
                     src="https://img.turbo0.com/badge-listed-light.svg"
                     alt="Listed on Turbo0"
+                    width={482}
+                    height={161}
                     className="h-7.5 w-auto"
                     loading="lazy"
                     onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}

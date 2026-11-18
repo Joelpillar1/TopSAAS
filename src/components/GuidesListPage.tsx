@@ -392,6 +392,8 @@ export const GuidesListPage: React.FC<GuidesListPageProps> = ({ soundEnabled }) 
                   <img
                     src={repo.owner.avatar_url}
                     alt=""
+                    width={24}
+                    height={24}
                     className="h-full w-full object-cover"
                     referrerPolicy="no-referrer"
                   />

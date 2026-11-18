@@ -92,7 +92,7 @@ TopSAAS connects innovative software founders with early adopters, tech professi
 
 ## Optional
 
-- [Sitemap](https://www.topsaas.space/sitemap.xml): canonical HTML URLs for search engines.
+- [Sitemap](https://www.topsaas.space/sitemap.xml): sitemap index covering every canonical page, repository, product, directory, guide, and blog post.
 - [Repo sitemap](https://www.topsaas.space/sitemap/repos.xml): direct URLs for repo detail pages.
 - [Product sitemap](https://www.topsaas.space/sitemap/products.xml): direct URLs for product detail pages.
 - [robots.txt](https://www.topsaas.space/robots.txt): crawler permissions allowing GPTBot, ClaudeBot, PerplexityBot, and all major AI engines.

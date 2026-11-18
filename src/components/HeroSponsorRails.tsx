@@ -235,6 +235,8 @@ const TickerItemPill: React.FC<{
           <img
             src={p.logoUrl}
             alt={p.name}
+            width={18}
+            height={18}
             className="h-4.5 w-4.5 rounded-lg object-contain shrink-0 border border-neutral-200/80 bg-white"
             onError={(e) => {
               (e.currentTarget as HTMLImageElement).style.display = 'none';
