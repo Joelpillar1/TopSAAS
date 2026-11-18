@@ -395,6 +395,22 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                     onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
                   />
                 </a>
+                <a
+                  href="https://usefulshelf.co/?utm_source=topsaas.space&utm_medium=referral&utm_campaign=badge&utm_content=lime"
+                  target="_blank"
+                  rel="nofollow noopener"
+                  className="transition-opacity hover:opacity-80 inline-flex items-center shrink-0"
+                >
+                  <img
+                    src="https://usefulshelf.co/badge/usefulshelf.svg?theme=lime"
+                    alt="Featured on UsefulShelf"
+                    width={248}
+                    height={66}
+                    className="h-7.5 w-auto"
+                    loading="lazy"
+                    onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                  />
+                </a>
 
                 {/* Set 2 (for seamless infinite loop) */}
                 <a
@@ -701,6 +717,22 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                     alt="TopSAAS on Nick Launches"
                     width={244}
                     height={56}
+                    className="h-7.5 w-auto"
+                    loading="lazy"
+                    onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                  />
+                </a>
+                <a
+                  href="https://usefulshelf.co/?utm_source=topsaas.space&utm_medium=referral&utm_campaign=badge&utm_content=lime"
+                  target="_blank"
+                  rel="nofollow noopener"
+                  className="transition-opacity hover:opacity-80 inline-flex items-center shrink-0"
+                >
+                  <img
+                    src="https://usefulshelf.co/badge/usefulshelf.svg?theme=lime"
+                    alt="Featured on UsefulShelf"
+                    width={248}
+                    height={66}
                     className="h-7.5 w-auto"
                     loading="lazy"
                     onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
