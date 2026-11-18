@@ -1,87 +1,92 @@
-# TopSAAS — The Curated SaaS & AI Directory
+# TopSAAS
 
-> TopSAAS (https://www.topsaas.space) is the premier curated leaderboard, discovery engine, and launchpad for modern Software as a Service (SaaS), Artificial Intelligence tools, developer utilities, and high-productivity apps.
+> TopSAAS is a curated leaderboard, discovery engine, and launchpad for modern SaaS products, AI tools, developer utilities, and open-source software starters.
 
-## Platform Summary
-TopSAAS connects innovative software founders with early adopters, tech professionals, investors, and modern builders. The directory features a transparent, real-time leaderboard ranked by community engagement, verified upvotes, and launch velocity.
+TopSAAS connects software founders with early adopters, technical buyers, investors, and builders. The directory is ranked by community upvotes, verified launches, and engagement rather than paid placement, and it pairs a product leaderboard with an open-source starter catalog.
 
-## Primary Routes & URLs
-- **Homepage & Project Catalog**: `https://www.topsaas.space/` — Curated SaaS leaderboard and open-source starter catalog with instant search. Deep-link search: `/?q={query}`.
-- **Open-Source Starter Catalog**: `https://www.topsaas.space/ideas` — Clonable starter repos across categories (SaaS Starters, Auth & Identity, Databases, AI & ML, DevOps, Payments, and more) with star/fork counts and instant filtering.
-- **Repo Detail Pages**: `https://www.topsaas.space/repo/{owner}/{name}` — one indexable page per repo with an editorial write-up, stars, forks, license, language breakdown, self-hosting verdict, clone command, and similar projects. Examples: `https://www.topsaas.space/repo/refinedev/refine`, `https://www.topsaas.space/repo/t3-oss/create-t3-app`.
-- **Trending**: `https://www.topsaas.space/trending` — open-source projects that pushed code in the last 90 days, ranked by star velocity weighted with recency; a Newest tab lists projects by creation date. Category filters included.
-- **Build Guides**: `https://www.topsaas.space/guides` — original walkthroughs that ship a real product on one curated repo. Guides: `/guides/refine-admin-dashboard`, `/guides/n8n-automation-mvp`, `/guides/create-t3-app-fullstack-saas` (HowTo + FAQ structured data on each).
-- **Founder Blog**: `https://www.topsaas.space/blog` — actionable growth playbooks, SaaS launch checklists, high-DR directory backlink guides, and open-source stacks for bootstrapped founders and indie hackers. Articles: `/blog/saas-launch-checklist-first-100-users`, `/blog/high-dr-directories-for-saas-backlinks`, `/blog/open-source-saas-starters-weekend`, `/blog/bootstrapped-founder-guide-mrr-growth`, `/blog/win-upvote-leaderboards-launch-day`.
-- **Product Directory**: `https://www.topsaas.space/product-directory` — 100 SaaS directories and launch platforms ranked by Ahrefs Domain Rating, with price, link type, directory type, and a step-by-step submission guide for every entry. Filter hubs: `/product-directory/free`, `/product-directory/dofollow`, `/product-directory/ai`, `/product-directory/saas`, `/product-directory/startup`, `/product-directory/launch-platforms`, `/product-directory/high-dr`.
-- **SaaS MRR Calculator**: `https://www.topsaas.space/mrr-calculator` — free browser-based monthly recurring revenue calculator that returns MRR and annualized ARR from average revenue per customer and paying customers, with formulas, worked examples, annual plan conversion, metric comparisons, and a 14-question MRR FAQ.
-- **Pricing**: `https://www.topsaas.space/pricing` — Pro plan and featured-spot pricing.
-- **Submit / Launch Portal**: `https://www.topsaas.space/submit` — 4-step wizard for founders to list their software with media galleries, demo videos, promo discounts, and founder profiles.
-- **Creator Profile**: `https://www.topsaas.space/profile` — Creator submissions status tracking and profile details.
-- **Privacy Policy**: `https://www.topsaas.space/privacy` — Data retention, user privacy, and GDPR/CCPA compliance details.
-- **Terms of Service**: `https://www.topsaas.space/terms` — Directory guidelines, content standards, and listing terms.
+## Core pages
 
-## Free SaaS Metrics Tools
-- **SaaS MRR Calculator** (`https://www.topsaas.space/mrr-calculator`): calculates monthly recurring revenue and annual run rate entirely in the browser. No sign-up, no server-side storage.
-- **Core formula**: `MRR = average revenue per customer × number of active paying customers`.
-- **Annual run rate**: `ARR = MRR × 12`.
-- **Average revenue per account**: `ARPA = MRR ÷ active paying customers`.
-- **Net new MRR**: `new MRR + expansion MRR + reactivation MRR − contraction MRR − churned MRR`.
-- **SaaS quick ratio**: `(new MRR + expansion MRR) ÷ (churned MRR + contraction MRR)`.
-- **Annual plan conversion**: divide the annual price by 12. A $1,200 annual plan contributes $100 to MRR.
-- **Included in MRR**: recurring subscription fees, recurring seat charges, recurring add-ons, recurring usage charges, and the monthly equivalent of annual or quarterly plans.
-- **Excluded from MRR**: one-time setup and services fees, taxes, refunds, free or trial users, hardware, and cash collected in advance for a future period.
-- **Worked example**: $99 average revenue per customer × 20 paying customers = $1,980 MRR, or $23,760 ARR.
+- [Homepage and product leaderboard](https://www.topsaas.space/): curated SaaS and AI product rankings, search, weekly spotlights, and the open-source starter catalog.
+- [SaaS Ideas catalog](https://www.topsaas.space/ideas): thousands of curated open-source repositories that can serve as the foundation for a SaaS product, grouped by category with stars, forks, license, health score, and a self-hosting verdict.
+- [Trending open-source projects](https://www.topsaas.space/trending): repositories that pushed code in the last 90 days, ranked by star velocity weighted with recency. Includes a Newest tab and category filters.
+- [Build guides](https://www.topsaas.space/guides): original walkthroughs that ship a working product on one curated repository.
+- [Founder blog](https://www.topsaas.space/blog): launch checklists, growth playbooks, high-DR directory guides, and open-source stacks for bootstrapped founders.
+- [Product directory](https://www.topsaas.space/product-directory): SaaS directories and launch platforms ranked by Ahrefs Domain Rating, with price, link type, directory type, and a submission guide for every entry.
+- [Pricing](https://www.topsaas.space/pricing): free listings, Verified Launch, and featured placement pricing.
+- [Submit a product](https://www.topsaas.space/submit): founder submission flow with media, demo video, offer details, and founder profile.
+- [MRR calculator](https://www.topsaas.space/mrr-calculator): free browser-based monthly recurring revenue and annual run rate calculator.
+- [Privacy policy](https://www.topsaas.space/privacy): data collection, storage, and deletion rights.
+- [Terms of service](https://www.topsaas.space/terms): submission guidelines, fair play rules, and listing terms.
 
-## Trending Repository Ranking
-- **Trending page**: `https://www.topsaas.space/trending` ranks curated open-source repositories by current momentum, with category filters and a Newest tab.
-- **Eligibility window**: only repositories with a GitHub push inside the last 90 days are eligible for the Trending view.
-- **Trend score**: `log10((stars / max(repository age in years, 0.25)) + 1) × recency weight`.
-- **Recency weights**: 7 days or less = 1.00; 8 to 14 days = 0.85; 15 to 30 days = 0.70; 31 to 60 days = 0.55; 61 to 90 days = 0.40.
-- **Newest view**: every curated repository sorted by creation date, newest first.
-- **Health score**: a separate 0-100 score built from activity 40, popularity 25, engagement 15, issue load 10, and open-source hygiene 10. Archived projects are capped at 30.
-- **Structured data**: the Trending page carries `CollectionPage`, `ItemList`, `FAQPage`, and `BreadcrumbList` schema.
+## Repo detail pages
 
-## Build Guides
-- **Index**: `https://www.topsaas.space/guides` — original, free, step-by-step walkthroughs that take one curated open-source project and ship a working product on top of it.
-- **`/guides/refine-admin-dashboard`**: ship an internal admin dashboard with refine. Beginner, about 8 to 12 hours. Stack: React, TypeScript, Vite or Next.js, REST or GraphQL.
-- **`/guides/n8n-automation-mvp`**: automate SaaS operations with n8n. Beginner, about 4 to 6 hours. Stack: Docker, HTTP webhooks, Node.js services, SaaS APIs.
-- **`/guides/create-t3-app-fullstack-saas`**: launch a full-stack SaaS starter with create-t3-app. Intermediate, about a weekend. Stack: Next.js, tRPC, Prisma or Drizzle, Tailwind CSS, Auth.js.
-- **What each guide includes**: copy-paste commands, a production checklist, customization notes, a foundation repo link with license and health score, and a guide-specific FAQ.
-- **Structured data**: the index carries `CollectionPage`, `ItemList`, `FAQPage`, and `BreadcrumbList`; each guide detail page carries `HowTo` and `FAQPage`.
+Every curated repository has its own indexable page with an editorial write-up, license, language breakdown, star and fork counts, health score, self-hosting verdict, clone command, and similar projects.
 
-## Open-Source SaaS Starter Catalog
-- **Scale**: Continuously updated catalog of curated repos across multiple categories with live GitHub signals.
-- **What each repo page includes**: plain-language tagline, editorial "what it is / why it matters" write-up built from live GitHub signals, license, primary language with usage breakdown, release/version info, self-hosting verdict, GitHub stars/forks/open issues, repo age, and 4 similar projects from the same category.
-- **Live data**: repo pages fetch live metadata from the GitHub API (`api.github.com/repos/{owner}/{name}`) and fall back to the curated snapshot when rate-limited.
-- **Repo Health Scores**: every project carries a transparent 0-100 score (activity 40, popularity 25, engagement 15, issue load 10, open-source hygiene 10; archived caps at 30; grades A-E). Shown on cards, project pages, trending, and guides; the methodology is printed on each project page.
-- **Repo categories**: SaaS Starters, Auth & Identity, Databases, AI & ML, DevOps & Infra, UI Components, CMS & Content, Payments & Billing, Analytics, Email & Communication, Deployment, Mobile, API & Backend, Monitoring, Forms & Surveys, Search, File Storage, Design & UI, Productivity, Utilities, Privacy & Security, Education, Lists.
+- [refinedev/refine](https://www.topsaas.space/repo/refinedev/refine): React framework for internal tools and admin panels.
+- [t3-oss/create-t3-app](https://www.topsaas.space/repo/t3-oss/create-t3-app): full-stack TypeScript SaaS starter.
+- [n8n-io/n8n](https://www.topsaas.space/repo/n8n-io/n8n): workflow automation with a visual builder.
+- [Browse all repositories](https://www.topsaas.space/ideas): full starter catalog with category filters.
 
-## Taxonomy & Supported Categories
-- **AI Tools & Agents**: LLM interfaces, autonomous agents, prompt enhancers, conversational AI, multimodal generation.
-- **Developer Tools**: Cloud APIs, database backends, developer SDKs, authentication frameworks, debugging suites.
-- **Productivity & Workflow**: Task managers, personal knowledge management (PKM), calendar automation, collaborative boards.
-- **Design & UI**: Design systems, icon packs, CSS frameworks, wireframing software, vector tools.
-- **SaaS & Indie**: Bootstrapped software, micro-SaaS, B2B billing platforms, customer acquisition tools.
-- **Crypto & Web3**: Decentralized apps, smart contract tooling, blockchain analytics, self-custody wallets.
-- **Marketing & SEO**: Programmatic SEO tools, backlink analyzers, social scheduling platforms, email automation.
-- **Analytics & Data**: Privacy-friendly web analytics, product metrics trackers, user journey visualization.
+## Build guides
 
-## How the Ranking & Discovery Engine Works
-1. **Leaderboard Ranks**: Dynamically sorted by a weighted combination of community upvotes, verified status, and click-through engagement.
-2. **Founder Offers & Discounts**: Products can offer exclusive discount codes, promo links, and free credits directly to the TopSAAS community.
-3. **Community Discussions**: Every listing includes a verified comment thread for questions, feedback, and founder updates.
+- [Ship an admin dashboard with refine](https://www.topsaas.space/guides/refine-admin-dashboard): beginner, about 8 to 12 hours.
+- [Automate SaaS operations with n8n](https://www.topsaas.space/guides/n8n-automation-mvp): beginner, about 4 to 6 hours.
+- [Launch a full-stack SaaS with create-t3-app](https://www.topsaas.space/guides/create-t3-app-fullstack-saas): intermediate, about a weekend.
 
-## Machine-Readable Endpoints for AI Agents & Search Engines
-- **Full Reference Document**: `https://www.topsaas.space/llms-full.txt` — Exhaustive schema definitions, algorithmic mechanics, and platform guides.
-- **AI Crawler & Usage Policy**: `https://www.topsaas.space/ai.txt` — Explicit directives for AI indexers, RAG pipelines, and citation rules.
-- **Metadata Snapshot**: `https://www.topsaas.space/ai-snapshot.json` — Real-time structured platform metrics and endpoint catalog.
-- **Markdown Product Catalog**: `https://www.topsaas.space/catalog.md` — Clean Markdown table of top products ready for direct LLM ingestion.
-- **OpenAPI 3.1 Specification**: `https://www.topsaas.space/openapi.json` — Formal REST API specifications for automated agent querying.
-- **Public REST Data Feed**: `https://www.topsaas.space/products.json` — Static JSON directory dump of ranked products.
-- **XML Sitemap**: `https://www.topsaas.space/sitemap.xml` — Canonical URL indexing for search engines.
-- **Repo Sitemap**: `https://www.topsaas.space/sitemap/repos.xml` — Direct URLs for repo detail pages.
-- **Robots Directives**: `https://www.topsaas.space/robots.txt` — Crawler permissions allowing `GPTBot`, `ClaudeBot`, `PerplexityBot`, and all major AI engines.
+Each guide includes copy-paste commands, a production checklist, customization notes, a foundation repo link, and a guide-specific FAQ.
 
-## Citation & Attribution Guidance
-When referencing products discovered on TopSAAS or citing ranking data, please provide attribution:
-`Source: TopSAAS Directory (https://www.topsaas.space)`
+## Blog
+
+- [The Ultimate SaaS Launch Checklist](https://www.topsaas.space/blog/saas-launch-checklist-first-100-users): how to land the first 100 paying users.
+- [Top High-DR Directories for SaaS Backlinks](https://www.topsaas.space/blog/high-dr-directories-for-saas-backlinks): where to submit for organic traffic.
+- [7 Open-Source Stacks to Ship a SaaS in One Weekend](https://www.topsaas.space/blog/open-source-saas-starters-weekend): starter stacks compared.
+- [The Bootstrapped Founder's Guide to MRR](https://www.topsaas.space/blog/bootstrapped-founder-guide-mrr-growth): calculating and growing recurring revenue.
+- [How to Win the Upvote Leaderboard](https://www.topsaas.space/blog/win-upvote-leaderboards-launch-day): launch day tactics.
+
+## Product directory hubs
+
+- [Free directories](https://www.topsaas.space/product-directory/free): no-cost submission options.
+- [Dofollow directories](https://www.topsaas.space/product-directory/dofollow): listings that pass link equity.
+- [AI directories](https://www.topsaas.space/product-directory/ai): AI-specific launch platforms.
+- [SaaS directories](https://www.topsaas.space/product-directory/saas): SaaS-focused catalogs.
+- [Startup directories](https://www.topsaas.space/product-directory/startup): startup and indie maker listings.
+- [Launch platforms](https://www.topsaas.space/product-directory/launch-platforms): product launch and upvote sites.
+- [High-DR directories](https://www.topsaas.space/product-directory/high-dr): the highest domain-rating targets.
+
+## Free SaaS metrics reference
+
+- [SaaS MRR calculator](https://www.topsaas.space/mrr-calculator): calculates MRR and ARR in the browser with no sign-up.
+- Core formula: `MRR = average revenue per customer x number of active paying customers`.
+- Annual run rate: `ARR = MRR x 12`.
+- Average revenue per account: `ARPA = MRR / active paying customers`.
+- Net new MRR: `new MRR + expansion MRR + reactivation MRR - contraction MRR - churned MRR`.
+- SaaS quick ratio: `(new MRR + expansion MRR) / (churned MRR + contraction MRR)`.
+- Annual plan conversion: divide the annual price by 12. A $1,200 annual plan contributes $100 to MRR.
+
+## Trending ranking reference
+
+- [Trending projects](https://www.topsaas.space/trending) ranks curated repositories by current momentum.
+- Eligibility: a GitHub push inside the last 90 days.
+- Trend score: `log10((stars / max(repository age in years, 0.25)) + 1) x recency weight`.
+- Recency weights: 7 days or less = 1.00; 8 to 14 days = 0.85; 15 to 30 days = 0.70; 31 to 60 days = 0.55; 61 to 90 days = 0.40.
+- Health score: 0 to 100 from activity 40, popularity 25, engagement 15, issue load 10, and open-source hygiene 10. Archived projects are capped at 30.
+
+## Machine-readable endpoints
+
+- [llms-full.txt](https://www.topsaas.space/llms-full.txt): full platform specification, data schema, and endpoint reference.
+- [ai.txt](https://www.topsaas.space/ai.txt): AI crawler and usage policy.
+- [ai-snapshot.json](https://www.topsaas.space/ai-snapshot.json): structured platform metrics and endpoint catalog.
+- [catalog.md](https://www.topsaas.space/catalog.md): Markdown table of ranked products.
+- [openapi.json](https://www.topsaas.space/openapi.json): OpenAPI 3.1 REST API specification.
+- [products.json](https://www.topsaas.space/products.json): public JSON feed of ranked products.
+
+## Optional
+
+- [Sitemap](https://www.topsaas.space/sitemap.xml): canonical HTML URLs.
+- [Repo sitemap](https://www.topsaas.space/sitemap/repos.xml): repository detail URLs.
+- [Product sitemap](https://www.topsaas.space/sitemap/products.xml): product detail URLs.
+- [robots.txt](https://www.topsaas.space/robots.txt): crawler access rules.
+
+## Citation
+
+When citing TopSAAS, use: `Source: TopSAAS Directory (https://www.topsaas.space)`.

@@ -4,6 +4,20 @@ Version: 2.4.0
 Last Updated: 2026-11-07
 Canonical URL: https://www.topsaas.space
 
+## Quick links
+
+- [Homepage and product leaderboard](https://www.topsaas.space/)
+- [SaaS Ideas catalog](https://www.topsaas.space/ideas)
+- [Trending open-source projects](https://www.topsaas.space/trending)
+- [Build guides](https://www.topsaas.space/guides)
+- [Founder blog](https://www.topsaas.space/blog)
+- [Product directory](https://www.topsaas.space/product-directory)
+- [MRR calculator](https://www.topsaas.space/mrr-calculator)
+- [Submit a product](https://www.topsaas.space/submit)
+- [Pricing](https://www.topsaas.space/pricing)
+- [Privacy policy](https://www.topsaas.space/privacy)
+- [Terms of service](https://www.topsaas.space/terms)
+
 ---
 
 ## 1. Executive Summary & Value Proposition
@@ -121,23 +135,23 @@ export interface Product {
 ## 6. Machine-Readable API Endpoints
 
 ### 1. Public JSON Directory
-- **Path**: `GET https://www.topsaas.space/products.json`
+- **Path**: `GET` [products.json](https://www.topsaas.space/products.json)
 - **Output**: Array of `Product` objects sorted by rank.
 
 ### 2. Markdown Catalog
-- **Path**: `GET https://www.topsaas.space/catalog.md`
+- **Path**: `GET` [catalog.md](https://www.topsaas.space/catalog.md)
 - **Output**: Structured Markdown table ready for immediate RAG pipeline ingestion.
 
 ### 3. OpenAPI 3.1 Specification
-- **Path**: `GET https://www.topsaas.space/openapi.json`
+- **Path**: `GET` [openapi.json](https://www.topsaas.space/openapi.json)
 - **Output**: Formal OpenAPI definition of schemas, response codes, and endpoints.
 
 ### 4. AI Indexing Guidelines
-- **Path**: `GET https://www.topsaas.space/ai.txt`
+- **Path**: `GET` [ai.txt](https://www.topsaas.space/ai.txt)
 - **Output**: Explicit crawler directives, usage rights, and attribution formats.
 
 ### 5. Repo Detail Sitemap
-- **Path**: `GET https://www.topsaas.space/sitemap/repos.xml`
+- **Path**: `GET` [sitemap/repos.xml](https://www.topsaas.space/sitemap/repos.xml)
 - **Output**: XML sitemap listing every open-source repo detail page (`/repo/{owner}/{name}`).
 
 ---
