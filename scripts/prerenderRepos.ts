@@ -123,6 +123,15 @@ const pageStyle =
 const linkStyle = 'color:#047857;text-decoration:underline;';
 const mutedStyle = 'color:#737373;font-size:.875rem;';
 
+const formatInlineMarkdown = (text: string): string =>
+  escapeHtml(text)
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_match, label, href) => {
+      const isExternal = href.startsWith('http://') || href.startsWith('https://');
+      const targetAttr = isExternal ? ' target="_blank" rel="noopener"' : '';
+      return `<a href="${href}" style="${linkStyle}"${targetAttr}>${label}</a>`;
+    })
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
 /** Static footer for crawlers and no-JS visitors; React renders the full footer. */
 const staticFooter = `
         <footer style="margin-top:2.5rem;border-top:1px solid #e5e5e5;padding-top:1.25rem;${mutedStyle}">
@@ -606,7 +615,7 @@ const faqList = (faqs: Array<{ q: string; a: string }>): string =>
 ${faqs
   .map(
     (faq) =>
-      `            <dt style="font-weight:600;margin:.75rem 0 .25rem">${escapeHtml(faq.q)}</dt>\n            <dd style="margin:0 0 .5rem">${escapeHtml(faq.a)}</dd>`
+      `            <dt style="font-weight:600;margin:.75rem 0 .25rem">${escapeHtml(faq.q)}</dt>\n            <dd style="margin:0 0 .5rem">${formatInlineMarkdown(faq.a)}</dd>`
   )
   .join('\n')}
           </dl>`;
@@ -1430,20 +1439,20 @@ const buildBlogPostBody = (post: BlogPost): string => `
           <ul style="margin:0 0 1rem;padding-left:1.25rem">
 ${post.keyTakeaways.map((item) => `            <li>${escapeHtml(item)}</li>`).join('\n')}
           </ul>
-${post.intro.map((paragraph) => `<p style="margin:0 0 1rem">${escapeHtml(paragraph)}</p>`).join('\n')}
+${post.intro.map((paragraph) => `<p style="margin:0 0 1rem">${formatInlineMarkdown(paragraph)}</p>`).join('\n')}
 ${post.sections
   .map(
     (section) => `          <h2 style="${h2Style}">${escapeHtml(section.title)}</h2>
-${section.paragraphs.map((paragraph) => `<p style="margin:0 0 1rem">${escapeHtml(paragraph)}</p>`).join('\n')}
+${section.paragraphs.map((paragraph) => `<p style="margin:0 0 1rem">${formatInlineMarkdown(paragraph)}</p>`).join('\n')}
 ${(section.subsections || [])
   .map(
     (sub) => `          <h3 style="font-size:1rem;margin:1.25rem 0 .5rem">${escapeHtml(sub.title)}</h3>
-${sub.paragraphs.map((paragraph) => `<p style="margin:0 0 1rem">${escapeHtml(paragraph)}</p>`).join('\n')}`
+${sub.paragraphs.map((paragraph) => `<p style="margin:0 0 1rem">${formatInlineMarkdown(paragraph)}</p>`).join('\n')}`
   )
   .join('\n')}
-${section.table ? `<table style="border-collapse:collapse;margin:0 0 1rem;width:100%"><thead><tr>${section.table.headers.map((h) => `<th style="border:1px solid #e5e5e5;padding:.5rem;text-align:left">${escapeHtml(h)}</th>`).join('')}</tr></thead><tbody>${section.table.rows.map((row) => `<tr>${row.map((cell) => `<td style="border:1px solid #e5e5e5;padding:.5rem">${escapeHtml(cell)}</td>`).join('')}</tr>`).join('')}</tbody></table>` : ''}
-${section.checklist ? `<ul style="margin:0 0 1rem;padding-left:1.25rem">${section.checklist.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : ''}
-${section.proTip ? `<p style="margin:0 0 1rem"><strong>Pro tip:</strong> ${escapeHtml(section.proTip)}</p>` : ''}
+${section.table ? `<table style="border-collapse:collapse;margin:0 0 1rem;width:100%"><thead><tr>${section.table.headers.map((h) => `<th style="border:1px solid #e5e5e5;padding:.5rem;text-align:left">${escapeHtml(h)}</th>`).join('')}</tr></thead><tbody>${section.table.rows.map((row) => `<tr>${row.map((cell) => `<td style="border:1px solid #e5e5e5;padding:.5rem">${formatInlineMarkdown(cell)}</td>`).join('')}</tr>`).join('')}</tbody></table>` : ''}
+${section.checklist ? `<ul style="margin:0 0 1rem;padding-left:1.25rem">${section.checklist.map((item) => `<li>${formatInlineMarkdown(item)}</li>`).join('')}</ul>` : ''}
+${section.proTip ? `<p style="margin:0 0 1rem"><strong>Pro tip:</strong> ${formatInlineMarkdown(section.proTip)}</p>` : ''}
 ${section.codeSnippet ? `<pre style="background:#f5f5f5;padding:.75rem;overflow-x:auto;margin:0 0 1rem"><code>${escapeHtml(section.codeSnippet.code)}</code></pre>` : ''}
 ${section.quote ? `<blockquote style="margin:0 0 1rem;border-left:3px solid #d4d4d4;padding-left:1rem"><p style="margin:0">${escapeHtml(section.quote.text)}</p><footer style="${mutedStyle}">${escapeHtml(section.quote.author)}</footer></blockquote>` : ''}`
   )
@@ -1877,7 +1886,7 @@ export function repoPrerenderPlugin(): Plugin {
       );
 
       console.log(
-        `[seo-prerender] wrote ${uniqueRepos.length} repo pages, ${DIRECTORIES.length} directory pages, ${DIRECTORY_HUBS.length} directory hubs, ${products.length} product pages, 3 guides, 5 blog posts, 2 legal pages, 9 core pages and /ideas`
+        `[seo-prerender] wrote ${uniqueRepos.length} repo pages, ${DIRECTORIES.length} directory pages, ${DIRECTORY_HUBS.length} directory hubs, ${products.length} product pages, 3 guides, ${BLOG_POSTS.length} blog posts, 2 legal pages, 9 core pages and /ideas`
       );
     },
   };

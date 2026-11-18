@@ -54,7 +54,7 @@ export interface BlogPost {
   tagline: string;
   /** Direct definition/answer engineered for Google AI Overviews, Perplexity & Featured Snippets (AEO) */
   directAnswer: string;
-  category: 'Launch Strategy' | 'SaaS Backlinks' | 'Open Source' | 'Growth & Marketing' | 'Founder Playbook';
+  category: 'Launch Strategy' | 'SaaS Backlinks' | 'Open Source' | 'Growth & Marketing' | 'Founder Playbook' | 'Product Review';
   publishedAt: string;
   updatedAt: string;
   readTime: string;
@@ -613,6 +613,367 @@ export const BLOG_POSTS: BlogPost[] = [
       { label: 'Submit Your SaaS to TopSAAS', href: '/submit' },
       { label: 'View the Live TopSAAS Leaderboard', href: '/' },
       { label: 'SaaS Launch Checklist Guide', href: '/blog/saas-launch-checklist-first-100-users' },
+    ],
+  },
+  {
+    slug: 'builttowinweb-review-2026',
+    title: 'BuiltToWinWeb Review 2026: Custom Websites, AI Tools and Pricing Explained',
+    tagline:
+      'An in-depth review of BuiltToWinWeb: hand-coded PHP custom business websites, zero recurring platform fees, sub-second Core Web Vitals, and AI discovery tools including WebAgentScan and the AI Indexing Pack.',
+    directAnswer:
+      'BuiltToWinWeb is a Florida-based custom web development studio founded by Jacob Campbell that builds hand-coded PHP websites for a one-time flat fee ($3,000 for business sites, $8,000 for ecommerce, $15,000 for web apps) with complete source code ownership. Alongside custom builds, it sells AI discovery tools—including WebAgentScan, AIWebBuilding, and the AI Indexing Pack—designed to make websites discoverable and readable by AI search engines and LLM agents like ChatGPT, Claude, and Perplexity.',
+    category: 'Product Review',
+    publishedAt: 'November 18, 2026',
+    updatedAt: 'November 18, 2026',
+    readTime: '10 min read',
+    featured: true,
+    coverGradient: 'from-blue-600 via-cyan-600 to-teal-700',
+    tags: ['Web Development', 'PHP', 'AI Indexing', 'Product Review', 'Core Web Vitals', 'SaaS Pricing'],
+    author: TOPSAAS_AUTHOR,
+    keyTakeaways: [
+      'BuiltToWinWeb replaces recurring SaaS builder subscriptions (Wix, Squarespace, Shopify) with a one-time flat fee and 100% source code ownership.',
+      'Sites are hand-coded in lightweight PHP without themes or bloated plugins, targeting 96–100 Google Lighthouse scores and sub-second load times.',
+      'Flat-fee custom packages start at $3,000 for an 8–10 page business site, $8,000 for ecommerce, and $15,000 for bespoke web apps.',
+      'The studio develops specialized AI readiness software: WebAgentScan ($9/mo), AIWebBuilding ($62.99/yr), the AI Indexing Pack ($39 one-time), and FreeAIBoost ($0 badge exchange).',
+      'Best suited for small businesses and founders seeking long-term ownership, high speed, and zero monthly platform lock-in; less suited for DIY founders wanting drag-and-drop page builders.',
+    ],
+    intro: [
+      'BuiltToWinWeb sells hand-coded business websites for a one-time flat fee alongside a specialized suite of AI-readiness tools. In this comprehensive review, we examine what the studio delivers, its transparent pricing structure, how it compares to legacy site builders like WordPress and Shopify, and what you should verify before booking a build.',
+      'As website builders continuously raise monthly subscription fees and pile on third-party plugin dependencies, modern businesses and founders increasingly look for lightweight, owned alternatives that deliver superior [Google Core Web Vitals](https://pagespeed.web.dev/) and visibility in emerging AI search engines.',
+      'Whether you are launching a new startup, migrating away from bloated WordPress themes, or ensuring your brand is indexed by autonomous AI assistants, this breakdown covers everything you need to know about [BuiltToWinWeb](https://builttowinweb.com/).',
+    ],
+    sections: [
+      {
+        id: 'at-a-glance',
+        title: 'BuiltToWinWeb at a Glance',
+        paragraphs: [
+          'Before diving into the detailed technical breakdown, here is a quick summary of what the studio offers, who is behind it, and how its pricing and capabilities compare:',
+        ],
+        table: {
+          caption: 'BuiltToWinWeb Overview & Key Specifications',
+          headers: ['Detail', 'Summary'],
+          rows: [
+            ['What it is', 'A boutique web studio by Jacob Campbell paired with a specialized suite of AI discovery tools'],
+            ['Founder & Location', 'Jacob Campbell, based in Greenacres, Florida (FAU Computer Science & Cybersecurity)'],
+            ['Best For', 'Small businesses, online stores, and founders who want 100% code ownership without recurring platform fees'],
+            ['Core Offer', 'Hand-coded PHP websites for a one-time flat fee with full source code transfer upon completion'],
+            ['Custom Site Pricing', '$3,000 (Business Pro), $8,000 (Ecommerce), $15,000 (SaaS or Web Application)'],
+            ['AI Tools & Software', 'WebAgentScan (from $9/mo), AIWebBuilding ($62.99/yr), AI Indexing Pack ($39 once), FreeAIBoost ($0)'],
+            ['Free Tier / Entry', 'FreeAIBoost ($0 badge exchange with 50-day streak unlocking AI Indexing Pack for 1 domain)'],
+            ['Performance Claims', 'Lighthouse performance scores of 96–100 and sub-second page loads (self-reported)'],
+            ['Key Constraint', 'Solo-developer operation; client capacity and turnaround times depend directly on one engineer'],
+            ['Overall Rating & Verdict', 'A credible, high-speed choice for businesses prioritizing asset ownership over drag-and-drop builders'],
+          ],
+        },
+      },
+      {
+        id: 'what-is-builttowinweb',
+        title: 'What is BuiltToWinWeb and Who is Behind It?',
+        paragraphs: [
+          '[BuiltToWinWeb](https://builttowinweb.com/) (also branded as Built2Win) is an independent custom web development and AI-tooling studio founded and operated by Jacob Campbell from Greenacres, Florida. The studio works with clients across the United States and the United Kingdom, with a multi-lingual web platform available in 11 languages.',
+          'Founder Jacob Campbell holds a Bachelor of Science in Computer Science with a minor in Cybersecurity from Florida Atlantic University (FAU), awarded in December 2024. Prior to launching the studio, he spent two years as an academic technical lab technician at FAU, engineered a full-stack ecommerce application featuring [Stripe](https://stripe.com) checkout and a relational SQL database, and actively maintains commercial client infrastructure.',
+          'A founder with a named, verifiable academic and technical pedigree is a major trust signal for a solo boutique studio. The studio openly links to Jacob Campbell’s verified professional profiles on LinkedIn and Upwork so prospective clients can vet credentials before scheduling an engagement.',
+          'The studio operates across two synergistic business pillars:',
+        ],
+        subsections: [
+          {
+            title: '1. Custom Web Engineering',
+            paragraphs: [
+              'Business websites, ecommerce storefronts, and full-stack web applications hand-coded in modern PHP. Unlike standard agency workflows, the studio uses no WordPress cores, no third-party page builders (such as Elementor or Divi), and no off-the-shelf commercial themes.',
+            ],
+          },
+          {
+            title: '2. Autonomous AI Software & Indexing',
+            paragraphs: [
+              'Proprietary tools including WebAgentScan, AIWebBuilding, the AI Indexing Pack, and FreeAIBoost. These products focus on modern search paradigms—making websites readable, secure, and indexable for autonomous LLM agents and AI search assistants like ChatGPT, Claude, and Perplexity.',
+            ],
+          },
+        ],
+      },
+      {
+        id: 'problems-it-solves',
+        title: 'What Problem Does BuiltToWinWeb Solve?',
+        paragraphs: [
+          'Most small businesses and solo founders build their web presence on hosted platforms or WordPress plugins out of convenience. Over time, that convenience turns into compounding technical debt. BuiltToWinWeb specifically targets three persistent pain points:',
+        ],
+        subsections: [
+          {
+            title: '1. Compounding Platform Subscriptions That Never End',
+            paragraphs: [
+              'Hosted website builders (such as Shopify, Squarespace, and Wix) charge monthly fees in perpetuity. Over a 3- to 5-year operating window, subscription fees, premium app extensions, and mandatory transaction charges can easily exceed the cost of a bespoke website—while leaving the business owner with zero ownership of their underlying software.',
+              'BuiltToWinWeb flips this dynamic: you pay a single, fixed fee, and upon final deployment, complete source code and database ownership are transferred to your business.',
+            ],
+          },
+          {
+            title: '2. Slow, Bloated Websites That Bleed Search Rankings',
+            paragraphs: [
+              'Google evaluates website experience through [Core Web Vitals](https://pagespeed.web.dev/). According to the studio’s technical audits, a standard WordPress installation often loads up to 22 separate plugin stylesheets, 14 render-blocking JavaScript files, and 6 external font files before rendering any content above the fold. This frequently drives Largest Contentful Paint (LCP) past 3.8 seconds.',
+              'By developing in raw, hand-crafted PHP, BuiltToWinWeb ships only the exact code required by the page, guaranteeing Lighthouse scores between 96 and 100.',
+            ],
+          },
+          {
+            title: '3. Total Invisibility to AI Search Engines and LLMs',
+            paragraphs: [
+              'With millions of buyers querying ChatGPT Search, Perplexity, and Claude for business recommendations, traditional SEO is no longer sufficient. Most standard websites serve heavy client-rendered JavaScript or unstructured HTML that AI crawlers fail to parse.',
+              'The studio equips client sites with standardized machine-readable discovery assets—including [llms.txt](https://llmstxt.org/), Model Context Protocol ([MCP](https://modelcontextprotocol.io/)) servers, agent cards, and clean Markdown endpoints—ensuring businesses are cited in conversational AI answers.',
+            ],
+          },
+        ],
+        statCallout: {
+          number: '3.8s → <1s',
+          label: 'Core Web Vitals Optimization',
+          context:
+            'Hand-coded PHP removes render-blocking plugins and bloated CSS frameworks, bringing page load times well under Google’s recommended thresholds.',
+        },
+      },
+      {
+        id: 'custom-pricing',
+        title: 'How Much Does a BuiltToWinWeb Custom Website Cost?',
+        paragraphs: [
+          'Custom development work is priced as a single, fixed fee. Every project begins with a required consultation followed by a formal written quote, with typical delivery timelines averaging roughly 30 days once client content and hosting credentials are in place.',
+        ],
+        table: {
+          caption: 'BuiltToWinWeb Custom Web Development Pricing (November 2026)',
+          headers: ['Package', 'Price', 'Scope & Included Features'],
+          rows: [
+            [
+              'Business Pro Website',
+              '$3,000',
+              '8 to 10 custom pages, custom CMS, online payments, booking module, lead capture, newsletter integration, mobile-responsive layout, deployment, 100% source ownership',
+            ],
+            [
+              'Ecommerce Website',
+              '$8,000 (Listed at 30% off)',
+              'Up to 15 pages, 100 initial products, unlimited categories, shopping cart & payment gateway, inventory management, customer reviews, custom domain emails, dedicated manager',
+            ],
+            [
+              'SaaS or Web Application',
+              '$15,000',
+              'Custom relational SQL database & REST API, role-based authentication, user dashboards, Stripe & Google Maps API integrations, admin portal, 6 months free maintenance, security audit',
+            ],
+          ],
+        },
+        proTip:
+          'All three custom packages convey 100% source code ownership. The Business Pro and Ecommerce tiers also advertise a money-back guarantee, though prospective clients should always read the studio’s published Terms of Service for exact milestone and refund stipulations.',
+      },
+      {
+        id: 'standalone-services',
+        title: 'Stand-Alone Technical Services & Add-Ons',
+        paragraphs: [
+          'For businesses with an existing website that do not need an entire rebuild from scratch, BuiltToWinWeb offers modular, stand-alone engineering and optimization services at fixed price points:',
+        ],
+        table: {
+          caption: 'Modular Engineering & Technical Services',
+          headers: ['Service', 'Price', 'Core Deliverable'],
+          rows: [
+            ['WordPress Migration to Custom PHP', '$1,950', 'Full database export, code rewrite, 301 redirect map, metadata migration & 30-day monitoring'],
+            ['Technical SEO Optimization', '$1,040', 'Crawl budget optimization, canonical auditing, internal linking structure, and sitemap hierarchy'],
+            ['Stripe Payment Gateway Integration', '$1,040', 'Custom webhook handling, checkout session logic, tax handling, and invoice receipt automation'],
+            ['Core Web Vitals Performance Optimization', '$975', 'Asset minification, critical CSS inlining, font subsetting, and sub-second LCP optimization'],
+            ['Local SEO & Google Business Profile', '$520', 'NAP consistency audit, Google Maps optimization, and local citation distribution'],
+            ['Schema Markup & Structured Data', '$520', 'Custom JSON-LD schema injection for Organization, Product, FAQ, and BreadcrumbList'],
+            ['Hosting Setup & Deployment', '$390', 'Server provisioning (VPS/Nginx/Apache), SSL configuration, DNS propagation, and automated backups'],
+            ['Custom Database Application', '$7,280', 'Custom relational schema design, indexing, stored procedures, and high-concurrency API layer'],
+          ],
+        },
+      },
+      {
+        id: 'ai-tools',
+        title: 'BuiltToWinWeb AI Tools: WebAgentScan, AIWebBuilding, AI Indexing Pack, and FreeAIBoost',
+        paragraphs: [
+          'Beyond client agency work, the studio develops four standalone software products designed to give websites first-class visibility in AI discovery engines.',
+        ],
+        subsections: [
+          {
+            title: 'WebAgentScan: Automated AI Readiness Auditing',
+            paragraphs: [
+              'A cloud-based scanner that analyzes any domain across a 100-point composite score across seven key areas: discovery files, machine-readable content, autonomous agent access permissions, Model Context Protocol (MCP) server quality, agent security headers, Domain Rating (DR), and a ranked remediation list.',
+              'Pricing is subscription-based: Starter ($9/mo for 300 scans, 15 DR lookups, 10 seats), Pro ($29/mo for 2,000 scans, 60 DR lookups, 3 seats), and Proprietary ($100/mo for unlimited scans, 200 DR lookups, 10 seats). Note that Starter and Pro plans require displaying a badge on your site, and there is currently no free trial.',
+            ],
+          },
+          {
+            title: 'AIWebBuilding: AI Website Generation',
+            paragraphs: [
+              'An intelligent site builder that transforms a plain-text business description (or your existing domain URL) into a complete, responsive website with blog, ecommerce, bookings, Stripe checkout, an MCP server builder, analytics, and a leads inbox.',
+              'Users can build and preview their site for free, paying only upon publishing: $62.99/year for template-based sites, or $73.99 for the first year with 200 AI credits ($62.99/year renewal). Extra prompt credits start at $5.99 and never expire.',
+            ],
+          },
+          {
+            title: 'AI Indexing Pack: Turnkey LLM Machine-Readability',
+            paragraphs: [
+              'A downloadable suite of files that configures your server with the machine-readable assets AI models search for: an [MCP server](https://modelcontextprotocol.io/), Markdown mirrors for autonomous agents, [llms.txt](https://llmstxt.org/), agent cards, `.well-known` endpoints, and bot access controls. The file edition sells for a one-time $39 (promoted as reduced from $599), while the WordPress plugin edition costs $49.',
+            ],
+          },
+          {
+            title: 'FreeAIBoost: Community Badge Exchange',
+            paragraphs: [
+              'A free visibility exchange program where participating sites place a badge, claim a spot in a rotating spotlight queue of 25 free slots, and check in for 50 consecutive days. Reaching day 50 unlocks the AI Indexing Pack for one domain free of charge. A $49 one-time fast-track upgrade allows founders to bypass the link review queue immediately.',
+            ],
+          },
+        ],
+      },
+      {
+        id: 'selling-points',
+        title: 'Why Buy From BuiltToWinWeb? The Selling Points',
+        paragraphs: [
+          'Here are the primary reasons business owners and founders choose BuiltToWinWeb over subscription builders or large corporate digital agencies:',
+        ],
+        checklist: [
+          'Complete Code Ownership: Zero subscription fees, zero platform lock-in, and full legal ownership of your source code.',
+          'Fixed-Price Transparency: Packages start at a fixed $3,000 with a written quote, eliminating surprise invoices and hourly billing disputes.',
+          'Engineered for Pure Speed: Hand-coded PHP ensures no bloated libraries or useless scripts, targeting 96–100 Lighthouse scores and sub-second load times.',
+          'SEO Built In from Day 1: Semantic HTML5, JSON-LD structured data, and mobile-responsive layouts are standard in every build.',
+          'Pioneering AI Search Readiness: Native support for A2A agent cards, MCP servers, and Markdown mirrors so AI search engines cite your brand.',
+          'Mandatory Scoping Consultation: Checkout buttons remain locked until you complete a consultation, preventing mismatched expectations.',
+          'Accessible Low-Cost Entry Points: Preview AIWebBuilding for free, join FreeAIBoost at $0, or test the $39 AI Indexing Pack before committing to a full build.',
+          'Zero-Intermediary Payments: AIWebBuilding shop transactions route directly through your own Stripe account with no middleman transaction cut.',
+          'Direct Founder Access: You work directly with lead engineer Jacob Campbell rather than through non-technical account reps.',
+          'Safe WordPress Migration: The $1,950 migration package includes 301 redirect mapping, metadata preservation, and 30 days of post-launch ranking protection.',
+        ],
+      },
+      {
+        id: 'comparison-matrix',
+        title: 'BuiltToWinWeb vs. Wix, Squarespace, WordPress, and Shopify',
+        paragraphs: [
+          'Choosing between BuiltToWinWeb and conventional website solutions comes down to whether you want to rent a proprietary platform or own a custom software asset outright. The table below outlines the architectural trade-offs:',
+          'A one-time flat fee wins decisively when you plan to operate a business for multiple years and value page speed, conversion rates, and asset control. A subscription builder wins when you need a functional landing page this weekend and want full drag-and-drop editing.',
+          'For businesses seeking a middle ground, AIWebBuilding provides an annual alternative at $62.99/year instead of monthly recurring subscriptions.',
+        ],
+        table: {
+          caption: 'Head-to-Head Comparison: Custom PHP vs. Major CMS and Site Builders',
+          headers: ['Evaluation Factor', 'BuiltToWinWeb (Custom PHP)', 'Hosted Builders (Wix, Squarespace)', 'WordPress & WooCommerce', 'Shopify & Webflow'],
+          rows: [
+            ['Cost Model', 'One-time flat fee ($3k–$15k)', 'Monthly/annual recurring subscription', 'Free core; paid hosting, plugins & themes', 'Recurring monthly subscription + app fees'],
+            ['Code Ownership', '100% source code transferred', 'Proprietary platform; zero code export', 'Self-hosted; open-source PHP/MySQL', 'Closed platform; code locked to ecosystem'],
+            ['Non-Technical Editing', 'Included bespoke lightweight CMS', 'Visual drag-and-drop page builder', 'Block editor (Gutenberg) + admin dashboard', 'Visual web canvas & modular store admin'],
+            ['Performance & Speed Control', 'Hand-optimized; zero bloat; 96–100 LCP', 'Platform-constrained; variable JS load', 'Heavy plugin overhead; requires caching plugins', 'Good baseline; degrades with 3rd-party apps'],
+            ['Average Time to Launch', 'Roughly 1 month (hand-crafted)', 'Hours to several days', 'Days to weeks depending on configuration', '1 to 3 weeks for typical store configuration'],
+            ['Best For', 'Founders seeking speed, security & permanent ownership', 'DIY creators needing immediate drag-and-drop launch', 'Content publishers needing endless plugin flexibility', 'Scaling DTC brands & visual design agencies'],
+          ],
+        },
+      },
+      {
+        id: 'pros-and-cons',
+        title: 'BuiltToWinWeb: Pros and Cons',
+        paragraphs: [
+          'A balanced assessment of the studio’s key strengths and practical limitations:',
+        ],
+        subsections: [
+          {
+            title: 'Key Strengths (Pros)',
+            paragraphs: [
+              '✓ One-time flat fee pricing with full source code ownership and zero platform lock-in.',
+              '✓ Blazing-fast page speeds with native SEO and structured JSON-LD data built into every page.',
+              '✓ 100% transparent public pricing for every package, add-on, and software tool.',
+              '✓ Low-risk entry options: free AIWebBuilding preview, $0 FreeAIBoost community access, and $39 AI Indexing Pack.',
+              '✓ Proactive adoption of cutting-edge AI discovery protocols, including MCP, A2A, and llms.txt.',
+              '✓ Verifiable founder background with Florida Atlantic University computer science credentials.',
+            ],
+          },
+          {
+            title: 'Key Limitations (Cons)',
+            paragraphs: [
+              '✕ Solo-developer operation: overall build capacity, support response, and turnaround depend on one engineer.',
+              '✕ Higher initial investment: thousands of dollars upfront compared to a $25/month builder subscription in year one.',
+              '✕ Post-launch structural modifications may require developer assistance or the included CMS rather than a visual canvas.',
+              '✕ WebAgentScan offers no free trial and enforces strict seat caps across tiers.',
+              '✕ Lighthouse scores and the 5.0 rating (7 reviews) are self-reported or based on a small sample size that clients should independently verify.',
+              '✕ Promotional pricing on tools like the $39 AI Indexing Pack is displayed as time-sensitive and subject to increase.',
+            ],
+          },
+        ],
+      },
+      {
+        id: 'pre-purchase-checklist',
+        title: 'What to Check Before Hiring BuiltToWinWeb',
+        paragraphs: [
+          'If you are considering commissioning a custom build or purchasing software from BuiltToWinWeb, follow this practical due diligence checklist:',
+        ],
+        checklist: [
+          'Book the Discovery Consultation: Use the mandatory scoping call to clarify deliverables, milestone deadlines, and who provides copy and visual assets.',
+          'Audit Portfolio Websites: The studio lists 25 portfolio projects. Run 2 or 3 through Google PageSpeed Insights and WebPageTest to verify real-world load times.',
+          'Review the Terms of Service: Check exact cancellation, milestone sign-off, refund terms, and source code transfer protocols.',
+          'Clarify Ongoing Maintenance: Only the $15,000 web app package includes 6 months of free maintenance; confirm support pricing for Business Pro and Ecommerce builds.',
+          'Confirm Content Management Scope: Review how the custom CMS functions and determine which updates you can execute independently without code.',
+          'Get Timeline Commitments in Writing: Confirm expected completion dates, bearing in mind that the ~30-day turnaround begins once all content and credentials are provided.',
+          'Align AI Tool Purchases: Clarify whether your immediate priority is protocol publishing (AI Indexing Pack) or diagnostic scoring (WebAgentScan).',
+          'Confirm Current Pricing: Verify whether limited-time discounts or introductory rates are currently active on the studio website.',
+        ],
+      },
+      {
+        id: 'final-verdict',
+        title: 'Final Verdict: Is BuiltToWinWeb Worth It?',
+        paragraphs: [
+          'BuiltToWinWeb is a compelling, high-quality option for small businesses, service providers, and startups seeking a blazing-fast, secure website that they own 100% without recurring monthly platform taxes. Its transparent pricing, verifiable founder background, mandatory pre-sale consultation, and low-cost entry products make it easy to evaluate with minimal downside.',
+          'It is a less suitable fit for DIY founders who want to launch in an afternoon with a visual drag-and-drop editor, or companies that require a large 24/7 support team. For those buyers, AIWebBuilding ($62.99/year) offers a viable middle ground from the same studio.',
+          'The best way to evaluate BuiltToWinWeb is to explore their [official website](https://builttowinweb.com/), test a live portfolio site on PageSpeed Insights, and book the free scoping consultation.',
+          'If you are building your own SaaS or digital product, consider [submitting your product to TopSAAS](/submit) to get featured in our directory, connect with early adopters, and build high-authority backlinks. You can also explore our [SaaS Product Directory](/product-directory) for curated tools or read our [Founders Playbooks](/guides).',
+        ],
+        quote: {
+          text: 'Owning your code is the ultimate hedge against platform subscription bloat. A fast, hand-crafted site delivers compounding returns in Core Web Vitals and organic customer trust.',
+          author: 'TopSAAS Editorial Review',
+        },
+        proTip:
+          'Editorial Note: This review is an independent analysis conducted by the TopSAAS editorial team based on BuiltToWinWeb’s public architecture, documentation, and published pricing. TopSAAS regularly reviews developer tools, web studios, and SaaS platforms to help founders make smart software and infrastructure investments.',
+      },
+    ],
+    faq: [
+      {
+        q: 'Is BuiltToWinWeb legit?',
+        a: 'Yes. BuiltToWinWeb is a verified web development studio operated by Florida Atlantic University computer science graduate Jacob Campbell. The studio provides public links to his LinkedIn and Upwork profiles, lists a physical business jurisdiction in Greenacres, Florida, and publishes clear service terms. As with any boutique studio, clients should review recent portfolio examples and complete the initial discovery call before booking.',
+      },
+      {
+        q: 'How much does a custom website cost with BuiltToWinWeb?',
+        a: 'Bespoke custom PHP websites are priced on a flat one-time fee: $3,000 for a Business Pro site (8–10 pages with CMS and payments), $8,000 for an Ecommerce store (up to 15 pages and 100 products), and $15,000 for a custom SaaS or web application.',
+      },
+      {
+        q: 'Are there any recurring monthly fees for custom websites?',
+        a: 'No. Custom development projects have zero mandatory recurring platform fees from BuiltToWinWeb. You only pay for standard third-party web hosting and your domain name. For standalone software, AIWebBuilding costs $62.99/year for hosting, and WebAgentScan operates on a monthly subscription starting at $9/month.',
+      },
+      {
+        q: 'Do I own the source code of my website?',
+        a: 'Yes. Upon final project sign-off and deployment, full source code and intellectual property rights are transferred to you with zero vendor lock-in.',
+      },
+      {
+        q: 'How long does a website build take from start to finish?',
+        a: 'Typical turnaround is approximately one month following the discovery consultation, once the client has provided their content and access credentials. The Business Pro package advertises expedited turnaround options, which should be confirmed during project scoping.',
+      },
+      {
+        q: 'Can BuiltToWinWeb migrate my WordPress website without losing SEO rankings?',
+        a: 'Yes. The studio offers a dedicated $1,950 WordPress-to-PHP migration service that includes full database transformation, 1-to-1 301 URL redirect mapping, structured metadata preservation, and 30 days of post-migration search console monitoring.',
+      },
+      {
+        q: 'What is the AI Indexing Pack and who needs it?',
+        a: 'The AI Indexing Pack is a downloadable package of protocol files—including Model Context Protocol ([MCP](https://modelcontextprotocol.io/)) server endpoints, Markdown mirrors, and [llms.txt](https://llmstxt.org/)—that make your website easily parsed and cited by AI engines like ChatGPT, Claude, and Perplexity. It costs $39 as a one-time purchase ($49 for WordPress).',
+      },
+      {
+        q: 'Can I get the AI Indexing Pack for free?',
+        a: 'Yes. Through the FreeAIBoost badge exchange program, webmasters who display the FreeAIBoost badge and maintain a 50-day consecutive check-in streak receive a complimentary AI Indexing Pack license for one domain.',
+      },
+      {
+        q: 'What does WebAgentScan do?',
+        a: 'WebAgentScan is an automated diagnostic tool that scores a website out of 100 for AI search readiness, evaluating agent access permissions, MCP server response, security headers, and domain authority while ranking actionable fixes.',
+      },
+      {
+        q: 'Is there a free trial for the AI website builder?',
+        a: 'Yes. AIWebBuilding allows founders to generate, customize, and preview their website completely free. You only pay the $62.99 annual hosting fee when you decide to publish the site live.',
+      },
+      {
+        q: 'Does BuiltToWinWeb work with international clients outside the US?',
+        a: 'Yes. BuiltToWinWeb actively serves clients in both the United States and the United Kingdom, and its official website offers localized content in 11 languages.',
+      },
+      {
+        q: 'Is a custom PHP website better than WordPress or Shopify?',
+        a: 'A custom PHP website is generally superior for page speed, Core Web Vitals, and avoiding monthly plugin subscriptions or platform lock-in. However, WordPress and Shopify offer larger plugin ecosystems and easier visual drag-and-drop editing for non-technical teams.',
+      },
+    ],
+    relatedInternalLinks: [
+      { label: 'Submit Your SaaS or Web Tool to TopSAAS', href: '/submit' },
+      { label: 'Browse Top SaaS & AI Tools in our Directory', href: '/product-directory' },
+      { label: 'Compare TopSAAS Launch & Promotion Plans', href: '/pricing' },
+      { label: 'Explore Curated SaaS Business Ideas', href: '/ideas' },
+      { label: 'View TopSAAS Machine-Readable LLM Index (llms.txt)', href: '/llms.txt' },
+      { label: 'Read All Founder & Growth Guides', href: '/guides' },
     ],
   },
 ];

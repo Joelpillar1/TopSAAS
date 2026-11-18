@@ -30,6 +30,69 @@ interface BlogDetailPageProps {
   soundEnabled?: boolean;
 }
 
+const renderFormattedText = (text: string): React.ReactNode => {
+  if (!text) return text;
+  const regex = /(\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*)/g;
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+
+    if (match[2] && match[3]) {
+      const label = match[2];
+      const url = match[3];
+      const isExternal = url.startsWith('http://') || url.startsWith('https://');
+
+      if (isExternal) {
+        parts.push(
+          <a
+            key={match.index}
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 underline font-semibold hover:text-blue-800 transition-colors inline-flex items-center gap-0.5"
+          >
+            <span>{label}</span>
+            <ExternalLink className="h-3 w-3 inline ml-0.5 text-blue-500" />
+          </a>
+        );
+      } else {
+        parts.push(
+          <a
+            key={match.index}
+            href={url}
+            onClick={(e) => {
+              e.preventDefault();
+              navigateTo(url);
+            }}
+            className="text-blue-600 underline font-semibold hover:text-blue-800 transition-colors cursor-pointer"
+          >
+            {label}
+          </a>
+        );
+      }
+    } else if (match[4]) {
+      parts.push(
+        <strong key={match.index} className="font-bold text-neutral-900">
+          {match[4]}
+        </strong>
+      );
+    }
+
+    lastIndex = regex.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  return parts;
+};
+
 export const BlogDetailPage: React.FC<BlogDetailPageProps> = ({
   slug,
   soundEnabled = false,
@@ -397,7 +460,7 @@ export const BlogDetailPage: React.FC<BlogDetailPageProps> = ({
                 key={i}
                 className="text-sm sm:text-base text-neutral-700 leading-relaxed font-normal"
               >
-                {para}
+                {renderFormattedText(para)}
               </p>
             ))}
           </div>
@@ -415,7 +478,7 @@ export const BlogDetailPage: React.FC<BlogDetailPageProps> = ({
                     key={pIndex}
                     className="text-sm sm:text-base text-neutral-700 leading-relaxed font-normal"
                   >
-                    {para}
+                    {renderFormattedText(para)}
                   </p>
                 ))}
               </div>
@@ -433,7 +496,7 @@ export const BlogDetailPage: React.FC<BlogDetailPageProps> = ({
                           key={spIdx}
                           className="text-sm sm:text-base text-neutral-700 leading-relaxed font-normal"
                         >
-                          {subPara}
+                          {renderFormattedText(subPara)}
                         </p>
                       ))}
                     </div>
@@ -488,7 +551,7 @@ export const BlogDetailPage: React.FC<BlogDetailPageProps> = ({
                                   cIdx === 0 ? 'font-bold text-neutral-900' : ''
                                 }`}
                               >
-                                {cell}
+                                {renderFormattedText(cell)}
                               </td>
                             ))}
                           </tr>
@@ -513,7 +576,7 @@ export const BlogDetailPage: React.FC<BlogDetailPageProps> = ({
                         className="flex items-start gap-2.5 text-xs sm:text-sm text-neutral-700"
                       >
                         <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 mt-2 shrink-0" />
-                        <span className="leading-relaxed">{item}</span>
+                        <span className="leading-relaxed">{renderFormattedText(item)}</span>
                       </li>
                     ))}
                   </ul>
@@ -529,7 +592,7 @@ export const BlogDetailPage: React.FC<BlogDetailPageProps> = ({
                       Pro Tip
                     </h4>
                     <p className="text-xs sm:text-sm text-blue-950 leading-relaxed">
-                      {section.proTip}
+                      {renderFormattedText(section.proTip)}
                     </p>
                   </div>
                 </div>
@@ -662,7 +725,7 @@ export const BlogDetailPage: React.FC<BlogDetailPageProps> = ({
                   >
                     <h4 className="text-sm font-bold text-neutral-900">{item.q}</h4>
                     <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed font-normal">
-                      {item.a}
+                      {renderFormattedText(item.a)}
                     </p>
                   </div>
                 ))}
