@@ -1,7 +1,8 @@
 User-agent: *
+Content-Signal: search=yes, ai-input=yes, ai-train=no
 Disallow: /accept
 Disallow: /accept/
-Disallow: /r
+Disallow: /r$
 Disallow: /r/
 Allow: /
 

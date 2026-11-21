@@ -26,21 +26,21 @@ const copy = (title: string, description: string, canonical: string): SeoCopy =>
 export const homeSeo = (): SeoCopy =>
   copy(
     'TopSAAS — The Curated Directory of Modern SaaS & AI Tools',
-    'Discover, compare, and launch modern SaaS products and AI tools. Real-time community leaderboard, verified founder launches, weekly spotlights, and open-source starters.',
+    'Discover modern SaaS products and AI tools on a community-ranked directory. Verified launches, weekly spotlights, and open-source starters.',
     `${SITE_URL}/`
   );
 
 export const trendingSeo = (): SeoCopy =>
   copy(
-    'Trending Open Source Projects: Fastest-Growing Repos | TopSAAS',
+    'Trending Open Source Repos: Fastest-Growing | TopSAAS',
     'See which open-source projects are trending now. Ranked by star velocity and recent GitHub activity across 23 categories, with health scores and repo details.',
     `${SITE_URL}/trending`
   );
 
 export const guidesSeo = (): SeoCopy =>
   copy(
-    'Build Guides: Ship Real SaaS on Open-Source Projects | TopSAAS',
-    'Original step-by-step build guides for refine, n8n, and create-t3-app. Copy-paste commands, production checklists, repo health scores, and a clear path to launch.',
+    'Build Guides: Ship Real SaaS on Open Source | TopSAAS',
+    'Step-by-step build guides for refine, n8n, and create-t3-app. Copy-paste commands, production checklists, repo health scores, and a clear path to launch.',
     `${SITE_URL}/guides`
   );
 
@@ -53,8 +53,8 @@ export const guideSeo = (guide: BuildGuide): SeoCopy =>
 
 export const mrrSeo = (): SeoCopy =>
   copy(
-    'SaaS MRR Calculator: Free Monthly Recurring Revenue Tool | TopSAAS',
-    'Calculate SaaS MRR and ARR instantly from average revenue per customer and paying customers. Includes formulas, worked examples, annual plan conversion, and an MRR FAQ.',
+    'SaaS MRR Calculator: Free Recurring Revenue Tool | TopSAAS',
+    'Calculate SaaS MRR and ARR instantly from revenue per customer and paying customers. Includes formulas, worked examples, annual plans, and an FAQ.',
     `${SITE_URL}/mrr-calculator`
   );
 
@@ -68,7 +68,7 @@ export const submitSeo = (): SeoCopy =>
 export const pricingSeo = (): SeoCopy =>
   copy(
     'Pricing & Launch Plans | TopSAAS',
-    'Explore launch plans on TopSAAS. From free standard submissions to the $5 Verified Launch with permanent dofollow backlink, verified badge, and AI search inclusion.',
+    'Explore TopSAAS launch plans: free submission or the $5 Verified Launch with a dofollow backlink, verified badge, and AI search inclusion.',
     `${SITE_URL}/pricing`
   );
 
@@ -88,7 +88,7 @@ export const productSeo = (product: Product): SeoCopy => {
 
 export const blogSeo = (): SeoCopy =>
   copy(
-    'TopSAAS Blog — SaaS Launch Guides, Growth Playbooks & SEO Tactics',
+    'TopSAAS Blog: SaaS Launch Guides and SEO Tactics',
     'Actionable guides, launch checklists, high-DR directory strategies, and open-source stacks for bootstrapped SaaS founders and indie hackers.',
     `${SITE_URL}/blog`
   );
@@ -102,14 +102,14 @@ export const blogPostSeo = (post: BlogPost): SeoCopy =>
 
 export const privacySeo = (): SeoCopy =>
   copy(
-    'Privacy Policy | TopSAAS',
+    'Privacy Policy: How TopSAAS Handles Your Data',
     'How TopSAAS collects, uses, stores, and protects your data, including account, submission, payment, and local storage information, plus your deletion rights.',
     `${SITE_URL}/privacy`
   );
 
 export const termsSeo = (): SeoCopy =>
   copy(
-    'Terms of Service | TopSAAS',
+    'Terms of Service: Rules for Using TopSAAS',
     'The rules for using TopSAAS: directory submission guidelines, fair play and anti-cheat policy, featured spot terms, intellectual property, and liability.',
     `${SITE_URL}/terms`
   );
