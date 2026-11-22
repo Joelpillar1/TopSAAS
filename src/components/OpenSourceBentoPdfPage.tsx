@@ -189,45 +189,48 @@ export const OpenSourceBentoPdfPage: React.FC<OpenSourceBentoPdfPageProps> = ({
   return (
     <article className="min-h-screen bg-neutral-50/50 text-neutral-900 font-sans pb-24 selection:bg-neutral-200 selection:text-neutral-900">
       {/* ── Sub-Nav / Breadcrumb Header ── */}
-      <nav className="sticky top-0 z-30 border-b border-neutral-200/80 bg-white/95 backdrop-blur-md">
-        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
-          <div className="flex items-center gap-3">
+      <nav className="relative z-10 border-b border-neutral-200/80 bg-white">
+        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-3 sm:px-6 gap-2">
+          {/* Left: Back button & Breadcrumb */}
+          <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
             <button
               type="button"
               onClick={() => {
                 playSound('click', soundEnabled);
                 onBack();
               }}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-2.5 py-1 text-xs font-medium text-neutral-700 shadow-2xs hover:bg-neutral-50 hover:text-neutral-950 transition-all cursor-pointer"
+              className="inline-flex items-center gap-1 sm:gap-1.5 rounded-lg border border-neutral-200 bg-white px-2 sm:px-2.5 py-1.5 text-xs font-medium text-neutral-700 shadow-2xs hover:bg-neutral-50 hover:text-neutral-950 transition-all cursor-pointer shrink-0 whitespace-nowrap active:scale-95"
             >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              <span>Back to SaaS Ideas</span>
+              <ArrowLeft className="h-3.5 w-3.5 shrink-0" />
+              <span className="hidden sm:inline">Back to SaaS Ideas</span>
+              <span className="sm:hidden">Back</span>
             </button>
-            <span className="text-neutral-300">/</span>
-            <span className="text-xs font-medium text-neutral-500">Open Source</span>
-            <span className="text-neutral-300">/</span>
-            <span className="text-xs font-semibold text-neutral-900">BentoPDF</span>
+            <span className="text-neutral-300 shrink-0 hidden sm:inline">/</span>
+            <span className="text-xs font-medium text-neutral-500 hidden md:inline shrink-0">Open Source</span>
+            <span className="text-neutral-300 shrink-0 hidden md:inline">/</span>
+            <span className="text-xs font-semibold text-neutral-900 truncate">BentoPDF</span>
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* Right: GitHub & Live Instance */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <a
               href={BENTO_PDF_META.githubUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-2.5 py-1 text-xs font-medium text-neutral-700 hover:bg-neutral-50 transition-colors"
+              className="inline-flex items-center gap-1 sm:gap-1.5 rounded-lg border border-neutral-200 bg-white px-2 sm:px-2.5 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 transition-colors shrink-0 whitespace-nowrap"
             >
-              <Github className="h-3.5 w-3.5" />
-              <span className="hidden xs:inline">GitHub</span>
+              <Github className="h-3.5 w-3.5 shrink-0" />
               <span className="font-mono text-[11px] font-bold text-neutral-900">{BENTO_PDF_META.stars}</span>
             </a>
             <a
               href={BENTO_PDF_META.officialWebsite}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-neutral-900 px-3 py-1 text-xs font-medium text-white shadow-2xs hover:bg-neutral-800 transition-colors"
+              className="inline-flex items-center gap-1 sm:gap-1.5 rounded-lg bg-neutral-900 px-2.5 sm:px-3 py-1.5 text-xs font-medium text-white shadow-2xs hover:bg-neutral-800 transition-colors shrink-0 whitespace-nowrap"
             >
-              <span>Live Instance</span>
-              <ExternalLink className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Live Instance</span>
+              <span className="sm:hidden">Live</span>
+              <ExternalLink className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
             </a>
           </div>
         </div>
