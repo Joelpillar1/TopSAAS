@@ -3,6 +3,7 @@ import path from 'node:path';
 import type { Plugin } from 'vite';
 import { CURATED_REPOS } from '../src/data/curatedRepos';
 import type { CuratedRepo, RepoCategory } from '../src/data/curatedRepos';
+import { HANDPICKED_REPOS, type HandpickedRepoDossier } from '../src/data/handpickedRepos';
 import { firstSentences, plainCopy, stripMarkup } from '../src/utils/plainCopy';import {
   SITE_URL,
   buildRepoEditorial,
@@ -49,6 +50,7 @@ import {
   guidesSeo,
   guideSeo,
   homeSeo,
+  ideasSeo,
   mrrSeo,
   pricingSeo,
   privacySeo,
@@ -92,6 +94,21 @@ const uniqueRepos: CuratedRepo[] = (() => {
   }
   return out;
 })();
+
+/** The handpicked foundations have their own section on /ideas. */
+const handpickedNames = new Set(
+  HANDPICKED_REPOS.map((dossier) => dossier.repoFullName.toLowerCase())
+);
+/** Dossier copy keyed by repo, so repo pages can ship the editorial too. */
+const dossierByRepo = new Map(
+  HANDPICKED_REPOS.map((dossier) => [dossier.repoFullName.toLowerCase(), dossier] as const)
+);
+const handpickedRepos = uniqueRepos.filter((repo) =>
+  handpickedNames.has(repo.full_name.toLowerCase())
+);
+const directoryRepos = uniqueRepos.filter(
+  (repo) => !handpickedNames.has(repo.full_name.toLowerCase())
+);
 
 const reposByCategory = new Map<RepoCategory, CuratedRepo[]>();
 for (const repo of uniqueRepos) {
@@ -162,7 +179,131 @@ const staticFooter = `
           </nav>
         </footer>`;
 
+/** Dossier prose: blank lines become paragraphs, single newlines become breaks. */
+const proseHtml = (text: string): string =>
+  text
+    .split(/\n{2,}/)
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map(
+      (part) =>
+        `<p style="margin:0 0 1rem">${formatInlineMarkdown(part).replace(/\n/g, '<br />')}</p>`
+    )
+    .join('');
+
+const listHtml = (items: readonly string[]): string =>
+  items.length === 0
+    ? ''
+    : `<ul style="margin:0 0 1rem;padding-left:1.25rem">\n${items
+        .map((item) => `            <li>${formatInlineMarkdown(item)}</li>`)
+        .join('\n')}\n          </ul>`;
+
+/** Handpicked repos carry operator-grade dossiers; emit them for crawlers too. */
+const buildDossierBody = (dossier: HandpickedRepoDossier): string => {
+  const name = escapeHtml(dossier.repoName);
+  const replaces =
+    dossier.replaces.allReplaces && dossier.replaces.allReplaces.length
+      ? dossier.replaces.allReplaces
+      : [dossier.replaces.name];
+
+  const ideasHtml = dossier.ideas
+    .map((idea) => {
+      const additions = Array.isArray(idea.youWouldNeedToAdd)
+        ? idea.youWouldNeedToAdd
+        : [idea.youWouldNeedToAdd];
+      return `            <h3 style="font-size:1rem;margin:1.5rem 0 .5rem">${escapeHtml(idea.title)}</h3>
+            <p style="margin:0 0 .5rem"><strong>Who pays:</strong> ${formatInlineMarkdown(idea.customer)}</p>
+            <p style="margin:0 0 .5rem"><strong>How to charge:</strong> ${formatInlineMarkdown(idea.howToCharge)}</p>
+            <p style="margin:0 0 .25rem"><strong>What you would add:</strong></p>
+            ${listHtml(additions)}`;
+    })
+    .join('\n');
+
+  const alternativesHtml = dossier.commercialAlternatives
+    .map(
+      (alt) =>
+        `            <li><strong>${escapeHtml(alt.name)}</strong>${
+          alt.pricing ? ` (${escapeHtml(alt.pricing)})` : ''
+        }: ${formatInlineMarkdown(alt.description)} ${formatInlineMarkdown(alt.whyReplace)}</li>`
+    )
+    .join('\n');
+
+  const commands = [
+    dossier.quickStart.clone,
+    dossier.quickStart.install,
+    dossier.quickStart.run,
+  ].filter((command): command is string => Boolean(command));
+
+  return `
+          <h2 style="font-size:1.125rem;margin:1.75rem 0 .5rem">What ${name} is</h2>
+          ${proseHtml(dossier.summary)}
+          <h2 style="font-size:1.125rem;margin:1.75rem 0 .5rem">The problem it solves</h2>
+          ${proseHtml(dossier.problemItSolves)}
+          <h2 style="font-size:1.125rem;margin:1.75rem 0 .5rem">How ${name} solves it</h2>
+          ${proseHtml(dossier.solution)}
+          ${
+            dossier.whoItsFor.length
+              ? `<h2 style="font-size:1.125rem;margin:1.75rem 0 .5rem">Who it is for</h2>${listHtml(dossier.whoItsFor)}`
+              : ''
+          }
+          <h2 style="font-size:1.125rem;margin:1.75rem 0 .5rem">Key features</h2>
+          <ul style="margin:0 0 1rem;padding-left:1.25rem">
+${dossier.features
+  .map(
+    (feature) =>
+      `            <li><strong>${escapeHtml(feature.title)}</strong> ${formatInlineMarkdown(feature.description)}</li>`
+  )
+  .join('\n')}
+          </ul>
+          <h2 style="font-size:1.125rem;margin:1.75rem 0 .5rem">License at a glance</h2>
+          <p style="margin:0 0 1rem"><strong>${escapeHtml(dossier.licenseSpdx)}</strong>: ${formatInlineMarkdown(dossier.licenseMeaning)}</p>
+          ${
+            dossier.licenseWarning
+              ? `<p style="margin:0 0 1rem"><strong>Careful:</strong> ${formatInlineMarkdown(dossier.licenseWarning)}</p>`
+              : ''
+          }
+          ${
+            dossier.caveats.length
+              ? `<h3 style="font-size:1rem;margin:1.5rem 0 .5rem">Caveats before you build</h3>${listHtml(dossier.caveats)}`
+              : ''
+          }
+          ${
+            dossier.ideas.length
+              ? `<h2 style="font-size:1.125rem;margin:1.75rem 0 .5rem">SaaS ideas you could build on ${name}</h2>\n${ideasHtml}`
+              : ''
+          }
+          ${
+            dossier.commercialAlternatives.length
+              ? `<h2 style="font-size:1.125rem;margin:1.75rem 0 .5rem">Commercial tools it replaces</h2>\n          <ul style="margin:0 0 1rem;padding-left:1.25rem">\n${alternativesHtml}\n          </ul>`
+              : ''
+          }
+          ${
+            dossier.goodFitIf.length
+              ? `<h2 style="font-size:1.125rem;margin:1.75rem 0 .5rem">Good fit if</h2>${listHtml(dossier.goodFitIf)}`
+              : ''
+          }
+          ${
+            dossier.skipIf.length
+              ? `<h2 style="font-size:1.125rem;margin:1.75rem 0 .5rem">Skip it if</h2>${listHtml(dossier.skipIf)}`
+              : ''
+          }
+          ${
+            commands.length
+              ? `<h2 style="font-size:1.125rem;margin:1.75rem 0 .5rem">Quick start</h2>\n          <pre style="margin:0 0 1rem;padding:.75rem 1rem;background:#f5f5f5;border:1px solid #e5e5e5;border-radius:.5rem;overflow-x:auto;font-size:.8125rem"><code>${escapeHtml(commands.join('\n'))}</code></pre>`
+              : ''
+          }
+          ${
+            dossier.quickStart.notes
+              ? `<p style="margin:0 0 1rem">${formatInlineMarkdown(dossier.quickStart.notes)}</p>`
+              : ''
+          }
+          <h3 style="font-size:1rem;margin:1.5rem 0 .5rem">Replaces</h3>
+          ${listHtml(replaces)}
+`;
+};
+
 const buildRepoBody = (repo: CuratedRepo): string => {
+  const dossier = dossierByRepo.get(repo.full_name.toLowerCase());
   const peers = reposByCategory.get(repo.category) ?? [];
   const rank = Math.max(1, peers.findIndex((r) => r.full_name === repo.full_name) + 1);
   const selfHosted = detectSelfHosted([], repo.description);
@@ -194,6 +335,7 @@ const buildRepoBody = (repo: CuratedRepo): string => {
           <h1 style="font-size:2rem;line-height:1.15;margin:0 0 .25rem;letter-spacing:-.02em">${escapeHtml(repo.name)}</h1>
           <p style="${mutedStyle}margin:0 0 1rem">${escapeHtml(repo.full_name)}</p>
           ${tagline ? `<p style="font-size:1.0625rem;font-weight:500;margin:0 0 1.25rem">${escapeHtml(tagline)}</p>` : ''}
+          ${dossier ? buildDossierBody(dossier) : ''}
           <p style="margin:0 0 1rem">${escapeHtml(editorial.lead)}</p>
           <h2 style="font-size:1.125rem;margin:1.75rem 0 .5rem">Why teams pick ${escapeHtml(repo.name)}</h2>
           <p style="margin:0 0 1rem">${escapeHtml(editorial.core)}</p>
@@ -208,6 +350,7 @@ ${editorial.capabilities
             <li>Owner: ${escapeHtml(repo.owner.login)}</li>
             <li>Stars: ${repo.stargazers_count.toLocaleString('en-US')}</li>
             <li>Forks: ${repo.forks_count.toLocaleString('en-US')}</li>
+            ${dossier ? `<li>Last verified: ${escapeHtml(dossier.lastVerified)}</li>` : ''}
             ${repo.language ? `<li>Main language: ${escapeHtml(repo.language)}</li>` : ''}
             <li>Repository: <a href="${escapeHtml(repo.html_url)}" rel="noopener" style="${linkStyle}">github.com/${escapeHtml(repo.full_name)}</a></li>
           </ul>
@@ -274,8 +417,19 @@ const buildRepoJsonLd = (repo: CuratedRepo): string => {
 };
 
 const buildIdeasBody = (): string => {
-  const total = uniqueRepos.length;
-  const categories = [...reposByCategory.entries()];
+  const total = directoryRepos.length;
+  const categories = (() => {
+    const grouped = new Map<RepoCategory, CuratedRepo[]>();
+    for (const repo of directoryRepos) {
+      const bucket = grouped.get(repo.category);
+      if (bucket) bucket.push(repo);
+      else grouped.set(repo.category, [repo]);
+    }
+    for (const bucket of grouped.values()) {
+      bucket.sort((a, b) => b.stargazers_count - a.stargazers_count);
+    }
+    return [...grouped.entries()];
+  })();
   return `
       <div style="${pageStyle}">
         <nav aria-label="Breadcrumb" style="${mutedStyle}margin-bottom:1.25rem">
@@ -287,6 +441,17 @@ const buildIdeasBody = (): string => {
           <h1 style="font-size:2rem;line-height:1.15;margin:0 0 .5rem;letter-spacing:-.02em">SaaS Ideas: ${total.toLocaleString('en-US')} open-source projects to build on</h1>
           <p style="margin:0 0 1rem">Every project below is a repository you can clone today: SaaS starters, auth, billing, analytics, AI plumbing and the rest of the stack a modern product needs. Each entry links to a detail page with stars, forks, language, related projects and notes on what it is good for.</p>
           <p style="margin:0 0 1.5rem">Prefer finished products? Browse <a href="/product-directory" style="${linkStyle}">the product directory</a> instead.</p>
+          <h2 style="font-size:1.125rem;margin:1.75rem 0 .5rem">Handpicked open source foundations (${handpickedRepos.length})</h2>
+          <p style="margin:0 0 .75rem">These foundations have a full commercial dossier: SaaS ideas, license analysis, and launch guidance.</p>
+          <ul style="margin:0;padding-left:1.25rem">
+${handpickedRepos
+  .map(
+    (r) =>
+      `            <li><a href="/repo/${escapeHtml(r.full_name)}" style="${linkStyle}">${escapeHtml(r.name)}</a></li>`
+  )
+  .join('\n')}
+          </ul>
+          <h2 style="font-size:1.125rem;margin:1.75rem 0 .5rem">Open source projects by category</h2>
 ${categories
   .map(
     ([category, repos]) => `          <h2 style="font-size:1.125rem;margin:1.75rem 0 .5rem">${escapeHtml(category)} (${repos.length.toLocaleString('en-US')})</h2>
@@ -433,7 +598,7 @@ interface PageHead {
   robots?: string;
   /** drop the template JSON-LD instead of keeping it */
   dropJsonLd?: boolean;
-  /** if true, don't wrap body in <noscript> (for pure static pages like 404) */
+  /** if true, render the body bare instead of as prerendered markup that JS hides (for the 404 page) */
   staticOnly?: boolean;
 }
 
@@ -491,7 +656,11 @@ const renderPage = (template: string, page: PageHead): string => {
     html = html.replace(/<script type="application\/ld\+json"[^>]*>[\s\S]*?<\/script>\s*/, '');
   }
 
-  const bodyContent = page.staticOnly ? page.body : `<noscript>${page.body}</noscript>`;
+  // Ship the body as real markup so every parser, not just JavaScript-capable
+  // browsers, can read the text and follow the links. A tiny inline script in
+  // the template adds `html.js` before first paint and hides this block, so
+  // visitors never see the prerendered copy while React swaps in.
+  const bodyContent = page.staticOnly ? page.body : `<div id="seo-prerender">${page.body}</div>`;
   html = html.replace('<div id="root"></div>', `<div id="root">${bodyContent}</div>`);
   return html;
 };
@@ -1529,14 +1698,15 @@ export function repoPrerenderPlugin(): Plugin {
         );
       }
 
-      const total = uniqueRepos.length.toLocaleString('en-US');
+      const total = directoryRepos.length.toLocaleString('en-US');
+      const ideasCopy = ideasSeo(directoryRepos.length);
       writePage(
         distDir,
         ['ideas'],
         renderPage(template, {
-          title: `SaaS Ideas: ${total} open-source projects to build on | TopSAAS`,
-          description: `Browse ${total} curated open-source repositories for building SaaS: starters, auth, billing, analytics, AI and infrastructure.`,
-          canonical: `${SITE_URL}/ideas`,
+          title: ideasCopy.title,
+          description: ideasCopy.description,
+          canonical: ideasCopy.canonical,
           body: buildIdeasBody(),
           jsonLd: escapeJson({
             '@context': 'https://schema.org',
@@ -1551,8 +1721,8 @@ export function repoPrerenderPlugin(): Plugin {
               {
                 '@type': 'ItemList',
                 name: 'Open-source SaaS starter projects',
-                numberOfItems: uniqueRepos.length,
-                itemListElement: uniqueRepos.slice(0, 100).map((repo, index) => ({
+                numberOfItems: directoryRepos.length,
+                itemListElement: directoryRepos.slice(0, 100).map((repo, index) => ({
                   '@type': 'ListItem',
                   position: index + 1,
                   name: repo.name,

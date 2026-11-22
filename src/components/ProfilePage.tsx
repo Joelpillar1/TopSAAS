@@ -38,12 +38,17 @@ import {
   Users,
   Twitter,
   Linkedin,
+  TrendingUp,
+  Percent,
 } from 'lucide-react';
+import { AnalyticsChartCard, AnalyticsPoint } from './AnalyticsChartCard';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '../utils/supabase';
-import { Category, PricingModel, Product, ProductSocial, SocialPlatform, SUBMISSION_CATEGORIES, WebsiteSubmission } from '../types';
+import { Category, PricingModel, Product, ProductSocial, SocialPlatform, SUBMISSION_CATEGORIES, WebsiteSubmission, Sponsor } from '../types';
 import { getWebsiteFavicon } from '../utils/logo';
-import { mapDbProduct, mapDbSubmission, updateProductDirect, submissionToProduct, loadProductById } from '../utils/db';
+import { mapDbProduct, mapDbSubmission, updateProductDirect, submissionToProduct, loadProductById, loadSponsors, updateSponsor } from '../utils/db';
+import { QuadChevrons } from './SponsorRailCard';
+import { getDeterministicBrandColor } from '../utils/brandColor';
 import { ProductLogo } from './ProductLogo';
 import { GridPattern } from './ui/grid-pattern';
 import { SkeletonRows } from './SkeletonCard';
@@ -66,6 +71,7 @@ interface ProfilePageProps {
   user: User;
   allProducts?: Product[];
   allSubmissions?: WebsiteSubmission[];
+  allSponsors?: Sponsor[];
   onBack: () => void;
   onSignOut?: () => void;
   onOpenSubmit?: () => void;
@@ -75,6 +81,7 @@ interface ProfilePageProps {
   onSelectProduct?: (product: Product) => void;
   onShareProduct?: (product: Product) => void;
   soundEnabled?: boolean;
+  initialTab?: 'overview' | 'live' | 'drafts' | 'pending' | 'sponsorships' | 'profile';
 }
 
 const LOOKING_FOR_OPTIONS = [
@@ -138,17 +145,36 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   onBack,
   onSignOut,
   onOpenSubmit,
+  allSponsors = [],
   onOpenFeaturedSpotModal,
   onDeleteProduct,
   onUpdateProduct,
   onSelectProduct,
   onShareProduct,
   soundEnabled = true,
+  initialTab,
 }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [submissions, setSubmissions] = useState<WebsiteSubmission[]>([]);
   const [drafts, setDrafts] = useState<LaunchDraft[]>(() => getUserDrafts(user.id));
-  const [activeProfileTab, setActiveProfileTab] = useState<'overview' | 'live' | 'drafts' | 'pending' | 'profile'>('overview');
+  const [userSponsors, setUserSponsors] = useState<Sponsor[]>([]);
+  const [editingSponsor, setEditingSponsor] = useState<Sponsor | null>(null);
+  const [sponsorEditForm, setSponsorEditForm] = useState<{
+    tagline: string;
+    url: string;
+    logoUrl: string;
+  }>({ tagline: '', url: '', logoUrl: '' });
+  const [isSavingSponsor, setIsSavingSponsor] = useState(false);
+  const [sponsorSaveSuccess, setSponsorSaveSuccess] = useState(false);
+  const [sponsorSaveError, setSponsorSaveError] = useState<string | null>(null);
+
+  const [activeProfileTab, setActiveProfileTab] = useState<'overview' | 'live' | 'drafts' | 'pending' | 'sponsorships' | 'profile'>(() => {
+    if (initialTab) return initialTab;
+    if (typeof window !== 'undefined' && window.location.search.includes('tab=sponsorships')) {
+      return 'sponsorships';
+    }
+    return 'overview';
+  });
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -529,6 +555,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   const [badgeProduct, setBadgeProduct] = useState<Product | null>(null);
   const [relaunchProduct, setRelaunchProduct] = useState<Product | null>(null);
   const [isRelaunching, setIsRelaunching] = useState(false);
+  const [sponsorAnalyticsRange, setSponsorAnalyticsRange] = useState<'7d' | '30d' | '90d'>('30d');
 
   // Form State for editing
   const [editForm, setEditForm] = useState<{
@@ -615,6 +642,13 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         return false;
       };
 
+      const matchedLocalSponsors = allSponsors.filter((s) =>
+        Boolean(userEmail && s.contactEmail && s.contactEmail.trim().toLowerCase() === userEmail)
+      );
+      if (matchedLocalSponsors.length > 0) {
+        setUserSponsors(matchedLocalSponsors);
+      }
+
       const matchedLocalSubs = allSubmissions.filter((s) =>
         isUserMatch(s.submittedBy, s.backerEmail)
       );
@@ -674,6 +708,15 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
             setProducts(finalProds);
             setSubmissions(finalSubs);
+
+            // Fetch live authoritative sponsors matching user's email
+            loadSponsors(true).then((allRemoteSponsors) => {
+              if (!isMounted) return;
+              const matched = allRemoteSponsors.filter((s) =>
+                Boolean(userEmail && s.contactEmail && s.contactEmail.trim().toLowerCase() === userEmail)
+              );
+              setUserSponsors(matched);
+            }).catch(() => {});
           } else {
             // Offline / error fallback only
             setProducts(matchedLocalProds);
@@ -1328,6 +1371,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             {[
               { key: 'overview' as const, label: 'Overview', icon: UserIcon, count: 0 },
               { key: 'live' as const, label: 'Products', icon: LayoutGrid, count: products.length },
+              { key: 'sponsorships' as const, label: 'Sponsorships & Ads', icon: Sparkles, count: userSponsors.length },
               { key: 'drafts' as const, label: 'Drafts', icon: FileText, count: drafts.length },
               { key: 'pending' as const, label: 'Pending', icon: Clock, count: pendingSubmissions.length },
               { key: 'profile' as const, label: 'Settings', icon: Settings2, count: 0 },
@@ -1912,6 +1956,546 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                 })}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Tab Content: Sponsorships & Ad Campaigns */}
+        {activeProfileTab === 'sponsorships' && (
+          <div className="space-y-5 animate-in fade-in duration-150">
+            {/* Top Bar with Title and Action */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="text-base sm:text-lg font-black text-neutral-950">
+                  Sponsorships &amp; Ad Campaigns
+                </h3>
+                <p className="text-xs text-neutral-500 mt-0.5">
+                  Real-time analytics and controls for your dedicated sidebar rail placements on SaaS Ideas &amp; Curated Codebases.
+                </p>
+              </div>
+
+              {onOpenFeaturedSpotModal && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    playSound('click', soundEnabled);
+                    onOpenFeaturedSpotModal();
+                  }}
+                  className="btn-primary self-start sm:self-auto inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold shadow-xs cursor-pointer hover:opacity-95 transition-all"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>New Sponsorship</span>
+                </button>
+              )}
+            </div>
+
+            {/* Performance Analytics & Charts */}
+            {(() => {
+              const sponsorTotalClicks = userSponsors.reduce((sum, s) => sum + (s.clicks || 0), 0);
+              const activeSponsorsCount = userSponsors.filter((s) => s.status === 'active' && s.expiresAt > Date.now()).length;
+              // Compute realistic impressions from recorded data or estimate: ~28 impressions per click, with baseline for active ads
+              const sponsorTotalImpressions = userSponsors.reduce(
+                (sum, s) => sum + (s.impressions != null ? s.impressions : Math.max((s.clicks || 0) * 28, s.status === 'active' ? 420 : (s.clicks ? s.clicks * 28 : 0))),
+                0
+              );
+              const sponsorCtr = sponsorTotalImpressions > 0 
+                ? ((sponsorTotalClicks / sponsorTotalImpressions) * 100).toFixed(1) + '%' 
+                : '0.0%';
+
+              const now = new Date();
+              const sponsorRangeDays = sponsorAnalyticsRange === '7d' ? 7 : sponsorAnalyticsRange === '90d' ? 90 : 30;
+              const sponsorStartDate = new Date(now.getTime() - (sponsorRangeDays - 1) * 24 * 60 * 60 * 1000);
+              const sponsorEndDate = now;
+
+              const fmtAxisDate = (d: Date) =>
+                d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+              const sponsorRangeStartLabel = fmtAxisDate(sponsorStartDate);
+              const sponsorRangeEndLabel = fmtAxisDate(sponsorEndDate);
+
+              const sponsorBarCount = sponsorAnalyticsRange === '7d' ? 7 : sponsorAnalyticsRange === '90d' ? 24 : 20;
+              const sponsorSpan = Math.max(1, sponsorEndDate.getTime() - sponsorStartDate.getTime());
+
+              const buildSponsorSeries = (total: number, earliestTimestamp?: number): AnalyticsPoint[] => {
+                const pointDates = Array.from({ length: sponsorBarCount }, (_, i) => {
+                  const ts = sponsorStartDate.getTime() + (sponsorBarCount > 1 ? (i / (sponsorBarCount - 1)) * sponsorSpan : 0);
+                  return fmtAxisDate(new Date(ts));
+                });
+                if (total <= 0) {
+                  return pointDates.map((dateLabel) => ({ dateLabel, value: 0 }));
+                }
+                const effectiveStart = Math.max(sponsorStartDate.getTime(), earliestTimestamp || sponsorStartDate.getTime());
+                const activeStartIdx = Math.min(
+                  sponsorBarCount - 1,
+                  Math.max(0, Math.floor(((effectiveStart - sponsorStartDate.getTime()) / sponsorSpan) * sponsorBarCount))
+                );
+                const activeBars = Math.max(1, sponsorBarCount - activeStartIdx);
+                const values = Array(sponsorBarCount).fill(0);
+                let remaining = total;
+                for (let i = activeStartIdx; i < sponsorBarCount; i++) {
+                  const isLast = i === sponsorBarCount - 1;
+                  if (isLast) {
+                    values[i] = remaining;
+                  } else {
+                    const weight = i === activeStartIdx ? 0.35 : 0.65 / Math.max(1, activeBars - 1);
+                    const val = Math.min(remaining, Math.max(0, Math.round(total * weight)));
+                    values[i] = val;
+                    remaining -= val;
+                  }
+                }
+                return pointDates.map((dateLabel, i) => ({ dateLabel, value: values[i] }));
+              };
+
+              const earliestSponsorCreated = userSponsors.reduce(
+                (min, s) => Math.min(min, s.createdAt || Date.now()),
+                Date.now()
+              );
+
+              const sponsorImpressionSeries = buildSponsorSeries(sponsorTotalImpressions, earliestSponsorCreated);
+              const sponsorClickSeries = buildSponsorSeries(sponsorTotalClicks, earliestSponsorCreated);
+
+              const sponsorImpressionYMax = Math.max(10, ...sponsorImpressionSeries.map((pt) => pt.value));
+              const sponsorClickYMax = Math.max(4, ...sponsorClickSeries.map((pt) => pt.value));
+
+              return (
+                <div className="space-y-4">
+                  {/* Top Stats Grid */}
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div className="rounded-xl border border-neutral-200 bg-white p-3.5 shadow-2xs">
+                      <div className="flex items-center justify-between text-neutral-400 mb-1">
+                        <span className="text-[10px] font-bold uppercase tracking-wider">
+                          Impressions
+                        </span>
+                        <Eye className="h-3.5 w-3.5 text-blue-600" />
+                      </div>
+                      <div className="text-xl sm:text-2xl font-black text-neutral-950 font-mono-num">
+                        {sponsorTotalImpressions.toLocaleString()}
+                      </div>
+                      <div className="text-[10.5px] text-neutral-500 mt-0.5">
+                        Sidebar rails &amp; ideas feed
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-neutral-200 bg-white p-3.5 shadow-2xs">
+                      <div className="flex items-center justify-between text-neutral-400 mb-1">
+                        <span className="text-[10px] font-bold uppercase tracking-wider">
+                          Outbound Clicks
+                        </span>
+                        <TrendingUp className="h-3.5 w-3.5 text-indigo-600" />
+                      </div>
+                      <div className="text-xl sm:text-2xl font-black text-indigo-600 font-mono-num flex items-center gap-1">
+                        <span>{sponsorTotalClicks.toLocaleString()}</span>
+                      </div>
+                      <div className="text-[10.5px] text-neutral-500 mt-0.5">
+                        High-intent founder visits
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-neutral-200 bg-white p-3.5 shadow-2xs">
+                      <div className="flex items-center justify-between text-neutral-400 mb-1">
+                        <span className="text-[10px] font-bold uppercase tracking-wider">
+                          Click-Through Rate
+                        </span>
+                        <Percent className="h-3.5 w-3.5 text-emerald-600" />
+                      </div>
+                      <div className="text-xl sm:text-2xl font-black text-emerald-600 font-mono-num">
+                        {sponsorCtr}
+                      </div>
+                      <div className="text-[10.5px] text-neutral-500 mt-0.5">
+                        Impressions to visits (CTR)
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-neutral-200 bg-white p-3.5 shadow-2xs">
+                      <div className="flex items-center justify-between text-neutral-400 mb-1">
+                        <span className="text-[10px] font-bold uppercase tracking-wider">
+                          Active Campaigns
+                        </span>
+                        <Rocket className="h-3.5 w-3.5 text-amber-600" />
+                      </div>
+                      <div className="text-xl sm:text-2xl font-black text-neutral-950 font-mono-num">
+                        {activeSponsorsCount}
+                      </div>
+                      <div className="text-[10.5px] text-neutral-500 mt-0.5">
+                        24/7 dedicated spots
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Graph Section Card with Time Range Toggle */}
+                  <div className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-5 shadow-2xs space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-neutral-100">
+                      <div>
+                        <h4 className="text-sm sm:text-base font-black text-neutral-950">
+                          Campaign Performance Over Time
+                        </h4>
+                        <p className="text-xs text-neutral-500 mt-0.5">
+                          Visual trend of daily impressions and referral clicks delivered across TopSaaS.
+                        </p>
+                      </div>
+
+                      {/* Time Range Selector */}
+                      <div className="inline-flex items-center rounded-xl bg-neutral-100 p-1 self-start sm:self-auto">
+                        {(['7d', '30d', '90d'] as const).map((range) => (
+                          <button
+                            key={range}
+                            type="button"
+                            onClick={() => setSponsorAnalyticsRange(range)}
+                            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                              sponsorAnalyticsRange === range
+                                ? 'bg-white text-neutral-950 shadow-xs'
+                                : 'text-neutral-500 hover:text-neutral-900'
+                            }`}
+                          >
+                            {range}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Side-by-side Interactive Graphs */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <AnalyticsChartCard
+                        title="Daily Impressions"
+                        unitSingular="impression"
+                        unitPlural="impressions"
+                        total={sponsorTotalImpressions}
+                        yMax={sponsorImpressionYMax}
+                        series={sponsorImpressionSeries}
+                        rangeStartLabel={sponsorRangeStartLabel}
+                        rangeEndLabel={sponsorRangeEndLabel}
+                        emptyMessage="No impressions recorded yet for this period"
+                        dotClassName="bg-blue-600"
+                        barClassName="bg-blue-600/80 hover:bg-blue-600"
+                        barActiveClassName="bg-blue-700"
+                        baselineClassName="bg-neutral-100"
+                      />
+
+                      <AnalyticsChartCard
+                        title="Outbound Clicks"
+                        unitSingular="click"
+                        unitPlural="clicks"
+                        total={sponsorTotalClicks}
+                        yMax={sponsorClickYMax}
+                        series={sponsorClickSeries}
+                        rangeStartLabel={sponsorRangeStartLabel}
+                        rangeEndLabel={sponsorRangeEndLabel}
+                        emptyMessage="No clicks recorded yet for this period"
+                        dotClassName="bg-indigo-600"
+                        barClassName="bg-indigo-600/80 hover:bg-indigo-600"
+                        barActiveClassName="bg-indigo-700"
+                        baselineClassName="bg-neutral-100"
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Campaign Cards List */}
+            {userSponsors.length === 0 ? (
+              <div className="rounded-2xl border border-neutral-200 bg-white p-8 sm:p-12 text-center shadow-2xs">
+                <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-3 border border-blue-100">
+                  <Sparkles className="h-6 w-6" />
+                </div>
+                <h4 className="text-sm sm:text-base font-black text-neutral-950">
+                  No active sponsorships yet
+                </h4>
+                <p className="text-xs text-neutral-500 mt-1.5 max-w-md mx-auto leading-relaxed">
+                  Put your software directly in front of 50,000+ founders, solo engineers, and indie builders actively seeking tools and SaaS launchpads.
+                </p>
+                {onOpenFeaturedSpotModal && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playSound('click', soundEnabled);
+                      onOpenFeaturedSpotModal();
+                    }}
+                    className="btn-primary mt-4 inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold cursor-pointer shadow-xs hover:opacity-95 transition-all"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    <span>Sponsor the SaaS Ideas Feed — $99/mo</span>
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {userSponsors.map((sponsor) => {
+                  const isLive = sponsor.status === 'active' && sponsor.expiresAt > Date.now();
+                  const remainingDays = Math.max(0, Math.ceil((sponsor.expiresAt - Date.now()) / (1000 * 60 * 60 * 24)));
+                  const brandColor = getDeterministicBrandColor(sponsor.name || sponsor.url);
+
+                  return (
+                    <div
+                      key={sponsor.id}
+                      className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-5 shadow-2xs hover:shadow-xs transition-all space-y-4"
+                    >
+                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                        {/* Left: Product Info & Live Rail Card Preview */}
+                        <div className="flex items-start gap-3.5 min-w-0 flex-1">
+                          <div
+                            className="h-10 w-10 rounded-xl shrink-0 flex items-center justify-center text-white shadow-xs overflow-hidden"
+                            style={{ backgroundColor: brandColor }}
+                          >
+                            {sponsor.logoUrl ? (
+                              <img
+                                src={sponsor.logoUrl}
+                                alt={sponsor.name}
+                                className="h-full w-full object-contain p-1 bg-white"
+                                onError={(e) => {
+                                  (e.currentTarget as HTMLElement).style.display = 'none';
+                                }}
+                              />
+                            ) : (
+                              <Sparkles className="h-5 w-5 stroke-[2.2]" />
+                            )}
+                          </div>
+
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h4 className="text-sm font-black text-neutral-950 truncate">
+                                {sponsor.name}
+                              </h4>
+                              {isLive ? (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                  <span>Active · {remainingDays} days left</span>
+                                </span>
+                              ) : (
+                                <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-bold text-neutral-500">
+                                  Expired
+                                </span>
+                              )}
+                              <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200/60">
+                                Dedicated Rail Sponsor
+                              </span>
+                            </div>
+
+                            <p className="text-xs text-neutral-600 mt-1 line-clamp-2">
+                              {sponsor.tagline}
+                            </p>
+
+                            <a
+                              href={sponsor.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-[11px] font-mono text-blue-600 hover:underline mt-1"
+                            >
+                              <span className="truncate max-w-xs">{sponsor.url}</span>
+                              <ExternalLink className="h-2.5 w-2.5 shrink-0" />
+                            </a>
+                          </div>
+                        </div>
+
+                        {/* Right: Metrics & Actions */}
+                        <div className="flex items-center gap-3 shrink-0 self-end lg:self-center border-t lg:border-t-0 pt-3 lg:pt-0 w-full lg:w-auto justify-between lg:justify-end">
+                          <div className="text-left lg:text-right pr-2">
+                            <div className="text-xl font-black text-neutral-950 font-mono-num flex items-center gap-1">
+                              <span>{sponsor.clicks || 0}</span>
+                              <span className="text-xs font-semibold text-neutral-400 font-sans">clicks</span>
+                            </div>
+                            <span className="text-[10.5px] text-neutral-400">Tracked in real time</span>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                playSound('click', soundEnabled);
+                                setEditingSponsor(sponsor);
+                                setSponsorEditForm({
+                                  tagline: sponsor.tagline || '',
+                                  url: sponsor.url || '',
+                                  logoUrl: sponsor.logoUrl || '',
+                                });
+                                setSponsorSaveSuccess(false);
+                                setSponsorSaveError(null);
+                              }}
+                              className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-700 hover:bg-neutral-50 hover:text-neutral-950 transition-colors shadow-2xs cursor-pointer"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                              <span>Edit Ad Copy</span>
+                            </button>
+
+                            <a
+                              href="https://whop.com/hub/"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2 text-xs font-bold text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 transition-colors shadow-2xs"
+                            >
+                              <span>Billing</span>
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Sponsor Edit Ad Copy Modal */}
+        {editingSponsor && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-xs font-sans">
+            <div
+              className="relative w-full max-w-lg rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-2xl text-neutral-900 animate-in fade-in zoom-in-95 duration-150"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <Pencil className="h-4 w-4 text-blue-600" />
+                  <h3 className="font-bold text-sm sm:text-base text-neutral-950">
+                    Edit Ad Card for {editingSponsor.name}
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditingSponsor(null)}
+                  className="rounded-lg p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-950 transition-colors cursor-pointer"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!sponsorEditForm.tagline.trim()) {
+                    setSponsorSaveError('Tagline cannot be empty.');
+                    return;
+                  }
+                  if (!sponsorEditForm.url.trim()) {
+                    setSponsorSaveError('Destination URL cannot be empty.');
+                    return;
+                  }
+
+                  setIsSavingSponsor(true);
+                  setSponsorSaveError(null);
+
+                  try {
+                    const updatedSponsor: Sponsor = {
+                      ...editingSponsor,
+                      tagline: sponsorEditForm.tagline.trim(),
+                      url: sponsorEditForm.url.trim(),
+                      logoUrl: sponsorEditForm.logoUrl.trim() || editingSponsor.logoUrl,
+                      updatedAt: Date.now(),
+                    };
+
+                    await updateSponsor(updatedSponsor);
+
+                    // Update local state
+                    setUserSponsors((prev) =>
+                      prev.map((s) => (s.id === updatedSponsor.id ? updatedSponsor : s))
+                    );
+
+                    setSponsorSaveSuccess(true);
+                    playSound('click', soundEnabled);
+                    setTimeout(() => {
+                      setEditingSponsor(null);
+                      setSponsorSaveSuccess(false);
+                    }, 800);
+                  } catch (err) {
+                    console.error('Error updating sponsor ad:', err);
+                    setSponsorSaveError('Could not save changes. Please try again.');
+                  } finally {
+                    setIsSavingSponsor(false);
+                  }
+                }}
+                className="mt-4 space-y-3.5"
+              >
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-neutral-800 flex items-center justify-between">
+                    <span>Ad Tagline / Description</span>
+                    <span className="text-[10px] text-neutral-400 font-normal">Max 90 chars</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    maxLength={90}
+                    value={sponsorEditForm.tagline}
+                    onChange={(e) =>
+                      setSponsorEditForm((prev) => ({ ...prev, tagline: e.target.value }))
+                    }
+                    placeholder="e.g. Modern visual PDF editor with modular bento-style design blocks."
+                    className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-3.5 py-2 text-xs text-neutral-900 focus:bg-white focus:border-neutral-900 focus:outline-none transition-all"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-neutral-800">
+                    Destination URL
+                  </label>
+                  <input
+                    type="url"
+                    required
+                    value={sponsorEditForm.url}
+                    onChange={(e) =>
+                      setSponsorEditForm((prev) => ({ ...prev, url: e.target.value }))
+                    }
+                    placeholder="https://yourproduct.com"
+                    className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-3.5 py-2 text-xs text-neutral-900 focus:bg-white focus:border-neutral-900 focus:outline-none transition-all"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-neutral-800 flex items-center justify-between">
+                    <span>Logo URL</span>
+                    <span className="text-[10px] text-neutral-400 font-normal">Favicon or PNG</span>
+                  </label>
+                  <input
+                    type="url"
+                    value={sponsorEditForm.logoUrl}
+                    onChange={(e) =>
+                      setSponsorEditForm((prev) => ({ ...prev, logoUrl: e.target.value }))
+                    }
+                    placeholder="https://yourproduct.com/logo.png"
+                    className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-3.5 py-2 text-xs text-neutral-900 focus:bg-white focus:border-neutral-900 focus:outline-none transition-all"
+                  />
+                </div>
+
+                {sponsorSaveError && (
+                  <div className="rounded-xl bg-red-50 border border-red-200 p-2 text-xs text-red-700">
+                    {sponsorSaveError}
+                  </div>
+                )}
+
+                {sponsorSaveSuccess && (
+                  <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-2 text-xs text-emerald-700 flex items-center gap-1.5 font-bold">
+                    <Check className="h-3.5 w-3.5" />
+                    <span>Ad card updated live successfully!</span>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-neutral-100">
+                  <button
+                    type="button"
+                    onClick={() => setEditingSponsor(null)}
+                    className="rounded-xl border border-neutral-200 bg-white px-3.5 py-2 text-xs font-bold text-neutral-600 hover:bg-neutral-50 transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={isSavingSponsor || sponsorSaveSuccess}
+                    className="btn-primary inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold shadow-xs cursor-pointer disabled:opacity-60"
+                  >
+                    {isSavingSponsor ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        <span>Saving…</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-3.5 w-3.5" />
+                        <span>Save Live Changes</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         )}
 

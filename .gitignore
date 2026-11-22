@@ -9,4 +9,9 @@ coverage/
 scripts/*
 # Build-time prerenderer used by vite.config.ts, so it must be committed.
 !scripts/prerenderRepos.ts
+# Repo-data refresh pipeline, used by the scheduled GitHub Actions workflow.
+!scripts/gen-repo-health.mjs
+!scripts/refresh-repo-data.mjs
+!scripts/check-repo-data-freshness.mjs
 .freebuff/
+scratch/

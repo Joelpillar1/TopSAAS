@@ -115,6 +115,49 @@ export function formatMonthLabel(reference: number = Date.now()): string {
 /** Internal scale capacity per week. TopSAAS launches 25 apps each week. */
 export const MAX_WEEKLY_LAUNCH_CAP = 25;
 
+/** True if a product belongs to a given launch week round */
+export function isProductInLaunchRound(
+  p: {
+    scheduledLaunchWeek?: number | string | null;
+    createdAt?: number | string;
+    autoRelaunch?: boolean;
+    relaunchWeeks?: Array<number | string>;
+    lastRelaunchedAt?: number | string;
+  },
+  week: WeekInfo
+): boolean {
+  // 1. Explicit scheduled launch week
+  if (p.scheduledLaunchWeek != null) {
+    const schedWeek = Number(p.scheduledLaunchWeek);
+    if (schedWeek === week.weekNumber) return true;
+    // Scheduled for a future week round - must never appear in earlier rounds
+    if (schedWeek > week.weekNumber) return false;
+  } else if (p.createdAt != null) {
+    if (isInWeek(Number(p.createdAt), week)) return true;
+  }
+
+  // 2. Auto weekly relaunch (only on or after initial launch week)
+  const initialWeek =
+    p.scheduledLaunchWeek != null
+      ? Number(p.scheduledLaunchWeek)
+      : p.createdAt != null
+      ? getWeekNumber(Number(p.createdAt))
+      : 1;
+  if (p.autoRelaunch && week.weekNumber >= initialWeek) return true;
+
+  // 3. Explicit relaunch weeks array
+  if (p.relaunchWeeks && week.weekNumber && p.relaunchWeeks.map(Number).includes(week.weekNumber)) {
+    return true;
+  }
+
+  // 4. Last relaunched timestamp
+  if (p.lastRelaunchedAt && isInWeek(Number(p.lastRelaunchedAt), week)) {
+    return true;
+  }
+
+  return false;
+}
+
 /** Formats a WeekInfo into a clean human date range, e.g. "Nov 9 to Nov 15" */
 export function formatWeekDateRange(week: WeekInfo, format: 'to' | '–' = 'to'): string {
   const startDate = new Date(week.start);

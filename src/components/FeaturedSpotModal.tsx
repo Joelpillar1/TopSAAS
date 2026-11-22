@@ -46,7 +46,7 @@ interface FeaturedSpotModalProps {
   onOpenSubmitModal: () => void;
   onOpenSignInModal?: () => void;
   initialTier?: SponsorPlanId;
-  mode?: 'featured' | 'sponsor';
+  mode?: 'featured' | 'sponsor' | 'ideas_sponsor';
   featuredProductIds?: string[];
   onActivateSponsor?: (
     sponsor: SponsorDraft,
@@ -171,6 +171,31 @@ export const SPONSOR_PLANS: SponsorPlanItem[] = [
       'Direct DoFollow SEO backlink',
     ],
     cta: 'Get Monthly — $29',
+  },
+];
+
+export const SAAS_IDEAS_PLANS: SponsorPlanItem[] = [
+  {
+    id: '1mo',
+    name: 'SaaS Ideas Dedicated Sponsor',
+    cardTitle: 'Monthly Pass',
+    price: 99,
+    priceLabel: '$99',
+    period: '/month',
+    discountBadge: 'High Intent',
+    badge: 'Founder Priority',
+    duration: '30 days',
+    rateNote: '$99 / month',
+    popular: true,
+    description: 'Prominent 24/7 dedicated sponsorship across all SaaS Ideas and Curated Codebase pages',
+    features: [
+      'Sticky placement on the SaaS Ideas & Curated Repos sidebar rail',
+      'Dynamic brand color matching your company logo & theme',
+      'Direct DoFollow outbound backlink & priority click tracking',
+      'Seen by thousands of active founders & software builders building MVPs',
+      'Includes animated traveling action button with your custom CTA',
+    ],
+    cta: 'Get Monthly Pass — $99',
   },
 ];
 
@@ -406,7 +431,12 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
     );
   });
 
-  const availablePlans = mode === 'featured' ? FEATURED_PLANS : SPONSOR_PLANS;
+  const availablePlans =
+    mode === 'featured'
+      ? FEATURED_PLANS
+      : mode === 'ideas_sponsor'
+      ? SAAS_IDEAS_PLANS
+      : SPONSOR_PLANS;
   const selectedPlan =
     availablePlans.find((p) => p.id === selectedPlanId) || availablePlans[0];
 
@@ -570,9 +600,11 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
       const planType: PlanType =
         mode === 'featured'
           ? (selectedPlan.id === '1wk' ? 'featured_1wk' : 'featured_1mo')
+          : mode === 'ideas_sponsor'
+          ? 'saas_ideas_monthly'
           : (selectedPlan.id === '1wk' ? 'sponsor_1wk' : selectedPlan.id === '3mo' ? '3mo' : selectedPlan.id === '1yr' ? '1yr' : 'sponsor_1mo');
 
-      if (mode === 'sponsor') {
+      if (mode === 'sponsor' || mode === 'ideas_sponsor') {
         // Stage the sponsor record. PaymentSuccess and the webhook both upsert
         // the same id, so the paid placement survives even if the tab closes.
         const sponsorDraft = buildSponsorDraft(selectedProduct, email, selectedPlan.id, 'whop');
@@ -697,11 +729,17 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
                       )}
                     </div>
                     <h2 className="text-xl font-black text-neutral-950 tracking-tight">
-                      {mode === 'featured' ? 'Feature Your App on TopSAAS' : 'Sponsor Your App on TopSAAS'}
+                      {mode === 'featured'
+                        ? 'Feature Your App on TopSAAS'
+                        : mode === 'ideas_sponsor'
+                        ? 'Sponsor the SaaS Ideas Feed'
+                        : 'Sponsor Your App on TopSAAS'}
                     </h2>
                     <p className="text-xs text-neutral-500 mt-1 max-w-sm mx-auto">
                       {mode === 'featured'
                         ? 'Pin your product in the Featured Spotlight directly above the directory cards.'
+                        : mode === 'ideas_sponsor'
+                        ? 'Spotlight your product 24/7 on the SaaS Ideas & Curated Codebases sidebar rail for $99/mo.'
                         : 'Spotlight your product 24/7 on top & side rails across the entire directory.'}
                     </p>
                   </div>
@@ -1048,7 +1086,7 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
                   </div>
 
                   {/* Horizontal List of Plan Cards (Weekly, Monthly) */}
-                  <div className="grid grid-cols-2 gap-3 sm:gap-4 w-full pt-3">
+                  <div className={`grid ${availablePlans.length === 1 ? 'grid-cols-1 max-w-md mx-auto' : 'grid-cols-2'} gap-3 sm:gap-4 w-full pt-3`}>
                     {availablePlans.map((plan) => {
                       const isSelected = selectedPlanId === plan.id;
                       return (
@@ -1247,6 +1285,8 @@ export const FeaturedSpotModal: React.FC<FeaturedSpotModalProps> = ({
                         <span className="font-semibold text-blue-600">
                           {mode === 'featured'
                             ? 'Featured Spot (Above Directory Cards)'
+                            : mode === 'ideas_sponsor'
+                            ? 'SaaS Ideas & Curated Codebases Sidebar Rail'
                             : 'Homepage Side Rails'}
                         </span>
                       </div>

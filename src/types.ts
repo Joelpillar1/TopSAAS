@@ -101,6 +101,7 @@ export interface Sponsor {
   expiresAt: number;
   pausedRemainingMs?: number;
   clicks: number;
+  impressions?: number;
   source: SponsorSource;
   whopPaymentId?: string;
   planType?: string;
@@ -124,6 +125,7 @@ export interface SponsorDraft {
   expiresAt?: number;
   pausedRemainingMs?: number;
   clicks?: number;
+  impressions?: number;
   source?: SponsorSource;
   whopPaymentId?: string;
   planType?: string;

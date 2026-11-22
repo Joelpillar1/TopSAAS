@@ -1,28 +1,40 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
   ArrowUpRight,
-  CalendarDays,
   Check,
-  Clock,
-  Code2,
   Copy,
-  Folder,
   GitFork,
   Github,
   BookOpen,
-  Languages,
   Link2,
   Scale,
   Server,
   Share2,
+  ShieldCheck,
+  ShieldAlert,
+  AlertTriangle,
+  Activity,
   Star,
   Tag,
+  CheckCircle2,
+  XCircle,
+  Terminal,
+  Sparkles,
+  DollarSign,
+  Layers,
+  Code2,
+  ChevronDown,
+  ChevronUp,
+  TrendingUp,
+  Target,
+  Rocket,
+  Zap,
 } from 'lucide-react';
 import { CURATED_REPOS, CuratedRepo } from '../data/curatedRepos';
 import { Product } from '../types';
-import { SponsoredPartnersSidebar } from './SponsoredPartnersSidebar';
+import { RepoCard, getRepoAlternativeInfo } from './RepoCard';
 import { formatStars } from '../utils/github';
 import { plainCopy } from '../utils/plainCopy';
 import {
@@ -39,6 +51,10 @@ import { navigateTo } from '../utils/nav';
 import { HealthScore, healthExplain } from './HealthScore';
 import { timeAgo } from './ProductRow';
 import { playSound } from '../utils/sound';
+import { getHandpickedDossier, HandpickedRepoDossier } from '../data/handpickedRepos';
+import { getLicenseSafety } from '../utils/licenseSafety';
+import { getWebsiteFavicon } from '../utils/logo';
+import { getIdeaBlueprint, StartupIdeaBlueprint } from '../data/ideaBlueprints';
 
 /** Metadata pulled live from the GitHub API (rate-limited, cached, optional). */
 interface RepoLiveMeta {
@@ -66,7 +82,6 @@ interface RepoDetailPageProps {
   soundEnabled: boolean;
   onBack: () => void;
   onSelectRepo: (repo: CuratedRepo) => void;
-  /** Opens the featured-spot flow (sign-in or reserve modal), like the homepage promo. */
   onOpenFeatured?: () => void;
   sponsors?: Product[];
   allProducts?: Product[];
@@ -75,10 +90,12 @@ interface RepoDetailPageProps {
   onOpenFeaturedSpotModal?: () => void;
 }
 
+export type RepoDetailTab = 'overview' | 'ideas' | 'tech' | 'license' | 'alternatives' | 'guide';
+
 /* ───────────────────────── live-data cache ───────────────────────── */
 
 const META_TTL = 30 * 60 * 1000; // 30 minutes
-const META_STORE = 'topsaas_repo_meta_v2';
+const META_STORE = 'topsaas_repo_meta_v4';
 type CacheEntry = { t: number; m: RepoLiveMeta };
 const metaCache = new Map<string, CacheEntry>();
 
@@ -90,7 +107,7 @@ try {
       if (v && typeof v.t === 'number' && Date.now() - v.t < META_TTL) metaCache.set(k, v);
     }
   }
-} catch {}
+} catch { }
 
 const getCachedMeta = (key: string): RepoLiveMeta | null => metaCache.get(key)?.m ?? null;
 
@@ -98,7 +115,7 @@ const setCachedMeta = (key: string, m: RepoLiveMeta) => {
   metaCache.set(key, { t: Date.now(), m });
   try {
     sessionStorage.setItem(META_STORE, JSON.stringify(Object.fromEntries(metaCache)));
-  } catch {}
+  } catch { }
 };
 
 /** GitHub GET that resolves to null on rate-limit / network failure (never throws). */
@@ -109,38 +126,11 @@ const ghJson = <T,>(url: string): Promise<T | null> =>
 
 /* ───────────────────────── misc helpers ───────────────────────── */
 
-const formatDate = (iso: string | null | undefined): string => {
-  if (!iso) return '–';
-  try {
-    return new Date(iso).toLocaleDateString(undefined, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  } catch {
-    return '–';
-  }
-};
-
-/** "3 years" / "1 year 4 mo" / "8 months": repository age, reference-style. */
-const formatAge = (iso: string | null | undefined): string => {
-  if (!iso) return '–';
-  const created = new Date(iso).getTime();
-  if (!isFinite(created)) return '–';
-  const days = Math.max(0, (Date.now() - created) / 86_400_000);
-  if (days < 30) return `${Math.max(1, Math.floor(days))} day${days >= 2 ? 's' : ''}`;
-  const months = Math.floor(days / 30.44);
-  if (months < 12) return `${months} month${months === 1 ? '' : 's'}`;
-  const years = Math.floor(months / 12);
-  const rem = months % 12;
-  return rem > 0 ? `${years} year${years === 1 ? '' : 's'} ${rem} mo` : `${years} years`;
-};
-
 const languageBreakdown = (languages: Record<string, number>) => {
   const entries = Object.entries(languages).sort((a, b) => b[1] - a[1]);
   const total = entries.reduce((sum, [, bytes]) => sum + bytes, 0);
   if (total <= 0) return [];
-  return entries.slice(0, 8).map(([name, bytes]) => ({
+  return entries.slice(0, 6).map(([name, bytes]) => ({
     name,
     bytes,
     percent: Math.max(1, Math.round((bytes / total) * 100)),
@@ -159,56 +149,31 @@ const LANGUAGE_COLORS: Record<string, string> = {
   'Jupyter Notebook': '#da5b0b',
   HTML: '#e34c26',
   CSS: '#563d7c',
-  SCSS: '#c6538c',
   Vue: '#41b883',
   Svelte: '#ff3e00',
-  Dart: '#00b4ab',
-  Swift: '#f05138',
-  Kotlin: '#a97bff',
   C: '#555555',
   'C++': '#f34b7d',
   'C#': '#178600',
   Shell: '#89e051',
-  Bash: '#89e051',
-  Dockerfile: '#384d54',
-  HCL: '#844fba',
-  Elixir: '#6e4a7e',
-  Lua: '#000080',
-  Zig: '#ec915c',
-  Solidity: '#aa6746',
-  Handlebars: '#f7931e',
-  MDX: '#fcb32c',
 };
 
-const languageColor = (name: string): string => LANGUAGE_COLORS[name] ?? '#6b7280';
+const languageColor = (name: string): string => LANGUAGE_COLORS[name] ?? '#71717a';
 
-/* ───────────────────────── small building blocks ───────────────────────── */
-
-const SectionLabel: React.FC<{ icon: React.ReactNode; children: React.ReactNode }> = ({
-  icon,
-  children,
-}) => (
-  <div className="flex items-center gap-2">
-    <span className="flex h-5 w-5 items-center justify-center rounded bg-mint-500/15 text-mint-600">
-      {icon}
-    </span>
-    <h2 className="text-xs font-bold text-neutral-950">{children}</h2>
-  </div>
-);
-
-const StatRow: React.FC<{ label: string; value: React.ReactNode; sub?: string }> = ({
-  label,
-  value,
-  sub,
-}) => (
-  <div className="flex items-baseline justify-between gap-3 py-2">
-    <span className="text-[11px] font-semibold text-neutral-500 shrink-0">{label}</span>
-    <span className="text-right min-w-0">
-      <span className="block text-[13px] font-black text-neutral-950 font-mono-num truncate">{value}</span>
-      {sub && <span className="block text-[10px] font-medium text-neutral-600">{sub}</span>}
-    </span>
-  </div>
-);
+const formatIntoParagraphs = (text: string): string[] => {
+  if (!text) return [];
+  const parts = text.split(/\n\n+/).map((p) => p.trim()).filter(Boolean);
+  if (parts.length > 1) {
+    return parts;
+  }
+  const sentences = text.match(/[^.!?]+[.!?]+(?:\s+|$)/g);
+  if (sentences && sentences.length >= 3) {
+    const midpoint = Math.ceil(sentences.length / 2);
+    const p1 = sentences.slice(0, midpoint).join(' ').trim();
+    const p2 = sentences.slice(midpoint).join(' ').trim();
+    if (p1 && p2) return [p1, p2];
+  }
+  return [text];
+};
 
 /* ───────────────────────── page ───────────────────────── */
 
@@ -218,26 +183,24 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
   soundEnabled,
   onBack,
   onSelectRepo,
-  onOpenFeatured,
-  sponsors = [],
-  allProducts = [],
-  onSelectProduct = () => {},
-  onTrackClick,
-  onOpenFeaturedSpotModal,
 }) => {
-  const repo = propRepo || (repoId ? CURATED_REPOS.find((r) => r.full_name.toLowerCase() === repoId.toLowerCase()) : null);
+  const repo =
+    propRepo ||
+    (repoId
+      ? CURATED_REPOS.find((r) => r.full_name.toLowerCase() === repoId.toLowerCase())
+      : null);
 
   if (!repo) {
     return (
-      <div className="min-h-screen bg-white text-neutral-900 flex items-center justify-center font-sans">
+      <div className="min-h-[60vh] bg-white text-neutral-900 flex items-center justify-center font-sans">
         <div className="text-center space-y-3">
-          <h2 className="text-lg font-bold">Repository not found</h2>
-          <p className="text-sm text-neutral-400">
-            This repo may have been removed from the collection.
+          <h2 className="text-base font-semibold text-neutral-900">Repository not found</h2>
+          <p className="text-xs text-neutral-500">
+            This repository may have been moved or removed from the directory.
           </p>
           <button
             onClick={onBack}
-            className="mt-2 rounded-xl bg-white border border-neutral-300 text-black px-4 py-2 text-xs font-bold cursor-pointer hover:bg-neutral-50"
+            className="mt-2 rounded-lg bg-white border border-neutral-300 text-neutral-900 px-3.5 py-1.5 text-xs font-semibold cursor-pointer hover:bg-neutral-50"
           >
             Back to SaaS Ideas
           </button>
@@ -246,34 +209,162 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
     );
   }
 
+  const ownerLogin =
+    repo.owner?.login || (repo.full_name ? repo.full_name.split('/')[0] : 'maintainer');
+  const ownerAvatar = repo.owner?.avatar_url || `https://github.com/${ownerLogin}.png`;
   const [live, setLive] = useState<RepoLiveMeta | null>(() => getCachedMeta(repo.full_name));
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const ctaRef = useRef<HTMLDivElement | null>(null);
-  // When the header CTA row scrolls out of view, mirror its actions (Visit on
-  // GitHub, star count, Clone) inside the sticky bar next to Back and Share.
-  const [stickyActions, setStickyActions] = useState(false);
+  const [activeTab, setActiveTab] = useState<RepoDetailTab>('overview');
+  const [expandedIdeas, setExpandedIdeas] = useState<Record<string, boolean>>(() => ({ '0': true }));
 
-  useEffect(() => {
-    const el = ctaRef.current;
-    if (!el || typeof IntersectionObserver === 'undefined') return;
-    const io = new IntersectionObserver(([entry]) => setStickyActions(!entry.isIntersecting), {
-      threshold: 0,
-    });
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
+  const tabsRef = useRef<HTMLDivElement>(null);
+  const prevTabRef = useRef<RepoDetailTab>(activeTab);
 
-  // Core repo data first (so the stats card fills quickly), then languages and
-  // the latest release. Every failure (rate limit, offline) degrades silently
-  // to the curated snapshot that is already on screen.
-  useEffect(() => {
-    let cancelled = false;
-    const cached = getCachedMeta(repo.full_name);
-    if (cached) {
-      setLive(cached);
+  /**
+   * Find the element that actually scrolls the page content.
+   *
+   * On desktop the repo page lives inside the center column, which has
+   * xl:overflow-y-auto, so the document itself does not scroll. On smaller
+   * screens the document scrolls instead. Always target the real container.
+   */
+  const getScrollParent = (element: HTMLElement | null): HTMLElement | null => {
+    let scroller = element?.parentElement ?? null;
+    while (scroller) {
+      const style = window.getComputedStyle(scroller);
+      const scrollable = /(auto|scroll)/.test(style.overflowY);
+      if (scrollable && scroller.scrollHeight > scroller.clientHeight + 1) return scroller;
+      scroller = scroller.parentElement;
+    }
+    return null;
+  };
+
+  /**
+   * Jump the document to a position without the global smooth scrolling
+   * (html.scroll-smooth), which would otherwise turn the jump into a slow
+   * drift that looks like the tab resumed halfway down.
+   */
+  const jumpWindowTo = (top: number) => {
+    const root = document.documentElement;
+    const previousBehavior = root.style.scrollBehavior;
+    root.style.scrollBehavior = 'auto';
+    try {
+      window.scrollTo({ top: Math.max(0, top), behavior: 'instant' });
+    } catch {
+      window.scrollTo(0, Math.max(0, top));
+    } finally {
+      if (previousBehavior) root.style.scrollBehavior = previousBehavior;
+      else root.style.removeProperty('scroll-behavior');
+    }
+  };
+
+  /**
+   * Put the newly selected tab back at the top of the visible area.
+   * The tab bar is sticky, so measure against a zero-height marker that sits
+   * just above it in normal flow.
+   */
+  const scrollTabsToTop = () => {
+    const anchor = tabsRef.current;
+    if (!anchor) return;
+
+    const scroller = getScrollParent(anchor);
+    if (scroller) {
+      const delta = anchor.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
+      const next = Math.max(0, scroller.scrollTop + delta);
+      try {
+        scroller.scrollTo({ top: next, behavior: 'instant' });
+      } catch {
+        scroller.scrollTop = next;
+      }
       return;
     }
-    setLive(null);
+
+    jumpWindowTo(anchor.getBoundingClientRect().top + window.scrollY);
+  };
+
+  // A different repo (remounted through key={repoRouteId}) always starts at the
+  // very top of the page.
+  useLayoutEffect(() => {
+    const scroller = getScrollParent(tabsRef.current);
+    if (scroller) {
+      scroller.scrollTop = 0;
+    }
+    jumpWindowTo(0);
+  }, [repo.full_name]);
+
+  // Secondary scroll-to-top after paint to ensure lazy-loaded chunks or mobile window
+  // start at the beginning of the page.
+  useEffect(() => {
+    jumpWindowTo(0);
+    const scroller = getScrollParent(tabsRef.current);
+    if (scroller) {
+      scroller.scrollTop = 0;
+    }
+  }, [repo.full_name]);
+
+  // Only scroll tabs to top if the user manually switched tabs AND was scrolled below the tabs
+  useLayoutEffect(() => {
+    if (prevTabRef.current === activeTab) {
+      return;
+    }
+    prevTabRef.current = activeTab;
+
+    // Check if the user is already scrolled past the tabs
+    const anchor = tabsRef.current;
+    if (anchor) {
+      const rect = anchor.getBoundingClientRect();
+      if (rect.top < 60) {
+        scrollTabsToTop();
+      }
+    }
+  }, [activeTab]);
+
+  const toggleIdea = (idOrIndex: string) => {
+    setExpandedIdeas((prev) => ({
+      ...prev,
+      [idOrIndex]: !prev[idOrIndex],
+    }));
+  };
+
+  // Handpicked SaaS dossier (if curated)
+  const dossier: HandpickedRepoDossier | undefined = getHandpickedDossier(repo.full_name);
+
+  // Alternative detection (replaces X)
+  const altInfo = dossier?.replaces
+    ? {
+      target: dossier.replaces.name,
+      allReplaces: dossier.replaces.allReplaces,
+      domain: dossier.replaces.domain,
+      pricing: dossier.replaces.pricing,
+    }
+    : getRepoAlternativeInfo(repo);
+
+  // Curated peer repos in the same category
+  const peers = CURATED_REPOS.filter((r) => r.category === repo.category);
+  const peerRank =
+    peers
+      .slice()
+      .sort((a, b) => b.stargazers_count - a.stargazers_count)
+      .findIndex((r) => r.full_name === repo.full_name) + 1;
+
+  // Self-hosted heuristic
+  const selfHosted = detectSelfHosted(live?.topics ?? [], live?.description || repo.description);
+
+  // Static fallback editorial write-up
+  const editorial = buildRepoEditorial(
+    repo,
+    { topics: live?.topics, license: live?.license || dossier?.licenseSpdx || null },
+    {
+      stars: live?.stars ?? repo.stargazers_count,
+      forks: live?.forks ?? repo.forks_count,
+      rank: peerRank > 0 ? peerRank : 1,
+      peerCount: peers.length,
+      selfHosted,
+    }
+  );
+
+  // Background fetch live GitHub API metadata
+  useEffect(() => {
+    let cancelled = false;
 
     ghJson<Record<string, unknown>>(`https://api.github.com/repos/${repo.full_name}`)
       .then((core) => {
@@ -327,9 +418,7 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
           setCachedMeta(repo.full_name, merged);
         });
       })
-      .catch(() => {
-        /* network failure: curated snapshot stays on screen */
-      });
+      .catch(() => { });
 
     return () => {
       cancelled = true;
@@ -337,88 +426,118 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
   }, [repo.full_name]);
 
   const description = plainCopy(live?.description || repo.description);
-  const topics = live?.topics?.length ? live.topics : null;
-  const selfHosted = detectSelfHosted(live?.topics ?? [], live?.description || repo.description);
-  const breakdown = live ? languageBreakdown(live.languages) : [];
   const stars = live?.stars ?? repo.stargazers_count;
   const forks = live?.forks ?? repo.forks_count;
-  const cloneUrl = `${repo.html_url}.git`;
-  const pageUrl =
-    typeof window !== 'undefined'
-      ? `${window.location.origin}/repo/${repo.full_name}`
-      : `/repo/${repo.full_name}`;
-  const xShareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
-    `${repo.name}: ${description || 'Open source project'}`
-  )}&url=${encodeURIComponent(pageUrl)}`;
+  const cloneUrl = `https://github.com/${repo.full_name}.git`;
+  const pageUrl = repoCanonicalUrl(repo.full_name);
+  const topics = live?.topics && live.topics.length > 0 ? live.topics : null;
+  const breakdown = languageBreakdown(live?.languages ?? {});
 
-  // Rank within the category: real context the reference page also leans on.
-  const peers = CURATED_REPOS.filter((r) => r.category === repo.category).sort(
-    (a, b) => b.stargazers_count - a.stargazers_count
-  );
-  const rank = Math.max(1, peers.findIndex((r) => r.full_name === repo.full_name) + 1);
+  // Health score calculation
+  const healthSignals =
+    live && live.pushedAt && live.createdAt
+      ? {
+        pushedAt: live.pushedAt,
+        createdAt: live.createdAt,
+        stars,
+        forks,
+        openIssues: live.openIssues ?? 0,
+        license: live.license,
+        archived: live.archived,
+        topics: live.topics.length,
+      }
+      : REPO_HEALTH[repo.full_name] ?? null;
+  const health = healthSignals ? computeHealth(healthSignals) : null;
 
-  const editorial = buildRepoEditorial(
-    repo,
-    { topics: live?.topics, license: live?.license },
-    {
-      stars,
-      forks,
-      rank,
-      peerCount: peers.length,
-      selfHosted,
-    }
-  );
+  // License Safety determination. Curated dossiers know about non-SPDX terms
+  // that the GitHub API reports as NOASSERTION, so prefer the dossier value.
+  const rawLicense = dossier?.licenseSpdx || live?.license || healthSignals?.license || null;
+  const safety = getLicenseSafety(rawLicense, { isOpenCore: dossier?.isOpenCore });
 
-  // Reference-style SEO title: "Postiz: Open Source Alternative to …"
-  // Also swaps canonical + OG/Twitter tags and injects per-repo JSON-LD so the
-  // SPA ships full head metadata for crawlers and answer engines. All restored
-  // on unmount so navigating away never leaks repo tags onto another route.
+  // Activity timestamps
+  const releaseTag = live?.version || null;
+  const lastCommit = live?.pushedAt || healthSignals?.pushedAt || null;
+  const buildGuide = getGuideForRepo(repo.full_name);
+
+  // Navigation Tabs matching screenshot structure
+  const TABS: Array<{ id: RepoDetailTab; label: string; badge?: number | string }> = [
+    { id: 'overview', label: 'Overview' },
+    ...(dossier && dossier.buildable !== false && dossier.ideas.length > 0
+      ? [{ id: 'ideas' as const, label: 'SaaS Ideas', badge: dossier.ideas.length }]
+      : []),
+    { id: 'tech', label: 'Tech stack' },
+    { id: 'license', label: 'License' },
+    ...(dossier?.commercialAlternatives && dossier.commercialAlternatives.length > 0
+      ? [{ id: 'alternatives' as const, label: 'Alternatives' }]
+      : []),
+    ...(buildGuide ? [{ id: 'guide' as const, label: 'Guide' }] : []),
+  ];
+
+  // SEO document title & JSON-LD
   useEffect(() => {
-    const canonical = repoCanonicalUrl(repo.full_name);
-    const metaDesc = repoSeoDescription(repo);
-
+    const title = repoSeoTitle(repo);
+    const desc = repoSeoDescription(repo);
     const prevTitle = document.title;
-    document.title = repoSeoTitle(repo);
+    document.title = title;
 
-    type HeadPatch = { el: Element; attr: string; prev: string | null };
-    const patches: HeadPatch[] = [];
-    const setHead = (selector: string, attr: string, value: string) => {
-      const el = document.querySelector(selector);
-      if (!el) return;
-      patches.push({ el, attr, prev: el.getAttribute(attr) });
-      el.setAttribute(attr, value);
+    const patches: Array<{ el: Element; attr: string; prev: string | null }> = [];
+    const setMeta = (sel: string, attr: string, val: string) => {
+      let el = document.querySelector(sel);
+      if (!el) {
+        el = document.createElement('meta');
+        if (sel.startsWith('meta[name=')) {
+          const m = sel.match(/name="([^"]+)"/);
+          if (m) el.setAttribute('name', m[1]);
+        } else if (sel.startsWith('meta[property=')) {
+          const m = sel.match(/property="([^"]+)"/);
+          if (m) el.setAttribute('property', m[1]);
+        }
+        document.head.appendChild(el);
+        patches.push({ el, attr, prev: null });
+      } else {
+        patches.push({ el, attr, prev: el.getAttribute(attr) });
+      }
+      el.setAttribute(attr, val);
     };
 
-    if (metaDesc) setHead('meta[name="description"]', 'content', metaDesc);
-    setHead('link[rel="canonical"]', 'href', canonical);
-    setHead('meta[property="og:url"]', 'content', canonical);
-    setHead('meta[property="og:title"]', 'content', document.title);
-    if (metaDesc) setHead('meta[property="og:description"]', 'content', metaDesc);
-    setHead('meta[name="twitter:url"]', 'content', canonical);
-    setHead('meta[name="twitter:title"]', 'content', document.title);
-    if (metaDesc) setHead('meta[name="twitter:description"]', 'content', metaDesc);
+    const setLink = (rel: string, val: string) => {
+      let el = document.querySelector(`link[rel="${rel}"]`);
+      if (!el) {
+        el = document.createElement('link');
+        el.setAttribute('rel', rel);
+        document.head.appendChild(el);
+        patches.push({ el, attr: 'href', prev: null });
+      } else {
+        patches.push({ el, attr: 'href', prev: el.getAttribute('href') });
+      }
+      el.setAttribute('href', val);
+    };
 
-    // SoftwareSourceCode structured data for the repo detail page. The static
-    // HTML already ships a copy for crawlers that skip JS, so replace it rather
-    // than leaving two entities for the same URL.
-    document.getElementById('repo-jsonld')?.remove();
+    setMeta('meta[name="description"]', 'content', desc);
+    setMeta('meta[property="og:title"]', 'content', title);
+    setMeta('meta[property="og:description"]', 'content', desc);
+    setMeta('meta[property="og:url"]', 'content', pageUrl);
+    setLink('canonical', pageUrl);
+    setMeta('meta[name="twitter:url"]', 'content', pageUrl);
+    setMeta('meta[property="og:type"]', 'content', 'website');
+    setMeta('meta[name="twitter:card"]', 'content', 'summary_large_image');
+    setMeta('meta[name="twitter:title"]', 'content', title);
+    setMeta('meta[name="twitter:description"]', 'content', desc);
+
     const ld: Record<string, unknown> = {
       '@context': 'https://schema.org',
       '@type': 'SoftwareSourceCode',
       name: repo.name,
-      description: description || `${repo.full_name} on GitHub`,
-      url: canonical,
+      description,
       codeRepository: repo.html_url,
-      author: { '@type': 'Organization', name: repo.owner.login },
-      keywords: repo.category,
-      interactionStatistic: {
-        '@type': 'InteractionCounter',
-        interactionType: 'https://schema.org/LikeAction',
-        userInteractionCount: stars,
+      url: pageUrl,
+      author: {
+        '@type': 'Organization',
+        name: ownerLogin,
       },
     };
     if (repo.language) ld.programmingLanguage = repo.language;
-    if (live?.license) ld.license = live.license;
+    if (rawLicense) ld.license = rawLicense;
     const ldEl = document.createElement('script');
     ldEl.type = 'application/ld+json';
     ldEl.id = 'repo-jsonld';
@@ -433,625 +552,1389 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
       }
       ldEl.remove();
     };
-  }, [repo.name, repo.full_name, repo.html_url, repo.owner.login, repo.language, repo.category, description, stars, live?.license]);
+  }, [repo.name, repo.full_name, repo.html_url, ownerLogin, repo.language, repo.category, description, rawLicense]);
 
   const copyText = (key: string, text: string) => {
     playSound('click', soundEnabled);
     try {
       navigator.clipboard.writeText(text);
-    } catch {}
+    } catch { }
     setCopiedKey(key);
     window.setTimeout(() => setCopiedKey((c) => (c === key ? null : c)), 2000);
   };
 
-  // Same category first (highest starred), then general fill so the section is never empty
+  // Similar repos
   const relatedRepos = (() => {
     const byStars = (a: CuratedRepo, b: CuratedRepo) => b.stargazers_count - a.stargazers_count;
-    const sameCategory = peers.filter((r) => r.full_name !== repo.full_name).slice(0, 4);
+    const sameCategory = peers.filter((r) => r.full_name !== repo.full_name).slice(0, 3);
     const picked = new Set(sameCategory.map((r) => r.full_name));
     const filler = CURATED_REPOS.filter(
       (r) => r.full_name !== repo.full_name && !picked.has(r.full_name)
     ).sort(byStars);
-    return [...sameCategory, ...filler].slice(0, 4);
+    return [...sameCategory, ...filler].slice(0, 3);
   })();
 
-  // Health score: live GitHub signals when they have loaded, the generated
-  // snapshot otherwise — either way scored by the same shared formula.
-  const healthSignals =
-    live && live.pushedAt && live.createdAt
-      ? {
-          pushedAt: live.pushedAt,
-          createdAt: live.createdAt,
-          stars,
-          forks,
-          openIssues: live.openIssues ?? 0,
-          license: live.license,
-          archived: live.archived,
-          topics: live.topics.length,
-        }
-      : REPO_HEALTH[repo.full_name] ?? null;
-  const health = healthSignals ? computeHealth(healthSignals) : null;
-  const healthRow = {
-    label: 'Health',
-    value: health ? <HealthScore score={health.score} band={health.band} /> : '–',
-    sub: health ? `${health.score}/100 · grade ${health.band}` : 'snapshot pending',
+  // Detailed overview & alternatives fields (curated or dynamic fallback)
+  const problemItSolves =
+    dossier?.problemItSolves ||
+    (altInfo
+      ? `Proprietary products in ${repo.category} (such as ${altInfo.target}) charge high monthly subscriptions, enforce rigid feature gates, and retain total control over your customer data. For founders, building on proprietary stacks introduces platform risk and compresses software profit margins.`
+      : `Building solutions in ${repo.category} from scratch consumes weeks of engineering on commodity infrastructure rather than unique product value.`);
+
+  const solution =
+    dossier?.solution ||
+    editorial.lead;
+
+  const whoItsForList =
+    dossier?.whoItsFor && dossier.whoItsFor.length > 0
+      ? dossier.whoItsFor
+      : [
+          `Founders & solo developers building modern applications in ${repo.category}`,
+          `Agencies delivering custom software solutions without ongoing per-seat client license fees`,
+          `Engineering teams utilizing ${repo.language || 'modern web stacks'} who prioritize codebase sovereignty`,
+          `Privacy-focused businesses and organizations requiring full control over data residency`,
+        ];
+
+  const featuresList =
+    dossier?.features && dossier.features.length > 0
+      ? dossier.features
+      : editorial.capabilities.map((c) => ({
+          title: c.title,
+          description: c.body,
+        }));
+
+  const commercialAlternativesList =
+    dossier?.commercialAlternatives && dossier.commercialAlternatives.length > 0
+      ? dossier.commercialAlternatives
+      : altInfo
+      ? [
+          {
+            name: altInfo.target,
+            domain: altInfo.domain || '',
+            pricing:
+              'pricing' in altInfo && altInfo.pricing
+                ? String(altInfo.pricing)
+                : 'Commercial proprietary subscription',
+            description: `The standard commercial proprietary solution in ${repo.category}.`,
+            whyReplace: `Requires ongoing subscription licensing fees and restricts codebase modification.`,
+          },
+        ]
+      : [];
+
+  // License-aware commercial rights. Never promise a right the license does
+  // not grant, especially for copyleft and source-available projects.
+  type CommercialRightState = 'yes' | 'conditional' | 'no';
+  const hasRecognizedLicense = Boolean(rawLicense);
+  const commercialRights: Array<{
+    icon: typeof DollarSign;
+    title: string;
+    state: CommercialRightState;
+    body: string;
+  }> = (() => {
+    if (!hasRecognizedLicense) {
+      const body =
+        'No recognized license was detected for this repository. Without an explicit license, default copyright applies and you cannot legally host, modify, or resell this code until the author grants permission.';
+      return [
+        { icon: DollarSign, title: 'Sell as Hosted SaaS', state: 'no' as const, body },
+        { icon: Code2, title: 'Codebase Modifications', state: 'no' as const, body },
+        { icon: Tag, title: 'White-Labeling & Rebranding', state: 'no' as const, body },
+      ];
+    }
+
+    if (safety.tier === 'restricted') {
+      return [
+        {
+          icon: DollarSign,
+          title: 'Sell as Hosted SaaS',
+          state: 'no' as const,
+          body: 'Source-available terms (SSPL, BUSL, Elastic or similar) restrict offering this software as a hosted or managed service. Do not launch a paid cloud version without written permission or a commercial agreement.',
+        },
+        {
+          icon: Code2,
+          title: 'Codebase Modifications',
+          state: 'conditional' as const,
+          body: 'The source is visible, but commercial use and modification can be limited by the license. Read the exact terms before changing or distributing the code.',
+        },
+        {
+          icon: Tag,
+          title: 'White-Labeling & Rebranding',
+          state: 'no' as const,
+          body: 'Rebranding and resale are not granted by source-available licenses. Treat the product name, brand, and code as the vendor’s property.',
+        },
+      ];
+    }
+
+    if (safety.tier === 'conditional') {
+      const hosted = safety.isAgpl
+        ? 'Hosting is allowed, but AGPL-3.0 requires you to offer the complete modified source to everyone who uses your hosted service. Plan for that disclosure before launch.'
+        : dossier?.isOpenCore
+        ? 'The open-source core can be hosted commercially, but enterprise folders or editions may carry separate terms. Check the repository LICENSE and any /ee or commercial license before charging.'
+        : safety.isCopyleft
+        ? 'Hosting is allowed. If you distribute modified builds, you must share the source under the same copyleft license; MPL and LGPL only cover the files you changed.'
+        : 'The license allows commercial hosting, but custom terms may apply. Confirm the exact grant in the LICENSE file before charging customers.';
+      return [
+        { icon: DollarSign, title: 'Sell as Hosted SaaS', state: 'conditional' as const, body: hosted },
+        {
+          icon: Code2,
+          title: 'Codebase Modifications',
+          state: 'conditional' as const,
+          body: safety.isAgpl
+            ? 'Modifications are allowed, but if you host the modified software you must publish the complete corresponding source under AGPL-3.0.'
+            : safety.isCopyleft
+            ? 'You can modify the code, but distributed changes must stay under the same license. Keep proprietary logic in separate services where the license permits it.'
+            : 'Modifications are allowed under the core license, but separately licensed or enterprise components may not be modifiable.',
+        },
+        {
+          icon: Tag,
+          title: 'White-Labeling & Rebranding',
+          state: 'conditional' as const,
+          body: 'Rebranding is generally allowed if you keep the original copyright notices and publish source when the copyleft license requires it. Do not imply endorsement by the original project.',
+        },
+      ];
+    }
+
+    return [
+      {
+        icon: DollarSign,
+        title: 'Sell as Hosted SaaS',
+        state: 'yes' as const,
+        body: 'You can charge subscription fees to host this software or package it as a cloud product without paying royalties to the author.',
+      },
+      {
+        icon: Code2,
+        title: 'Codebase Modifications',
+        state: 'yes' as const,
+        body: 'Closed-source modifications are allowed. You can add proprietary features, UI changes, and custom database schemas privately.',
+      },
+      {
+        icon: Tag,
+        title: 'White-Labeling & Rebranding',
+        state: 'yes' as const,
+        body: 'You can rebrand the dashboard with your own logo, color palette, and custom domain. Preserve the original copyright notice in repo headers.',
+      },
+    ];
+  })();
+
+  const rightStateStyles: Record<
+    CommercialRightState,
+    { icon: typeof CheckCircle2; label: string; className: string }
+  > = {
+    yes: { icon: CheckCircle2, label: 'Allowed', className: 'text-emerald-600' },
+    conditional: { icon: AlertTriangle, label: 'Conditions apply', className: 'text-amber-600' },
+    no: { icon: XCircle, label: 'Not allowed', className: 'text-rose-600' },
   };
 
-  // Cross-link: the original build guide for this project, when we have one.
-  const buildGuide = getGuideForRepo(repo.full_name);
-
-  // Sidebar stat rows: live values when available, curated fallback otherwise.
-  const sidebarRows: { label: string; value: React.ReactNode; sub?: string }[] = live
-    ? [
-        healthRow,
-        {
-          label: 'Last commit',
-          value: live.pushedAt ? timeAgo(new Date(live.pushedAt).getTime()) : '–',
-          sub: formatDate(live.pushedAt),
-        },
-        {
-          label: 'Repository age',
-          value: formatAge(live.createdAt),
-          sub: live.createdAt ? `since ${new Date(live.createdAt).getFullYear()}` : undefined,
-        },
-        {
-          label: 'Version',
-          value: live.version || '–',
-          sub: live.version ? formatDate(live.versionDate) : 'no release yet',
-        },
-        { label: 'License', value: live.license || '–' },
-        { label: 'Self-hosted', value: selfHosted ? 'Yes' : 'No' },
-        { label: 'Open issues', value: live.openIssues?.toLocaleString() ?? '–' },
-      ]
-    : [
-        healthRow,
-        { label: 'Language', value: repo.language || '–' },
-        { label: 'Category', value: repo.category },
-        { label: 'Self-hosted', value: selfHosted ? 'Yes' : '–' },
-        { label: 'Visibility', value: 'Public' },
-        { label: 'Verified', value: 'Oct 2026', sub: 'curated snapshot' },
-      ];
-
-  const compactStats = live
-    ? [
-        { label: 'Stars', value: formatStars(stars), icon: <Star className="h-3 w-3 text-amber-400 fill-amber-400" /> },
-        {
-          label: 'Last commit',
-          value: live.pushedAt ? timeAgo(new Date(live.pushedAt).getTime()) : '–',
-          icon: <Clock className="h-3 w-3 text-neutral-500" />,
-        },
-        { label: 'License', value: live.license || '–', icon: <Scale className="h-3 w-3 text-neutral-500" /> },
-        { label: 'Age', value: formatAge(live.createdAt), icon: <CalendarDays className="h-3 w-3 text-neutral-500" /> },
-      ]
-    : [
-        { label: 'Stars', value: formatStars(stars), icon: <Star className="h-3 w-3 text-amber-400 fill-amber-400" /> },
-        { label: 'Forks', value: formatStars(forks), icon: <GitFork className="h-3 w-3 text-neutral-500" /> },
-        { label: 'Language', value: repo.language || '–', icon: <Code2 className="h-3 w-3 text-neutral-500" /> },
-        { label: 'Verified', value: 'Oct 2026', icon: <Check className="h-3 w-3 text-neutral-500" /> },
-      ];
-
   return (
-    <div className="min-h-screen bg-white text-neutral-900 flex flex-col font-sans pb-12 sm:pb-16">
-      {/* Sticky bar: back · live key stats · share · github */}
-      <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-3.5 py-2.5 sm:px-6 sm:py-3 gap-2">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <button
-              type="button"
-              onClick={() => {
-                playSound('click', soundEnabled);
-                onBack();
-              }}
-              className="inline-flex items-center gap-1.5 px-1 py-2 text-xs font-bold text-neutral-500 hover:text-neutral-950 transition-colors cursor-pointer shrink-0"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span>Back</span>
-            </button>
+    <div className="w-full bg-white text-neutral-900 flex flex-col font-sans">
+      {/* Top Utility Bar */}
+      <div className="border-b border-neutral-200/80 bg-white">
+        <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3 sm:px-6">
+          <button
+            type="button"
+            onClick={() => {
+              playSound('click', soundEnabled);
+              onBack();
+            }}
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-neutral-600 hover:text-neutral-950 transition-colors cursor-pointer"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            <span>Back to SaaS Ideas</span>
+          </button>
 
-            {stickyActions && (
-              <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-                <a
-                  href={repo.html_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => playSound('click', soundEnabled)}
-                  className="btn-primary px-2.5 py-1.5 text-[11px] font-bold shrink-0"
-                >
-                  <Github className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">View on GitHub</span>
-                  <span className="sm:hidden">GitHub</span>
-                </a>
-                <span className="inline-flex items-center gap-1 rounded-md border border-neutral-200 bg-neutral-100 px-2 py-1.5 text-[11px] font-bold text-neutral-800 font-mono-num shrink-0">
-                  <Star className="h-3 w-3 text-amber-400 fill-amber-400" />
-                  {stars.toLocaleString()}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => copyText('cloneSticky', cloneUrl)}
-                  className="inline-flex items-center gap-1 rounded-md border border-neutral-200 bg-neutral-100 px-2 py-1.5 text-[11px] font-bold text-neutral-700 hover:text-neutral-950 hover:border-neutral-300 hover:bg-neutral-50 transition-all cursor-pointer shrink-0"
-                  title="Copy clone URL"
-                >
-                  {copiedKey === 'cloneSticky' ? (
-                    <Check className="h-3 w-3 text-mint-600" />
-                  ) : (
-                    <Copy className="h-3 w-3" />
-                  )}
-                  <span className="hidden sm:inline">
-                    {copiedKey === 'cloneSticky' ? 'Copied' : 'Clone'}
-                  </span>
-                </button>
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => copyText('page', pageUrl)}
-              className="inline-flex items-center justify-center rounded-md border border-neutral-200 bg-neutral-100 p-2 sm:px-3 sm:py-1.5 text-xs font-bold text-neutral-700 hover:text-neutral-950 hover:border-neutral-300 hover:bg-neutral-50 shadow-2xs active:scale-95 transition-all cursor-pointer min-h-[38px] min-w-[38px]"
-              title="Copy link to this page"
+              className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-white px-2.5 py-1 text-xs font-medium text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-colors cursor-pointer"
             >
               {copiedKey === 'page' ? (
-                <Check className="h-4 w-4 text-mint-600" />
+                <Check className="h-3.5 w-3.5 text-emerald-600" />
               ) : (
-                <Share2 className="h-4 w-4" />
+                <Share2 className="h-3.5 w-3.5 text-neutral-400" />
               )}
-              <span className="hidden sm:inline sm:ml-1.5">
-                {copiedKey === 'page' ? 'Copied' : 'Share'}
-              </span>
+              <span>{copiedKey === 'page' ? 'Copied' : 'Share'}</span>
             </button>
+
+            <a
+              href={repo.html_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => playSound('click', soundEnabled)}
+              className="inline-flex items-center gap-1.5 rounded-md bg-neutral-900 px-3 py-1 text-xs font-medium text-white hover:bg-neutral-800 transition-colors"
+            >
+              <Github className="h-3.5 w-3.5" />
+              <span>GitHub</span>
+            </a>
           </div>
         </div>
       </div>
 
-      {/* Main: editorial column + sticky stats sidebar */}
-      <nav
-        aria-label="Breadcrumb"
-        className="mx-auto w-full max-w-6xl px-3.5 pt-4 sm:px-6 sm:pt-5"
-      >
-        <div className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-neutral-500">
-          <a href="/" className="transition-colors hover:text-neutral-950">
-            Directory
-          </a>
-          <span className="text-neutral-300">/</span>
-          <a href="/ideas" className="transition-colors hover:text-neutral-950">
-            SaaS Ideas
-          </a>
-          <span className="text-neutral-300">/</span>
-          <span className="text-neutral-900">{repo.name}</span>
-        </div>
-      </nav>
-
-      <main className="mx-auto w-full max-w-6xl px-3.5 py-5 sm:px-6 sm:py-8 space-y-6 flex-1">
-        {/* Row 1: editorial + sticky stats (wrapper bounds the sticky range) */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8 items-start">
-        {/* ─────────── left: editorial ─────────── */}
-        <div className="lg:col-span-2 space-y-6 min-w-0">
-          {/* Header */}
-          <header className="space-y-4">
-            <div className="flex items-start gap-4">
-              <div className="h-14 w-14 sm:h-16 sm:w-16 shrink-0 overflow-hidden rounded-lg border border-neutral-200/70 bg-white shadow-2xs">
-                <img
-                  src={repo.owner.avatar_url}
-                  alt={repo.owner.login}
-                  width={64}
-                  height={64}
-                  className="h-full w-full object-cover"
-                  referrerPolicy="no-referrer"
-                />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-neutral-950">
-                    {repo.name}
-                  </h1>
-                  {live?.archived && (
-                    <span className="rounded bg-amber-500/15 border border-amber-500/40 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">
-                      Archived
-                    </span>
-                  )}
-                  {live && (
-                    <span className="inline-flex items-center gap-1 rounded bg-neutral-100 border border-neutral-200 px-1.5 py-0.5 text-[10px] font-bold text-neutral-600">
-                      <span className="h-1.5 w-1.5 rounded-full bg-mint-500" />
-                      live
-                    </span>
-                  )}
-                </div>
-                <p className="mt-1 text-xs font-semibold text-neutral-500 font-mono-num break-all">
-                  {repo.full_name}
-                </p>
-              </div>
+      {/* Main Single-Column Document Container */}
+      <main className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 space-y-8 flex-1">
+        {/* Header Section */}
+        <header className="space-y-4">
+          <div className="flex items-start gap-4">
+            <div className="h-12 w-12 sm:h-14 sm:w-14 shrink-0 overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50">
+              <img
+                src={ownerAvatar}
+                alt={ownerLogin}
+                width={56}
+                height={56}
+                className="h-full w-full object-cover"
+                referrerPolicy="no-referrer"
+              />
             </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-neutral-950">
+                  {repo.name}
+                </h1>
+                {dossier?.reviewed && (
+                  <span className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-semibold text-neutral-700 bg-neutral-100 border border-neutral-200">
+                    Curated Dossier
+                  </span>
+                )}
+                {live?.archived && (
+                  <span className="rounded px-1.5 py-0.5 text-[10px] font-semibold text-amber-800 bg-amber-50 border border-amber-200">
+                    Archived
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-neutral-500 font-mono mt-0.5">
+                {repo.full_name}
+              </p>
+            </div>
+          </div>
 
-            {/* Tagline: the one-liner, set large like the reference */}
-            <p className="text-base sm:text-lg font-medium text-neutral-700 leading-relaxed max-w-3xl">
-              {description}
-            </p>
+          {/* Description */}
+          <p className="text-base text-neutral-700 leading-relaxed max-w-3xl">
+            {description}
+          </p>
 
-            {/* Chips */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1 rounded-md bg-mint-500/15 px-2 py-1 text-[11px] font-bold text-mint-600 ring-1 ring-inset ring-mint-500/40">
-                {repo.category}
-              </span>
-              {repo.language && (
-                <span className="inline-flex items-center gap-1.5 rounded-md bg-white border border-neutral-200 px-2 py-1 text-[11px] font-bold text-neutral-700">
-                  <span
-                    className="h-2 w-2 rounded-full shrink-0"
-                    style={{ backgroundColor: languageColor(repo.language) }}
+          {/* Metadata Badges */}
+          <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
+            {altInfo && (
+              <span className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-neutral-50 px-2.5 py-1 text-neutral-800 font-medium">
+                {altInfo.domain && (
+                  <img
+                    src={getWebsiteFavicon(altInfo.domain, 16)}
+                    alt=""
+                    className="h-3.5 w-3.5 rounded shrink-0"
+                    onError={(e) => {
+                      (e.target as HTMLElement).style.display = 'none';
+                    }}
                   />
-                  {repo.language}
+                )}
+                <span>
+                  Replaces <strong className="font-semibold text-neutral-950">{altInfo.target}</strong>
                 </span>
-              )}
-              {selfHosted && (
-                <span className="inline-flex items-center gap-1.5 rounded-md bg-white border border-neutral-200 px-2 py-1 text-[11px] font-bold text-neutral-700">
-                  <Server className="h-3 w-3" />
-                  Self-hosted
-                </span>
-              )}
-              {live?.homepage && (
-                <a
-                  href={live.homepage}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => playSound('click', soundEnabled)}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-white border border-neutral-200 px-2 py-1 text-[11px] font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-colors"
-                >
-                  <Link2 className="h-3 w-3" />
-                  <span className="max-w-[220px] truncate">{live.homepage}</span>
-                </a>
-              )}
-            </div>
+              </span>
+            )}
 
-            {/* CTAs */}
-            <div ref={ctaRef} className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center rounded-md border border-neutral-200 bg-white px-2.5 py-1 text-neutral-700 font-medium">
+              {repo.category}
+            </span>
+
+            {repo.language && (
+              <span className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-white px-2.5 py-1 text-neutral-700 font-medium">
+                <span
+                  className="h-2 w-2 rounded-full shrink-0"
+                  style={{ backgroundColor: languageColor(repo.language) }}
+                />
+                {repo.language}
+              </span>
+            )}
+
+            {selfHosted && (
+              <span className="inline-flex items-center gap-1 rounded-md border border-neutral-200 bg-white px-2.5 py-1 text-neutral-700 font-medium">
+                <Server className="h-3 w-3 text-neutral-400" />
+                Self-hostable
+              </span>
+            )}
+
+            {live?.homepage && (
               <a
-                href={repo.html_url}
+                href={live.homepage}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => playSound('click', soundEnabled)}
-                className="btn-primary px-5 py-3 text-xs font-bold"
+                className="inline-flex items-center gap-1 rounded-md border border-neutral-200 bg-white px-2.5 py-1 text-neutral-700 hover:text-neutral-950 hover:bg-neutral-50 transition-colors font-medium"
               >
-                <span>Visit on GitHub</span>
-                <ArrowUpRight className="h-3.5 w-3.5" />
+                <Link2 className="h-3 w-3 text-neutral-400" />
+                <span>{live.homepage.replace(/^https?:\/\//, '').replace(/\/$/, '')}</span>
               </a>
-              <span className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-white px-4 py-3 text-xs font-bold text-neutral-900">
-                <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
-                <span className="font-mono-num">{stars.toLocaleString()}</span>
-                <span className="text-neutral-500">stars</span>
-              </span>
-              <button
-                type="button"
-                onClick={() => copyText('clone', cloneUrl)}
-                className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-white px-4 py-3 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-all cursor-pointer active:scale-95"
-                title="Copy clone URL"
-              >
-                {copiedKey === 'clone' ? (
-                  <Check className="h-3.5 w-3.5 text-mint-600" />
-                ) : (
-                  <Copy className="h-3.5 w-3.5" />
-                )}
-                <span className="font-mono-num">{copiedKey === 'clone' ? 'Copied!' : 'Clone'}</span>
-              </button>
-            </div>
-
-            {/* Compact stats: mobile/tablet (the sidebar owns them on lg) */}
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:hidden">
-              {compactStats.map((s) => (
-                <div
-                  key={s.label}
-                  className="rounded-md border border-neutral-200 bg-white px-3 py-2 shadow-2xs"
-                >
-                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-neutral-500">
-                    {s.icon}
-                    <span className="truncate">{s.label}</span>
-                  </div>
-                  <div className="mt-0.5 text-sm font-black text-neutral-950 font-mono-num truncate">
-                    {s.value}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </header>
-
-          {/* Editorial write-up: our own reading of the project */}
-          <article className="rounded-lg border border-neutral-200 bg-white p-5 sm:p-7 shadow-xs space-y-5">
-            <p className="text-[15px] leading-7 text-neutral-700">{editorial.lead}</p>
-            <p className="text-[15px] leading-7 text-neutral-700">{editorial.core}</p>
-
-            <div className="space-y-3 pt-1">
-              <h3 className="text-sm font-black text-neutral-950">Key capabilities</h3>
-              <ul className="space-y-2.5">
-                {editorial.capabilities.map((c) => (
-                  <li
-                    key={c.title}
-                    className="relative pl-4 text-[14.5px] leading-6 text-neutral-700 before:absolute before:left-0 before:top-[0.6em] before:h-1.5 before:w-1.5 before:rounded-full before:bg-mint-500/70"
-                  >
-                    <span className="font-bold text-neutral-950">{c.title}</span> {c.body}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <p className="text-[15px] leading-7 text-neutral-700">{editorial.closing}</p>            </article>
-
-            {/* Build guide cross-link: original walkthrough for this project */}
-            {buildGuide && (
-              <button
-                type="button"
-                onClick={() => {
-                  playSound('click', soundEnabled);
-                  navigateTo(`/guides/${buildGuide.slug}`);
-                }}
-                className="group flex w-full items-center gap-3.5 rounded-lg border border-neutral-200 bg-white p-4 text-left transition-colors hover:border-neutral-300 hover:bg-neutral-50 cursor-pointer"
-              >
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-mint-500/15 text-mint-600">
-                  <BookOpen className="h-4 w-4" />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-[10px] font-bold text-mint-600">
-                    Build guide
-                  </span>
-                  <span className="block truncate text-sm font-bold text-neutral-950 group-hover:text-mint-700 transition-colors">
-                    {buildGuide.title}
-                  </span>
-                  <span className="block truncate text-xs text-neutral-600">
-                    {buildGuide.timeEstimate} · {buildGuide.difficulty}
-                  </span>
-                </span>
-                <ArrowRight className="h-4 w-4 shrink-0 text-mint-600 transition-transform group-hover:translate-x-0.5" />
-              </button>
-            )}
-
-          {/* Categories & Tags */}
-          <section className="rounded-lg border border-neutral-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
-            <div className="space-y-2">
-              <SectionLabel>Categories</SectionLabel>
-              <div>
-                <span className="inline-flex rounded-md bg-neutral-100 border border-neutral-200 px-2.5 py-1 text-xs font-bold text-neutral-800">
-                  {repo.category}
-                </span>
-              </div>
-            </div>
-            {topics && (
-              <div className="space-y-2 pt-1 border-t border-neutral-200/70">
-                <SectionLabel>Tags</SectionLabel>
-                <div className="flex flex-wrap gap-1.5">
-                  {topics.map((t) => (
-                    <a
-                      key={t}
-                      href={`https://github.com/topics/${encodeURIComponent(t)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={() => playSound('click', soundEnabled)}
-                      className="inline-flex items-center gap-1 rounded bg-white border border-neutral-200 px-2 py-1 text-[11px] font-semibold text-neutral-700 hover:border-mint-500/50 hover:text-mint-700 transition-colors"
-                    >
-                      <span className="text-neutral-600">#</span>
-                      {t}
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
-          </section>
-
-          {/* Built with */}
-          <section className="rounded-lg border border-neutral-200 bg-white p-5 sm:p-6 shadow-xs space-y-3">
-            <SectionLabel>Built with</SectionLabel>
-            {breakdown.length > 0 ? (
-              <>
-                <div className="flex h-2 w-full overflow-hidden rounded-full bg-white border border-neutral-200">
-                  {breakdown.map((l) => (
-                    <span
-                      key={l.name}
-                      className="h-full first:rounded-l-full last:rounded-r-full"
-                      style={{ width: `${l.percent}%`, backgroundColor: languageColor(l.name) }}
-                      title={`${l.name} ${l.percent}%`}
-                    />
-                  ))}
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {breakdown.map((l) => (
-                    <span
-                      key={l.name}
-                      className="inline-flex items-center gap-1.5 rounded bg-white border border-neutral-200 px-2 py-1 text-[11px] font-bold text-neutral-700"
-                    >
-                      <span
-                        className="h-2 w-2 rounded-full shrink-0"
-                        style={{ backgroundColor: languageColor(l.name) }}
-                      />
-                      {l.name}
-                      <span className="text-neutral-500 font-mono-num">{l.percent}%</span>
-                    </span>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <div className="flex items-center gap-2 text-xs font-medium text-neutral-500">
-                <Code2 className="h-4 w-4" />
-                {repo.language
-                  ? `Primary language: ${repo.language}`
-                  : 'Language breakdown syncs live from GitHub.'}
-              </div>
-            )}
-          </section>
-
-          {/* Share row */}
-          <section className="flex flex-wrap items-center gap-2 border-t border-neutral-200 pt-5">
-            <span className="text-[11px] font-bold text-neutral-500 mr-1">
-              Share
-            </span>
-            <button
-              type="button"
-              onClick={() => copyText('page2', pageUrl)}
-              className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-700 hover:text-neutral-950 hover:border-neutral-300 hover:bg-neutral-50 transition-colors cursor-pointer"
-            >
-              {copiedKey === 'page2' ? (
-                <Check className="h-3.5 w-3.5 text-mint-600" />
-              ) : (
-                <Copy className="h-3.5 w-3.5" />
-              )}
-              {copiedKey === 'page2' ? 'Link copied' : 'Copy link'}
-            </button>
-            <a
-              href={xShareUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => playSound('click', soundEnabled)}
-              className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-700 hover:text-neutral-950 hover:border-neutral-300 hover:bg-neutral-50 transition-colors"
-            >
-              Post on X
-              <ArrowUpRight className="h-3 w-3 opacity-60" />
-            </a>
-            <a
-              href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(pageUrl)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => playSound('click', soundEnabled)}
-              className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-700 hover:text-neutral-950 hover:border-neutral-300 hover:bg-neutral-50 transition-colors"
-            >
-              LinkedIn
-              <ArrowUpRight className="h-3 w-3 opacity-60" />
-            </a>
-          </section>
-        </div>
-
-        {/* ─────────── right: sticky stats sidebar ─────────── */}
-        <aside className="lg:sticky lg:top-[68px] space-y-5 min-w-0">
-          {/* 1. Sponsored Partners Sidebar (⚡ Sponsors placed at the very top, exactly like ProductPage) */}
-          <SponsoredPartnersSidebar
-            sponsors={sponsors && sponsors.length > 0 ? sponsors : allProducts.filter((p) => p.isSponsored)}
-            soundEnabled={soundEnabled}
-            onSelectProduct={onSelectProduct}
-            onTrackClick={onTrackClick}
-            onOpenFeaturedSpotModal={onOpenFeaturedSpotModal}
-          />
-
-          {/* Key stats card: the reference's top-right panel */}
-          <div className="rounded-lg border border-neutral-200/60 bg-white p-5 shadow-xs">
-            <div className="flex items-end justify-between gap-3 pb-3 border-b border-neutral-200">
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
-                  <span className="text-2xl font-black text-neutral-950 font-mono-num">
-                    {stars.toLocaleString()}
-                  </span>
-                  <span className="text-xs font-semibold text-neutral-500">stars</span>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="flex items-center justify-end gap-1.5">
-                  <GitFork className="h-3.5 w-3.5 text-neutral-500" />
-                  <span className="text-base font-black text-neutral-950 font-mono-num">
-                    {forks.toLocaleString()}
-                  </span>
-                </div>
-                <span className="text-[10px] font-semibold text-neutral-500">forks</span>
-              </div>
-            </div>
-            <div className="divide-y divide-neutral-200/70">
-              {sidebarRows.map((row) => (
-                <StatRow key={row.label} {...row} />
-              ))}
-              <div className="flex items-baseline justify-between gap-3 py-2">
-                <span className="text-[11px] font-semibold text-neutral-500 shrink-0">
-                  Repository
-                </span>
-                <a
-                  href={`https://github.com/${repo.owner.login}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[13px] font-black text-mint-600 hover:text-mint-700 hover:underline truncate font-mono-num"
-                >
-                  {repo.full_name}
-                </a>
-              </div>
-            </div>
-            {!live && (
-              <p className="mt-2 border-t border-neutral-200 pt-2.5 text-[10px] font-medium text-neutral-500">
-                Live GitHub data (commit, version, license) syncs in when the API is reachable.
-              </p>
-            )}
-            {health && (
-              <details className="mt-2 border-t border-neutral-200 pt-2.5 text-[10px] text-neutral-500">
-                <summary className="cursor-pointer font-semibold text-neutral-600 hover:text-neutral-900">
-                  How the health score is computed
-                </summary>
-                <p className="mt-1.5 leading-relaxed">
-                  {healthExplain}. Activity decays with days since the last push, and archived
-                  projects cap at 30. Grade bands: A at 85+, B at 70+, C at 55+, D at 40+.
-                  {' '}{REPO_HEALTH_GENERATED_AT && `Snapshot signals refreshed ${REPO_HEALTH_GENERATED_AT.slice(0, 10)}.`}
-                </p>
-              </details>
             )}
           </div>
-        </aside>
-        </div>
+        </header>
 
-        {/* ─────────── Similar open source projects: full width, below ─────────── */}
-        <section className="space-y-3">
-          <SectionLabel>
-            Similar open source projects
-          </SectionLabel>
-          <div className="grid grid-cols-1 gap-px overflow-hidden rounded-lg border border-neutral-200 bg-neutral-200 sm:grid-cols-2 lg:grid-cols-4">
-            {relatedRepos.map((r) => (
-              <button
-                key={r.full_name}
-                type="button"
-                onClick={() => {
-                  playSound('click', soundEnabled);
-                  onSelectRepo(r);
-                }}
-                className="group flex flex-col bg-white p-5 text-left transition-all duration-300 ease-out cursor-pointer hover:-translate-y-0.5 hover:bg-neutral-100 hover:shadow-[0_4px_20px_-4px_rgba(25,25,24,0.08)] focus:outline-none focus-visible:ring-2 focus-visible:ring-mint-500/60"
-              >
-                <div className="flex items-start justify-between gap-2.5">
-                  <span className="h-11 w-11 shrink-0 overflow-hidden rounded-md border border-neutral-200 bg-white transition-all duration-200 group-hover:border-neutral-500">
-                    <img
-                      src={r.owner.avatar_url}
-                      alt={r.owner.login}
-                      width={24}
-                      height={24}
-                      className="h-full w-full object-cover"
-                      referrerPolicy="no-referrer"
-                    />
-                  </span>
-                  <span className="flex h-6 w-6 items-center justify-center rounded border border-neutral-200 text-neutral-500 opacity-0 transition-all duration-200 group-hover:opacity-100 group-hover:border-neutral-300 group-hover:bg-neutral-900 group-hover:text-white">
-                    <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
-                  </span>
+        {/* Trust Data Strip */}
+        <section className="rounded-xl border border-neutral-200/90 bg-neutral-50/50 p-3 sm:p-4 text-xs text-neutral-600 shadow-2xs">
+          {/* Mobile Layout (sm:hidden): Clean structured cards */}
+          <div className="sm:hidden space-y-2.5">
+            {/* Row 1: Stars & Forks in clean stat tiles */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="flex items-center gap-2 rounded-xl border border-neutral-200/80 bg-white p-2.5 shadow-2xs">
+                <Star className="h-4 w-4 text-amber-500 fill-amber-400 shrink-0" />
+                <div className="min-w-0">
+                  <div className="text-sm font-bold text-neutral-950 font-mono-num leading-tight">
+                    {stars.toLocaleString()}
+                  </div>
+                  <div className="text-[10.5px] font-medium text-neutral-400">stars</div>
                 </div>
-                <p className="mt-4 truncate text-[15px] font-bold tracking-tight text-neutral-950 group-hover:text-mint-600 transition-colors">
-                  {r.name}
-                </p>
-                <p className="mt-0.5 truncate text-[11px] font-medium text-neutral-500 group-hover:text-neutral-700 transition-colors">
-                  {r.owner.login}
-                </p>
-                <p className="mt-1.5 flex-1 text-[12.5px] font-medium leading-relaxed text-neutral-600 group-hover:text-neutral-800 line-clamp-2 transition-colors">
-                  {plainCopy(r.description || '')}
-                </p>
-                <div className="mt-4 flex items-center justify-between gap-2 border-t border-neutral-200 group-hover:border-neutral-200 pt-3 transition-colors">
-                  <div className="flex items-center gap-2.5 text-[11px] text-neutral-400">
-                    <span className="inline-flex items-center gap-1">
-                      <Star className="h-3 w-3 text-amber-500 fill-amber-400" />
-                      <span className="font-bold text-neutral-900 font-mono-num">
-                        {formatStars(r.stargazers_count)}
-                      </span>
-                    </span>
-                    <span className="inline-flex items-center gap-1">
-                      <GitFork className="h-3 w-3 text-neutral-500" />
-                      <span className="font-mono-num">{r.forks_count}</span>
+              </div>
+
+              <div className="flex items-center gap-2 rounded-xl border border-neutral-200/80 bg-white p-2.5 shadow-2xs">
+                <GitFork className="h-4 w-4 text-neutral-400 shrink-0" />
+                <div className="min-w-0">
+                  <div className="text-sm font-bold text-neutral-950 font-mono-num leading-tight">
+                    {forks.toLocaleString()}
+                  </div>
+                  <div className="text-[10.5px] font-medium text-neutral-400">forks</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Row 2: License & Health in a divided box */}
+            <div className="rounded-xl border border-neutral-200/80 bg-white divide-y divide-neutral-100 overflow-hidden shadow-2xs text-xs">
+              {/* License Row */}
+              <div className="p-2.5 flex items-center justify-between gap-2" title={safety.plainExplanation}>
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className={`h-2 w-2 rounded-full shrink-0 ${safety.colorClasses.dotBg}`} />
+                  <span className="font-semibold text-neutral-900 truncate text-[11.5px]">{safety.badgeLabel}</span>
+                </div>
+                <span className="font-mono text-[10px] font-medium text-neutral-600 bg-neutral-100 px-1.5 py-0.5 rounded shrink-0">
+                  {safety.spdxId}
+                </span>
+              </div>
+
+              {/* Health Row */}
+              {health && (
+                <div className="p-2.5 flex items-center justify-between gap-2">
+                  <span className="text-neutral-500 font-medium text-[11.5px]">Repo Health</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-bold text-neutral-900 font-mono-num text-[11.5px]">{health.score}/100</span>
+                    <span className="text-[10px] font-semibold text-neutral-700 bg-neutral-100 border border-neutral-200/70 px-1.5 py-0.5 rounded">
+                      Grade {health.band}
                     </span>
                   </div>
-                  <div className="flex min-w-0 items-center gap-1.5">
-                    {r.language && (
-                      <span className="shrink-0 rounded border border-neutral-200 bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold text-neutral-700">
-                        {r.language}
-                      </span>
+                </div>
+              )}
+            </div>
+
+            {/* Row 3: Activity */}
+            {lastCommit && (
+              <div className="flex items-center justify-between text-[11px] text-neutral-400 px-1 pt-0.5">
+                <span>Pushed {timeAgo(new Date(lastCommit).getTime())}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Desktop Layout (hidden sm:flex): Wide single-line strip */}
+          <div className="hidden sm:flex flex-wrap items-center justify-between gap-y-3 gap-x-6">
+            <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+              <div className="flex items-center gap-1.5">
+                <Star className="h-3.5 w-3.5 text-amber-500 fill-amber-400" />
+                <span className="font-semibold text-neutral-900 font-mono-num">
+                  {stars.toLocaleString()}
+                </span>
+                <span className="text-neutral-400 text-[11px]">stars</span>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <GitFork className="h-3.5 w-3.5 text-neutral-400" />
+                <span className="font-semibold text-neutral-900 font-mono-num">
+                  {forks.toLocaleString()}
+                </span>
+                <span className="text-neutral-400 text-[11px]">forks</span>
+              </div>
+
+              <div className="flex items-center gap-1.5" title={safety.plainExplanation}>
+                <span className={`h-1.5 w-1.5 rounded-full ${safety.colorClasses.dotBg}`} />
+                <span className="font-medium text-neutral-800">{safety.badgeLabel}</span>
+                <span className="text-neutral-400 font-mono text-[10px]">({safety.spdxId})</span>
+              </div>
+
+              {health && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-neutral-400">Health:</span>
+                  <span className="font-semibold text-neutral-900 font-mono-num">
+                    {health.score}/100
+                  </span>
+                  <span className="text-neutral-400 text-[11px]">(Grade {health.band})</span>
+                </div>
+              )}
+            </div>
+
+            {lastCommit && (
+              <div className="flex items-center gap-4 text-[11px] text-neutral-400 ml-auto sm:ml-0">
+                <span>Pushed {timeAgo(new Date(lastCommit).getTime())}</span>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Zero-height marker used to measure the real top of the tab panel.
+            The tab bar itself is sticky, so its own rect is pinned to the top
+            once the user scrolls and cannot be used as the scroll anchor. */}
+        <div ref={tabsRef} className="h-0" aria-hidden="true" />
+
+        {/* ── Sub-Navigation Tabs (Clean App Theme - non-sticky on mobile for clean scrolling) ── */}
+        <div className="relative xl:sticky xl:top-0 z-20 bg-white/95 backdrop-blur-md border-b border-neutral-200 -mx-4 px-4 sm:-mx-6 sm:px-6">
+          <nav className="flex items-center gap-6 sm:gap-8 overflow-x-auto no-scrollbar" aria-label="Sections">
+            {TABS.map((tab) => {
+              const active = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => {
+                    playSound('click', soundEnabled);
+                    setActiveTab(tab.id);
+                  }}
+                  className={`relative py-3.5 text-xs sm:text-sm transition-colors cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                    active
+                      ? 'font-bold text-neutral-950'
+                      : 'font-medium text-neutral-500 hover:text-neutral-950'
+                  }`}
+                >
+                  <span>{tab.label}</span>
+                  {tab.badge !== undefined && (
+                    <span
+                      className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-semibold ${
+                        active
+                          ? 'bg-neutral-900 text-white'
+                          : 'bg-neutral-100 text-neutral-600'
+                      }`}
+                    >
+                      {tab.badge}
+                    </span>
+                  )}
+
+                  {/* Clean active indicator underline matching TopSAAS brand */}
+                  <span
+                    className={`absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-neutral-950 transition-opacity ${
+                      active ? 'opacity-100' : 'opacity-0'
+                    }`}
+                    aria-hidden="true"
+                  />
+                </button>
+              );
+            })}
+          </nav>
+        </div>
+
+        {/* ── Tab Content Views ── */}
+
+        {/* TAB 1: OVERVIEW */}
+        <div hidden={activeTab !== 'overview'} className="space-y-8 animate-fadeIn">
+            {/* The Opportunity Overview (TL;DR) */}
+            <section className="space-y-2">
+              <h2 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-950">
+                Opportunity Overview
+              </h2>
+              <div className="rounded-xl border border-neutral-200/90 bg-white p-5 sm:p-6 space-y-4">
+                <p className="text-base text-neutral-800 leading-relaxed font-normal">
+                  {dossier ? dossier.summary : editorial.lead}
+                </p>
+
+                {/* Highlight prompt to SaaS Ideas */}
+                {dossier && dossier.ideas.length > 0 && (
+                  <div className="pt-3 border-t border-neutral-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm">
+                    <div className="text-neutral-700">
+                      <strong>Top opportunity:</strong> {dossier.ideas[0].title} ({dossier.ideas[0].howToCharge})
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playSound('click', soundEnabled);
+                        setActiveTab('ideas');
+                      }}
+                      className="inline-flex items-center gap-1 font-semibold text-neutral-950 hover:underline cursor-pointer shrink-0"
+                    >
+                      <span>Explore all {dossier.ideas.length} ideas</span>
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* Problem & Solution Breakdown */}
+            <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="rounded-xl border border-neutral-200/90 bg-white p-5 sm:p-6 space-y-3.5">
+                <div className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-rose-500 shrink-0" />
+                  <h3 className="text-sm font-semibold text-neutral-950">
+                    The Problem It Solves
+                  </h3>
+                </div>
+                <div className="space-y-3">
+                  {formatIntoParagraphs(problemItSolves).map((p, idx) => (
+                    <p key={idx} className="text-sm text-neutral-700 leading-relaxed">
+                      {p}
+                    </p>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-neutral-200/90 bg-white p-5 sm:p-6 space-y-3.5">
+                <div className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
+                  <h3 className="text-sm font-semibold text-neutral-950">
+                    The Solution &amp; Opportunity
+                  </h3>
+                </div>
+                <div className="space-y-3">
+                  {formatIntoParagraphs(solution).map((p, idx) => (
+                    <p key={idx} className="text-sm text-neutral-700 leading-relaxed">
+                      {p}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            {/* Who It's For Personas */}
+            <section className="space-y-3">
+              <h2 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-950">
+                Who It's For
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {whoItsForList.map((persona, i) => (
+                  <div
+                    key={i}
+                    className="flex items-start gap-2.5 p-4 rounded-xl border border-neutral-200/80 bg-neutral-50/50"
+                  >
+                    <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 shrink-0 mt-2" />
+                    <span className="text-sm font-medium text-neutral-800 leading-relaxed">
+                      {persona}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Core Features */}
+            {featuresList.length > 0 && (
+              <section className="space-y-3">
+                <h2 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-950">
+                  Core Platform Features
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  {featuresList.map((feat, i) => (
+                    <div
+                      key={i}
+                      className="rounded-xl border border-neutral-200/90 bg-white p-5 space-y-2"
+                    >
+                      <h3 className="text-sm font-semibold text-neutral-950 flex items-center gap-2">
+                        <span className="font-mono text-xs text-neutral-400">
+                          {String(i + 1).padStart(2, '0')}.
+                        </span>
+                        <span>{feat.title}</span>
+                      </h3>
+                      <p className="text-sm text-neutral-600 leading-relaxed">
+                        {feat.description}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Founder Fit Evaluation */}
+            {dossier && (
+              <section className="space-y-3">
+                <h2 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-950">
+                  Founder Fit Evaluation
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Good fit if */}
+                  <div className="rounded-xl border border-neutral-200/90 bg-white p-5 space-y-3">
+                    <div className="flex items-center gap-1.5 text-sm font-semibold text-emerald-800">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                      <span>Good fit if</span>
+                    </div>
+                    <ul className="space-y-2.5">
+                      {dossier.goodFitIf.map((item, i) => (
+                        <li key={i} className="flex items-start gap-2.5 text-sm text-neutral-700 leading-relaxed">
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0 mt-2" />
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Skip if */}
+                  <div className="rounded-xl border border-neutral-200/90 bg-white p-5 space-y-3">
+                    <div className="flex items-center gap-1.5 text-sm font-semibold text-neutral-800">
+                      <XCircle className="h-4 w-4 text-neutral-500 shrink-0" />
+                      <span>Skip if</span>
+                    </div>
+                    <ul className="space-y-2.5">
+                      {dossier.skipIf.map((item, i) => (
+                        <li key={i} className="flex items-start gap-2.5 text-sm text-neutral-700 leading-relaxed">
+                          <span className="h-1.5 w-1.5 rounded-full bg-neutral-400 shrink-0 mt-2" />
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* Developer Quick Start */}
+            <section className="space-y-3">
+              <div className="flex items-baseline justify-between">
+                <h2 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-950">
+                  Quick Start
+                </h2>
+                <span className="text-sm text-neutral-500">README instructions</span>
+              </div>
+
+              <div className="rounded-xl border border-neutral-200/90 bg-neutral-100/80 p-4 sm:p-5 text-xs font-mono space-y-2.5">
+                <div className="flex items-center justify-between gap-3 bg-white p-3 rounded-lg border border-neutral-200/80 shadow-xs">
+                  <code className="truncate text-neutral-800 font-mono font-medium">
+                    {dossier?.quickStart.clone || `git clone ${repo.html_url}.git`}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      copyText(
+                        'cmd-clone',
+                        dossier?.quickStart.clone || `git clone ${repo.html_url}.git`
+                      )
+                    }
+                    className="text-xs font-sans font-medium text-neutral-500 hover:text-neutral-950 transition-colors cursor-pointer shrink-0 px-2 py-0.5 rounded hover:bg-neutral-100"
+                  >
+                    {copiedKey === 'cmd-clone' ? 'Copied' : 'Copy'}
+                  </button>
+                </div>
+
+                {dossier?.quickStart.install && (
+                  <div className="flex items-center justify-between gap-3 bg-white p-3 rounded-lg border border-neutral-200/80 shadow-xs">
+                    <code className="truncate text-neutral-800 font-mono font-medium">{dossier.quickStart.install}</code>
+                    <button
+                      type="button"
+                      onClick={() => copyText('cmd-install', dossier.quickStart.install || '')}
+                      className="text-xs font-sans font-medium text-neutral-500 hover:text-neutral-950 transition-colors cursor-pointer shrink-0 px-2 py-0.5 rounded hover:bg-neutral-100"
+                    >
+                      {copiedKey === 'cmd-install' ? 'Copied' : 'Copy'}
+                    </button>
+                  </div>
+                )}
+
+                {dossier?.quickStart.run && (
+                  <div className="flex items-center justify-between gap-3 bg-white p-3 rounded-lg border border-neutral-200/80 shadow-xs">
+                    <code className="truncate text-neutral-800 font-mono font-medium">{dossier.quickStart.run}</code>
+                    <button
+                      type="button"
+                      onClick={() => copyText('cmd-run', dossier.quickStart.run || '')}
+                      className="text-xs font-sans font-medium text-neutral-500 hover:text-neutral-950 transition-colors cursor-pointer shrink-0 px-2 py-0.5 rounded hover:bg-neutral-100"
+                    >
+                      {copiedKey === 'cmd-run' ? 'Copied' : 'Copy'}
+                    </button>
+                  </div>
+                )}
+
+                {dossier?.quickStart.notes && (
+                  <div className="text-xs font-sans text-neutral-500 pt-1">
+                    Note: {dossier.quickStart.notes}
+                  </div>
+                )}
+              </div>
+            </section>
+          </div>
+
+        {/* TAB 2: SAAS IDEAS */}
+        {dossier && (
+          <div hidden={activeTab !== 'ideas'} className="space-y-6 animate-fadeIn">
+            {/* Header & Controls */}
+            <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-3 border-b border-neutral-100 pb-3">
+              <div>
+                <h2 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-950">
+                  SaaS Opportunity Blueprints for {repo.name}
+                </h2>
+                <p className="text-sm text-neutral-500 mt-0.5">
+                  Battle-tested startup concepts you can build and monetize on top of this codebase. Evaluated with 20-year operator diligence.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3 shrink-0">
+                <span className="text-xs text-neutral-400 font-medium font-mono-num">
+                  {dossier.ideas.length} blueprints
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const allExpanded = dossier.ideas.every((idea, i) => expandedIdeas[idea.id || String(i)]);
+                    const next = !allExpanded;
+                    const nextMap: Record<string, boolean> = {};
+                    dossier.ideas.forEach((idea, i) => {
+                      nextMap[idea.id || String(i)] = next;
+                    });
+                    setExpandedIdeas(nextMap);
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-white px-2.5 py-1 text-xs font-medium text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-colors cursor-pointer shadow-xs"
+                >
+                  {dossier.ideas.every((idea, i) => expandedIdeas[idea.id || String(i)]) ? (
+                    <>
+                      <ChevronUp className="h-3.5 w-3.5 text-neutral-400" />
+                      <span>Collapse All</span>
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="h-3.5 w-3.5 text-neutral-400" />
+                      <span>Expand All</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* List of Interactive Cards */}
+            <div className="space-y-4">
+              {dossier.ideas.map((idea, idx) => {
+                const ideaKey = idea.id || String(idx);
+                const isExpanded = !!expandedIdeas[ideaKey];
+                const blueprint = getIdeaBlueprint(repo.full_name, ideaKey, idea);
+
+                return (
+                  <div
+                    key={ideaKey}
+                    className="rounded-2xl border border-neutral-200/90 bg-neutral-100/70 hover:border-neutral-300 transition-all overflow-hidden shadow-xs"
+                  >
+                    {/* Clickable Card Header */}
+                    <div
+                      onClick={() => {
+                        playSound('click', soundEnabled);
+                        toggleIdea(ideaKey);
+                      }}
+                      className="p-5 sm:p-6 cursor-pointer select-none transition-colors hover:bg-neutral-100/90 flex flex-col gap-3.5"
+                    >
+                      <div className="flex items-start gap-3">
+                        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white border border-neutral-200 text-xs font-mono font-bold text-neutral-800 shadow-xs shrink-0 mt-0.5">
+                          {String(idx + 1).padStart(2, '0')}
+                        </span>
+                        <div className="min-w-0 flex-1 space-y-1">
+                          <h3 className="text-base sm:text-lg font-bold text-neutral-950 tracking-tight leading-snug">
+                            {idea.title}
+                          </h3>
+                          <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed font-normal">
+                            {blueprint.summary}
+                          </p>
+                        </div>
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-500 hover:text-neutral-950 transition-colors shadow-xs">
+                          {isExpanded ? (
+                            <ChevronUp className="h-4 w-4" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4" />
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Price and ICP footer */}
+                      {/* Mobile: Boxed card with separated rows */}
+                      <div className="sm:hidden mt-3 rounded-xl border border-neutral-200/90 bg-white divide-y divide-neutral-200/70 overflow-hidden shadow-2xs">
+                        <div className="p-3 text-left">
+                          <span className="block text-[10.5px] font-mono font-semibold uppercase tracking-wider text-neutral-500">
+                            PRICING
+                          </span>
+                          <span className="block text-xs font-semibold text-neutral-900 mt-1 leading-snug">
+                            {idea.howToCharge}
+                          </span>
+                        </div>
+                        <div className="p-3 text-left">
+                          <span className="block text-[10.5px] font-mono font-semibold uppercase tracking-wider text-neutral-500">
+                            TARGET ICP
+                          </span>
+                          <span className="block text-xs font-semibold text-neutral-900 mt-1 leading-snug">
+                            {idea.customer}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Desktop (sm+): Clean horizontal lines */}
+                      <div className="hidden sm:block space-y-2 pt-3 border-t border-neutral-200/60 text-xs">
+                        <div className="flex items-start gap-2">
+                          <span className="font-medium text-neutral-500 shrink-0 leading-snug">Pricing:</span>
+                          <span className="min-w-0 font-semibold text-neutral-900 leading-snug">
+                            {idea.howToCharge}
+                          </span>
+                        </div>
+
+                        <div className="flex items-start gap-2">
+                          <span className="font-medium text-neutral-500 shrink-0 leading-snug">Target ICP:</span>
+                          <span className="min-w-0 font-semibold text-neutral-900 leading-snug">
+                            {idea.customer}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Expanded 20-Year Startup Operator Blueprint */}
+                    {isExpanded && (
+                      <div className="border-t border-neutral-200/90 bg-white p-6 sm:p-8 space-y-7 animate-fadeIn">
+                        {/* Section 1: Core Concept & Mechanics */}
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-neutral-500">
+                            <Rocket className="h-4 w-4 text-neutral-700" />
+                            <span>1. Core Business Concept &amp; Operational Mechanics</span>
+                          </div>
+                          <p className="text-sm text-neutral-800 leading-relaxed font-normal bg-neutral-50/70 p-4 rounded-xl border border-neutral-200/70">
+                            {blueprint.concept}
+                          </p>
+                        </div>
+
+                        {/* Section 2: Unfair Advantage & Economic Moat */}
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-neutral-500">
+                            <TrendingUp className="h-4 w-4 text-emerald-600" />
+                            <span>2. The Unfair Advantage (Why Building on This Repo Wins)</span>
+                          </div>
+                          <p className="text-sm text-neutral-800 leading-relaxed font-normal bg-neutral-50/70 p-4 rounded-xl border border-neutral-200/70">
+                            {blueprint.unfairAdvantage}
+                          </p>
+                        </div>
+
+                        {/* Section 3: Target ICP & Buyer Psychology */}
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-neutral-500">
+                            <Target className="h-4 w-4 text-neutral-700" />
+                            <span>3. Ideal Customer Profile (ICP) &amp; Buyer Psychology</span>
+                          </div>
+                          <p className="text-sm text-neutral-800 leading-relaxed font-normal bg-neutral-50/70 p-4 rounded-xl border border-neutral-200/70">
+                            {blueprint.targetIcp}
+                          </p>
+                        </div>
+
+                        {/* Section 4: Monetization Architecture & Path to $10k MRR */}
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-neutral-500">
+                            <DollarSign className="h-4 w-4 text-emerald-600" />
+                            <span>4. Monetization Architecture &amp; Unit Economics</span>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            {blueprint.monetization.tiers.map((tier, tIdx) => (
+                              <div
+                                key={tIdx}
+                                className="rounded-xl border border-neutral-200/80 bg-neutral-50/60 p-4 space-y-1.5 shadow-2xs"
+                              >
+                                <div className="flex items-baseline justify-between gap-2">
+                                  <span className="text-xs font-semibold text-neutral-600 uppercase tracking-wider">
+                                    {tier.name}
+                                  </span>
+                                  <span className="text-sm font-bold text-neutral-950 font-mono-num">
+                                    {tier.price}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-neutral-600 leading-relaxed">
+                                  {tier.description}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="rounded-xl border border-neutral-200/70 bg-neutral-50/70 p-4 text-xs sm:text-sm text-neutral-700 leading-relaxed">
+                            <strong className="text-neutral-900 font-semibold">The Math to $10k MRR:</strong>{' '}
+                            {blueprint.monetization.pathTomrr}
+                          </div>
+                        </div>
+
+                        {/* Section 5: Go-To-Market (GTM) Distribution Playbook */}
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-neutral-500">
+                            <Zap className="h-4 w-4 text-neutral-700" />
+                            <span>5. Tactical Go-To-Market (GTM) Playbook</span>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                            <div className="rounded-xl border border-neutral-200/80 bg-neutral-50/60 p-4 space-y-1.5 shadow-2xs">
+                              <span className="text-xs font-bold text-neutral-900 uppercase tracking-wider block">
+                                Stage 1: First 10 Customers (Zero Paid Ads)
+                              </span>
+                              <p className="text-xs sm:text-sm text-neutral-700 leading-relaxed">
+                                {blueprint.gtmPlaybook.firstTenUsers}
+                              </p>
+                            </div>
+
+                            <div className="rounded-xl border border-neutral-200/80 bg-neutral-50/60 p-4 space-y-1.5 shadow-2xs">
+                              <span className="text-xs font-bold text-neutral-900 uppercase tracking-wider block">
+                                Stage 2: Repeatable Scale Channel (Days 15–90)
+                              </span>
+                              <p className="text-xs sm:text-sm text-neutral-700 leading-relaxed">
+                                {blueprint.gtmPlaybook.scalingChannel}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Section 6: Technical Implementation Delta */}
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-neutral-500">
+                            <Code2 className="h-4 w-4 text-neutral-700" />
+                            <span>6. Technical Implementation Delta (What to Build)</span>
+                          </div>
+
+                          <div className="rounded-xl border border-neutral-200/70 bg-neutral-50/70 p-4 sm:p-5 space-y-2.5">
+                            <div className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">
+                              Proprietary glue required on top of {repo.name}:
+                            </div>
+                            <ul className="space-y-2 text-sm text-neutral-700 leading-relaxed">
+                              {blueprint.techStackDelta.map((delta, dIdx) => (
+                                <li key={dIdx} className="flex items-start gap-2.5">
+                                  <CheckCircle2 className="h-4 w-4 text-neutral-500 shrink-0 mt-0.5" />
+                                  <span>{delta}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+
+                        {/* Section 7: 20-Year Founder Advice & Pitfalls */}
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-neutral-500">
+                            <AlertTriangle className="h-4 w-4 text-amber-600" />
+                            <span>7. 20-Year Veteran Advice (Pitfalls to Avoid)</span>
+                          </div>
+                          <div className="rounded-xl border border-neutral-200/80 bg-neutral-50/80 p-4 sm:p-5 text-sm text-neutral-800 leading-relaxed font-normal">
+                            {blueprint.founderPitfalls}
+                          </div>
+                        </div>
+
+                        {/* Blueprint Footer Utility */}
+                        <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-neutral-100 text-xs text-neutral-500">
+                          <span>Validated commercial opportunity blueprint for {repo.name}.</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const copyTextStr = `${blueprint.title}\n\nTarget ICP: ${blueprint.customer}\nPricing: ${blueprint.howToCharge}\n\nConcept:\n${blueprint.concept}\n\nUnfair Advantage:\n${blueprint.unfairAdvantage}\n\nGTM Playbook:\n${blueprint.gtmPlaybook.firstTenUsers}\n\nPitfalls to Avoid:\n${blueprint.founderPitfalls}`;
+                              copyText(`blueprint-${ideaKey}`, copyTextStr);
+                            }}
+                            className="inline-flex items-center gap-1.5 font-medium text-neutral-700 hover:text-neutral-950 transition-colors cursor-pointer bg-white px-3 py-1 rounded-md border border-neutral-200 shadow-2xs"
+                          >
+                            {copiedKey === `blueprint-${ideaKey}` ? (
+                              <>
+                                <Check className="h-3.5 w-3.5 text-emerald-600" />
+                                <span>Copied Blueprint</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="h-3.5 w-3.5 text-neutral-400" />
+                                <span>Copy Blueprint Notes</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="text-xs text-neutral-500 pt-2 border-t border-neutral-100">
+              Note: Pricing models, revenue projections, and unit economics are tactical benchmarks derived from comparable B2B SaaS businesses, not financial guarantees. Always validate willingness to pay with direct customer interviews before building.
+            </div>
+          </div>
+        )}
+
+        {/* TAB 3: LICENSE */}
+        <div hidden={activeTab !== 'license'} className="space-y-6 animate-fadeIn">
+            <div className="flex items-baseline justify-between border-b border-neutral-100 pb-2">
+              <div>
+                <h2 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-950">
+                  Commercial License &amp; SaaS Rights
+                </h2>
+                <p className="text-sm text-neutral-500 mt-0.5">
+                  Plain-English commercial rules for founders and developers building on {repo.name}.
+                </p>
+              </div>
+              <span className="font-mono text-xs text-neutral-500 font-medium shrink-0">
+                SPDX: {safety.spdxId}
+              </span>
+            </div>
+
+            {/* Consolidated License Container with Light Grey Background */}
+            <div className="rounded-2xl border border-neutral-200/90 bg-neutral-50/80 p-6 sm:p-7 space-y-6">
+              {/* Header Status & Plain Explanation */}
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <span className={`h-2.5 w-2.5 rounded-full ${safety.colorClasses.dotBg}`} />
+                    <span className="text-base font-semibold text-neutral-950">
+                      {safety.badgeLabel}
+                    </span>
+                    <span className="text-xs text-neutral-500 font-mono">
+                      ({safety.spdxId})
+                    </span>
+                  </div>
+
+                  <span className="text-xs font-medium text-neutral-700 bg-white px-2.5 py-1 rounded-md border border-neutral-200/80">
+                    {!hasRecognizedLicense
+                      ? 'No recognized license'
+                      : safety.tier === 'safe'
+                      ? 'Permissive License'
+                      : safety.tier === 'conditional'
+                      ? 'Conditions apply'
+                      : 'Source-available / Restricted'}
+                  </span>
+                </div>
+
+                <div>
+                  <div className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider mb-1">
+                    Commercial Rights &amp; Freedom
+                  </div>
+                  <p className="text-sm text-neutral-800 leading-relaxed font-normal">
+                    {dossier?.licenseMeaning || safety.plainExplanation}
+                  </p>
+                </div>
+              </div>
+
+              {/* Founder Commercial Rights Matrix */}
+              <div className="space-y-3 pt-2">
+                <h3 className="text-sm font-semibold text-neutral-950 tracking-tight">
+                  Founder Commercial Rights
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  {commercialRights.map((right) => {
+                    const RightIcon = right.icon;
+                    const state = rightStateStyles[right.state];
+                    const StateIcon = state.icon;
+                    return (
+                      <div key={right.title} className="rounded-xl border border-neutral-200/80 bg-white p-4 space-y-1.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 text-sm font-semibold text-neutral-950">
+                            <RightIcon className="h-4 w-4 text-neutral-600 shrink-0" />
+                            <span>{right.title}</span>
+                          </div>
+                          <span className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide ${state.className}`}>
+                            <StateIcon className="h-3 w-3 shrink-0" />
+                            {state.label}
+                          </span>
+                        </div>
+                        <p className="text-sm text-neutral-600 leading-relaxed">
+                          {right.body}
+                        </p>
+                      </div>
+                    );
+                  })}
+
+                  <div className="rounded-xl border border-neutral-200/80 bg-white p-4 space-y-1.5">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-neutral-950">
+                      <Scale className="h-4 w-4 text-neutral-600 shrink-0" />
+                      <span>Trademark Boundaries</span>
+                    </div>
+                    <p className="text-sm text-neutral-600 leading-relaxed">
+                      The software license covers the source code, but not project trademarks. Choose an original brand name rather than selling as official &quot;{repo.name}&quot;.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Commercial Diligence & Strategy Notes */}
+              {((dossier?.caveats && dossier.caveats.length > 0) || dossier?.licenseWarning) && (
+                <div className="space-y-3 pt-2">
+                  <h3 className="text-sm font-semibold text-neutral-950 tracking-tight">
+                    Commercial Diligence &amp; Strategy Notes
+                  </h3>
+                  <div className="rounded-xl border border-neutral-200/80 bg-white p-5 space-y-3">
+                    {dossier?.caveats && dossier.caveats.length > 0 && (
+                      <ul className="space-y-2 text-sm text-neutral-700 leading-relaxed">
+                        {dossier.caveats.map((c, idx) => (
+                          <li key={idx} className="flex items-start gap-2.5">
+                            <span className="h-1.5 w-1.5 rounded-full bg-neutral-500 shrink-0 mt-2" />
+                            <span>{c}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+
+                    {dossier?.licenseWarning && (
+                      <p className="text-sm text-neutral-600 leading-relaxed pt-2 border-t border-neutral-100">
+                        {dossier.licenseWarning}
+                      </p>
                     )}
                   </div>
                 </div>
-              </button>
-            ))}
+              )}
+
+              <p className="text-xs text-neutral-400 pt-2 border-t border-neutral-200/70">
+                Disclaimer: TopSAAS provides independent editorial analysis and does not offer legal advice. Always review the full license terms with legal counsel before building a business.
+              </p>
+            </div>
           </div>
-        </section>
+
+        {/* TAB 4: TECH STACK */}
+        <div hidden={activeTab !== 'tech'} className="space-y-6 animate-fadeIn">
+            <div className="flex items-baseline justify-between border-b border-neutral-100 pb-2">
+              <div>
+                <h2 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-950">
+                  Tech Stack &amp; Architecture
+                </h2>
+                <p className="text-sm text-neutral-500 mt-0.5">
+                  Codebase composition and engineering foundation for {repo.name}.
+                </p>
+              </div>
+              <span className="text-xs text-neutral-400 font-medium">Codebase composition</span>
+            </div>
+
+            <div className="rounded-xl border border-neutral-200/90 bg-white p-5 sm:p-6 space-y-6">
+              {/* Language Breakdown */}
+              {breakdown.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-neutral-950">
+                    Language Breakdown
+                  </h3>
+                  <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-neutral-100">
+                    {breakdown.map((l) => (
+                      <span
+                        key={l.name}
+                        style={{ width: `${l.percent}%`, backgroundColor: languageColor(l.name) }}
+                        title={`${l.name} ${l.percent}%`}
+                      />
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap gap-4 text-xs pt-1">
+                    {breakdown.map((l) => (
+                      <span key={l.name} className="inline-flex items-center gap-1.5 text-neutral-700 font-medium">
+                        <span
+                          className="h-2 w-2 rounded-full shrink-0"
+                          style={{ backgroundColor: languageColor(l.name) }}
+                        />
+                        <span>{l.name}</span>
+                        <span className="text-neutral-400 font-mono-num">{l.percent}%</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Core Capabilities */}
+              <div className="pt-4 border-t border-neutral-100 space-y-3">
+                <h3 className="text-sm font-semibold text-neutral-950">
+                  Core Foundation Highlights
+                </h3>
+                <ul className="space-y-2.5 text-sm text-neutral-700 leading-relaxed">
+                  {editorial.capabilities.map((c) => (
+                    <li key={c.title} className="flex items-start gap-2.5">
+                      <span className="h-1.5 w-1.5 rounded-full bg-neutral-500 shrink-0 mt-2" />
+                      <span>
+                        <strong className="text-neutral-900 font-semibold">{c.title}:</strong> {c.body}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Trade-offs to Consider */}
+              {dossier && dossier.tradeoffs.length > 0 && (
+                <div className="pt-4 border-t border-neutral-100 space-y-3">
+                  <h3 className="text-sm font-semibold text-neutral-950">
+                    Engineering Trade-offs &amp; Constraints
+                  </h3>
+                  <ul className="space-y-2.5 text-sm text-neutral-700 leading-relaxed">
+                    {dossier.tradeoffs.map((t, idx) => (
+                      <li key={idx} className="flex items-start gap-2.5">
+                        <span className="font-mono text-neutral-400 text-xs shrink-0 mt-0.5">
+                          {idx + 1}.
+                        </span>
+                        <span>{t}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+
+        {/* TAB 5: ALTERNATIVES */}
+        {dossier && (
+          <div hidden={activeTab !== 'alternatives'} className="space-y-8 animate-fadeIn">
+            {/* Commercial SaaS Replaced (Rich Cards with Logos & Descriptions) */}
+            {commercialAlternativesList.length > 0 && (
+              <section className="space-y-4">
+                <div className="flex items-baseline justify-between border-b border-neutral-100 pb-2">
+                  <div>
+                    <h2 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-950">
+                      Commercial Software Replaced
+                    </h2>
+                    <p className="text-sm text-neutral-500 mt-0.5">
+                      Proprietary tools and paid SaaS platforms {repo.name} can replace.
+                    </p>
+                  </div>
+                  <span className="text-xs text-neutral-400 font-medium font-mono-num">
+                    {commercialAlternativesList.length} alternatives
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {commercialAlternativesList.map((alt) => (
+                    <div
+                      key={alt.name}
+                      className="group rounded-xl border border-neutral-200/90 bg-neutral-100/80 hover:bg-neutral-100 transition-all p-5 sm:p-6 space-y-4 flex flex-col justify-between shadow-xs"
+                    >
+                      <div className="space-y-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-xl border border-neutral-200 bg-white flex items-center justify-center overflow-hidden shrink-0">
+                              {alt.domain ? (
+                                <img
+                                  src={getWebsiteFavicon(alt.domain, 32)}
+                                  alt={alt.name}
+                                  className="h-5 w-5 object-contain"
+                                  onError={(e) => {
+                                    (e.target as HTMLElement).style.display = 'none';
+                                  }}
+                                />
+                              ) : (
+                                <Server className="h-5 w-5 text-neutral-400" />
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <h3 className="text-base font-semibold text-neutral-950 tracking-tight">
+                                {alt.name}
+                              </h3>
+                              {alt.domain && (
+                                <a
+                                  href={alt.domain.startsWith('http://') || alt.domain.startsWith('https://') ? alt.domain : `https://${alt.domain}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1.5 text-xs text-neutral-500 hover:text-neutral-950 font-mono break-all mt-0.5 transition-colors group/link hover:underline"
+                                  title={`Visit ${alt.name} (${alt.domain})`}
+                                >
+                                  <Link2 className="h-3 w-3 shrink-0 text-neutral-400 group-hover/link:text-neutral-900 transition-colors" />
+                                  <span>{alt.domain}</span>
+                                </a>
+                              )}
+                            </div>
+                          </div>
+
+                          <span className="text-xs font-semibold text-neutral-600 bg-white border border-neutral-200 px-2.5 py-0.5 rounded shrink-0">
+                            Replaced
+                          </span>
+                        </div>
+
+                        <p className="text-sm text-neutral-700 leading-relaxed">
+                          {alt.description}
+                        </p>
+                      </div>
+
+                      <div className="space-y-3 pt-3 border-t border-neutral-200/80">
+                        {alt.pricing && (
+                          <div className="flex flex-col sm:flex-row sm:items-baseline justify-between text-xs gap-1 sm:gap-4">
+                            <span className="text-neutral-500 font-medium shrink-0">Pricing benchmark:</span>
+                            <span className="font-semibold text-neutral-950 font-mono-num text-xs sm:text-right break-words">
+                              {alt.pricing}
+                            </span>
+                          </div>
+                        )}
+
+                        {alt.whyReplace && (
+                          <div className="rounded-lg bg-white p-3 text-xs text-neutral-700 leading-relaxed border border-neutral-200/80">
+                            <strong className="text-neutral-900 font-semibold">Drawback:</strong>{' '}
+                            {alt.whyReplace}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <p className="text-xs text-neutral-500 leading-relaxed pt-1">
+                  Deploying on {repo.name} eliminates recurring vendor per-seat fees, protects you from unexpected price hikes, and gives you total data sovereignty.
+                </p>
+              </section>
+            )}
+          </div>
+        )}
+
+        {/* TAB 6: GUIDE */}
+        {buildGuide && (
+          <div hidden={activeTab !== 'guide'} className="space-y-6 animate-fadeIn">
+            <div className="flex items-baseline justify-between border-b border-neutral-100 pb-2">
+              <div>
+                <h2 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-950">
+                  {buildGuide.title}
+                </h2>
+                <p className="text-sm text-neutral-500 mt-0.5">
+                  {buildGuide.tagline}
+                </p>
+              </div>
+              <span className="text-xs text-neutral-400 font-medium font-mono-num">
+                {buildGuide.timeEstimate}
+              </span>
+            </div>
+
+            <div className="rounded-xl border border-neutral-200/90 bg-white p-5 sm:p-6 space-y-5">
+              <p className="text-sm text-neutral-700 leading-relaxed whitespace-pre-line">
+                {buildGuide.intro}
+              </p>
+
+              {/* Steps Overview */}
+              {buildGuide.steps && buildGuide.steps.length > 0 && (
+                <div className="pt-3 border-t border-neutral-100 space-y-3">
+                  <h3 className="text-sm font-semibold text-neutral-950">
+                    Implementation Roadmap ({buildGuide.steps.length} Steps)
+                  </h3>
+                  <div className="space-y-2">
+                    {buildGuide.steps.map((step, idx) => (
+                      <div key={idx} className="flex items-start gap-3 p-3.5 rounded-lg bg-neutral-50 border border-neutral-200/70">
+                        <span className="font-mono text-xs font-semibold text-neutral-500 shrink-0 mt-0.5">
+                          {String(idx + 1).padStart(2, '0')}.
+                        </span>
+                        <div className="min-w-0">
+                          <h4 className="text-sm font-semibold text-neutral-900">{step.title}</h4>
+                          <p className="text-sm text-neutral-600 mt-1 leading-relaxed">{step.body}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-3 border-t border-neutral-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="text-sm text-neutral-500">
+                  Step-by-step architecture breakdown, commands, and launch checklist.
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigateTo(`/guides/${buildGuide.slug}`)}
+                  className="inline-flex items-center gap-1.5 rounded-md bg-neutral-950 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-neutral-800 transition-colors cursor-pointer shrink-0"
+                >
+                  <span>Read full step-by-step guide</span>
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* Similar Open Source Projects (Shown on all tabs) */}
+        {relatedRepos.length > 0 && (
+          <section className="space-y-4 pt-10 border-t border-neutral-200/80 mt-12">
+            <div className="flex items-baseline justify-between border-b border-neutral-100 pb-2">
+              <div>
+                <h2 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-950">
+                  Similar Open Source Projects in {repo.category}
+                </h2>
+                <p className="text-sm text-neutral-500 mt-0.5">
+                  Curated open source alternatives and ecosystem peers.
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {relatedRepos.map((r) => (
+                <RepoCard
+                  key={r.full_name}
+                  repo={r}
+                  onOpen={onSelectRepo}
+                  soundEnabled={soundEnabled}
+                />
+              ))}
+            </div>
+          </section>
+        )}
       </main>
     </div>
   );

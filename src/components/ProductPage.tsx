@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { AnalyticsChartCard, AnalyticsPoint } from './AnalyticsChartCard';
 import { Product, Comment } from '../types';
 import { 
   ExternalLink, 
@@ -52,12 +53,10 @@ import { BorderBeam } from './BorderBeam';
 import { RichText } from './RichText';
 import { sanitizeRichText } from '../utils/richText';
 import { VerifiedBadge } from './VerifiedBadge';
-import { SponsoredPartnersSidebar } from './SponsoredPartnersSidebar';
 import { timeAgo } from './ProductRow';
 import { applyPageSeo } from '../utils/pageSeo';
 import { stripMarkup } from '../utils/plainCopy';
 import { productSeo, SITE_URL } from '../utils/coreSeo';
-import { productFaqs } from '../utils/productFaqs';
 import { formatOutboundUrl, trackOutboundClick } from '../utils/referral';
 import { redirectToCheckout } from '../utils/whop';
 import { getWeekInfo, getWeekByNumber, formatWeekDateRange, isInWeek } from '../utils/weeks';
@@ -153,155 +152,6 @@ const CommentAvatar: React.FC<{
       }
     >
       {initial}
-    </div>
-  );
-};
-
-interface AnalyticsPoint {
-  dateLabel: string;
-  value: number;
-}
-
-interface AnalyticsChartCardProps {
-  title: string;
-  unitSingular: string;
-  unitPlural: string;
-  total: number;
-  yMax: number;
-  series: AnalyticsPoint[];
-  rangeStartLabel: string;
-  rangeEndLabel: string;
-  emptyMessage: string;
-  dotClassName: string;
-  barClassName: string;
-  barActiveClassName: string;
-  baselineClassName: string;
-}
-
-/** Interactive bar chart card with crosshair highlight, live header readout, and floating tooltip */
-const AnalyticsChartCard: React.FC<AnalyticsChartCardProps> = ({
-  title,
-  unitSingular,
-  unitPlural,
-  total,
-  yMax,
-  series,
-  rangeStartLabel,
-  rangeEndLabel,
-  emptyMessage,
-  dotClassName,
-  barClassName,
-  barActiveClassName,
-  baselineClassName,
-}) => {
-  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
-  const activePoint = hoveredIdx !== null ? series[hoveredIdx] : null;
-  const ticks = [yMax, Math.round(yMax * 0.75), Math.round(yMax * 0.5), Math.round(yMax * 0.25), 0];
-
-  return (
-    <div className="rounded-2xl border border-neutral-200/90 bg-white p-4 sm:p-5 shadow-2xs flex flex-col justify-between">
-      <div className="flex items-center justify-between gap-2 mb-4">
-        <div className="flex items-center gap-2">
-          <span className={`h-2 w-2 rounded-full shrink-0 ${dotClassName}`} />
-          <span className="text-sm font-bold text-neutral-950">{title}</span>
-        </div>
-        <span className="text-xs font-mono-num text-neutral-500 transition-colors">
-          {activePoint
-            ? `${activePoint.dateLabel} · ${activePoint.value.toLocaleString()}`
-            : `${total.toLocaleString()} total`}
-        </span>
-      </div>
-
-      <div className="relative flex gap-3 h-44">
-        {/* Y-axis */}
-        <div className="flex flex-col justify-between text-[10px] font-mono-num text-neutral-400 pb-5 select-none">
-          {ticks.map((t, i) => (
-            <span key={i}>{t}</span>
-          ))}
-        </div>
-
-        {/* Plot Area */}
-        <div
-          className="relative flex-1 flex flex-col justify-end"
-          onMouseLeave={() => setHoveredIdx(null)}
-        >
-          {/* Subtle horizontal gridlines */}
-          <div className="pointer-events-none absolute inset-0 bottom-5 flex flex-col justify-between">
-            {ticks.slice(0, 4).map((_, i) => (
-              <div key={i} className="w-full border-t border-dashed border-neutral-100" />
-            ))}
-            <div />
-          </div>
-
-          {total === 0 && hoveredIdx === null && (
-            <div className="absolute inset-0 bottom-5 flex items-center justify-center pointer-events-none z-10">
-              <span className="text-xs text-neutral-400 text-center px-3">
-                {emptyMessage}
-              </span>
-            </div>
-          )}
-
-          {/* Interactive Bars */}
-          <div className="relative z-10 flex items-end gap-1 h-full pb-1 border-b border-neutral-200/70">
-            {series.map((pt, idx) => {
-              const isHovered = hoveredIdx === idx;
-              const pct = pt.value > 0 ? Math.max(8, Math.round((pt.value / yMax) * 100)) : 0;
-              const tooltipAlign =
-                idx <= 1
-                  ? 'left-0'
-                  : idx >= series.length - 2
-                  ? 'right-0'
-                  : 'left-1/2 -translate-x-1/2';
-
-              return (
-                <div
-                  key={idx}
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`${pt.dateLabel}: ${pt.value} ${pt.value === 1 ? unitSingular : unitPlural}`}
-                  onMouseEnter={() => setHoveredIdx(idx)}
-                  onFocus={() => setHoveredIdx(idx)}
-                  onBlur={() => setHoveredIdx(null)}
-                  onClick={() => setHoveredIdx((prev) => (prev === idx ? null : idx))}
-                  className={`relative flex-1 h-full flex items-end cursor-crosshair rounded-t-md transition-colors outline-none ${
-                    isHovered ? 'bg-neutral-100/70' : ''
-                  }`}
-                >
-                  {isHovered && (
-                    <div
-                      className={`pointer-events-none absolute -top-8 ${tooltipAlign} z-30 whitespace-nowrap rounded-lg bg-neutral-950 px-2.5 py-1 text-[11px] font-semibold text-white shadow-lg`}
-                    >
-                      <span className="text-neutral-300">{pt.dateLabel}</span>
-                      <span className="mx-1 text-neutral-500">·</span>
-                      <span className="font-mono-num font-bold">
-                        {pt.value.toLocaleString()} {pt.value === 1 ? unitSingular : unitPlural}
-                      </span>
-                    </div>
-                  )}
-
-                  <div
-                    className={`w-full rounded-t-sm transition-all duration-150 ${
-                      pt.value > 0
-                        ? isHovered
-                          ? barActiveClassName
-                          : barClassName
-                        : isHovered
-                        ? `h-[4px] ${barActiveClassName}`
-                        : `h-[2px] ${baselineClassName}`
-                    }`}
-                    style={pt.value > 0 ? { height: `${pct}%` } : undefined}
-                  />
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="flex items-center justify-between pt-1.5 text-[10px] font-mono-num text-neutral-400">
-            <span>{rangeStartLabel}</span>
-            <span>{rangeEndLabel}</span>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };
@@ -698,7 +548,6 @@ export const ProductPage: React.FC<ProductPageProps> = ({
     }
 
     const seo = productSeo(product);
-    const faqs = productFaqs(product);
 
     return applyPageSeo({
       ...seo,
@@ -706,14 +555,6 @@ export const ProductPage: React.FC<ProductPageProps> = ({
         '@context': 'https://schema.org',
         '@graph': [
           app,
-          {
-            '@type': 'FAQPage',
-            mainEntity: faqs.map((faq) => ({
-              '@type': 'Question',
-              name: faq.q,
-              acceptedAnswer: { '@type': 'Answer', text: faq.a },
-            })),
-          },
           {
             '@type': 'BreadcrumbList',
             itemListElement: [
@@ -778,8 +619,6 @@ export const ProductPage: React.FC<ProductPageProps> = ({
     .filter((p) => p.id !== product.id && (p.category === product.category || Math.abs(p.rank - product.rank) <= 2))
     .slice(0, 3);
 
-  const faqs = useMemo(() => productFaqs(product), [product]);
-
   // Media gallery (demo video + screenshots unified horizontally)
   const galleryRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -839,36 +678,34 @@ export const ProductPage: React.FC<ProductPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50/40 text-neutral-900 flex flex-col font-sans pb-12 sm:pb-16">
+    <div className="w-full space-y-4 sm:space-y-5 min-w-0 font-sans pb-6">
       {/* Top Breadcrumb Navigation */}
-      <div className="bg-white">
-        <div className="mx-auto w-full max-w-7xl px-3.5 py-2.5 sm:px-6 flex items-center justify-between text-xs">
+      <div className="flex items-center justify-between text-xs py-1">
+        <button
+          type="button"
+          onClick={onBack}
+          className="inline-flex items-center gap-1.5 font-bold text-neutral-600 hover:text-neutral-950 transition-colors cursor-pointer"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          <span>Back to Directory</span>
+        </button>
+        <div className="flex items-center gap-2 text-neutral-400 text-[11px] truncate">
           <button
             type="button"
             onClick={onBack}
-            className="inline-flex items-center gap-1.5 font-bold text-neutral-600 hover:text-neutral-950 transition-colors cursor-pointer"
+            className="hidden sm:inline hover:text-neutral-900 hover:underline cursor-pointer"
           >
-            <ChevronLeft className="h-4 w-4" />
-            <span>Back</span>
+            Directory
           </button>
-          <div className="flex items-center gap-2 text-neutral-400 text-[11px] truncate">
-            <a href="/" className="hidden sm:inline hover:text-neutral-900 hover:underline">
-              Directory
-            </a>
-            <span className="hidden sm:inline">/</span>
-            <span className="text-neutral-600 font-semibold">{product.category}</span>
-            <span>/</span>
-            <span className="text-neutral-900 font-bold truncate max-w-[140px] sm:max-w-xs">{product.name}</span>
-          </div>
+          <span className="hidden sm:inline">/</span>
+          <span className="text-neutral-600 font-semibold">{product.category}</span>
+          <span>/</span>
+          <span className="text-neutral-900 font-bold truncate max-w-[140px] sm:max-w-xs">{product.name}</span>
         </div>
       </div>
 
-      {/* Main Page Content - Side-by-Side 2-Column Grid starting from the top */}
-      <main className="mx-auto w-full max-w-7xl px-3.5 py-4 sm:px-6 sm:py-6 flex-1">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          
-          {/* LEFT COLUMN: Main Product Details & Discussion (lg:col-span-8) */}
-          <div className="lg:col-span-8 space-y-5 sm:space-y-6 min-w-0">
+      {/* Main Single-Column Document Flow */}
+      <div className="w-full space-y-4 sm:space-y-5 min-w-0">
             {/* Header Hero Section */}
             <div className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-7 shadow-xs space-y-5 sm:space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 sm:gap-5">
@@ -1744,23 +1581,6 @@ export const ProductPage: React.FC<ProductPageProps> = ({
               </div>
             </div>
 
-            {/* FAQ */}
-            <section className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs space-y-4">
-              <h2 className="text-sm font-bold text-neutral-950">
-                Frequently asked questions about {product.name}
-              </h2>
-              <dl className="space-y-4">
-                {faqs.map((faq) => (
-                  <div key={faq.q}>
-                    <dt className="text-sm font-bold text-neutral-900">{faq.q}</dt>
-                    <dd className="mt-1 text-xs font-medium leading-relaxed text-neutral-500 sm:text-sm">
-                      {faq.a}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-            </section>
-
             {/* Explore Related Websites */}
             {relatedProducts.length > 0 && (
               <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs space-y-4">
@@ -2160,19 +1980,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
               </div>
               );
             })()}
-          </div>
 
-          {/* RIGHT COLUMN: Sidebar (lg:col-span-4) - Starts from top with Sponsored first */}
-          <div className="lg:col-span-4 space-y-5 sm:space-y-6 lg:sticky lg:top-20 self-start">
-            {/* 1. Sponsored Partners Sidebar (⚡ Sponsors placed at the very top) */}
-            <SponsoredPartnersSidebar
-              sponsors={sponsors && sponsors.length > 0 ? sponsors : allProducts.filter((p) => p.isSponsored)}
-              currentProductId={product.id}
-              soundEnabled={soundEnabled}
-              onSelectProduct={onSelectProduct}
-              onTrackClick={onTrackClick}
-              onOpenFeaturedSpotModal={onOpenFeaturedSpotModal}
-            />
 
             {/* 2. Quick Specs & Highlights (Website Specifications) */}
             <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-xs space-y-3.5">
@@ -2391,9 +2199,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
               </div>
             </div>
 
-          </div>
-        </div>
-      </main>
+      </div>
 
       {/* Screenshots lightbox */}
       {lightboxIndex !== null && product.screenshots && product.screenshots.length > 0 && (

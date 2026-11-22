@@ -37,6 +37,15 @@ export const trendingSeo = (): SeoCopy =>
     `${SITE_URL}/trending`
   );
 
+export const ideasSeo = (total: number): SeoCopy => {
+  const count = total.toLocaleString('en-US');
+  return copy(
+    `SaaS Ideas: ${count} open-source projects to build on | TopSAAS`,
+    `Browse ${count} curated open-source repositories for building SaaS: starters, auth, billing, analytics, AI and infrastructure.`,
+    `${SITE_URL}/ideas`
+  );
+};
+
 export const guidesSeo = (): SeoCopy =>
   copy(
     'Build Guides: Ship Real SaaS on Open Source | TopSAAS',

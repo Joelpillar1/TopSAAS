@@ -1664,6 +1664,110 @@ export async function setGlobalFeaturedProduct(
   } catch { }
 }
 
+// ── Dedicated SaaS Ideas Featured Product ──
+
+export const LOCAL_SAAS_IDEAS_FEATURED_PRODUCT_KEY = 'topsaas_saas_ideas_featured_product';
+export const LOCAL_SAAS_IDEAS_FEATURED_EXPIRY_KEY = 'topsaas_saas_ideas_featured_expiry';
+
+export interface SaaSIdeasFeaturedConfig {
+  productId: string | null;
+  expiresAt: number | null;
+}
+
+/** Get dedicated SaaS Ideas featured product from Supabase or localStorage */
+export async function getSaaSIdeasFeaturedConfig(forceFresh = false): Promise<SaaSIdeasFeaturedConfig> {
+  if (!forceFresh) {
+    const cached = getCached<SaaSIdeasFeaturedConfig>('saas_ideas_featured_config', CACHE_TTL.FEATURED);
+    if (cached) return cached;
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('site_settings')
+      .select('key, value')
+      .in('key', ['saas_ideas_featured_product', 'saas_ideas_featured_expiry']);
+
+    if (!error && data && data.length > 0) {
+      const idRow = data.find((r) => r.key === 'saas_ideas_featured_product');
+      const expRow = data.find((r) => r.key === 'saas_ideas_featured_expiry');
+
+      const rawId = idRow?.value?.trim() || null;
+      const productId = rawId && rawId !== 'default' && rawId !== 'empty' ? rawId : (rawId === 'empty' ? 'empty' : null);
+      const expiresAt = expRow?.value ? parseInt(expRow.value, 10) : null;
+
+      if (productId) {
+        try { localStorage.setItem(LOCAL_SAAS_IDEAS_FEATURED_PRODUCT_KEY, productId); } catch {}
+      } else {
+        try { localStorage.removeItem(LOCAL_SAAS_IDEAS_FEATURED_PRODUCT_KEY); } catch {}
+      }
+      if (expiresAt) {
+        try { localStorage.setItem(LOCAL_SAAS_IDEAS_FEATURED_EXPIRY_KEY, expiresAt.toString()); } catch {}
+      } else {
+        try { localStorage.removeItem(LOCAL_SAAS_IDEAS_FEATURED_EXPIRY_KEY); } catch {}
+      }
+
+      const result: SaaSIdeasFeaturedConfig = { productId, expiresAt };
+      setCached('saas_ideas_featured_config', result);
+      return result;
+    }
+  } catch (err) {
+    console.debug('getSaaSIdeasFeaturedConfig note:', err);
+  }
+
+  // Fallback to local storage
+  try {
+    const rawId = localStorage.getItem(LOCAL_SAAS_IDEAS_FEATURED_PRODUCT_KEY);
+    const rawExp = localStorage.getItem(LOCAL_SAAS_IDEAS_FEATURED_EXPIRY_KEY);
+    const expiresAt = rawExp ? parseInt(rawExp, 10) : null;
+
+    if (expiresAt && Date.now() > expiresAt) {
+      localStorage.removeItem(LOCAL_SAAS_IDEAS_FEATURED_PRODUCT_KEY);
+      localStorage.removeItem(LOCAL_SAAS_IDEAS_FEATURED_EXPIRY_KEY);
+      return { productId: null, expiresAt: null };
+    }
+
+    const productId = rawId && rawId !== 'default' && rawId !== 'empty' ? rawId : (rawId === 'empty' ? 'empty' : null);
+    return { productId, expiresAt };
+  } catch {
+    return { productId: null, expiresAt: null };
+  }
+}
+
+/** Set dedicated SaaS Ideas featured product in Supabase and localStorage */
+export async function setSaaSIdeasFeaturedProduct(
+  productId: string | null,
+  durationDays: number = 30
+): Promise<void> {
+  const normalizedId = (!productId || productId === 'default')
+    ? 'default'
+    : (productId === 'empty' || productId === '')
+      ? 'empty'
+      : productId;
+
+  const isCustomProduct = normalizedId !== 'default' && normalizedId !== 'empty';
+  const expiresAt = isCustomProduct ? Date.now() + durationDays * 86400000 : 0;
+
+  try {
+    if (normalizedId === 'default' || !isCustomProduct) {
+      localStorage.removeItem(LOCAL_SAAS_IDEAS_FEATURED_PRODUCT_KEY);
+      localStorage.removeItem(LOCAL_SAAS_IDEAS_FEATURED_EXPIRY_KEY);
+    } else {
+      localStorage.setItem(LOCAL_SAAS_IDEAS_FEATURED_PRODUCT_KEY, normalizedId);
+      localStorage.setItem(LOCAL_SAAS_IDEAS_FEATURED_EXPIRY_KEY, expiresAt.toString());
+    }
+  } catch { }
+
+  try {
+    await supabase.from('site_settings').upsert([
+      { key: 'saas_ideas_featured_product', value: normalizedId, description: 'Dedicated featured product for SaaS Ideas feed' },
+      { key: 'saas_ideas_featured_expiry', value: expiresAt.toString(), description: 'Expiry timestamp for SaaS Ideas featured spot' },
+    ]);
+    invalidateCache('saas_ideas_featured_config');
+  } catch (err) {
+    console.warn('setSaaSIdeasFeaturedProduct error:', err);
+  }
+}
+
 // ── Global Sponsor Rails Enabled Toggle ──
 
 export const SPONSOR_RAILS_ENABLED_KEY = 'sponsor_rails_enabled';
@@ -2011,6 +2115,7 @@ export const mapDbSponsor = (row: Record<string, unknown>): Sponsor => ({
   expiresAt: Number(row.expires_at) || Date.now(),
   pausedRemainingMs: row.paused_remaining_ms != null ? Number(row.paused_remaining_ms) : undefined,
   clicks: Number(row.clicks) || 0,
+  impressions: row.impressions != null ? Number(row.impressions) : undefined,
   source: ((row.source as Sponsor['source']) || 'admin_grant') as Sponsor['source'],
   whopPaymentId: (row.whop_payment_id as string) || undefined,
   planType: (row.plan_type as string) || undefined,

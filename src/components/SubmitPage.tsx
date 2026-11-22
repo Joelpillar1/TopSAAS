@@ -10,7 +10,7 @@ import { prepareRichText } from '../utils/richText';
 import { uploadScreenshotToStorage } from '../utils/storage';
 import { RichTextEditor } from './RichTextEditor';
 import { LaunchWeekSelector } from './LaunchWeekSelector';
-import { getWeekByNumber } from '../utils/weeks';
+import { getWeekByNumber, getWeekInfo, isProductInLaunchRound } from '../utils/weeks';
 import { autofillWithOpenAI, formatAutofillErrorMessage } from '../utils/autofill';
 import { redirectToCheckout, WHOP_LINKS } from '../utils/whop';
 import { appendTrackkitParams } from '../utils/trackkit';
@@ -495,20 +495,33 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
     priorUpvotedIdsRef.current = new Set(userUpvotes);
   }
 
-  // Candidate products: Only show products the user has NOT upvoted in prior sessions
-  const candidateProducts = useMemo(() => {
+  // Candidate products: Only show products the user has NOT upvoted in prior sessions.
+  // Rule: Only show present week launches for people to upvote; don't show past weeks
+  // except if there are no launches this week to show.
+  const { candidateProducts, isShowingCurrentWeekOnly } = useMemo(() => {
     const priorSet = priorUpvotedIdsRef.current;
-    return livePublicProducts
-      .filter((p) => {
-        if (priorSet && isProductUpvoted(p.id, priorSet)) return false;
-        return true;
-      })
-      .sort((a, b) => {
-        const rankA = a.rank ?? 9999;
-        const rankB = b.rank ?? 9999;
-        if (rankA !== rankB) return rankA - rankB;
-        return (b.upvotes ?? 0) - (a.upvotes ?? 0);
-      });
+    const unvotedLive = livePublicProducts.filter((p) => {
+      if (priorSet && isProductUpvoted(p.id, priorSet)) return false;
+      return true;
+    });
+
+    const currentWeek = getWeekInfo(Date.now());
+    const currentWeekLaunches = unvotedLive.filter((p) => isProductInLaunchRound(p, currentWeek));
+
+    const isCurrent = currentWeekLaunches.length > 0;
+    const candidates = isCurrent ? currentWeekLaunches : unvotedLive;
+
+    const sorted = candidates.sort((a, b) => {
+      const rankA = a.rank ?? 9999;
+      const rankB = b.rank ?? 9999;
+      if (rankA !== rankB) return rankA - rankB;
+      return (b.upvotes ?? 0) - (a.upvotes ?? 0);
+    });
+
+    return {
+      candidateProducts: sorted,
+      isShowingCurrentWeekOnly: isCurrent,
+    };
   }, [livePublicProducts]);
 
   // Total eligible unvoted products available on the platform for this user
@@ -3198,14 +3211,14 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                             ? "You've already supported all active launches on TopSAAS! Free launch unlocked below."
                             : isUpvoteRequirementMet
                               ? `Great job! You have upvoted ${requiredUpvotes === 5 ? '5' : `all ${requiredUpvotes}`} available launch${requiredUpvotes === 1 ? '' : 'es'}. You can now launch your product for free below.`
-                              : `Click the ▲ button on ${requiredUpvotes === 5 ? 'any 5 launches' : `all ${requiredUpvotes} available launch${requiredUpvotes === 1 ? '' : 'es'}`} below to support community makers and unlock your free launch right here.`}
+                              : `Click the ▲ button on ${requiredUpvotes === 5 ? 'any 5 launches' : `all ${requiredUpvotes} available launch${requiredUpvotes === 1 ? '' : 'es'}`} ${isShowingCurrentWeekOnly ? "from this week's round " : ""}below to support community makers and unlock your free launch right here.`}
                         </p>
                       </div>
 
                       {/* Embedded Live Directory Products List */}
                       <div className="border border-neutral-200 rounded-2xl overflow-hidden shadow-2xs bg-white">
                         <div className="bg-neutral-100/70 border-b border-neutral-200 px-3.5 py-2 text-[11px] font-bold text-neutral-600 flex items-center justify-between gap-2">
-                          <span>Pick apps to upvote</span>
+                          <span>{isShowingCurrentWeekOnly ? "This week's launches" : "Active launches"}</span>
                           <span>Click ▲ to upvote</span>
                         </div>
 

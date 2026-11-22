@@ -96,6 +96,265 @@
       "dest": "/api/r?slug=$1"
     },
     {
+      "src": "/repo/BraveOPotato/FckSignups",
+      "status": 308,
+      "headers": {
+        "Location": "/repo/BraveOPotato/NoSignups"
+      }
+    },
+    {
+      "src": "/repo/calcom/cal\\.com",
+      "status": 308,
+      "headers": {
+        "Location": "/repo/calcom/cal.diy"
+      }
+    },
+    {
+      "src": "/repo/lobehub/lobe-chat",
+      "status": 308,
+      "headers": {
+        "Location": "/repo/lobehub/lobehub"
+      }
+    },
+    {
+      "src": "/repo/harness/gitness",
+      "status": 308,
+      "headers": {
+        "Location": "/repo/harness/harness"
+      }
+    },
+    {
+      "src": "/repo/pacocoursey/cmdk",
+      "status": 308,
+      "headers": {
+        "Location": "/repo/dip/cmdk"
+      }
+    },
+    {
+      "src": "/repo/dubinc/dub",
+      "status": 308,
+      "headers": {
+        "Location": "/repo/dubinc/dub.link"
+      }
+    },
+    {
+      "src": "/repo/facebook/react-native",
+      "status": 308,
+      "headers": {
+        "Location": "/repo/react/react-native"
+      }
+    },
+    {
+      "src": "/repo/FunAudioLLM/CosyVoice",
+      "status": 308,
+      "headers": {
+        "Location": "/repo/QwenAudio/CosyVoice"
+      }
+    },
+    {
+      "src": "/repo/pathwaycom/llm-app",
+      "status": 308,
+      "headers": {
+        "Location": "/repo/pathwaycom/serviette"
+      }
+    },
+    {
+      "src": "/repo/kepano/obsidian-skills",
+      "status": 308,
+      "headers": {
+        "Location": "/repo/obsidianmd/obsidian-skills"
+      }
+    },
+    {
+      "src": "/repo/feder-cr/invisible_playwright_mcp",
+      "status": 308,
+      "headers": {
+        "Location": "/repo/oss-invisible/playwright_mcp"
+      }
+    },
+    {
+      "src": "/repo/dipakkr/A-to-Z-Resources-for-Students",
+      "status": 308,
+      "headers": {
+        "Location": "/repo/dipakkr/awesome-ai-engineering"
+      }
+    },
+    {
+      "src": "/repo/google/gvisor",
+      "status": 308,
+      "headers": {
+        "Location": "/repo/gvisor/gvisor"
+      }
+    },
+    {
+      "src": "/repo/EvoLinkAI/awesome-gpt-image-2-API-and-Prompts",
+      "status": 308,
+      "headers": {
+        "Location": "/repo/Evolink-AI/awesome-gpt-image-2-API-Prompts"
+      }
+    },
+    {
+      "src": "/repo/bastienwirtz/homer",
+      "status": 308,
+      "headers": {
+        "Location": "/repo/homer-dashboard/homer"
+      }
+    },
+    {
+      "src": "/repo/trailhq/Graft",
+      "status": 308,
+      "headers": {
+        "Location": "/repo/trailhq/Trail-Code"
+      }
+    },
+    {
+      "src": "/repo/hyperdxio/hyperdx",
+      "status": 308,
+      "headers": {
+        "Location": "/repo/ClickHouse/ClickStack"
+      }
+    },
+    {
+      "src": "/repo/nexu-io/html-anything",
+      "status": 308,
+      "headers": {
+        "Location": "/repo/nexu-io/openmotion"
+      }
+    },
+    {
+      "src": "/repo/tester-army/e2e",
+      "status": 308,
+      "headers": {
+        "Location": "/repo/e2e-inc/e2e"
+      }
+    },
+    {
+      "src": "/repo/liuzhao1225/YouDub-webui",
+      "status": 308,
+      "headers": {
+        "Location": "/repo/liuzhao1225/YouDub-Desktop"
+      }
+    },
+    {
+      "src": "/repo/SenteLabsAI/OpenExecutive",
+      "status": 308,
+      "headers": {
+        "Location": "/repo/ForeactLabs/OpenExecutive"
+      }
+    },
+    {
+      "src": "/repo/Anil-matcha/open-dots",
+      "status": 308,
+      "headers": {
+        "Location": "/repo/Anil-matcha/suparagent"
+      }
+    },
+    {
+      "src": "/repo/decodingai-magazine/llm-twin-course",
+      "status": 308,
+      "headers": {
+        "Location": "/repo/itsdecodingai/llm-twin-course"
+      }
+    },
+    {
+      "src": "/repo/JimLiu/baoyu-design",
+      "status": 308,
+      "headers": {
+        "Location": "/repo/JimLiu/open-artifact"
+      }
+    },
+    {
+      "src": "/repo/HiThink-Tech/Financial-API",
+      "status": 308,
+      "headers": {
+        "Location": "/repo/Hithink-Tech-Org/Financial-API"
+      }
+    },
+    {
+      "src": "/repo/Observal/Observal",
+      "status": 308,
+      "headers": {
+        "Location": "/repo/AgenticResourceRegistry/AgenticResourceRegistry"
+      }
+    },
+    {
+      "src": "/repo/dosco/graphjin",
+      "status": 308,
+      "headers": {
+        "Location": "/repo/dosco/deeporg"
+      }
+    },
+    {
+      "src": "/repo/bmpi-dev/awesome-seo",
+      "status": 308,
+      "headers": {
+        "Location": "/repo/i365dev/awesome-seo"
+      }
+    },
+    {
+      "src": "/repo/gothinkster/golang-gin-realworld-example-app",
+      "status": 308,
+      "headers": {
+        "Location": "/repo/realworld-apps/golang-gin-realworld-example-app"
+      }
+    },
+    {
+      "src": "/repo/pawurb/hotpath-rs",
+      "status": 308,
+      "headers": {
+        "Location": "/repo/hotpath-rs/hotpath"
+      }
+    },
+    {
+      "src": "/repo/pyrra-dev/pyrra",
+      "status": 308,
+      "headers": {
+        "Location": "/repo/prometheus-community/pyrra"
+      }
+    },
+    {
+      "src": "/repo/insistence/RuoYi-Vue3-FastAPI",
+      "status": 308,
+      "headers": {
+        "Location": "/repo/insistence/RuoYi-FastAPI"
+      }
+    },
+    {
+      "src": "/repo/xevrion/breakscale",
+      "status": 308,
+      "headers": {
+        "Location": "/repo/workersio/breakscale"
+      }
+    },
+    {
+      "src": "/repo/yuzhimanhua/Awesome-Scientific-Language-Models",
+      "status": 308,
+      "headers": {
+        "Location": "/repo/yuz9yuz/Awesome-Scientific-Language-Models"
+      }
+    },
+    {
+      "src": "/repo/decodingai-magazine/personalized-recommender-course",
+      "status": 308,
+      "headers": {
+        "Location": "/repo/itsdecodingai/personalized-recommender-course"
+      }
+    },
+    {
+      "src": "/repo/decodingai-magazine/building-a-coding-agent-from-scratch-course",
+      "status": 308,
+      "headers": {
+        "Location": "/repo/itsdecodingai/building-a-coding-agent-from-scratch-course"
+      }
+    },
+    {
+      "src": "/repo/snoups/remnashop",
+      "status": 308,
+      "headers": {
+        "Location": "/repo/remnashop/remnashop"
+      }
+    },
+    {
       "handle": "filesystem"
     },
     {
@@ -121,6 +380,20 @@
     {
       "src": "/repo/(.*)",
       "dest": "/repo/$1/index.html"
+    },
+    {
+      "src": "/saas-ideas",
+      "status": 308,
+      "headers": {
+        "Location": "/ideas"
+      }
+    },
+    {
+      "src": "/saas-ideas/(.*)",
+      "status": 308,
+      "headers": {
+        "Location": "/ideas"
+      }
     },
     {
       "src": "/ideas",

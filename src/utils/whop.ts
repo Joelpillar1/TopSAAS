@@ -16,6 +16,9 @@ export const WHOP_LINKS = {
   sponsor3mo: 'https://whop.com/checkout/plan_SMad32AkVoMeu',
   sponsor1yr: 'https://whop.com/checkout/plan_2uumEoGYQUKtb',
 
+  // SaaS Ideas Sidebar Rail Sponsor ($99/mo direct checkout)
+  saasIdeasMonthly: 'https://whop.com/checkout/plan_GlElOrUKyLY2e/',
+
   // Featured Spot (Pinned top banner: $15/wk & $39/mo)
   featured1wk: 'https://whop.com/checkout/plan_YGXtgHZnspc77',
   featured1mo: 'https://whop.com/checkout/plan_GBN00B27YgYdx',
@@ -33,6 +36,7 @@ export type PlanType =
   | '30days'
   | 'sponsor_1wk'
   | 'sponsor_1mo'
+  | 'saas_ideas_monthly'
   | 'featured_1wk'
   | 'featured_1mo'
   | 'weekly_relaunch'
@@ -84,6 +88,9 @@ export function normalizePlanKey(planType: PlanType): string {
   if (p === 'sponsor_1mo' || p === 'sponsor1mo' || p === 'sponsor-1mo' || p === 'sponsor_monthly') {
     return 'sponsor_1mo';
   }
+  if (p === 'saas_ideas_monthly' || p === 'ideas_sponsor' || p === 'ideas_monthly') {
+    return 'saas_ideas_monthly';
+  }
 
   // Generic 1wk / 1mo (defaults to sponsor)
   if (p === '1wk' || p === 'weekly' || p === '1week' || p === '7days') return 'sponsor_1wk';
@@ -128,6 +135,9 @@ export async function getWhopCheckoutUrlFromSupabase(
   if (planKey === 'sponsor_1mo') {
     return WHOP_LINKS.sponsor1mo;
   }
+  if (planKey === 'saas_ideas_monthly') {
+    return WHOP_LINKS.saasIdeasMonthly;
+  }
 
   try {
     // 1. Try secure RPC function if available
@@ -163,6 +173,7 @@ export async function getWhopCheckoutUrlFromSupabase(
   if (planKey === 'featured_1mo') return WHOP_LINKS.featured1mo;
   if (planKey === 'sponsor_1wk') return WHOP_LINKS.sponsor1wk;
   if (planKey === 'sponsor_1mo') return WHOP_LINKS.sponsor1mo;
+  if (planKey === 'saas_ideas_monthly') return WHOP_LINKS.saasIdeasMonthly;
   if (planKey === 'weekly_relaunch') return WHOP_LINKS.weeklyRelaunch;
   if (planKey === 'onetime') return WHOP_LINKS.oneTime;
   if (planKey === 'per_product_pass') return WHOP_LINKS.perProductPass;
@@ -195,6 +206,15 @@ export async function createCheckoutSession(
   const returnUrl = `${window.location.origin}/payment-success?plan=${planType}&product=${encodeURIComponent(
     productName
   )}${targetProductId ? `&target_product_id=${targetProductId}` : ''}${options.sponsorId ? `&sponsor_id=${encodeURIComponent(options.sponsorId)}` : ''}`;
+
+  // For SaaS Ideas Monthly sponsor, directly use the direct-to-checkout Whop link
+  if (planKey === 'saas_ideas_monthly') {
+    const baseLink = WHOP_LINKS.saasIdeasMonthly;
+    const redirectUrl = encodeURIComponent(returnUrl);
+    const separator = baseLink.includes('?') ? '&' : '?';
+    const directUrl = `${baseLink}${separator}redirect_url=${redirectUrl}${customerEmail ? `&email=${encodeURIComponent(customerEmail)}` : ''}`;
+    return { checkout_url: appendTrackkitParams(directUrl) };
+  }
 
   // 1. Attempt edge function checkout session
   try {
@@ -234,7 +254,9 @@ export async function createCheckoutSession(
   // 2. Fetch checkout URL dynamically from Supabase database or verified direct checkout links
   const dbUrl = await getWhopCheckoutUrlFromSupabase(planType);
   const fallbackUrl =
-    planKey === 'onetime'
+    planKey === 'saas_ideas_monthly'
+      ? WHOP_LINKS.saasIdeasMonthly
+      : planKey === 'onetime'
       ? WHOP_LINKS.oneTime
       : planKey === 'weekly_relaunch'
       ? WHOP_LINKS.weeklyRelaunch

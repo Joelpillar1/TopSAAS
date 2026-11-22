@@ -208,23 +208,33 @@ const capabilitiesFromTopics = (topics: string[]): RepoCapability[] => {
  */
 export const buildRepoEditorial = (
   repo: CuratedRepo,
-  signals: RepoEditorialSignals,
-  ctx: RepoEditorialContext
+  signals?: RepoEditorialSignals,
+  ctx?: Partial<RepoEditorialContext>
 ): RepoEditorial => {
   const usePhrase =
     CATEGORY_USE[repo.category] ?? 'building the next version of your product';
   const noun = CATEGORY_NOUN[repo.category] ?? 'open-source project';
   const desc = ensurePeriod(plainCopy(repo.description) || `${repo.full_name} on GitHub.`);
-  const licenseBit = signals.license ? `, released under the ${signals.license} license` : '';
+  const licenseBit = signals?.license ? `, released under the ${signals.license} license` : '';
+
+  const peers = CURATED_REPOS.filter((r) => r.category === repo.category);
+  const byStars = (a: CuratedRepo, b: CuratedRepo) => b.stargazers_count - a.stargazers_count;
+  const sortedPeers = [...peers].sort(byStars);
+  const calculatedRank = sortedPeers.findIndex((r) => r.full_name === repo.full_name) + 1;
+  const rank = ctx?.rank ?? (calculatedRank > 0 ? calculatedRank : 1);
+  const peerCount = ctx?.peerCount ?? peers.length;
+  const stars = ctx?.stars ?? repo.stargazers_count;
+  const forks = ctx?.forks ?? repo.forks_count;
+  const isSelfHosted = ctx?.selfHosted ?? false;
 
   const lead =
     `${desc} ` +
-    `In our ${repo.category} collection it ranks #${ctx.rank} of ${ctx.peerCount} by stars` +
+    `In our ${repo.category} collection it ranks #${rank} of ${peerCount} by stars` +
     `${repo.language ? `, and most of the code is ${repo.language}` : ''}` +
     `${licenseBit}. Maintained in the open by ${repo.owner.login}.`;
 
   let core: string;
-  if (ctx.selfHosted) {
+  if (isSelfHosted) {
     core =
       `The core idea is ownership. ${repo.name} runs on your own hardware or cloud account, ` +
       `so the data, the limits and the cost all stay yours: no per-seat bill, no vendor lock-in, ` +
@@ -246,14 +256,14 @@ export const buildRepoEditorial = (
       `production, which is exactly what makes it a fast, low-risk place to start.`;
   }
 
-  const capabilities: RepoCapability[] = signals.topics
+  const capabilities: RepoCapability[] = signals?.topics
     ? capabilitiesFromTopics(signals.topics)
     : [];
   if (capabilities.length < 3) {
     const fillers: RepoCapability[] = [
       {
         title: 'Community-backed',
-        body: `${ctx.stars.toLocaleString()} stars and ${ctx.forks.toLocaleString()} forks: real production use, active issues and answers when you get stuck`,
+        body: `${stars.toLocaleString()} stars and ${forks.toLocaleString()} forks: real production use, active issues and answers when you get stuck`,
       },
       ...(repo.language
         ? [
@@ -264,8 +274,8 @@ export const buildRepoEditorial = (
           ]
         : []),
       {
-        title: 'Vetted on TopSAAS',
-        body: `hand-picked for our ${repo.category} set and verified against GitHub on October 5, 2026`,
+        title: 'In the TopSAAS catalog',
+        body: `curated for our ${repo.category} catalog alongside its license, activity and self-hosting signals`,
       },
     ];
     for (const f of fillers) {
@@ -274,15 +284,15 @@ export const buildRepoEditorial = (
     }
   }
 
-  const closingTail = ctx.selfHosted
+  const closingTail = isSelfHosted
     ? 'and because it is self-hostable, the data and the limits stay yours'
-    : signals.license
+    : signals?.license
       ? `and the ${signals.license} license means you can build on it freely`
       : 'and its community keeps it maintained';
 
   const closing =
     `${repo.name} fits naturally into a stack when you're ${usePhrase}. ` +
-    `The numbers back it up: ${ctx.stars.toLocaleString()} stars and ${ctx.forks.toLocaleString()} forks, ${closingTail}.`;
+    `The numbers back it up: ${stars.toLocaleString()} stars and ${forks.toLocaleString()} forks, ${closingTail}.`;
 
   return { lead, core, capabilities, closing };
 };
@@ -325,7 +335,16 @@ const duplicateNames = (() => {
 })();
 
 /** Unique, length-bounded title shared by the prerendered HTML and the SPA. */
-export const repoSeoTitle = (repo: CuratedRepo): string => {
+export const repoSeoTitle = (repoOrName: CuratedRepo | string, category?: string, description?: string): string => {
+  if (typeof repoOrName === 'string') {
+    const brand = ' | TopSAAS';
+    const label = repoOrName;
+    const desc = tidyTail(plainCopy(description || '').replace(/[.!?]+$/, ''));
+    if (!desc) return `${label}${brand}`;
+    const budget = Math.max(24, 60 - label.length - 2 - brand.length);
+    return `${label}: ${clip(desc, budget)}${brand}`;
+  }
+  const repo = repoOrName;
   const brand = ' | TopSAAS';
   const label = duplicateNames.has(repo.name) ? repo.full_name : repo.name;
   const desc = tidyTail(plainCopy(repo.description || '').replace(/[.!?]+$/, ''));
@@ -335,10 +354,22 @@ export const repoSeoTitle = (repo: CuratedRepo): string => {
 };
 
 /** Unique meta description around 150 to 158 characters. */
-export const repoSeoDescription = (repo: CuratedRepo): string => {
+export const repoSeoDescription = (repoOrName: CuratedRepo | string, description?: string, category?: string): string => {
+  if (typeof repoOrName === 'string') {
+    const base = tidyTail(plainCopy(description || '').replace(/[.!?]+$/, ''));
+    const cat = category ? `${category} ` : '';
+    const owner = `Open source ${cat}project: ${repoOrName}.`;
+    const fixed = `${owner}`;
+    const budget = 158 - fixed.length - 2;
+    const lead = budget < 40 ? '' : base.length <= budget ? `${base}. ` : `${clip(base, budget)} `;
+    const out = `${lead}${fixed}`;
+    return out.length <= 158 ? out : fixed;
+  }
+  const repo = repoOrName;
   const base = tidyTail(plainCopy(repo.description || '').replace(/[.!?]+$/, ''));
-  const owner = `Open source ${repo.category} project by ${repo.owner.login}.`;
-  const stats = `${repo.stargazers_count.toLocaleString('en-US')} stars and ${repo.forks_count.toLocaleString('en-US')} forks.`;
+  const ownerLogin = repo.owner?.login || (repo.full_name ? repo.full_name.split('/')[0] : 'maintainers');
+  const owner = `Open source ${repo.category || ''} project by ${ownerLogin}.`;
+  const stats = `${(repo.stargazers_count || 0).toLocaleString('en-US')} stars and ${(repo.forks_count || 0).toLocaleString('en-US')} forks.`;
   const fixed = `${owner} ${stats}`;
   const budget = 158 - fixed.length - 2;
   const lead = budget < 40 ? '' : base.length <= budget ? `${base}. ` : `${clip(base, budget)} `;

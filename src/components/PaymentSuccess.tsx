@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { CheckCircle, ArrowLeft, Crown, ExternalLink } from 'lucide-react';
 import { playSound } from '../utils/sound';
-import { setGlobalFeaturedProduct, insertProductDirect, createSponsor, loadProductById } from '../utils/db';
+import { setGlobalFeaturedProduct, insertProductDirect, createSponsor, loadProductById, setSaaSIdeasFeaturedProduct } from '../utils/db';
 import { SponsorDraft } from '../types';
 import { supabase } from '../utils/supabase';
 
@@ -74,6 +74,9 @@ export const PaymentSuccess: React.FC<PaymentSuccessProps> = ({
           planType: planParam || draft.planType,
           source: 'whop',
         });
+        if (planParam === 'saas_ideas_monthly') {
+          setSaaSIdeasFeaturedProduct(draft.id, 30);
+        }
       } catch (err) {
         console.warn('Error saving pending sponsor on payment success:', err);
       }
@@ -161,6 +164,7 @@ export const PaymentSuccess: React.FC<PaymentSuccessProps> = ({
     if (p === 'weekly_relaunch') {
       return { name: 'Auto Weekly Relaunch', price: '$5/week' };
     }
+    if (p === 'saas_ideas_monthly' || p === 'ideas_monthly') return { name: 'SaaS Ideas Monthly Pass', price: '$99/month' };
     if (p === 'featured_1wk' || p === 'featured1wk') return { name: '1-Week Featured Spot', price: '$15/week' };
     if (p === 'featured_1mo' || p === 'featured1mo') return { name: '1-Month Featured Spot', price: '$39/month' };
     if (p === 'sponsor_1wk' || p === 'sponsor1wk') return { name: '1-Week Sidebar Sponsor', price: '$10/week' };
@@ -256,6 +260,16 @@ export const PaymentSuccess: React.FC<PaymentSuccessProps> = ({
 
           {/* Actions */}
           <div className="flex flex-col gap-3">
+            {params.plan === 'saas_ideas_monthly' ? (
+              <a
+                href="/profile"
+                className="btn-primary w-full flex items-center justify-center gap-2 rounded-xl py-3 px-4 text-sm font-bold text-white shadow-xs hover:opacity-95 transition-all text-center"
+              >
+                <span>View Analytics in Profile</span>
+                <ExternalLink className="h-4 w-4" />
+              </a>
+            ) : null}
+
             <button
               type="button"
               onClick={() => {

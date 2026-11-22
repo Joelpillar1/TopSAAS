@@ -7,7 +7,7 @@ import { WebsiteSubmission, Category, Product, Sponsor, SponsorDraft } from '../
 import { playSound } from '../utils/sound';
 import { getWebsiteFavicon } from '../utils/logo';
 import { publishedProductId, loadSubmissionById, isSponsorOnlyProduct, getProductSlug } from '../utils/db';
-import { getWeekByNumber, getWeekInfo, formatWeekDateRange } from '../utils/weeks';
+import { getWeekByNumber, getWeekInfo, formatWeekDateRange, getWeekNumber, getWeeksRange } from '../utils/weeks';
 import { getCountdown, formatRemainingMs } from '../utils/countdown';
 import { RichText } from './RichText';
 import { ProductLogo } from './ProductLogo';
@@ -146,19 +146,221 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
   const approvedCount = submissions.filter((s) => s.status === 'approved').length;
   const rejectedCount = submissions.filter((s) => s.status === 'rejected').length;
 
-  // Active view tab: submissions queue vs products management vs featured vs sponsors
-  const [activeView, setActiveView] = useState<'submissions' | 'products' | 'featured' | 'sponsors'>('submissions');
+  // Launch state helpers: determine whether a project has launched live or is scheduled in the future
+  const isLaunched = (p: { scheduledLaunchWeek?: number; scheduledLaunchDate?: number; createdAt?: number }, now = Date.now()): boolean => {
+    if (p.scheduledLaunchWeek != null) {
+      return getWeekByNumber(Number(p.scheduledLaunchWeek)).start <= now;
+    }
+    if (p.scheduledLaunchDate != null) {
+      return Number(p.scheduledLaunchDate) <= now;
+    }
+    if (p.createdAt && Number(p.createdAt) > now) {
+      return false;
+    }
+    return true;
+  };
 
-  // Sponsors live in their own table, so the Live Products list stays clean.
-  const directoryProducts = products.filter((p) => !isSponsorOnlyProduct(p));
+  const getTargetLaunchMs = (item: { scheduledLaunchWeek?: number; scheduledLaunchDate?: number; createdAt?: number }): number => {
+    if (item.scheduledLaunchWeek != null) {
+      return getWeekByNumber(Number(item.scheduledLaunchWeek)).start;
+    }
+    if (item.scheduledLaunchDate != null) {
+      return Number(item.scheduledLaunchDate);
+    }
+    if (item.createdAt && Number(item.createdAt) > Date.now()) {
+      return Number(item.createdAt);
+    }
+    return Date.now();
+  };
+
+  // Live products: directory products whose launch date/week has arrived
+  const liveDirectoryProducts = products.filter((p) => !isSponsorOnlyProduct(p) && isLaunched(p));
+  // Queued future products: directory products whose launch date/week is in the future
+  const queuedDirectoryProducts = products.filter((p) => !isSponsorOnlyProduct(p) && !isLaunched(p));
+  // Keep directoryProducts referencing liveDirectoryProducts so existing table logic only affects live products
+  const directoryProducts = liveDirectoryProducts;
+
   const activeSponsorsCount = sponsors.filter(
     (s) => s.status === 'active' && s.expiresAt > Date.now()
   ).length;
 
-  // If new pending submissions come in, make sure we show the queue
+  // Active view tab: submissions queue vs future launches vs products management vs featured vs sponsors
+  const [activeView, setActiveView] = useState<'submissions' | 'future' | 'products' | 'featured' | 'sponsors'>('submissions');
+
+  // Unified future launches (products & submissions scheduled for future dates/weeks, arranged chronologically)
+  const allFutureLaunches = React.useMemo(() => {
+    const list: Array<{
+      id: string;
+      sourceType: 'product' | 'submission';
+      productRef?: Product;
+      submissionRef?: WebsiteSubmission;
+      name: string;
+      tagline: string;
+      url: string;
+      category: string;
+      logoUrl?: string;
+      scheduledLaunchWeek?: number;
+      scheduledLaunchDate?: number;
+      targetLaunchMs: number;
+      targetWeekNumber: number;
+      isApproved: boolean;
+      status: 'scheduled' | 'under_review';
+      pricingModel?: string;
+      twitterHandle?: string;
+      creatorName?: string;
+      creatorUsername?: string;
+      creatorAvatar?: string;
+      submittedBy?: string;
+      userEmail?: string;
+      screenshots?: string[];
+      demoVideoUrl?: string;
+      offerDiscount?: string;
+      offerCode?: string;
+      autoRelaunch?: boolean;
+      createdAt: number;
+    }> = [];
+
+    const seenIds = new Set<string>();
+    const seenUrls = new Set<string>();
+
+    // 1. Add queued directory products (approved products whose launch timestamp is in the future)
+    for (const p of queuedDirectoryProducts) {
+      const targetMs = getTargetLaunchMs(p);
+      const targetWeek = p.scheduledLaunchWeek != null ? Number(p.scheduledLaunchWeek) : getWeekInfo(new Date(targetMs)).weekNumber;
+      list.push({
+        id: p.id,
+        sourceType: 'product',
+        productRef: p,
+        name: p.name,
+        tagline: p.tagline,
+        url: p.url,
+        category: p.category,
+        logoUrl: p.logoUrl,
+        scheduledLaunchWeek: p.scheduledLaunchWeek,
+        scheduledLaunchDate: p.scheduledLaunchDate,
+        targetLaunchMs: targetMs,
+        targetWeekNumber: targetWeek,
+        isApproved: true,
+        status: 'scheduled',
+        pricingModel: p.pricingModel,
+        twitterHandle: p.twitterHandle,
+        creatorName: p.creatorName,
+        creatorUsername: p.creatorUsername,
+        creatorAvatar: p.creatorAvatar,
+        submittedBy: p.submittedBy,
+        screenshots: p.screenshots,
+        demoVideoUrl: p.demoVideoUrl,
+        offerDiscount: p.offerDiscount,
+        offerCode: p.offerCode,
+        autoRelaunch: p.autoRelaunch || p.autoRelaunchPaid,
+        createdAt: p.createdAt || Date.now(),
+      });
+      seenIds.add(p.id);
+      if (p.url) seenUrls.add(p.url.toLowerCase());
+    }
+
+    // 2. Add future launch submissions that are not already live or queued
+    for (const s of submissions) {
+      if (s.status === 'rejected') continue;
+      const pubId = publishedProductId(s.id);
+      const urlKey = (s.url || '').toLowerCase();
+
+      // Check if already in live directory products
+      const isLive = liveDirectoryProducts.some((p) => p.id === pubId || (p.url && p.url.toLowerCase() === urlKey));
+      if (isLive) continue;
+
+      if (seenIds.has(pubId) || seenIds.has(s.id) || (urlKey && seenUrls.has(urlKey))) {
+        const match = list.find((it) => it.id === pubId || it.id === s.id || (urlKey && it.url.toLowerCase() === urlKey));
+        if (match && !match.submissionRef) {
+          match.submissionRef = s;
+          match.userEmail = s.userEmail;
+        }
+        continue;
+      }
+
+      // Check if future scheduled
+      if (!isLaunched(s)) {
+        const targetMs = getTargetLaunchMs(s);
+        const targetWeek = s.scheduledLaunchWeek != null ? Number(s.scheduledLaunchWeek) : getWeekInfo(new Date(targetMs)).weekNumber;
+        list.push({
+          id: s.id,
+          sourceType: 'submission',
+          submissionRef: s,
+          name: s.name,
+          tagline: s.tagline,
+          url: s.url,
+          category: s.category,
+          logoUrl: s.logoUrl,
+          scheduledLaunchWeek: s.scheduledLaunchWeek,
+          scheduledLaunchDate: s.scheduledLaunchDate,
+          targetLaunchMs: targetMs,
+          targetWeekNumber: targetWeek,
+          isApproved: s.status === 'approved',
+          status: s.status === 'approved' ? 'scheduled' : 'under_review',
+          pricingModel: s.pricingModel,
+          twitterHandle: s.twitterHandle,
+          creatorName: s.creatorName || s.backerName,
+          creatorUsername: s.creatorUsername,
+          creatorAvatar: s.creatorAvatar,
+          submittedBy: s.submittedBy,
+          userEmail: s.userEmail,
+          screenshots: s.screenshots,
+          demoVideoUrl: s.demoVideoUrl,
+          offerDiscount: s.offerDiscount,
+          offerCode: s.offerCode,
+          autoRelaunch: s.autoRelaunch || s.autoRelaunchPaid,
+          createdAt: s.createdAt || Date.now(),
+        });
+        seenIds.add(s.id);
+        seenIds.add(pubId);
+        if (urlKey) seenUrls.add(urlKey);
+      }
+    }
+
+    // Arranged chronologically by date: soonest launch first
+    return list.sort((a, b) => a.targetLaunchMs - b.targetLaunchMs);
+  }, [queuedDirectoryProducts, liveDirectoryProducts, submissions]);
+
+  // Future Launches filter & sort state
+  const [futureSearchQuery, setFutureSearchQuery] = useState('');
+  const [futureCategoryFilter, setFutureCategoryFilter] = useState<string>('All');
+  const [futureStatusFilter, setFutureStatusFilter] = useState<'all' | 'scheduled' | 'under_review'>('all');
+  const [futureSortOrder, setFutureSortOrder] = useState<'date_asc' | 'date_desc' | 'name'>('date_asc');
+  const [reschedulingItem, setReschedulingItem] = useState<(typeof allFutureLaunches)[0] | null>(null);
+  const [rescheduleWeekChoice, setRescheduleWeekChoice] = useState<number | 'now' | null>(null);
+  const [futureLaunchToast, setFutureLaunchToast] = useState<string | null>(null);
+
+  const filteredFutureLaunches = React.useMemo(() => {
+    return allFutureLaunches
+      .filter((item) => {
+        if (futureStatusFilter === 'scheduled' && !item.isApproved) return false;
+        if (futureStatusFilter === 'under_review' && item.isApproved) return false;
+        if (futureCategoryFilter !== 'All' && item.category !== futureCategoryFilter) return false;
+        if (futureSearchQuery.trim()) {
+          const q = futureSearchQuery.toLowerCase();
+          const matchName = item.name.toLowerCase().includes(q);
+          const matchTagline = item.tagline.toLowerCase().includes(q);
+          const matchCategory = item.category.toLowerCase().includes(q);
+          const matchUrl = item.url.toLowerCase().includes(q);
+          if (!matchName && !matchTagline && !matchCategory && !matchUrl) return false;
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        if (futureSortOrder === 'date_asc') return a.targetLaunchMs - b.targetLaunchMs;
+        if (futureSortOrder === 'date_desc') return b.targetLaunchMs - a.targetLaunchMs;
+        return a.name.localeCompare(b.name);
+      });
+  }, [allFutureLaunches, futureStatusFilter, futureCategoryFilter, futureSearchQuery, futureSortOrder]);
+
+  // Only auto-switch to submissions on initial mount if pending items exist
+  const hasInitializedTab = React.useRef(false);
   React.useEffect(() => {
-    if (pendingCount > 0) {
-      setActiveView('submissions');
+    if (!hasInitializedTab.current) {
+      hasInitializedTab.current = true;
+      if (pendingCount > 0) {
+        setActiveView('submissions');
+      }
     }
   }, [pendingCount]);
 
@@ -423,7 +625,136 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
         colors: ['#000000', '#22c55e', '#3b82f6', '#f59e0b'],
       });
     } catch {}
+
+    const isFuture = !isLaunched(sub);
     onAcceptSubmission(sub);
+
+    if (isFuture) {
+      const targetMs = getTargetLaunchMs(sub);
+      const targetWeek = sub.scheduledLaunchWeek != null ? `Week ${sub.scheduledLaunchWeek}` : new Date(targetMs).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      setFutureLaunchToast(`"${sub.name}" approved! It has been scheduled for ${targetWeek} and added to the Future Launches tab.`);
+      setTimeout(() => setFutureLaunchToast(null), 6000);
+    }
+  };
+
+  const handlePublishFutureItemLive = (item: (typeof allFutureLaunches)[0]) => {
+    if (!window.confirm(`Publish "${item.name}" live to the public directory right now?`)) return;
+    playSound('success', soundEnabled);
+    try {
+      confetti({
+        particleCount: 60,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#000000', '#22c55e', '#3b82f6', '#f59e0b'],
+      });
+    } catch {}
+
+    const now = Date.now();
+    if (item.productRef) {
+      const updated: Product = {
+        ...item.productRef,
+        scheduledLaunchWeek: undefined,
+        scheduledLaunchDate: now,
+        createdAt: now,
+      };
+      onUpdateProduct?.(updated);
+    }
+    if (item.submissionRef) {
+      const updatedSub: WebsiteSubmission = {
+        ...item.submissionRef,
+        scheduledLaunchWeek: undefined,
+        scheduledLaunchDate: now,
+        status: 'approved',
+      };
+      onAcceptSubmission(updatedSub);
+    }
+    setFutureLaunchToast(`"${item.name}" is now published LIVE in the directory!`);
+    setTimeout(() => setFutureLaunchToast(null), 5000);
+  };
+
+  const handleOpenReschedule = (item: (typeof allFutureLaunches)[0]) => {
+    setReschedulingItem(item);
+    setRescheduleWeekChoice(item.scheduledLaunchWeek != null ? item.scheduledLaunchWeek : getWeekNumber());
+  };
+
+  const handleConfirmReschedule = () => {
+    if (!reschedulingItem || rescheduleWeekChoice === null) return;
+    playSound('click', soundEnabled);
+
+    if (rescheduleWeekChoice === 'now') {
+      handlePublishFutureItemLive(reschedulingItem);
+      setReschedulingItem(null);
+      return;
+    }
+
+    const weekNum = Number(rescheduleWeekChoice);
+    const weekStart = getWeekByNumber(weekNum).start;
+
+    if (reschedulingItem.productRef) {
+      const updated: Product = {
+        ...reschedulingItem.productRef,
+        scheduledLaunchWeek: weekNum,
+        scheduledLaunchDate: weekStart,
+      };
+      onUpdateProduct?.(updated);
+    }
+    if (reschedulingItem.submissionRef) {
+      const updatedSub: WebsiteSubmission = {
+        ...reschedulingItem.submissionRef,
+        scheduledLaunchWeek: weekNum,
+        scheduledLaunchDate: weekStart,
+      };
+      onUpdateSubmission(updatedSub);
+    }
+    setFutureLaunchToast(`"${reschedulingItem.name}" rescheduled for Week ${weekNum}!`);
+    setTimeout(() => setFutureLaunchToast(null), 4000);
+    setReschedulingItem(null);
+  };
+
+  const handleDelistFutureItem = (item: (typeof allFutureLaunches)[0]) => {
+    if (item.productRef) {
+      handleDelist(item.productRef);
+    } else if (item.submissionRef) {
+      handleReject(item.submissionRef.id);
+    }
+  };
+
+  const handleViewFutureDetails = (item: (typeof allFutureLaunches)[0]) => {
+    if (item.submissionRef) {
+      setViewingDetailsSubmission(item.submissionRef);
+    } else if (item.productRef) {
+      const p = item.productRef;
+      const syntheticSub: WebsiteSubmission = {
+        id: p.id,
+        name: p.name,
+        tagline: p.tagline,
+        url: p.url,
+        category: p.category as Category,
+        logoUrl: p.logoUrl,
+        problemItSolves: p.problemItSolves || '',
+        solution: p.solution || '',
+        uniqueSellingPoint: p.uniqueSellingPoint || '',
+        screenshots: p.screenshots,
+        demoVideoUrl: p.demoVideoUrl,
+        twitterHandle: p.twitterHandle,
+        socials: p.socials,
+        creatorName: p.creatorName,
+        creatorUsername: p.creatorUsername,
+        creatorAvatar: p.creatorAvatar,
+        submittedBy: p.submittedBy,
+        offerDiscount: p.offerDiscount,
+        offerCode: p.offerCode,
+        offerUrl: p.offerUrl,
+        offerDetails: p.offerDetails,
+        autoRelaunch: p.autoRelaunch,
+        autoRelaunchPaid: p.autoRelaunchPaid,
+        scheduledLaunchWeek: p.scheduledLaunchWeek,
+        scheduledLaunchDate: p.scheduledLaunchDate,
+        status: 'approved',
+        createdAt: p.createdAt || Date.now(),
+      };
+      setViewingDetailsSubmission(syntheticSub);
+    }
   };
 
   const handleReject = (id: string) => {
@@ -563,6 +894,23 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
             </button>
             <button
               type="button"
+              onClick={() => { setActiveView('future'); playSound('click', soundEnabled); }}
+              className={`flex items-center gap-1.5 rounded-t-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer border border-b-0 whitespace-nowrap ${
+                activeView === 'future'
+                  ? 'bg-neutral-950 border-neutral-950 text-white shadow-2xs'
+                  : 'bg-transparent border-transparent text-neutral-500 hover:text-neutral-950 hover:bg-neutral-800/60'
+              }`}
+            >
+              <Rocket className="h-3.5 w-3.5 text-sky-400" />
+              <span>Future Launches</span>
+              <span className={`ml-1 rounded-full px-1.5 py-0.2 text-[9px] font-bold ${
+                allFutureLaunches.length > 0 ? 'bg-sky-500 text-white font-black' : 'bg-neutral-700 text-neutral-300'
+              }`}>
+                {allFutureLaunches.length}
+              </span>
+            </button>
+            <button
+              type="button"
               onClick={() => { setActiveView('products'); playSound('click', soundEnabled); }}
               className={`flex items-center gap-1.5 rounded-t-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer border border-b-0 whitespace-nowrap ${
                 activeView === 'products'
@@ -649,6 +997,37 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
             )}
           </div>
         </div>
+
+        {/* Future Launch Feedback Toast */}
+        {futureLaunchToast && (
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-sky-300 bg-sky-50 px-4 py-3 text-xs text-sky-900 shadow-sm animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="flex items-center gap-2">
+              <Rocket className="h-4 w-4 text-sky-600 shrink-0" />
+              <span className="font-semibold">{futureLaunchToast}</span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              {activeView !== 'future' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveView('future');
+                    setFutureLaunchToast(null);
+                  }}
+                  className="rounded-lg bg-sky-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-sky-700 cursor-pointer"
+                >
+                  View Future Launches &rarr;
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setFutureLaunchToast(null)}
+                className="text-sky-600 hover:text-sky-900"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* ============================================================ */}
         {/* SUBMISSIONS QUEUE & REVIEW VIEW */}
@@ -911,10 +1290,17 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                   </span>
                                 )}
                                 {isApproved && (
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-bold text-emerald-300">
-                                    <CheckCircle2 className="h-3 w-3" />
-                                    <span>Approved & Live {liveProduct?.rank ? `(Rank #${liveProduct.rank})` : ''}</span>
-                                  </span>
+                                  isLaunched(sub) ? (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-bold text-emerald-300">
+                                      <CheckCircle2 className="h-3 w-3" />
+                                      <span>Approved & Live {liveProduct?.rank ? `(Rank #${liveProduct.rank})` : ''}</span>
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-sky-500/15 border border-sky-500/30 px-2 py-0.5 text-[10px] font-bold text-sky-400">
+                                      <Rocket className="h-3 w-3" />
+                                      <span>Approved &amp; In Future Queue ({sub.scheduledLaunchWeek ? `Week ${sub.scheduledLaunchWeek}` : 'Scheduled'})</span>
+                                    </span>
+                                  )
                                 )}
                                 {isRejected && (
                                   <span className="inline-flex items-center gap-1 rounded-full bg-red-500/15 border border-red-500/30 px-2 py-0.5 text-[10px] font-bold text-red-300">
@@ -1092,6 +1478,389 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                 </button>
                               </>
                             )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* ============================================================ */}
+        {/* FUTURE LAUNCHES VIEW */}
+        {/* ============================================================ */}
+        {activeView === 'future' && (
+          <>
+            {/* Future Launches Metrics */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+              <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-2xs">
+                <div className="flex items-center justify-between text-xs font-bold text-sky-500 mb-1">
+                  <span>Total Scheduled</span>
+                  <Rocket className="h-4 w-4" />
+                </div>
+                <div className="text-2xl sm:text-3xl font-black text-neutral-950">
+                  {allFutureLaunches.length}
+                </div>
+                <p className="text-[11px] text-neutral-400 mt-1">Pending future launches</p>
+              </div>
+
+              <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-2xs">
+                <div className="flex items-center justify-between text-xs font-bold text-emerald-500 mb-1">
+                  <span>Next Launch</span>
+                  <Calendar className="h-4 w-4" />
+                </div>
+                <div className="text-sm sm:text-base font-black text-neutral-950 truncate">
+                  {allFutureLaunches.length > 0
+                    ? `Week ${allFutureLaunches[0].targetWeekNumber}`
+                    : 'None queued'}
+                </div>
+                <p className="text-[11px] text-neutral-400 mt-1 truncate">
+                  {allFutureLaunches.length > 0
+                    ? `${formatRemainingMs(Math.max(0, allFutureLaunches[0].targetLaunchMs - Date.now()))} remaining`
+                    : 'No upcoming launches'}
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-2xs">
+                <div className="flex items-center justify-between text-xs font-bold text-mint-600 mb-1">
+                  <span>Approved &amp; Scheduled</span>
+                  <CheckCircle2 className="h-4 w-4" />
+                </div>
+                <div className="text-2xl sm:text-3xl font-black text-mint-600">
+                  {allFutureLaunches.filter((x) => x.isApproved).length}
+                </div>
+                <p className="text-[11px] text-neutral-400 mt-1">Ready for automatic release</p>
+              </div>
+
+              <div className="rounded-xl border border-neutral-200 bg-white p-4 shadow-2xs">
+                <div className="flex items-center justify-between text-xs font-bold text-amber-500 mb-1">
+                  <span>Under Review</span>
+                  <Clock className="h-4 w-4" />
+                </div>
+                <div className="text-2xl sm:text-3xl font-black text-amber-500">
+                  {allFutureLaunches.filter((x) => !x.isApproved).length}
+                </div>
+                <p className="text-[11px] text-neutral-400 mt-1">Future date submissions</p>
+              </div>
+            </div>
+
+            {/* Explanation Banner */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-sky-200 bg-gradient-to-r from-sky-50 via-white to-sky-50/30 p-3.5">
+              <div className="flex items-start sm:items-center gap-3">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sky-500 text-white shadow-xs">
+                  <Rocket className="h-4 w-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-neutral-900">
+                    Future Launches Pipeline
+                  </h4>
+                  <p className="text-[11px] text-neutral-600">
+                    Projects here are scheduled for future launch weeks and are automatically sorted by their launch date. When their launch week begins, they publish live to the public leaderboard automatically.
+                  </p>
+                </div>
+              </div>
+              <div className="shrink-0 flex items-center gap-2">
+                <span className="text-[11px] font-medium text-neutral-500">
+                  Sorted: Soonest first
+                </span>
+              </div>
+            </div>
+
+            {/* Future Launches Search & Filters */}
+            <div className="rounded-xl border border-neutral-200 bg-white p-3.5 sm:p-4 flex flex-col gap-3">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="relative w-full sm:w-80">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400" />
+                  <input
+                    type="text"
+                    value={futureSearchQuery}
+                    onChange={(e) => setFutureSearchQuery(e.target.value)}
+                    placeholder="Search future launches by name, category, or URL..."
+                    className="w-full rounded-lg border border-neutral-200 bg-white pl-8.5 pr-3 py-1.5 text-xs text-neutral-900 placeholder-neutral-400 focus:border-sky-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-sky-500/30"
+                  />
+                  {futureSearchQuery && (
+                    <button type="button" onClick={() => setFutureSearchQuery('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-950">
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                  {/* Status Filter */}
+                  <div className="flex items-center gap-1 rounded-lg bg-neutral-100 p-1 border border-neutral-200">
+                    <button
+                      type="button"
+                      onClick={() => setFutureStatusFilter('all')}
+                      className={`rounded-md px-2.5 py-1 text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                        futureStatusFilter === 'all'
+                          ? 'bg-neutral-950 text-white shadow-xs'
+                          : 'text-neutral-500 hover:text-neutral-950'
+                      }`}
+                    >
+                      All ({allFutureLaunches.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFutureStatusFilter('scheduled')}
+                      className={`rounded-md px-2.5 py-1 text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                        futureStatusFilter === 'scheduled'
+                          ? 'bg-emerald-600 text-white shadow-xs'
+                          : 'text-neutral-500 hover:text-neutral-950'
+                      }`}
+                    >
+                      Approved ({allFutureLaunches.filter((x) => x.isApproved).length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFutureStatusFilter('under_review')}
+                      className={`rounded-md px-2.5 py-1 text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                        futureStatusFilter === 'under_review'
+                          ? 'bg-amber-500 text-white shadow-xs'
+                          : 'text-neutral-500 hover:text-neutral-950'
+                      }`}
+                    >
+                      Under Review ({allFutureLaunches.filter((x) => !x.isApproved).length})
+                    </button>
+                  </div>
+
+                  {/* Sort Order Selector */}
+                  <div className="flex items-center gap-1 rounded-lg border border-neutral-200 bg-white px-2 py-1 text-xs text-neutral-700">
+                    <ArrowUpDown className="h-3.5 w-3.5 text-neutral-400" />
+                    <select
+                      value={futureSortOrder}
+                      onChange={(e) => setFutureSortOrder(e.target.value as any)}
+                      className="bg-transparent text-xs font-bold text-neutral-900 focus:outline-none cursor-pointer"
+                    >
+                      <option value="date_asc">Launch Date (Soonest first)</option>
+                      <option value="date_desc">Launch Date (Furthest first)</option>
+                      <option value="name">Product Name (A-Z)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Categories */}
+              <div className="flex items-center gap-1.5 w-full overflow-x-auto pb-1 sm:pb-0">
+                {(['All', 'AI Tools', 'Developer Tools', 'Productivity', 'Design & UI', 'SaaS & Indie', 'Crypto & Web3'] as const).map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setFutureCategoryFilter(cat)}
+                    className={`rounded-lg px-2.5 py-1 text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap ${
+                      futureCategoryFilter === cat
+                        ? 'bg-sky-600 text-white'
+                        : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Future Launches List (Arranged by Date) */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between px-1">
+                <h2 className="text-xs font-bold text-neutral-600 flex items-center gap-1.5">
+                  <Calendar className="h-3.5 w-3.5 text-sky-500" />
+                  <span>Scheduled Future Launches</span>
+                  <span className="font-normal text-neutral-400">({filteredFutureLaunches.length})</span>
+                </h2>
+                <span className="text-[11px] text-neutral-500">
+                  Arranged chronologically by launch date
+                </span>
+              </div>
+
+              {filteredFutureLaunches.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-neutral-200 bg-white p-10 text-center space-y-3">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-sky-50 text-sky-600">
+                    <Rocket className="h-6 w-6" />
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="text-sm font-black text-neutral-950">No future launches found</h3>
+                    <p className="text-xs text-neutral-500 max-w-sm mx-auto">
+                      {allFutureLaunches.length > 0
+                        ? 'No launches match your current filters. Try resetting search or category.'
+                        : 'When you approve a submission scheduled for a future week or date, it will automatically appear here sorted by launch date.'}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {filteredFutureLaunches.map((item) => {
+                    const logoSrc = item.logoUrl || getWebsiteFavicon(item.url);
+                    const weekInfo = getWeekByNumber(item.targetWeekNumber);
+                    const dateRangeStr = formatWeekDateRange(weekInfo.start, weekInfo.end);
+                    const remainingMs = Math.max(0, item.targetLaunchMs - Date.now());
+                    const targetDateStr = new Date(item.targetLaunchMs).toLocaleDateString('en-US', {
+                      weekday: 'short',
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    });
+
+                    return (
+                      <div
+                        key={item.id}
+                        className="rounded-xl border border-neutral-200 bg-white p-4 sm:p-5 shadow-2xs hover:border-sky-300 transition-all space-y-3"
+                      >
+                        {/* Top Timing & Status Bar */}
+                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-100 pb-2.5">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="inline-flex items-center gap-1.5 rounded-lg bg-sky-50 border border-sky-200 px-2.5 py-1 text-xs font-black text-sky-800">
+                              <Calendar className="h-3.5 w-3.5 text-sky-600" />
+                              <span>Week {item.targetWeekNumber} ({dateRangeStr})</span>
+                            </span>
+
+                            <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 border border-neutral-200 px-2.5 py-0.5 text-[11px] font-semibold text-neutral-600">
+                              <Clock className="h-3 w-3 text-neutral-400" />
+                              <span>Launches in {formatRemainingMs(remainingMs)}</span>
+                            </span>
+                          </div>
+
+                          <div>
+                            {item.isApproved ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700">
+                                <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                                <span>Approved &amp; Scheduled</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2.5 py-0.5 text-[11px] font-bold text-amber-700">
+                                <Clock className="h-3 w-3 text-amber-600" />
+                                <span>Pending Approval (Future)</span>
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Middle: Project Info & Actions */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                          <div className="flex items-start gap-3 min-w-0 flex-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleViewFutureDetails(item);
+                                playSound('click', soundEnabled);
+                              }}
+                              className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-2xs hover:border-sky-400 transition-all cursor-pointer group"
+                            >
+                              <ProductLogo
+                                src={logoSrc}
+                                alt={item.name}
+                                containerClassName="h-full w-full flex items-center justify-center"
+                                iconClassName="h-5 w-5 text-neutral-400 group-hover:scale-110 transition-transform"
+                              />
+                            </button>
+
+                            <div className="min-w-0 flex-1 space-y-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    handleViewFutureDetails(item);
+                                    playSound('click', soundEnabled);
+                                  }}
+                                  className="text-base font-black text-neutral-950 tracking-tight hover:text-sky-600 cursor-pointer transition-colors text-left"
+                                >
+                                  {item.name}
+                                </button>
+                                <span className="rounded-md bg-neutral-100 border border-neutral-200 px-2 py-0.5 text-[10px] font-bold text-neutral-600">
+                                  {item.category}
+                                </span>
+                                {item.pricingModel && (
+                                  <span className="rounded-md bg-neutral-100 border border-neutral-200 px-2 py-0.5 text-[10px] font-semibold text-neutral-500">
+                                    {item.pricingModel}
+                                  </span>
+                                )}
+                                {item.autoRelaunch && (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 px-2 py-0.5 text-[10px] font-bold text-blue-700">
+                                    <Rocket className="h-2.5 w-2.5" /> Auto-Relaunch
+                                  </span>
+                                )}
+                              </div>
+
+                              <p className="text-xs text-neutral-600 line-clamp-2">
+                                {item.tagline}
+                              </p>
+
+                              <div className="flex flex-wrap items-center gap-3 pt-1 text-[11px] text-neutral-500">
+                                <a
+                                  href={item.url.startsWith('http') ? item.url : `https://${item.url}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-sky-600 hover:underline"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <Globe className="h-3 w-3" />
+                                  <span className="truncate max-w-[200px]">{item.url.replace(/^https?:\/\//i, '')}</span>
+                                  <ExternalLink className="h-2.5 w-2.5" />
+                                </a>
+
+                                <span className="text-neutral-300">•</span>
+                                <span>Target Launch: {targetDateStr}</span>
+
+                                {item.creatorName && (
+                                  <>
+                                    <span className="text-neutral-300">•</span>
+                                    <span className="inline-flex items-center gap-1">
+                                      <User className="h-3 w-3 text-neutral-400" />
+                                      {item.creatorName}
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 shrink-0 self-start sm:self-center">
+                            {/* Publish Live Now */}
+                            <button
+                              type="button"
+                              onClick={() => handlePublishFutureItemLive(item)}
+                              title="Override schedule and launch immediately to live directory"
+                              className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:scale-95 px-3 py-1.5 text-xs font-bold text-white shadow-xs transition-all cursor-pointer"
+                            >
+                              <Rocket className="h-3.5 w-3.5" />
+                              <span>Publish Live Now</span>
+                            </button>
+
+                            {/* Reschedule Date/Week */}
+                            <button
+                              type="button"
+                              onClick={() => handleOpenReschedule(item)}
+                              title="Change scheduled launch week"
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-300 bg-white hover:bg-neutral-50 active:scale-95 px-3 py-1.5 text-xs font-bold text-neutral-700 transition-all cursor-pointer"
+                            >
+                              <Calendar className="h-3.5 w-3.5 text-sky-600" />
+                              <span>Reschedule</span>
+                            </button>
+
+                            {/* View Details */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleViewFutureDetails(item);
+                                playSound('click', soundEnabled);
+                              }}
+                              title="Inspect full details, screenshots, and pitch"
+                              className="inline-flex items-center justify-center rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50 p-2 text-neutral-600 hover:text-neutral-900 transition-colors cursor-pointer"
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                            </button>
+
+                            {/* Delist / Reject */}
+                            <button
+                              type="button"
+                              onClick={() => handleDelistFutureItem(item)}
+                              title="Remove or reject from future queue"
+                              className="inline-flex items-center justify-center rounded-lg border border-neutral-200 bg-white hover:border-red-300 hover:bg-red-50 p-2 text-neutral-400 hover:text-red-600 transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -2962,6 +3731,129 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                 className="rounded-xl bg-blue-600 hover:bg-blue-700 px-4 py-2 text-xs font-black text-white shadow-xs cursor-pointer disabled:opacity-50"
               >
                 {isAssigningSponsor ? 'Assigning...' : 'Activate Sponsor'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reschedule Future Launch Modal */}
+      {reschedulingItem && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
+          onClick={() => setReschedulingItem(null)}
+        >
+          <div
+            className="w-full max-w-lg rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-2xl space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-100 text-sky-600">
+                  <Calendar className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-neutral-900">
+                    Reschedule Launch
+                  </h3>
+                  <p className="text-xs text-neutral-500">
+                    {reschedulingItem.name}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setReschedulingItem(null)}
+                className="rounded-lg p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div className="rounded-xl bg-neutral-50 p-3 border border-neutral-200 text-xs text-neutral-600">
+                <span className="font-bold text-neutral-900">Current Schedule: </span>
+                Week {reschedulingItem.targetWeekNumber} ({formatWeekDateRange(getWeekByNumber(reschedulingItem.targetWeekNumber).start, getWeekByNumber(reschedulingItem.targetWeekNumber).end)})
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-neutral-800 mb-2">
+                  Select New Launch Week / Timing:
+                </label>
+                <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
+                  {/* Immediate option */}
+                  <button
+                    type="button"
+                    onClick={() => setRescheduleWeekChoice('now')}
+                    className={`w-full flex items-center justify-between p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                      rescheduleWeekChoice === 'now'
+                        ? 'border-emerald-500 bg-emerald-50/50 text-emerald-950 font-bold ring-1 ring-emerald-500'
+                        : 'border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-800'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Rocket className="h-4 w-4 text-emerald-600 shrink-0" />
+                      <div>
+                        <div className="text-xs font-bold">Publish Live Immediately</div>
+                        <div className="text-[11px] text-neutral-500 font-normal">Go live right now today</div>
+                      </div>
+                    </div>
+                    {rescheduleWeekChoice === 'now' && <Check className="h-4 w-4 text-emerald-600" />}
+                  </button>
+
+                  {/* Upcoming weeks range */}
+                  {getWeeksRange(getWeekNumber(), 8).map((w) => {
+                    const isSelected = rescheduleWeekChoice === w.weekNumber;
+                    const isCurrent = w.isCurrent;
+                    return (
+                      <button
+                        key={w.weekNumber}
+                        type="button"
+                        onClick={() => setRescheduleWeekChoice(w.weekNumber)}
+                        className={`w-full flex items-center justify-between p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                          isSelected
+                            ? 'border-sky-500 bg-sky-50/50 text-sky-950 font-bold ring-1 ring-sky-500'
+                            : 'border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-800'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Calendar className="h-4 w-4 text-sky-600 shrink-0" />
+                          <div>
+                            <div className="text-xs font-bold flex items-center gap-2">
+                              <span>Week {w.weekNumber}</span>
+                              {isCurrent && (
+                                <span className="rounded bg-mint-500 text-white text-[9px] px-1.5 py-0.2 font-black">
+                                  Current Week
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[11px] text-neutral-500 font-normal">
+                              {formatWeekDateRange(w.start, w.end)}
+                            </div>
+                          </div>
+                        </div>
+                        {isSelected && <Check className="h-4 w-4 text-sky-600" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-neutral-100">
+              <button
+                type="button"
+                onClick={() => setReschedulingItem(null)}
+                className="rounded-xl border border-neutral-200 bg-white px-4 py-2 text-xs font-bold text-neutral-700 hover:bg-neutral-50 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmReschedule}
+                className="rounded-xl bg-sky-600 hover:bg-sky-700 px-4 py-2 text-xs font-black text-white shadow-xs cursor-pointer"
+              >
+                Save Schedule
               </button>
             </div>
           </div>

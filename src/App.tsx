@@ -16,14 +16,15 @@ import { LegalTab } from './components/LegalModal';
 import { playSound } from './utils/sound';
 import confetti from 'canvas-confetti';
 import { supabase } from './utils/supabase';
-import { loadProducts, loadProductById, loadSubmissions, invalidateCache, saveAllProducts, saveProductRanksDirect, debouncedSyncProducts, toggleUpvote, getUserUpvotes, getUpvoteStats, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, setGlobalFeaturedProducts, setProductFeaturedPosition, LOCAL_FEATURED_PRODUCTS_KEY, LOCAL_FEATURED_POSITIONS_MAP_KEY, insertProductDirect, updateProductDirect, fetchComments, addComment, getCachedCommentsSync, submissionToProduct, publishedProductId, isProductUpvoted, getGuestUpvotes, saveGuestUpvotes, incrementProductUpvotesDirect, incrementProductClicksDirect, loadSponsors, createSponsor, updateSponsor, endSponsor, endSponsorsForProduct, toggleSponsorPause, incrementSponsorClicks, sponsorToDisplayProduct, isLiveSponsor, getSponsorRailsEnabled, setSponsorRailsEnabled, LOCAL_SPONSOR_RAILS_KEY, getSponsorOrder, setSponsorOrder, sortSponsorsByOrder, LOCAL_SPONSOR_ORDER_KEY, getFeaturedPosition, setFeaturedPosition, LOCAL_FEATURED_POSITION_KEY, SUBMISSION_QUEUE_COLUMNS, loadSubmissionById, isSponsorOnlyProduct, getProductSlug, matchesProductIdentifier } from './utils/db';
+import { loadProducts, loadProductById, loadSubmissions, invalidateCache, saveAllProducts, saveProductRanksDirect, debouncedSyncProducts, toggleUpvote, getUserUpvotes, getUpvoteStats, checkIsAdmin, getGlobalFeaturedProduct, setGlobalFeaturedProduct, setGlobalFeaturedProducts, setProductFeaturedPosition, LOCAL_FEATURED_PRODUCTS_KEY, LOCAL_FEATURED_POSITIONS_MAP_KEY, insertProductDirect, updateProductDirect, fetchComments, addComment, getCachedCommentsSync, submissionToProduct, publishedProductId, isProductUpvoted, getGuestUpvotes, saveGuestUpvotes, incrementProductUpvotesDirect, incrementProductClicksDirect, loadSponsors, createSponsor, updateSponsor, endSponsor, endSponsorsForProduct, toggleSponsorPause, incrementSponsorClicks, sponsorToDisplayProduct, isLiveSponsor, getSponsorRailsEnabled, setSponsorRailsEnabled, LOCAL_SPONSOR_RAILS_KEY, getSponsorOrder, setSponsorOrder, sortSponsorsByOrder, LOCAL_SPONSOR_ORDER_KEY, getFeaturedPosition, setFeaturedPosition, LOCAL_FEATURED_POSITION_KEY, SUBMISSION_QUEUE_COLUMNS, loadSubmissionById, isSponsorOnlyProduct, getProductSlug, matchesProductIdentifier, LOCAL_SAAS_IDEAS_FEATURED_PRODUCT_KEY, LOCAL_SAAS_IDEAS_FEATURED_EXPIRY_KEY, getSaaSIdeasFeaturedConfig, setSaaSIdeasFeaturedProduct } from './utils/db';
 import { trackGoal } from './utils/trackkit';
 import { isInWeek, getWeekInfo, getWeekNumber, getWeekByNumber, getMonthKey, isInMonth, formatMonthLabel, formatWeekDateRange, WeekInfo } from './utils/weeks';
 import { getWebsiteFavicon } from './utils/logo';
 import { uploadScreenshotToStorage } from './utils/storage';
 import { sendEmailNotification } from './utils/email';
-import { Trophy, X, Plus, ShieldCheck, Loader2, Star, MessageCircle, Flame, Search } from 'lucide-react';
+import { Trophy, X, Plus, ShieldCheck, Loader2, Star, MessageCircle, Flame, Search, ArrowUpRight } from 'lucide-react';
 import { FeaturedSpotModal } from './components/FeaturedSpotModal';
+import { SaaSIdeasSponsorModal } from './components/SaaSIdeasSponsorModal';
 import { ProductPage } from './components/ProductPage';
 import { BadgeRoute } from './components/BadgeRoute';
 
@@ -44,11 +45,16 @@ const BlogDetailPage = React.lazy(() => import('./components/BlogDetailPage').th
 const LegalPage = React.lazy(() => import('./components/LegalPage').then((m) => ({ default: m.LegalPage })));
 const PricingPage = React.lazy(() => import('./components/PricingPage').then((m) => ({ default: m.PricingPage })));
 const RepoDetailPage = React.lazy(() => import('./components/RepoDetailPage').then((m) => ({ default: m.RepoDetailPage })));
-import type { CuratedRepo } from './data/curatedRepos';
+const OpenSourceBentoPdfPage = React.lazy(() => import('./components/OpenSourceBentoPdfPage').then((m) => ({ default: m.OpenSourceBentoPdfPage })));
+import { type CuratedRepo } from './data/curatedRepos';
+import { IdeasSponsorCard, IDEAS_SPONSOR_SLOTS } from './components/IdeasSponsorCard';
+import { SaaSIdeasMobileSponsor } from './components/SaaSIdeasMobileSponsor';
+import { SaaSOpportunityCard } from './components/SaaSOpportunityCard';
+import { FEATURED_SIDEBAR_OPPORTUNITIES } from './data/saasOpportunities';
 import { getDirectoryHub } from './data/directories';
 import { ProductRow, timeAgo } from './components/ProductRow';
 import { SponsorTile } from './components/SponsorTile';
-import { HeroSponsorRails, MobileTopSponsorTicker, MobileBottomStickySponsorTicker } from './components/HeroSponsorRails';
+import { HeroSponsorRails, DIRECTORY_MOBILE_SLOTS } from './components/HeroSponsorRails';
 import { WeeklyLaunchView } from './components/WeeklyLaunchView';
 import { BestOfSection } from './components/BestOfSection';
 import { ProductLogo } from './components/ProductLogo';
@@ -56,6 +62,7 @@ import { SkeletonRows, SkeletonGrid, SkeletonTile } from './components/SkeletonC
 import { SkeletonTable } from './components/SkeletonTable';
 import { SkeletonProductPage } from './components/SkeletonProductPage';
 import { SkeletonSaaSIdeas } from './components/SkeletonSaaSIdeas';
+import { SkeletonRepoDetail } from './components/SkeletonRepoDetail';
 import { AdminLoginGate } from './components/AdminLoginGate';
 import { isAdminSessionActive, clearAdminSession } from './utils/adminAuth';
 
@@ -222,6 +229,9 @@ export default function App() {
     if (typeof window !== 'undefined') {
       const path = window.location.pathname;
       const hash = window.location.hash;
+      if (/^\/opensource\//.test(path)) {
+        return 'opensource';
+      }
       if (/^\/repo\//.test(path)) {
         return 'repo';
       }
@@ -465,6 +475,21 @@ export default function App() {
     } catch { return null; }
   });
 
+  // Dedicated featured product for SaaS Ideas feed
+  const [saasIdeasFeaturedProductId, setSaaSIdeasFeaturedProductId] = useState<string | null>(() => {
+    try {
+      const id = localStorage.getItem(LOCAL_SAAS_IDEAS_FEATURED_PRODUCT_KEY);
+      if (!id || id === 'empty' || id === 'default') return null;
+      const expiry = localStorage.getItem(LOCAL_SAAS_IDEAS_FEATURED_EXPIRY_KEY);
+      if (expiry && Date.now() > Number(expiry)) {
+        localStorage.removeItem(LOCAL_SAAS_IDEAS_FEATURED_PRODUCT_KEY);
+        localStorage.removeItem(LOCAL_SAAS_IDEAS_FEATURED_EXPIRY_KEY);
+        return null;
+      }
+      return id;
+    } catch { return null; }
+  });
+
   // Featured product position in the directory listing (0 = top/above #1, N = after rank N)
   const [featuredPosition, setFeaturedPositionState] = useState<number>(() => {
     try {
@@ -488,6 +513,16 @@ export default function App() {
         if (config.productId !== undefined) setFeaturedProductId(config.productId);
         if (config.position !== undefined) setFeaturedPositionState(config.position);
         if (config.expiresAt !== undefined) setFeaturedExpiresAt(config.expiresAt);
+      });
+
+      getSaaSIdeasFeaturedConfig().then(({ productId, expiresAt }) => {
+        if (productId !== undefined) {
+          if (expiresAt && Date.now() > expiresAt) {
+            setSaaSIdeasFeaturedProductId(null);
+          } else {
+            setSaaSIdeasFeaturedProductId(productId && productId !== 'empty' && productId !== 'default' ? productId : null);
+          }
+        }
       });
     };
 
@@ -530,7 +565,7 @@ export default function App() {
       const raw = localStorage.getItem(LOCAL_SPONSOR_RAILS_KEY);
       if (raw !== null) return raw === 'true';
     } catch { }
-    return false; // Default OFF so it never flashes open ad spots when disabled
+    return true; // Default ON so the layout with left sponsors and right rail displays
   });
 
   // Load master sponsor rails state from Supabase on mount
@@ -603,16 +638,17 @@ export default function App() {
   // One-Click Deals filter state ("Steals Only")
   const [stealsOnly, setStealsOnly] = useState<boolean>(false);
 
-  // Pagination state for homepage (50 list per page)
+  // Pagination state for homepage (100 list per page)
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [pageSize] = useState<number>(50);
+  const [pageSize] = useState<number>(100);
 
   // Modals
   const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
   const [shareProduct, setShareProduct] = useState<Product | null>(null);
   const [isHowItWorksOpen, setIsHowItWorksOpen] = useState(false);
   const [isFeaturedSpotModalOpen, setIsFeaturedSpotModalOpen] = useState(false);
-  const [featuredModalMode, setFeaturedModalMode] = useState<'featured' | 'sponsor'>('featured');
+  const [isSaaSIdeasSponsorModalOpen, setIsSaaSIdeasSponsorModalOpen] = useState(false);
+  const [featuredModalMode, setFeaturedModalMode] = useState<'featured' | 'sponsor' | 'ideas_sponsor'>('featured');
   const [featuredInitialTier, setFeaturedInitialTier] = useState<'1wk' | '1mo' | '3mo' | '1yr' | 'trial'>('1mo');
   const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
   const [legalTab, setLegalTab] = useState<LegalTab>('privacy');
@@ -702,6 +738,14 @@ export default function App() {
     }
     return null;
   });
+  // Open source teardown route state — resolved from /opensource/:slug
+  const [openSourceSlug, setOpenSourceSlug] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      const m = window.location.pathname.match(/^\/opensource\/(.+)$/);
+      if (m) return decodeURIComponent(m[1]);
+    }
+    return null;
+  });
   // Build guide route state — resolved from /guides/:slug
   const [guideSlug, setGuideSlug] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
@@ -766,9 +810,13 @@ export default function App() {
       const hash = window.location.hash;
 
       const badgeMatch = path.match(/^\/badge\/(.+)$/);
+      const openSourceMatch = path.match(/^\/opensource\/(.+)$/);
       const productMatch = path.match(/^\/(?:products?)\/(.+)$/);
       const repoMatch = path.match(/^\/repo\/(.+)$/);
-      if (badgeMatch) {
+      if (openSourceMatch) {
+        setCurrentRoute('opensource');
+        setOpenSourceSlug(decodeURIComponent(openSourceMatch[1]));
+      } else if (badgeMatch) {
         setCurrentRoute('badge');
         setProductRouteId(decodeURIComponent(badgeMatch[1]));
       } else if (productMatch) {
@@ -866,6 +914,16 @@ export default function App() {
   // Dynamic Category & Homepage SEO on main directory
   useEffect(() => {
     if (currentRoute === '/') {
+      // Every indexable route owns its canonical. Without this, leaving /ideas
+      // or a repo page through the SPA leaves that page's canonical on /.
+      const canonical = 'https://www.topsaas.space/';
+      const canonicalEl = document.querySelector('link[rel="canonical"]');
+      if (canonicalEl) canonicalEl.setAttribute('href', canonical);
+      const ogUrlEl = document.querySelector('meta[property="og:url"]');
+      if (ogUrlEl) ogUrlEl.setAttribute('content', canonical);
+      const twitterUrlEl = document.querySelector('meta[name="twitter:url"]');
+      if (twitterUrlEl) twitterUrlEl.setAttribute('content', canonical);
+
       if (selectedCategory && selectedCategory !== 'All') {
         const title = `Top ${selectedCategory} & Software (2026) | TopSAAS`;
         const desc = `Discover the best ${selectedCategory} software, AI tools, and indie products. Real-time community upvotes and verified launches on TopSAAS.`;
@@ -951,8 +1009,49 @@ export default function App() {
     try {
       window.history.pushState({}, repo.name, `/repo/${repo.full_name}`);
     } catch { }
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
   };
+
+  // Navigate by "owner/name" without pulling the full curated dataset into the
+  // initial bundle. RepoDetailPage resolves the metadata once its chunk loads.
+  const handleOpenRepoByFullName = (fullName: string) => {
+    setCurrentRoute('repo');
+    setRepoRouteId(fullName);
+    try {
+      const name = fullName.split('/')[1] || fullName;
+      window.history.pushState({}, name, `/repo/${fullName}`);
+    } catch { }
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  };
+
+  // Warm the repo detail chunk while the browser is idle so opening a repo
+  // does not wait for a fresh chunk download. Cheap: one request, no render.
+  useEffect(() => {
+    let cancelled = false;
+    const prefetch = () => {
+      if (!cancelled) void import('./components/RepoDetailPage');
+    };
+    const idleWindow = window as typeof window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    if (typeof idleWindow.requestIdleCallback === 'function') {
+      const id = idleWindow.requestIdleCallback(prefetch, { timeout: 4000 });
+      return () => {
+        cancelled = true;
+        idleWindow.cancelIdleCallback?.(id);
+      };
+    }
+    const timer = window.setTimeout(prefetch, 2500);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, []);
 
   // Navigate to a product's detail page
   const handleOpenProduct = (product: Product) => {
@@ -2704,6 +2803,16 @@ export default function App() {
       .sort(compareProductsForWeek(lastWeekInfo))
     : [];
 
+  // Top 3 products from last week (or fallback gracefully to top products if previous week has fewer than 3)
+  const topThreeLastWeek = React.useMemo((): Product[] => {
+    if (lastWeekBest.length >= 3) return lastWeekBest.slice(0, 3);
+    if (lastWeekBest.length > 0) {
+      const remaining = directoryProducts.filter((p) => !lastWeekBest.some((b) => b.id === p.id));
+      return [...lastWeekBest, ...remaining].slice(0, 3);
+    }
+    return directoryProducts.slice(0, 3);
+  }, [lastWeekBest, directoryProducts]);
+
   // Last month's best (previous calendar month)
   const nowDate = new Date();
   const lastMonthReference = new Date(nowDate.getFullYear(), nowDate.getMonth() - 1, 15).getTime();
@@ -2718,7 +2827,7 @@ export default function App() {
     setCurrentPage(1);
   }, [searchQuery, selectedCategory, stealsOnly]);
 
-  // Pagination calculation (50 per page on filtered list)
+  // Pagination calculation (100 per page on filtered list)
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / pageSize));
   const startIndex = (currentPage - 1) * pageSize;
   const paginatedProducts = filteredProducts.slice(startIndex, startIndex + pageSize);
@@ -2796,6 +2905,75 @@ export default function App() {
       ).map(sponsorToDisplayProduct)
     : [];
 
+  // Dedicated sponsor for first side rail: CVArchitect.app
+  const cvArchitectSponsor = React.useMemo((): Product => {
+    const existing = products.find(
+      (p) =>
+        p.name?.toLowerCase().includes('cvarchitect') ||
+        p.url?.toLowerCase().includes('cvarchitect')
+    );
+    if (existing) {
+      return {
+        ...existing,
+        name: 'CVArchitect',
+        url: 'https://cvarchitect.app',
+        logoUrl: existing.logoUrl || 'https://www.google.com/s2/favicons?domain=cvarchitect.app&sz=128',
+        tagline: 'Stop submitting same resume to every role, tailor you resume to each job with cvarchitect',
+        isSponsored: true,
+      };
+    }
+    return {
+      id: 'prod-cvarchitect-rail-sponsor',
+      rank: 1,
+      name: 'CVArchitect',
+      tagline: 'Stop submitting same resume to every role, tailor you resume to each job with cvarchitect',
+      url: 'https://cvarchitect.app',
+      logoUrl: 'https://www.google.com/s2/favicons?domain=cvarchitect.app&sz=128',
+      category: 'AI Tools, HR & Hiring',
+      isSponsored: true,
+      upvotes: 48,
+      clicks: 19,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+  }, [products]);
+
+  const ideasSponsors = React.useMemo((): Product[] => {
+    const liveOtherSponsors = sortSponsorsByOrder(
+      sponsors.filter((s) => isLiveSponsor(s)),
+      sponsorOrderIds
+    )
+      .map(sponsorToDisplayProduct)
+      .filter(
+        (p) =>
+          !p.name?.toLowerCase().includes('cvarchitect') &&
+          !p.url?.toLowerCase().includes('cvarchitect')
+      );
+
+    return [cvArchitectSponsor, ...liveOtherSponsors];
+  }, [cvArchitectSponsor, sponsors, sponsorOrderIds]);
+
+  // Dedicated featured product for the SaaS Ideas feed (completely separate from directory featured)
+  const saasIdeasFeaturedProduct = React.useMemo((): Product | null => {
+    if (!saasIdeasFeaturedProductId || saasIdeasFeaturedProductId === 'default' || saasIdeasFeaturedProductId === 'empty') {
+      return null;
+    }
+    const foundProduct = products.find((p) => p.id === saasIdeasFeaturedProductId);
+    if (foundProduct) return foundProduct;
+
+    // Check submissions
+    const foundSub = submissions.find((s) => s.id === saasIdeasFeaturedProductId);
+    if (foundSub) return submissionToProduct(foundSub, 1);
+
+    // Check active sponsors table
+    const foundSponsor = sponsors.find(
+      (s) => isLiveSponsor(s) && (s.id === saasIdeasFeaturedProductId || s.productId === saasIdeasFeaturedProductId)
+    );
+    if (foundSponsor) return sponsorToDisplayProduct(foundSponsor);
+
+    return null;
+  }, [saasIdeasFeaturedProductId, products, submissions, sponsors]);
+
   const isSubmitPage =
     currentRoute === '/submit' ||
     (typeof window !== 'undefined' &&
@@ -2803,26 +2981,24 @@ export default function App() {
         window.location.pathname.startsWith('/submit/') ||
         window.location.hash.includes('submit')));
 
+  const isSaaSIdeasSection =
+    activeTab === 'saas-ideas' ||
+    currentRoute === 'repo' ||
+    currentRoute === 'trending' ||
+    currentRoute === 'guides' ||
+    currentRoute === 'guide' ||
+    (typeof window !== 'undefined' &&
+      (window.location.pathname === '/ideas' ||
+        window.location.pathname.startsWith('/repo/') ||
+        window.location.pathname === '/trending' ||
+        window.location.pathname.startsWith('/guides')));
+
   const globalHeader = (
     <div className="sticky top-0 z-40 w-full">
-      {/* Mobile-only Infinite Scrolling Sponsors ABOVE Top Nav - hidden on /submit page */}
-      {!isSubmitPage && (
-        <MobileTopSponsorTicker
-          enabled={sponsorRailsEnabled}
-          sponsors={activeRailSponsors}
-          soundEnabled={soundEnabled}
-          onTrackClick={handleTrackClick}
-          onOpenProduct={handleOpenProduct}
-          onOpenFeaturedSpotModal={() => {
-            setFeaturedModalMode('sponsor');
-            setIsFeaturedSpotModalOpen(true);
-          }}
-        />
-      )}
       <Header
         onGoHome={handleBackToLeaderboard}
         onOpenSubmit={handleTopNavSubmit}
-        onSignIn={handleSignIn}
+        onSignIn={() => setIsSignInModalOpen(true)}
         onGoToProfile={handleGoToProfile}
         user={user}
         activeTab={activeTab}
@@ -3002,12 +3178,12 @@ export default function App() {
             user={user}
             allProducts={products}
             allSubmissions={submissions}
+            allSponsors={sponsors}
             onBack={handleBackToLeaderboard}
             onSignOut={handleSignOut}
             onOpenSubmit={handleOpenSubmit}
             onOpenFeaturedSpotModal={() => {
-              setFeaturedModalMode('sponsor');
-              setIsFeaturedSpotModalOpen(true);
+              setIsSaaSIdeasSponsorModalOpen(true);
             }}
             onDeleteProduct={handleDelistProduct}
             onUpdateProduct={handleUpdateProduct}
@@ -3096,33 +3272,69 @@ export default function App() {
     if (!product) {
       if (!productsLoaded) {
         return (
-          <>
+          <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between font-sans">
             {globalHeader}
-            <SkeletonProductPage onBack={handleBackToLeaderboard} />
+            <main className="flex-1 max-w-7xl 2xl:max-w-[1600px] w-full mx-auto px-4 sm:px-6 pt-2 pb-6">
+              <HeroSponsorRails
+                enabled={sponsorRailsEnabled}
+                sponsors={activeRailSponsors}
+                lastWeeksTop3={topThreeLastWeek}
+                lastWeekLabel={lastWeekInfo?.label}
+                onNavigateToDirectory={() => handleTabChange('product-directory')}
+                soundEnabled={soundEnabled}
+                isLoading={!productsLoaded}
+                onTrackClick={handleTrackClick}
+                onOpenProduct={handleOpenProduct}
+                onOpenFeaturedSpotModal={() => {
+                  setFeaturedModalMode('sponsor');
+                  setIsFeaturedSpotModalOpen(true);
+                }}
+              >
+                <SkeletonProductPage onBack={handleBackToLeaderboard} />
+              </HeroSponsorRails>
+            </main>
             {globalModals}
-          </>
+          </div>
         );
       }
       return (
-        <>
+        <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between font-sans">
           {globalHeader}
-          <div className="min-h-screen bg-white text-neutral-900 flex items-center justify-center font-sans">
-            <div className="text-center space-y-3">
-              <h2 className="text-lg font-bold">Product not found</h2>
-              <p className="text-sm text-neutral-400">This listing may have been removed.</p>
-              <button
-                onClick={() => {
-                  setCurrentRoute('/');
-                  try { window.history.pushState('', document.title, '/'); } catch { }
-                }}
-                className="mt-2 rounded-xl bg-white text-black px-4 py-2 text-xs font-bold cursor-pointer"
-              >
-                Back to Home
-              </button>
-            </div>
-          </div>
+          <main className="flex-1 max-w-7xl 2xl:max-w-[1600px] w-full mx-auto px-4 sm:px-6 pt-2 pb-6">
+            <HeroSponsorRails
+              enabled={sponsorRailsEnabled}
+              sponsors={activeRailSponsors}
+              lastWeeksTop3={topThreeLastWeek}
+              lastWeekLabel={lastWeekInfo?.label}
+              onNavigateToDirectory={() => handleTabChange('product-directory')}
+              soundEnabled={soundEnabled}
+              isLoading={!productsLoaded}
+              onTrackClick={handleTrackClick}
+              onOpenProduct={handleOpenProduct}
+              onOpenFeaturedSpotModal={() => {
+                setFeaturedModalMode('sponsor');
+                setIsFeaturedSpotModalOpen(true);
+              }}
+            >
+              <div className="min-h-[400px] flex items-center justify-center">
+                <div className="text-center space-y-3">
+                  <h2 className="text-lg font-bold">Product not found</h2>
+                  <p className="text-sm text-neutral-400">This listing may have been removed.</p>
+                  <button
+                    onClick={() => {
+                      setCurrentRoute('/');
+                      try { window.history.pushState('', document.title, '/'); } catch { }
+                    }}
+                    className="mt-2 rounded-xl bg-neutral-900 text-white px-4 py-2 text-xs font-bold cursor-pointer hover:bg-neutral-800 transition-colors"
+                  >
+                    Back to Home
+                  </button>
+                </div>
+              </div>
+            </HeroSponsorRails>
+          </main>
           {globalModals}
-        </>
+        </div>
       );
     }
     const ownedProduct = markOwnership(product);
@@ -3154,106 +3366,213 @@ export default function App() {
     return (
       <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between font-sans">
         {globalHeader}
-        <ProductPage
-          product={ownedProduct}
-          topProduct={topProduct || product}
-          allProducts={sortedByRankProducts.map((p, idx) => ({ ...markOwnership(p), rank: idx + 1 }))}
-          sponsors={sortSponsorsByOrder(
-            sponsors.filter((s) => isLiveSponsor(s) && s.productId !== product.id),
-            sponsorOrderIds
-          ).map(sponsorToDisplayProduct)}
-          onOpenFeaturedSpotModal={() => {
-            setFeaturedModalMode('sponsor');
-            setIsFeaturedSpotModalOpen(true);
-          }}
-          comments={comments.filter((c) => c.productId === product.id)}
-          soundEnabled={soundEnabled}
-          isSignedIn={!!user}
-          userId={user?.id}
-          isOwner={isProductOwner}
-          isAdmin={isAdmin}
-          userName={submitterName}
-          userEmail={user?.email}
-          userAvatar={user?.user_metadata?.avatar_url || user?.user_metadata?.picture}
-          onOpenSignIn={() => setIsSignInModalOpen(true)}
-          onAddComment={handleAddComment}
-          onBack={() => {
-            setCurrentRoute('/');
-            try { window.history.pushState('', document.title, '/'); } catch { }
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
-          onSelectProduct={(p) => {
-            setCurrentRoute('product');
-            const slug = getProductSlug(p);
-            setProductRouteId(slug || p.id);
-            try { window.history.pushState({}, p.name, `/products/${encodeURIComponent(slug || p.id)}`); } catch { }
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
-          onShare={(p) => setShareProduct(p)}
-          onTrackClick={handleTrackClick}
-          onUpvote={handleUpvote}
-          isUpvoted={isProductUpvoted(product.id, userUpvotes)}
-          hasPaidAccess={canViewAnalytics}
-          onOpenPricing={() => {
-            setCurrentRoute('/pricing');
-            try { window.history.pushState('', document.title, '/pricing'); } catch { }
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
-        />
-        <RichFooter
-          totalProducts={directoryProducts.length}
-          soundEnabled={soundEnabled}
-          onOpenSubmit={handleOpenSubmit}
-          onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
-          onSelectCategory={setSelectedCategory}
-          onOpenPrivacy={() => {
-            setCurrentRoute('/privacy');
-            try { window.history.pushState('', document.title, '/privacy'); } catch { }
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
-          onOpenTerms={() => {
-            setCurrentRoute('/terms');
-            try { window.history.pushState('', document.title, '/terms'); } catch { }
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
-          onOpenPricing={handleOpenPricing}
-        />
-        <ShareModal
-          product={shareProduct}
-          isOpen={!!shareProduct}
-          onClose={() => setShareProduct(null)}
-          soundEnabled={soundEnabled}
-        />
-        <SignInModal
-          isOpen={isSignInModalOpen}
-          onClose={() => setIsSignInModalOpen(false)}
-          onSignIn={handleSignIn}
-        />
-        <FeaturedSpotModal
-          isOpen={isFeaturedSpotModalOpen}
-          onClose={() => setIsFeaturedSpotModalOpen(false)}
-          products={products}
-          user={user}
-          mode={featuredModalMode}
-          featuredProductIds={featuredProductIds}
-          initialTier={featuredInitialTier}
-          soundEnabled={soundEnabled}
-          onActivateSponsor={handleActivateSponsorTrial}
-          onActivateFeatured={handleActivateFeatured}
-          onOpenSignInModal={() => {
-            setIsFeaturedSpotModalOpen(false);
-            setIsSignInModalOpen(true);
-          }}
-          onOpenSubmitModal={() => {
-            setIsFeaturedSpotModalOpen(false);
-            handleOpenSubmit();
-          }}
-        />
+        <main className="flex-1 max-w-7xl 2xl:max-w-[1600px] w-full mx-auto px-4 sm:px-6 pt-2 pb-6">
+          <HeroSponsorRails
+            enabled={sponsorRailsEnabled}
+            sponsors={activeRailSponsors}
+            lastWeeksTop3={topThreeLastWeek}
+            lastWeekLabel={lastWeekInfo?.label}
+            onNavigateToDirectory={() => handleTabChange('product-directory')}
+            soundEnabled={soundEnabled}
+            isLoading={!productsLoaded}
+            onTrackClick={handleTrackClick}
+            onOpenProduct={handleOpenProduct}
+            onOpenFeaturedSpotModal={() => {
+              setFeaturedModalMode('sponsor');
+              if (!user) {
+                setIsSignInModalOpen(true);
+              } else {
+                setIsFeaturedSpotModalOpen(true);
+              }
+            }}
+            footer={
+              <RichFooter
+                totalProducts={directoryProducts.length}
+                soundEnabled={soundEnabled}
+                onOpenSubmit={handleOpenSubmit}
+                onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
+                onSelectCategory={setSelectedCategory}
+                onOpenPrivacy={() => {
+                  setCurrentRoute('/privacy');
+                  try { window.history.pushState('', document.title, '/privacy'); } catch { }
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                onOpenTerms={() => {
+                  setCurrentRoute('/terms');
+                  try { window.history.pushState('', document.title, '/terms'); } catch { }
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                onOpenPricing={handleOpenPricing}
+              />
+            }
+          >
+            <ProductPage
+              product={ownedProduct}
+              topProduct={topProduct || product}
+              allProducts={sortedByRankProducts.map((p, idx) => ({ ...markOwnership(p), rank: idx + 1 }))}
+              sponsors={sortSponsorsByOrder(
+                sponsors.filter((s) => isLiveSponsor(s) && s.productId !== product.id),
+                sponsorOrderIds
+              ).map(sponsorToDisplayProduct)}
+              onOpenFeaturedSpotModal={() => {
+                setFeaturedModalMode('sponsor');
+                setIsFeaturedSpotModalOpen(true);
+              }}
+              comments={comments.filter((c) => c.productId === product.id)}
+              soundEnabled={soundEnabled}
+              isSignedIn={!!user}
+              userId={user?.id}
+              isOwner={isProductOwner}
+              isAdmin={isAdmin}
+              userName={submitterName}
+              userEmail={user?.email}
+              userAvatar={user?.user_metadata?.avatar_url || user?.user_metadata?.picture}
+              onOpenSignIn={() => setIsSignInModalOpen(true)}
+              onAddComment={handleAddComment}
+              onBack={() => {
+                setCurrentRoute('/');
+                try { window.history.pushState('', document.title, '/'); } catch { }
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              onSelectProduct={(p) => {
+                setCurrentRoute('product');
+                const slug = getProductSlug(p);
+                setProductRouteId(slug || p.id);
+                try { window.history.pushState({}, p.name, `/products/${encodeURIComponent(slug || p.id)}`); } catch { }
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              onShare={(p) => setShareProduct(p)}
+              onTrackClick={handleTrackClick}
+              onUpvote={handleUpvote}
+              isUpvoted={isProductUpvoted(product.id, userUpvotes)}
+              hasPaidAccess={canViewAnalytics}
+              onOpenPricing={() => {
+                setCurrentRoute('/pricing');
+                try { window.history.pushState('', document.title, '/pricing'); } catch { }
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            />
+          </HeroSponsorRails>
+        </main>
+        {globalModals}
       </div>
     );
   }
 
-  // 1.6 REPO DETAIL ROUTE (/repo/:owner/:name)
+  // Shared persistent 3-column Ideas & Repo chrome for /repo/:id, /trending, /guides, /guides/:slug
+  const renderRepoChrome = (content: React.ReactNode) => (
+    <div className="min-h-screen xl:h-screen xl:overflow-hidden bg-white text-neutral-900 flex flex-col font-sans no-scrollbar">
+      {globalHeader}
+      {/* Mobile Floating Sticky Sponsor under top nav (SaaS Ideas sponsors) */}
+      <div className="sticky top-[60px] z-30 xl:hidden w-full px-3.5 sm:px-6 pt-2 pointer-events-none flex justify-center">
+        <div className="pointer-events-auto w-full max-w-xl">
+          <SaaSIdeasMobileSponsor
+            slots={IDEAS_SPONSOR_SLOTS.slice(0, 5)}
+            sponsors={ideasSponsors}
+            soundEnabled={soundEnabled}
+            onTrackClick={handleTrackClick}
+            onOpenProduct={handleOpenProduct}
+            onOpenFeaturedSpotModal={() => {
+              setIsSaaSIdeasSponsorModalOpen(true);
+            }}
+            isFloating
+          />
+        </div>
+      </div>
+      {/* Persistent 3-col Ideas layout */}
+      <div className="mx-auto w-full max-w-[1600px] px-3.5 sm:px-6 flex flex-row items-start gap-4 xl:gap-6 pt-1 sm:pt-2 flex-1 min-h-0 xl:h-[calc(100vh-4.25rem)] xl:overflow-hidden no-scrollbar">
+
+        {/* ── Left Side Rail (Desktop xl+) ── */}
+        <aside className="hidden xl:flex flex-col w-[280px] 2xl:w-[320px] shrink-0 xl:h-full xl:overflow-hidden no-scrollbar py-0.5" aria-label="Sponsor rail">
+          <div className="w-full h-full rounded-2xl xl:rounded-3xl border border-neutral-200/90 bg-white p-2.5 xl:p-3 shadow-xs flex flex-col justify-between overflow-hidden">
+            {/* Header: ─── SPONSORED ─── */}
+            <div className="relative flex items-center justify-center my-0.5 shrink-0">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-neutral-200" />
+              </div>
+              <span className="relative bg-white px-2.5 py-0.5 rounded-full border border-neutral-300 text-[10px] font-bold text-neutral-500 uppercase tracking-wider select-none">
+                SPONSORED
+              </span>
+            </div>
+
+            {/* 5 Cards fitting evenly into viewport without scrolling */}
+            <div className="flex flex-col justify-between flex-1 gap-1.5 xl:gap-2 my-1 overflow-hidden min-h-0">
+              {IDEAS_SPONSOR_SLOTS.slice(0, 5).map((slot, index) => (
+                <IdeasSponsorCard
+                  key={slot.id}
+                  slot={slot}
+                  product={ideasSponsors[index]}
+                  soundEnabled={soundEnabled}
+                  onTrackClick={handleTrackClick}
+                  onOpenProduct={handleOpenProduct}
+                  onOpenFeaturedSpotModal={() => {
+                    setIsSaaSIdeasSponsorModalOpen(true);
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        </aside>
+
+        {/* ── Center Column: Content + RichFooter ── */}
+        <div className="flex-1 min-w-0 max-w-full flex flex-col gap-6 pb-16 xl:pb-6 xl:h-full xl:min-h-0 xl:overflow-y-auto no-scrollbar">
+          {content}
+          <RichFooter
+            totalProducts={directoryProducts.length}
+            soundEnabled={soundEnabled}
+            onOpenSubmit={handleOpenSubmit}
+            onSelectCategory={setSelectedCategory}
+            onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
+            onOpenPrivacy={() => {
+              setCurrentRoute('/privacy');
+              try { window.history.pushState('', document.title, '/privacy'); } catch { }
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onOpenTerms={() => {
+              setCurrentRoute('/terms');
+              try { window.history.pushState('', document.title, '/terms'); } catch { }
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onOpenPricing={handleOpenPricing}
+          />
+        </div>
+
+        {/* ── Right Side Rail (Desktop xl+) ── */}
+        <aside className="hidden xl:flex flex-col w-[280px] 2xl:w-[320px] shrink-0 xl:h-full xl:overflow-y-auto no-scrollbar py-0.5" aria-label="Top picks side rail">
+          <div className="w-full rounded-3xl border border-neutral-200/90 bg-white p-3 2xl:p-3.5 shadow-xs space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-neutral-100 px-1">
+              <div className="flex items-center gap-1.5">
+                <span className="flex h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
+                <h3 className="text-xs font-bold text-neutral-900">Top Pick For You</h3>
+              </div>
+              <span className="text-[10px] font-medium text-neutral-400">Curated ideas</span>
+            </div>
+            <div className="space-y-3">
+              {FEATURED_SIDEBAR_OPPORTUNITIES.map((opp) => (
+                <SaaSOpportunityCard
+                  key={opp.id}
+                  opportunity={opp}
+                  soundEnabled={soundEnabled}
+                  onOpenRepo={(fullName) => {
+                    handleOpenRepoByFullName(fullName);
+                  }}
+                />
+              ))}
+            </div>
+            <div className="pt-2 border-t border-neutral-100">
+              <p className="text-[10.5px] text-neutral-500 leading-relaxed text-center font-medium">
+                ⚡ Fork proven codebases to ship 4x faster without building auth &amp; plumbing from scratch.
+              </p>
+            </div>
+          </div>
+        </aside>
+
+      </div>
+      {globalModals}
+    </div>
+  );
+
+  // 1.6 REPO DETAIL ROUTE (/repo/:owner/:name) — rendered inside persistent 3-col Ideas layout
   if (currentRoute === 'repo') {
     const repoId = repoRouteId || '';
     const backToSaaSIdeas = () => {
@@ -3265,48 +3584,35 @@ export default function App() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    return (
-      <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between font-sans">
-        {globalHeader}
-        <React.Suspense fallback={<div className="flex-1" />}>
-          <RepoDetailPage
-            repoId={repoId}
-            soundEnabled={soundEnabled}
-            onBack={backToSaaSIdeas}
-            onSelectRepo={handleOpenRepo}
-            allProducts={sortedByRankProducts.map((p, idx) => ({ ...markOwnership(p), rank: idx + 1 }))}
-            sponsors={sortSponsorsByOrder(
-              sponsors.filter((s) => isLiveSponsor(s)),
-              sponsorOrderIds
-            ).map(sponsorToDisplayProduct)}
-            onSelectProduct={handleOpenProduct}
-            onTrackClick={handleTrackClick}
-            onOpenFeaturedSpotModal={() => {
-              setFeaturedModalMode('sponsor');
-              setIsFeaturedSpotModalOpen(true);
-            }}
-            onOpenFeatured={() => {
-              setFeaturedModalMode('featured');
-              if (!user) {
-                setIsSignInModalOpen(true);
-              } else {
-                setIsFeaturedSpotModalOpen(true);
-              }
-            }}
-          />
-        </React.Suspense>
-        <RichFooter
-          totalProducts={directoryProducts.length}
-          soundEnabled={soundEnabled}
-          onOpenSubmit={handleOpenSubmit}
-          onSelectCategory={setSelectedCategory}
-          onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
-          onOpenPrivacy={() => handleNavigateLegal('privacy')}
-          onOpenTerms={() => handleNavigateLegal('terms')}
-          onOpenPricing={handleOpenPricing}
-        />
-        {globalModals}
-      </div>
+    return renderRepoChrome(
+      <React.Suspense fallback={<SkeletonRepoDetail />}>
+              <RepoDetailPage
+                key={repoId}
+                repoId={repoId}
+                soundEnabled={soundEnabled}
+                onBack={backToSaaSIdeas}
+                onSelectRepo={handleOpenRepo}
+                allProducts={sortedByRankProducts.map((p, idx) => ({ ...markOwnership(p), rank: idx + 1 }))}
+                sponsors={sortSponsorsByOrder(
+                  sponsors.filter((s) => isLiveSponsor(s)),
+                  sponsorOrderIds
+                ).map(sponsorToDisplayProduct)}
+                onSelectProduct={handleOpenProduct}
+                onTrackClick={handleTrackClick}
+                onOpenFeaturedSpotModal={() => {
+                  setFeaturedModalMode('sponsor');
+                  setIsFeaturedSpotModalOpen(true);
+                }}
+                onOpenFeatured={() => {
+                  setFeaturedModalMode('featured');
+                  if (!user) {
+                    setIsSignInModalOpen(true);
+                  } else {
+                    setIsFeaturedSpotModalOpen(true);
+                  }
+                }}
+              />
+            </React.Suspense>
     );
   }
 
@@ -3497,6 +3803,23 @@ export default function App() {
   const routeChrome = (page: React.ReactNode) => (
     <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between selection:bg-mint-500/20 selection:text-neutral-900 font-sans pb-16 lg:pb-0">
       {globalHeader}
+      {/* Mobile floating sticky sponsor for directory & ecosystem pages */}
+      <div className="sticky top-[60px] z-30 lg:hidden w-full px-3.5 sm:px-6 pt-2 pointer-events-none flex justify-center">
+        <div className="pointer-events-auto w-full max-w-xl">
+          <SaaSIdeasMobileSponsor
+            slots={DIRECTORY_MOBILE_SLOTS}
+            sponsors={activeRailSponsors}
+            soundEnabled={soundEnabled}
+            onTrackClick={handleTrackClick}
+            onOpenProduct={handleOpenProduct}
+            onOpenFeaturedSpotModal={() => {
+              setFeaturedModalMode('sponsor');
+              setIsFeaturedSpotModalOpen(true);
+            }}
+            isFloating
+          />
+        </div>
+      </div>
       <React.Suspense fallback={<div className="flex-1" />}>
         {page}
       </React.Suspense>
@@ -3510,37 +3833,23 @@ export default function App() {
         onOpenTerms={() => handleNavigateLegal('terms')}
         onOpenPricing={handleOpenPricing}
       />
-      {/* Sticky Bottom Infinite Scrolling Sponsors (Mobile Only) - hidden on /submit */}
-      {!isSubmitPage && (
-        <MobileBottomStickySponsorTicker
-          enabled={sponsorRailsEnabled}
-          sponsors={activeRailSponsors}
-          soundEnabled={soundEnabled}
-          onTrackClick={handleTrackClick}
-          onOpenProduct={handleOpenProduct}
-          onOpenFeaturedSpotModal={() => {
-            setFeaturedModalMode('sponsor');
-            setIsFeaturedSpotModalOpen(true);
-          }}
-        />
-      )}
       {globalModals}
     </div>
   );
 
-  // 1.7 TRENDING ROUTE (/trending)
+  // 1.7 TRENDING ROUTE (/trending) — rendered inside persistent 3-col Ideas layout
   if (currentRoute === 'trending') {
-    return routeChrome(<TrendingPage soundEnabled={soundEnabled} onOpenRepo={handleOpenRepo} />);
+    return renderRepoChrome(<TrendingPage soundEnabled={soundEnabled} onOpenRepo={handleOpenRepo} />);
   }
 
-  // 1.8 BUILD GUIDES LIST ROUTE (/guides)
+  // 1.8 BUILD GUIDES LIST ROUTE (/guides) — rendered inside persistent 3-col Ideas layout
   if (currentRoute === 'guides') {
-    return routeChrome(<GuidesListPage soundEnabled={soundEnabled} />);
+    return renderRepoChrome(<GuidesListPage soundEnabled={soundEnabled} />);
   }
 
-  // 1.9 BUILD GUIDE DETAIL ROUTE (/guides/:slug)
+  // 1.9 BUILD GUIDE DETAIL ROUTE (/guides/:slug) — rendered inside persistent 3-col Ideas layout
   if (currentRoute === 'guide') {
-    return routeChrome(
+    return renderRepoChrome(
       <GuideDetailPage slug={guideSlug} soundEnabled={soundEnabled} onOpenRepo={handleOpenRepo} />
     );
   }
@@ -3572,6 +3881,25 @@ export default function App() {
     return routeChrome(<MrrCalculatorPage soundEnabled={soundEnabled} />);
   }
 
+  // 1.105 OPEN SOURCE TEARDOWN ROUTE (/opensource/:slug)
+  if (currentRoute === 'opensource') {
+    const backToSaaSIdeas = () => {
+      setCurrentRoute('/ideas');
+      try {
+        window.history.pushState({}, 'SaaS Ideas', '/ideas');
+      } catch { }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    return routeChrome(
+      <OpenSourceBentoPdfPage
+        soundEnabled={soundEnabled}
+        onBack={backToSaaSIdeas}
+        onSelectProduct={handleOpenProduct}
+      />
+    );
+  }
+
   // 1.11 BLOG LIST ROUTE (/blog)
   if (currentRoute === 'blog' || currentRoute === '/blog') {
     return routeChrome(<BlogListPage soundEnabled={soundEnabled} />);
@@ -3584,41 +3912,128 @@ export default function App() {
 
   // 2. MAIN DIRECTORY HOMEPAGE ROUTE
   return (
-    <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between selection:bg-mint-500/20 selection:text-neutral-900 font-sans pb-16 lg:pb-0">
+    <div className={`min-h-screen bg-white text-neutral-900 flex flex-col justify-between selection:bg-mint-500/20 selection:text-neutral-900 font-sans ${activeTab === 'saas-ideas' ? 'xl:h-screen xl:overflow-hidden pb-0 no-scrollbar' : 'pb-16 lg:pb-0'}`}>
       {globalHeader}
       {/* Main Content Area */}
-      <main className="mx-auto w-full max-w-7xl px-3.5 sm:px-6 space-y-4 sm:space-y-5 flex-1 pb-16 pt-4 sm:pt-6">
+      <main className={`mx-auto w-full max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 flex-1 ${activeTab === 'saas-ideas' ? 'pt-1 sm:pt-2 xl:min-h-0 xl:h-[calc(100vh-4.25rem)] xl:overflow-hidden pb-0 no-scrollbar' : 'pt-4 sm:pt-6 space-y-4 sm:space-y-5 pb-16'}`}>
 
         {activeTab === 'saas-ideas' ? (
-          <React.Suspense fallback={<SkeletonSaaSIdeas />}>
-            <SaaSIdeas
-              soundEnabled={soundEnabled}
-              topProducts={topThreeProducts}
-              productsLoaded={productsLoaded}
-              featuredProductId={featuredProductId}
-              featuredProduct={explicitFeaturedProduct}
-              commentCounts={commentCounts}
-              onOpenFeaturedSpotModal={() => {
-                if (!user) {
-                  setIsSignInModalOpen(true);
-                } else {
-                  setIsFeaturedSpotModalOpen(true);
-                }
-              }}
-              onShareProduct={(p) => setShareProduct(p)}
-              onTrackClick={handleTrackClick}
-              onUpvote={handleUpvote}
-              onOpenDetail={handleOpenProduct}
-              onOpenRepo={handleOpenRepo}
-              upvotedIds={userUpvotes}
-            />
-          </React.Suspense>
+          <div className="flex flex-row items-start gap-4 xl:gap-6 xl:h-full xl:min-h-0 no-scrollbar">
+
+            {/* ── Left Side Rail (Desktop xl+) ── */}
+            <aside className="hidden xl:flex flex-col w-[280px] 2xl:w-[320px] shrink-0 xl:h-full xl:overflow-hidden no-scrollbar py-0.5" aria-label="Sponsor rail">
+              <div className="w-full h-full rounded-2xl xl:rounded-3xl border border-neutral-200/90 bg-white p-2.5 xl:p-3 shadow-xs flex flex-col justify-between overflow-hidden">
+                {/* Header: ─── SPONSORED ─── */}
+                <div className="relative flex items-center justify-center my-0.5 shrink-0">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-neutral-200" />
+                  </div>
+                  <span className="relative bg-white px-2.5 py-0.5 rounded-full border border-neutral-300 text-[10px] font-bold text-neutral-500 uppercase tracking-wider select-none">
+                    SPONSORED
+                  </span>
+                </div>
+
+                {/* 5 Cards fitting evenly into viewport without scrolling */}
+                <div className="flex flex-col justify-between flex-1 gap-1.5 xl:gap-2 my-1 overflow-hidden min-h-0">
+                  {IDEAS_SPONSOR_SLOTS.slice(0, 5).map((slot, index) => (
+                    <IdeasSponsorCard
+                      key={slot.id}
+                      slot={slot}
+                      product={ideasSponsors[index]}
+                      soundEnabled={soundEnabled}
+                      onTrackClick={handleTrackClick}
+                      onOpenProduct={handleOpenProduct}
+                      onOpenFeaturedSpotModal={() => {
+                        setIsSaaSIdeasSponsorModalOpen(true);
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            </aside>
+
+            {/* ── Center Column: SaaSIdeas + RichFooter ── */}
+            <div className="flex-1 min-w-0 max-w-full flex flex-col gap-6 pb-16 xl:pb-6 xl:h-full xl:min-h-0 xl:overflow-y-auto no-scrollbar">
+              <React.Suspense fallback={<SkeletonSaaSIdeas />}>
+                <SaaSIdeas
+                  soundEnabled={soundEnabled}
+                  sponsors={ideasSponsors}
+                  topProducts={topThreeProducts}
+                  productsLoaded={productsLoaded}
+                  featuredProductId={saasIdeasFeaturedProductId}
+                  featuredProduct={saasIdeasFeaturedProduct}
+                  commentCounts={commentCounts}
+                  onOpenFeaturedSpotModal={() => {
+                    setIsSaaSIdeasSponsorModalOpen(true);
+                  }}
+                  onShareProduct={(p) => setShareProduct(p)}
+                  onTrackClick={handleTrackClick}
+                  onUpvote={handleUpvote}
+                  onOpenDetail={handleOpenProduct}
+                  onOpenRepo={handleOpenRepo}
+                  upvotedIds={userUpvotes}
+                />
+              </React.Suspense>
+              <RichFooter
+                totalProducts={directoryProducts.length}
+                soundEnabled={soundEnabled}
+                onOpenSubmit={handleOpenSubmit}
+                onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
+                onSelectCategory={setSelectedCategory}
+                onOpenPrivacy={() => {
+                  setCurrentRoute('/privacy');
+                  try { window.history.pushState('', document.title, '/privacy'); } catch { }
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                onOpenTerms={() => {
+                  setCurrentRoute('/terms');
+                  try { window.history.pushState('', document.title, '/terms'); } catch { }
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                onOpenPricing={handleOpenPricing}
+              />
+            </div>
+
+            {/* ── Right Side Rail (Desktop xl+) ── */}
+            <aside className="hidden xl:flex flex-col w-[280px] 2xl:w-[320px] shrink-0 xl:h-full xl:overflow-y-auto no-scrollbar py-0.5" aria-label="Top picks side rail">
+              <div className="w-full rounded-3xl border border-neutral-200/90 bg-white p-3 2xl:p-3.5 shadow-xs space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-neutral-100 px-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="flex h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
+                    <h3 className="text-xs font-bold text-neutral-900">Top Pick For You</h3>
+                  </div>
+                  <span className="text-[10px] font-medium text-neutral-400">Curated ideas</span>
+                </div>
+                <div className="space-y-3">
+                  {FEATURED_SIDEBAR_OPPORTUNITIES.map((opp) => (
+                    <SaaSOpportunityCard
+                      key={opp.id}
+                      opportunity={opp}
+                      soundEnabled={soundEnabled}
+                      onOpenRepo={(fullName) => {
+                        handleOpenRepoByFullName(fullName);
+                      }}
+                    />
+                  ))}
+                </div>
+                <div className="pt-2 border-t border-neutral-100">
+                  <p className="text-[10.5px] text-neutral-500 leading-relaxed text-center font-medium">
+                    ⚡ Fork proven codebases to ship 4x faster without building auth &amp; plumbing from scratch.
+                  </p>
+                </div>
+              </div>
+            </aside>
+
+          </div>
         ) : (
           <>
             {/* ── Hero: brand statement + search ── */}
             <HeroSponsorRails
               enabled={sponsorRailsEnabled}
               sponsors={activeRailSponsors}
+              lastWeeksTop3={topThreeLastWeek}
+              lastWeekLabel={lastWeekInfo?.label}
+              onNavigateToDirectory={() => handleTabChange('product-directory')}
               soundEnabled={soundEnabled}
               isLoading={!productsLoaded}
               onTrackClick={handleTrackClick}
@@ -3631,6 +4046,26 @@ export default function App() {
                   setIsFeaturedSpotModalOpen(true);
                 }
               }}
+              footer={
+                <RichFooter
+                  totalProducts={directoryProducts.length}
+                  soundEnabled={soundEnabled}
+                  onOpenSubmit={handleOpenSubmit}
+                  onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
+                  onSelectCategory={setSelectedCategory}
+                  onOpenPrivacy={() => {
+                    setCurrentRoute('/privacy');
+                    try { window.history.pushState('', document.title, '/privacy'); } catch { }
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  onOpenTerms={() => {
+                    setCurrentRoute('/terms');
+                    try { window.history.pushState('', document.title, '/terms'); } catch { }
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  onOpenPricing={handleOpenPricing}
+                />
+              }
             >
               <HomeHero
                 totalProducts={directoryProducts.length}
@@ -4142,25 +4577,27 @@ export default function App() {
         )}
       </main>
 
-      {/* Footer */}
-      <RichFooter
-        totalProducts={directoryProducts.length}
-        soundEnabled={soundEnabled}
-        onOpenSubmit={handleOpenSubmit}
-        onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
-        onSelectCategory={setSelectedCategory}
-        onOpenPrivacy={() => {
-          setCurrentRoute('/privacy');
-          try { window.history.pushState('', document.title, '/privacy'); } catch { }
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
-        onOpenTerms={() => {
-          setCurrentRoute('/terms');
-          try { window.history.pushState('', document.title, '/terms'); } catch { }
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
-        onOpenPricing={handleOpenPricing}
-      />
+      {/* Footer (rendered for secondary pages; saas-ideas and homepage directory render RichFooter inside their center column) */}
+      {activeTab !== 'saas-ideas' && currentRoute !== '/' && (
+        <RichFooter
+          totalProducts={directoryProducts.length}
+          soundEnabled={soundEnabled}
+          onOpenSubmit={handleOpenSubmit}
+          onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
+          onSelectCategory={setSelectedCategory}
+          onOpenPrivacy={() => {
+            setCurrentRoute('/privacy');
+            try { window.history.pushState('', document.title, '/privacy'); } catch { }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          onOpenTerms={() => {
+            setCurrentRoute('/terms');
+            try { window.history.pushState('', document.title, '/terms'); } catch { }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          onOpenPricing={handleOpenPricing}
+        />
+      )}
 
       <SignInModal
         isOpen={isSignInModalOpen}
@@ -4210,20 +4647,15 @@ export default function App() {
         }}
       />
 
-      {/* Sticky Bottom Infinite Scrolling Sponsor Ticker (Mobile Only) - hidden on /submit */}
-      {!isSubmitPage && (
-        <MobileBottomStickySponsorTicker
-          enabled={sponsorRailsEnabled}
-          sponsors={activeRailSponsors}
-          soundEnabled={soundEnabled}
-          onTrackClick={handleTrackClick}
-          onOpenProduct={handleOpenProduct}
-          onOpenFeaturedSpotModal={() => {
-            setFeaturedModalMode('sponsor');
-            setIsFeaturedSpotModalOpen(true);
-          }}
-        />
-      )}
+      {/* Dedicated SaaS Ideas Sponsor Modal ($99/mo) */}
+      <SaaSIdeasSponsorModal
+        isOpen={isSaaSIdeasSponsorModalOpen}
+        onClose={() => setIsSaaSIdeasSponsorModalOpen(false)}
+        soundEnabled={soundEnabled}
+        defaultEmail={user?.email || ''}
+        user={user}
+        onRequireSignIn={() => setIsSignInModalOpen(true)}
+      />
 
     </div>
   );
