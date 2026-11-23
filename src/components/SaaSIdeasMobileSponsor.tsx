@@ -144,7 +144,7 @@ export const SaaSIdeasMobileSponsor: React.FC<SaaSIdeasMobileSponsorProps> = ({
           handleClick(e as unknown as React.MouseEvent);
         }
       }}
-      className={`group relative w-full overflow-hidden rounded-xl border border-dashed border-neutral-300 bg-white px-3.5 py-2.5 text-left transition-all duration-200 cursor-pointer active:scale-[0.99] select-none ${
+      className={`group relative w-full h-[82px] min-h-[82px] max-h-[82px] box-border overflow-hidden rounded-xl border border-dashed border-neutral-300 bg-white px-3.5 py-2.5 flex flex-col justify-between text-left transition-all duration-200 cursor-pointer active:scale-[0.99] select-none ${
         isFloating
           ? 'shadow-lg shadow-neutral-900/10 ring-1 ring-black/5'
           : 'shadow-2xs'
@@ -152,7 +152,7 @@ export const SaaSIdeasMobileSponsor: React.FC<SaaSIdeasMobileSponsorProps> = ({
       aria-label={`Sponsored announcement: ${displayName}`}
     >
       {/* Top Row: [Small Logo] [Brand Name] ......... [Grey "SPONSORED" text] */}
-      <div className="flex items-center justify-between gap-2.5">
+      <div className="flex items-center justify-between gap-2.5 h-6 shrink-0">
         <div className="flex items-center gap-2 min-w-0 flex-1">
           {/* Logo container */}
           <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-neutral-50 p-0.5 border border-neutral-200/80 overflow-hidden">
@@ -192,10 +192,10 @@ export const SaaSIdeasMobileSponsor: React.FC<SaaSIdeasMobileSponsorProps> = ({
         </div>
       </div>
 
-      {/* Description text */}
-      <div className="mt-1">
+      {/* Description text - Fixed 2-line height container strictly identical across all cards */}
+      <div className="h-[34px] min-h-[34px] max-h-[34px] overflow-hidden flex items-start mt-1 shrink-0">
         <p
-          className={`text-xs text-neutral-500 font-normal leading-snug line-clamp-2 transition-opacity duration-200 ${
+          className={`text-xs text-neutral-500 font-normal leading-[17px] line-clamp-2 transition-opacity duration-200 ${
             isFading ? 'opacity-0' : 'opacity-100'
           }`}
         >

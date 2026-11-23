@@ -59,7 +59,7 @@ export const SponsorTile: React.FC<SponsorTileProps> = ({
             handleClick();
           }
         }}
-        className="group relative flex w-full flex-col overflow-hidden rounded-2xl border border-neutral-300/80 bg-gradient-to-b from-neutral-100/90 via-neutral-50/50 to-neutral-100/80 p-4 sm:p-5 text-left transition-all duration-300 ease-out cursor-pointer hover:border-neutral-400 hover:shadow-[0_8px_28px_rgba(0,0,0,0.06)] focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 shadow-[0_1px_4px_rgba(0,0,0,0.03)]"
+        className="group relative flex w-full min-h-[120px] sm:min-h-[136px] justify-between flex-col overflow-hidden rounded-2xl border border-neutral-300/80 bg-gradient-to-b from-neutral-100/90 via-neutral-50/50 to-neutral-100/80 p-4 sm:p-5 text-left transition-all duration-300 ease-out cursor-pointer hover:border-neutral-400 hover:shadow-[0_8px_28px_rgba(0,0,0,0.06)] focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 shadow-[0_1px_4px_rgba(0,0,0,0.03)]"
       >
         {/* Featured/Sponsor Card Left-to-Right Interval Shimmer */}
         <CardShimmer delay="sponsor" />
@@ -87,7 +87,7 @@ export const SponsorTile: React.FC<SponsorTileProps> = ({
         </div>
 
         {/* Top Kicker Row: "topsaas featured ↗" (no T box frame, arrow in front) */}
-        <div className="relative z-10 flex items-center justify-between mb-3 select-none">
+        <div className="relative z-10 flex items-center justify-between h-7 mb-3 select-none">
           <div className="flex items-center gap-1.5 text-[11.5px] font-medium text-neutral-500 group-hover:text-neutral-800 transition-colors">
             <span>topsaas featured</span>
             <ArrowUpRight className="h-3.5 w-3.5 text-neutral-400 group-hover:text-neutral-800 transition-colors" />
@@ -144,7 +144,7 @@ export const SponsorTile: React.FC<SponsorTileProps> = ({
           handleClick();
         }
       }}
-      className="group relative flex w-full flex-col overflow-hidden rounded-2xl border border-dashed border-neutral-300/90 bg-gradient-to-b from-neutral-100/90 via-neutral-50/50 to-neutral-100/80 p-4 sm:p-5 text-left transition-all duration-300 ease-out cursor-pointer hover:border-neutral-400 hover:shadow-[0_8px_26px_rgba(0,0,0,0.05)] focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 shadow-2xs"
+      className="group relative flex w-full min-h-[120px] sm:min-h-[136px] justify-between flex-col overflow-hidden rounded-2xl border border-dashed border-neutral-300/90 bg-gradient-to-b from-neutral-100/90 via-neutral-50/50 to-neutral-100/80 p-4 sm:p-5 text-left transition-all duration-300 ease-out cursor-pointer hover:border-neutral-400 hover:shadow-[0_8px_26px_rgba(0,0,0,0.05)] focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 shadow-2xs"
     >
       {/* Subtle Background Grid */}
       <GridPattern
@@ -156,7 +156,7 @@ export const SponsorTile: React.FC<SponsorTileProps> = ({
       />
 
       {/* Top Kicker Row */}
-      <div className="relative z-10 flex items-center justify-between mb-3 select-none">
+      <div className="relative z-10 flex items-center justify-between h-7 mb-3 select-none">
         <div className="flex items-center gap-1.5 text-[11.5px] font-medium text-neutral-500 group-hover:text-neutral-800 transition-colors">
           <span>topsaas featured spot</span>
           <ArrowUpRight className="h-3.5 w-3.5 text-neutral-400 group-hover:text-neutral-800 transition-colors" />
