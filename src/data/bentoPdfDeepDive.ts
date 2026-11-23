@@ -21,6 +21,14 @@ export interface BentoFaq {
   answer: string;
 }
 
+export interface BentoEcosystemLink {
+  title: string;
+  description: string;
+  url: string;
+  badge?: string;
+  isExternal?: boolean;
+}
+
 export const BENTO_PDF_META = {
   repoFullName: 'alam00000/bentopdf',
   repoName: 'BentoPDF',
@@ -30,6 +38,13 @@ export const BENTO_PDF_META = {
   officialWebsite: 'https://www.bentopdf.com/',
   githubUrl: 'https://github.com/alam00000/bentopdf',
   dockerHub: 'ghcr.io/alam00000/bentopdf-simple:latest',
+  dockerPackageUrl: 'https://github.com/alam00000/bentopdf/pkgs/container/bentopdf-simple',
+  licenseUrl: 'https://www.gnu.org/licenses/agpl-3.0.html',
+  mupdfUrl: 'https://mupdf.com/',
+  tesseractUrl: 'https://tesseract.projectnaptha.com/',
+  pdfLibUrl: 'https://pdf-lib.js.org/',
+  pdfJsUrl: 'https://mozilla.github.io/pdf.js/',
+  wasmUrl: 'https://webassembly.org/',
   techStack: [
     'TypeScript',
     'Vite',
@@ -44,6 +59,117 @@ export const BENTO_PDF_META = {
   totalTools: 51,
   primaryArchitecture: 'Client-Side WebAssembly (Local Browser Memory Execution)',
 };
+
+export const BENTO_INTERNAL_LINKS: BentoEcosystemLink[] = [
+  {
+    title: 'Open-Source SaaS Opportunities',
+    description: 'Explore 50+ vetted open-source repos with market sizing, ICP targets, and monetization blueprints.',
+    url: '/ideas',
+    badge: 'Ideas Catalog',
+  },
+  {
+    title: 'MRR & Pricing Calculator',
+    description: 'Model customer volume, monthly pricing tiers, and breakeven timelines for your PDF micro-SaaS.',
+    url: '/mrr-calculator',
+    badge: 'Revenue Modeler',
+  },
+  {
+    title: 'TopSAAS Product Directory',
+    description: 'Benchmark launched developer tools, AI utilities, and indie SaaS products with live user metrics.',
+    url: '/product-directory',
+    badge: 'Directory',
+  },
+  {
+    title: 'Trending SaaS Products',
+    description: 'Track fast-growing indie software, community upvotes, and weekly launch leaderboards.',
+    url: '/trending',
+    badge: 'Trending',
+  },
+  {
+    title: 'Founder Build Guides',
+    description: 'Deep-dive architectural playbooks on building, hardening, and marketing micro-SaaS products.',
+    url: '/guides',
+    badge: 'Build Guides',
+  },
+  {
+    title: 'Submit Your Software',
+    description: 'Launch your BentoPDF fork or software product to reach founders, buyers, and tech enthusiasts.',
+    url: '/submit',
+    badge: 'Verified Launch',
+  },
+  {
+    title: 'Sponsorships & Featured Spots',
+    description: 'Promote your software or developer platform across TopSAAS rails and high-intent traffic streams.',
+    url: '/pricing',
+    badge: 'Sponsor Rails',
+  },
+];
+
+export const BENTO_EXTERNAL_RESOURCES: BentoEcosystemLink[] = [
+  {
+    title: 'alam00000/bentopdf GitHub Repository',
+    description: 'Official open-source repository containing full frontend source code, WASM bindings, and Dockerfiles.',
+    url: 'https://github.com/alam00000/bentopdf',
+    badge: 'GitHub',
+    isExternal: true,
+  },
+  {
+    title: 'BentoPDF Live Web Application',
+    description: 'Interactive live production deployment executing all 51 tools directly in client browser memory.',
+    url: 'https://www.bentopdf.com/',
+    badge: 'Live Demo',
+    isExternal: true,
+  },
+  {
+    title: 'bentopdf-simple Container (GHCR)',
+    description: 'Official minimal Docker container on GitHub Container Registry for air-gapped and self-hosted homelabs.',
+    url: 'https://github.com/alam00000/bentopdf/pkgs/container/bentopdf-simple',
+    badge: 'Docker Image',
+    isExternal: true,
+  },
+  {
+    title: 'MuPDF WebAssembly Rendering Engine',
+    description: "Artifex's lightweight, highly optimized PDF and XPS parser and renderer compiled to WebAssembly.",
+    url: 'https://mupdf.com/',
+    badge: 'MuPDF WASM',
+    isExternal: true,
+  },
+  {
+    title: 'Tesseract.js Client-Side OCR',
+    description: 'Neural-network Optical Character Recognition engine supporting 100+ languages directly inside Web Workers.',
+    url: 'https://tesseract.projectnaptha.com/',
+    badge: 'Tesseract.js',
+    isExternal: true,
+  },
+  {
+    title: 'pdf-lib JavaScript Library',
+    description: 'Pure TypeScript library for low-level PDF manipulation, page merging, splitting, and xref re-indexing.',
+    url: 'https://pdf-lib.js.org/',
+    badge: 'pdf-lib',
+    isExternal: true,
+  },
+  {
+    title: 'Mozilla PDF.js Parser & Standards',
+    description: 'Industry standard HTML5 PDF viewer and specification parser maintaining web document compliance.',
+    url: 'https://mozilla.github.io/pdf.js/',
+    badge: 'PDF.js',
+    isExternal: true,
+  },
+  {
+    title: 'GNU AGPL-3.0 License Specification',
+    description: 'Legal terms of the GNU Affero General Public License v3, governing network interaction and open-source forks.',
+    url: 'https://www.gnu.org/licenses/agpl-3.0.html',
+    badge: 'AGPL-3.0',
+    isExternal: true,
+  },
+  {
+    title: 'W3C WebAssembly (WASM) Standard',
+    description: 'Official W3C specification defining binary code format and safe sandboxed execution in modern browser engines.',
+    url: 'https://webassembly.org/',
+    badge: 'W3C Standard',
+    isExternal: true,
+  },
+];
 
 export const BENTO_PDF_ARCHITECTURE = {
   summary:

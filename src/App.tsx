@@ -924,6 +924,7 @@ export default function App() {
       const twitterUrlEl = document.querySelector('meta[name="twitter:url"]');
       if (twitterUrlEl) twitterUrlEl.setAttribute('content', canonical);
 
+      let categoryJsonLdEl = document.getElementById('category-jsonld') as HTMLScriptElement | null;
       if (selectedCategory && selectedCategory !== 'All') {
         const title = `Top ${selectedCategory} & Software (2026) | TopSAAS`;
         const desc = `Discover the best ${selectedCategory} software, AI tools, and indie products. Real-time community upvotes and verified launches on TopSAAS.`;
@@ -934,7 +935,54 @@ export default function App() {
         if (ogTitle) ogTitle.setAttribute('content', title);
         const ogDesc = document.querySelector('meta[property="og:description"]');
         if (ogDesc) ogDesc.setAttribute('content', desc);
+
+        const targetCat = selectedCategory.toLowerCase();
+        const catProducts = products.filter((p) => {
+          if (!p.category) return false;
+          const parts = p.category.split(',').map((c) => c.trim().toLowerCase());
+          return parts.includes(targetCat);
+        });
+
+        const catSchema = {
+          '@context': 'https://schema.org',
+          '@graph': [
+            {
+              '@type': 'CollectionPage',
+              '@id': `https://www.topsaas.space/?category=${encodeURIComponent(selectedCategory)}#webpage`,
+              url: `https://www.topsaas.space/?category=${encodeURIComponent(selectedCategory)}`,
+              name: title,
+              description: desc,
+              inLanguage: 'en',
+              isPartOf: {
+                '@type': 'WebSite',
+                name: 'TopSAAS',
+                url: 'https://www.topsaas.space/',
+              },
+            },
+            {
+              '@type': 'ItemList',
+              name: `Top ${selectedCategory} Software & Tools`,
+              numberOfItems: catProducts.length,
+              itemListElement: catProducts.slice(0, 50).map((p, idx) => ({
+                '@type': 'ListItem',
+                position: idx + 1,
+                name: p.name,
+                url: `https://www.topsaas.space/products/${getProductSlug(p)}`,
+                item: `https://www.topsaas.space/products/${getProductSlug(p)}`,
+              })),
+            },
+          ],
+        };
+
+        if (!categoryJsonLdEl) {
+          categoryJsonLdEl = document.createElement('script');
+          categoryJsonLdEl.type = 'application/ld+json';
+          categoryJsonLdEl.id = 'category-jsonld';
+          document.head.appendChild(categoryJsonLdEl);
+        }
+        categoryJsonLdEl.textContent = JSON.stringify(catSchema);
       } else {
+        if (categoryJsonLdEl) categoryJsonLdEl.remove();
         document.title = 'TopSAAS — The Curated Directory of Modern SaaS & AI Tools';
         const defaultDesc = 'Discover modern SaaS products and AI tools on a community-ranked directory. Verified launches, weekly spotlights, and open-source starters.';
         const metaDesc = document.querySelector('meta[name="description"]');
@@ -945,7 +993,12 @@ export default function App() {
         if (ogDesc) ogDesc.setAttribute('content', defaultDesc);
       }
     }
-  }, [currentRoute, activeTab, selectedCategory]);
+
+    return () => {
+      const el = document.getElementById('category-jsonld');
+      if (el) el.remove();
+    };
+  }, [currentRoute, activeTab, selectedCategory, products]);
 
   // Honor ?q= deep links (the SearchAction target advertised in the homepage
   // JSON-LD), so search-engine site-search results land with the query applied.
@@ -3915,7 +3968,7 @@ export default function App() {
     <div className={`min-h-screen bg-white text-neutral-900 flex flex-col justify-between selection:bg-mint-500/20 selection:text-neutral-900 font-sans ${activeTab === 'saas-ideas' ? 'xl:h-screen xl:overflow-hidden pb-0 no-scrollbar' : 'pb-16 lg:pb-0'}`}>
       {globalHeader}
       {/* Main Content Area */}
-      <main className={`mx-auto w-full max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 flex-1 ${activeTab === 'saas-ideas' ? 'pt-1 sm:pt-2 xl:min-h-0 xl:h-[calc(100vh-4.25rem)] xl:overflow-hidden pb-0 no-scrollbar' : 'pt-4 sm:pt-6 space-y-4 sm:space-y-5 pb-16'}`}>
+      <main className={`mx-auto w-full max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 flex-1 ${activeTab === 'saas-ideas' ? 'pt-1 sm:pt-2 xl:min-h-0 xl:h-[calc(100vh-4.25rem)] xl:overflow-hidden pb-0 no-scrollbar' : 'pt-1 sm:pt-2 pb-16'}`}>
 
         {activeTab === 'saas-ideas' ? (
           <div className="flex flex-row items-start gap-4 xl:gap-6 xl:h-full xl:min-h-0 no-scrollbar">

@@ -145,6 +145,7 @@ export const directoryListJsonLd = (
           position: index + 1,
           name: directory.name,
           url: `${DIRECTORY_SITE_URL}/product-directory/${directory.slug}`,
+          item: `${DIRECTORY_SITE_URL}/product-directory/${directory.slug}`,
           description: directory.description,
         })),
       },

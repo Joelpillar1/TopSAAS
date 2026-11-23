@@ -177,6 +177,11 @@ const formatIntoParagraphs = (text: string): string[] => {
 
 /* ───────────────────────── page ───────────────────────── */
 
+const REPO_ALIASES: Record<string, string> = {
+  'tradecatlabs/vibe-coding-cn': '2025Emma/vibe-coding-cn',
+  'zoicware/removewindowsai': 'usefam1/RemoveWindowsAI',
+};
+
 export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
   repo: propRepo,
   repoId,
@@ -184,11 +189,23 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
   onBack,
   onSelectRepo,
 }) => {
+  const normalizedRepoId = repoId
+    ? (REPO_ALIASES[repoId.toLowerCase()] || repoId)
+    : null;
+
   const repo =
     propRepo ||
-    (repoId
-      ? CURATED_REPOS.find((r) => r.full_name.toLowerCase() === repoId.toLowerCase())
+    (normalizedRepoId
+      ? CURATED_REPOS.find((r) => r.full_name.toLowerCase() === normalizedRepoId.toLowerCase())
       : null);
+
+  useEffect(() => {
+    if (repo && repoId && repo.full_name.toLowerCase() !== repoId.toLowerCase()) {
+      try {
+        window.history.replaceState({}, repo.name, `/repo/${repo.full_name}`);
+      } catch { }
+    }
+  }, [repo, repoId]);
 
   if (!repo) {
     return (
@@ -526,7 +543,7 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
 
     const ld: Record<string, unknown> = {
       '@context': 'https://schema.org',
-      '@type': 'SoftwareSourceCode',
+      '@type': ['Product', 'SoftwareSourceCode'],
       name: repo.name,
       description,
       codeRepository: repo.html_url,
@@ -534,6 +551,16 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
       author: {
         '@type': 'Organization',
         name: ownerLogin,
+      },
+      brand: {
+        '@type': 'Brand',
+        name: ownerLogin,
+      },
+      offers: {
+        '@type': 'Offer',
+        price: '0',
+        priceCurrency: 'USD',
+        availability: 'https://schema.org/InStock',
       },
     };
     if (repo.language) ld.programmingLanguage = repo.language;

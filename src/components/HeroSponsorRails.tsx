@@ -52,36 +52,36 @@ const LEFT_SLOTS = [
 
 /** Skeleton loader for ad cards matching the exact dimensions and spacing */
 export const SkeletonAdCard: React.FC = () => (
-  <div className="flex w-full flex-col justify-between rounded-2xl border border-neutral-200/80 bg-white p-3.5 xl:p-4 text-left shadow-2xs overflow-hidden min-h-[112px] xl:min-h-[120px]">
+  <div className="flex-1 min-h-0 flex w-full flex-col justify-between rounded-xl xl:rounded-2xl border border-neutral-200/80 bg-white p-2.5 xl:p-3 text-left shadow-2xs overflow-hidden">
     <div className="flex items-center gap-2">
       <div
-        className="h-7 w-7 xl:h-8 xl:w-8 shrink-0 rounded-xl animate-pulse bg-gradient-to-r from-neutral-200 via-neutral-100 to-neutral-200 bg-[length:200%_100%]"
+        className="h-6 w-6 xl:h-7 xl:w-7 shrink-0 rounded-lg animate-pulse bg-gradient-to-r from-neutral-200 via-neutral-100 to-neutral-200 bg-[length:200%_100%]"
         style={{ animation: 'shimmer 1.5s infinite linear' }}
       />
       <div
-        className="h-3.5 w-28 xl:w-32 rounded animate-pulse bg-gradient-to-r from-neutral-200 via-neutral-100 to-neutral-200 bg-[length:200%_100%]"
-        style={{ animation: 'shimmer 1.5s infinite linear' }}
-      />
-    </div>
-
-    <div className="mt-2.5 space-y-1.5">
-      <div
-        className="h-2.5 w-full rounded animate-pulse bg-gradient-to-r from-neutral-200 via-neutral-100 to-neutral-200 bg-[length:200%_100%]"
-        style={{ animation: 'shimmer 1.5s infinite linear' }}
-      />
-      <div
-        className="h-2.5 w-3/4 rounded animate-pulse bg-gradient-to-r from-neutral-200 via-neutral-100 to-neutral-200 bg-[length:200%_100%]"
+        className="h-3 w-24 xl:w-28 rounded animate-pulse bg-gradient-to-r from-neutral-200 via-neutral-100 to-neutral-200 bg-[length:200%_100%]"
         style={{ animation: 'shimmer 1.5s infinite linear' }}
       />
     </div>
 
-    <div className="mt-2.5 flex items-center justify-between">
+    <div className="mt-1 space-y-1">
       <div
-        className="h-5 w-20 rounded-md animate-pulse bg-gradient-to-r from-neutral-200 via-neutral-100 to-neutral-200 bg-[length:200%_100%]"
+        className="h-2 w-full rounded animate-pulse bg-gradient-to-r from-neutral-200 via-neutral-100 to-neutral-200 bg-[length:200%_100%]"
         style={{ animation: 'shimmer 1.5s infinite linear' }}
       />
       <div
-        className="h-3 w-14 rounded animate-pulse bg-gradient-to-r from-neutral-200 via-neutral-100 to-neutral-200 bg-[length:200%_100%]"
+        className="h-2 w-3/4 rounded animate-pulse bg-gradient-to-r from-neutral-200 via-neutral-100 to-neutral-200 bg-[length:200%_100%]"
+        style={{ animation: 'shimmer 1.5s infinite linear' }}
+      />
+    </div>
+
+    <div className="mt-1 flex items-center justify-between">
+      <div
+        className="h-4 w-16 rounded-md animate-pulse bg-gradient-to-r from-neutral-200 via-neutral-100 to-neutral-200 bg-[length:200%_100%]"
+        style={{ animation: 'shimmer 1.5s infinite linear' }}
+      />
+      <div
+        className="h-2.5 w-12 rounded animate-pulse bg-gradient-to-r from-neutral-200 via-neutral-100 to-neutral-200 bg-[length:200%_100%]"
         style={{ animation: 'shimmer 1.5s infinite linear' }}
       />
     </div>
@@ -124,15 +124,15 @@ const OpenAdCard: React.FC<OpenAdCardProps> = ({
           handleClick();
         }
       }}
-      className="group relative flex w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed border-neutral-300 hover:border-neutral-400 bg-white/70 p-4 text-center transition-all duration-200 hover:bg-neutral-50/80 cursor-pointer overflow-hidden min-h-[112px] xl:min-h-[120px] focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 select-none shadow-2xs"
+      className="group relative flex-1 min-h-0 flex w-full flex-col items-center justify-center rounded-xl xl:rounded-2xl border-2 border-dashed border-neutral-300 hover:border-neutral-400 bg-white/70 p-2 xl:p-2.5 text-center transition-all duration-200 hover:bg-neutral-50/80 cursor-pointer overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 select-none shadow-2xs"
     >
-      <div className="flex flex-col items-center justify-center space-y-1">
-        <Megaphone className="h-5 w-5 text-neutral-600 group-hover:text-neutral-900 stroke-[1.8] group-hover:scale-110 transition-transform" />
-        <h4 className="text-xs xl:text-sm font-bold text-neutral-800 group-hover:text-neutral-950 tracking-tight leading-tight">
+      <div className="flex flex-col items-center justify-center space-y-0.5">
+        <Megaphone className="h-4 w-4 xl:h-4.5 xl:w-4.5 text-neutral-600 group-hover:text-neutral-900 stroke-[1.8] group-hover:scale-110 transition-transform" />
+        <h4 className="text-[11px] xl:text-xs font-bold text-neutral-800 group-hover:text-neutral-950 tracking-tight leading-tight">
           Advertise your product
         </h4>
-        <p className="text-[11px] font-medium text-neutral-400 group-hover:text-neutral-600 leading-tight">
-          Your product on a Sponsor card across the site, for 30 days.
+        <p className="text-[9.5px] xl:text-[10px] font-medium text-neutral-400 group-hover:text-neutral-600 leading-tight line-clamp-1">
+          Your product on a Sponsor card, for 30 days.
         </p>
       </div>
     </div>
@@ -402,46 +402,61 @@ export const HeroSponsorRails: React.FC<HeroSponsorRailsProps> = ({
         </div>
       )}
 
-      <div className="flex flex-col lg:flex-row items-center lg:items-start justify-between gap-4 xl:gap-6 2xl:gap-8 pt-1 w-full">
-        {/* Left Side Rail (Desktop - stays sticky in place while page scrolls, aligned with Logo edge) */}
+      <div className="flex flex-col xl:flex-row items-center xl:items-start justify-between gap-4 xl:gap-6 2xl:gap-8 w-full">
+        {/* Left Side Rail (Desktop - stays static in viewport while page scrolls, like SaaS Ideas) */}
         <aside
           aria-label="Sponsors"
-          className="hidden lg:flex flex-col gap-2 w-[215px] xl:w-[245px] 2xl:w-[270px] shrink-0 sticky top-16 self-start py-0.5"
+          className="hidden xl:flex flex-col w-[280px] 2xl:w-[320px] shrink-0 sticky top-[58px] sm:top-[60px] h-[calc(100vh-4.25rem)] max-h-[calc(100vh-4.25rem)] self-start py-0.5 overflow-hidden"
         >
-          {LEFT_SLOTS.map((slot, index) => {
-            const sponsoredItem = leftSponsors[index];
-            const card = isLoading ? (
-              <SkeletonAdCard key={slot.id} />
-            ) : sponsoredItem ? (
-              <ActiveSponsorCard
-                key={`active-left-${sponsoredItem.id}`}
-                product={sponsoredItem}
-                soundEnabled={soundEnabled}
-                onTrackClick={onTrackClick}
-                onOpenProduct={onOpenProduct}
-              />
-            ) : (
-              <OpenAdCard
-                key={slot.id}
-                soundEnabled={soundEnabled}
-                onOpenModal={onOpenFeaturedSpotModal}
-              />
-            );
+          <div className="w-full h-full rounded-2xl xl:rounded-3xl border border-neutral-200/90 bg-white p-2.5 xl:p-3 shadow-xs flex flex-col justify-between overflow-hidden">
+            {/* Header: ─── SPONSORED ─── */}
+            <div className="relative flex items-center justify-center my-0.5 shrink-0">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-neutral-200" />
+              </div>
+              <span className="relative bg-white px-2.5 py-0.5 rounded-full border border-neutral-300 text-[10px] font-bold text-neutral-500 uppercase tracking-wider select-none">
+                SPONSORED
+              </span>
+            </div>
 
-            if (index !== 0 || !sponsoredItem) return card;
-            return (
-              <BorderBeam
-                key={slot.id}
-                size="md"
-                colorVariant="colorful"
-                strength={0.85}
-                borderRadius={8}
-                className="rounded-2xl"
-              >
-                {card}
-              </BorderBeam>
-            );
-          })}
+            {/* 5 Cards fitting evenly into viewport without scrolling */}
+            <div className="flex flex-col justify-between flex-1 gap-1.5 xl:gap-2 my-1 overflow-hidden min-h-0">
+              {LEFT_SLOTS.slice(0, 5).map((slot, index) => {
+                const sponsoredItem = leftSponsors[index];
+                const card = isLoading ? (
+                  <SkeletonAdCard key={slot.id} />
+                ) : sponsoredItem ? (
+                  <ActiveSponsorCard
+                    key={`active-left-${sponsoredItem.id}`}
+                    product={sponsoredItem}
+                    soundEnabled={soundEnabled}
+                    onTrackClick={onTrackClick}
+                    onOpenProduct={onOpenProduct}
+                  />
+                ) : (
+                  <OpenAdCard
+                    key={slot.id}
+                    soundEnabled={soundEnabled}
+                    onOpenModal={onOpenFeaturedSpotModal}
+                  />
+                );
+
+                if (index !== 0 || !sponsoredItem) return card;
+                return (
+                  <BorderBeam
+                    key={slot.id}
+                    size="md"
+                    colorVariant="colorful"
+                    strength={0.85}
+                    borderRadius={8}
+                    className="rounded-2xl flex-1 min-h-0 flex flex-col"
+                  >
+                    {card}
+                  </BorderBeam>
+                );
+              })}
+            </div>
+          </div>
         </aside>
 
         {/* Center Hero + Directory List + Footer */}
@@ -463,10 +478,10 @@ export const HeroSponsorRails: React.FC<HeroSponsorRailsProps> = ({
           {footer}
         </div>
 
-        {/* Right Side Rail (Desktop - Last Week's Top 3 + Backlinks Directory Guide - stays sticky, aligned with Profile edge) */}
+        {/* Right Side Rail (Desktop - Last Week's Top 3 + Backlinks Directory Guide) */}
         <aside
           aria-label="Community highlights and backlinks guide"
-          className="hidden lg:flex flex-col gap-3 w-[220px] xl:w-[255px] 2xl:w-[280px] shrink-0 sticky top-16 self-start py-0.5"
+          className="hidden xl:flex flex-col gap-3 w-[280px] 2xl:w-[320px] shrink-0 sticky top-[58px] sm:top-[60px] self-start py-0.5"
         >
           <LastWeekTopThreeCard
             products={lastWeeksTop3}

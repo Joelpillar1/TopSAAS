@@ -96,6 +96,20 @@
       "dest": "/api/r?slug=$1"
     },
     {
+      "src": "/repo/tradecatlabs/vibe-coding-cn",
+      "status": 308,
+      "headers": {
+        "Location": "/repo/2025Emma/vibe-coding-cn"
+      }
+    },
+    {
+      "src": "/repo/zoicware/RemoveWindowsAI",
+      "status": 308,
+      "headers": {
+        "Location": "/repo/usefam1/RemoveWindowsAI"
+      }
+    },
+    {
       "src": "/repo/BraveOPotato/FckSignups",
       "status": 308,
       "headers": {

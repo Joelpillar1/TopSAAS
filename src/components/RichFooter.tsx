@@ -770,6 +770,32 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                 </a>
               </li>
               <li>
+                <a
+                  href="/ideas"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    playSound('click', soundEnabled);
+                    navigateTo('/ideas');
+                  }}
+                  className="text-xs text-neutral-600 hover:text-neutral-950 transition-colors cursor-pointer flex items-center gap-1.5"
+                >
+                  SaaS Ideas
+                </a>
+              </li>
+              <li>
+                <a
+                  href="/opensource/bentopdf"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    playSound('click', soundEnabled);
+                    navigateTo('/opensource/bentopdf');
+                  }}
+                  className="text-xs text-neutral-600 hover:text-neutral-950 transition-colors cursor-pointer flex items-center gap-1.5"
+                >
+                  BentoPDF Teardown
+                </a>
+              </li>
+              <li>
                 <button
                   type="button"
                   onClick={() => { playSound('click', soundEnabled); navigateTo('/trending'); }}

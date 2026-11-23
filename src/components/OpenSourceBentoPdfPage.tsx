@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   ArrowLeft,
+  ArrowUpRight,
   ExternalLink,
   Github,
   Search,
@@ -26,6 +27,12 @@ import {
   AlertTriangle,
   Send,
   Boxes,
+  Globe,
+  BookOpen,
+  Calculator,
+  Compass,
+  Rocket,
+  Package,
 } from 'lucide-react';
 import {
   BENTO_PDF_META,
@@ -33,12 +40,15 @@ import {
   BENTO_TOOLS,
   BENTO_FAQS,
   BENTO_BLUEPRINTS,
+  BENTO_INTERNAL_LINKS,
+  BENTO_EXTERNAL_RESOURCES,
   BentoTool,
   BentoBlueprintIdea,
 } from '../data/bentoPdfDeepDive';
 import { applyPageSeo } from '../utils/pageSeo';
 import { playSound } from '../utils/sound';
 import { plainCopy } from '../utils/plainCopy';
+import { navigateTo } from '../utils/nav';
 
 interface OpenSourceBentoPdfPageProps {
   soundEnabled: boolean;
@@ -75,7 +85,7 @@ export const OpenSourceBentoPdfPage: React.FC<OpenSourceBentoPdfPageProps> = ({
       '@context': 'https://schema.org',
       '@graph': [
         {
-          '@type': 'TechArticle',
+          '@type': ['Article', 'TechArticle'],
           '@id': 'https://www.topsaas.space/opensource/bentopdf#article',
           headline: 'BentoPDF Technical Reference & Micro-SaaS Blueprint Suite',
           description:
@@ -100,11 +110,16 @@ export const OpenSourceBentoPdfPage: React.FC<OpenSourceBentoPdfPageProps> = ({
             operatingSystem: 'Cross-platform, Web Browser, Docker',
             applicationCategory: 'UtilityApplication',
             codeRepository: 'https://github.com/alam00000/bentopdf',
+            url: 'https://www.bentopdf.com/',
             author: {
               '@type': 'Person',
               name: 'Alam Abdullah',
             },
           },
+          significantLink: [
+            ...BENTO_INTERNAL_LINKS.map((l) => `https://www.topsaas.space${l.url}`),
+            ...BENTO_EXTERNAL_RESOURCES.map((l) => l.url),
+          ],
         },
         {
           '@type': 'ItemList',
@@ -206,28 +221,64 @@ export const OpenSourceBentoPdfPage: React.FC<OpenSourceBentoPdfPageProps> = ({
               <span className="sm:hidden">Back</span>
             </button>
             <span className="text-neutral-300 shrink-0 hidden sm:inline">/</span>
-            <span className="text-xs font-medium text-neutral-500 hidden md:inline shrink-0">Open Source</span>
+            <a
+              href="/"
+              onClick={(e) => {
+                e.preventDefault();
+                playSound('click', soundEnabled);
+                navigateTo('/');
+              }}
+              className="text-xs font-medium text-neutral-500 hover:text-neutral-900 transition-colors hidden sm:inline shrink-0"
+            >
+              Directory
+            </a>
+            <span className="text-neutral-300 shrink-0 hidden md:inline">/</span>
+            <a
+              href="/ideas"
+              onClick={(e) => {
+                e.preventDefault();
+                playSound('click', soundEnabled);
+                navigateTo('/ideas');
+              }}
+              className="text-xs font-medium text-neutral-500 hover:text-neutral-900 transition-colors hidden md:inline shrink-0"
+            >
+              SaaS Ideas
+            </a>
             <span className="text-neutral-300 shrink-0 hidden md:inline">/</span>
             <span className="text-xs font-semibold text-neutral-900 truncate">BentoPDF</span>
           </div>
 
-          {/* Right: GitHub & Live Instance */}
+          {/* Right: GitHub, Docker & Live Instance */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <a
               href={BENTO_PDF_META.githubUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 sm:gap-1.5 rounded-lg border border-neutral-200 bg-white px-2 sm:px-2.5 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 transition-colors shrink-0 whitespace-nowrap"
+              className="inline-flex items-center gap-1 sm:gap-1.5 rounded-lg border border-neutral-200 bg-white px-2 sm:px-2.5 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 transition-colors shrink-0 whitespace-nowrap shadow-2xs"
+              title="View BentoPDF source on GitHub"
             >
               <Github className="h-3.5 w-3.5 shrink-0" />
               <span className="font-mono text-[11px] font-bold text-neutral-900">{BENTO_PDF_META.stars}</span>
+            </a>
+            <a
+              href={BENTO_PDF_META.dockerPackageUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden md:inline-flex items-center gap-1 rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 transition-colors shrink-0 whitespace-nowrap shadow-2xs"
+              title="Inspect Docker container on GitHub Container Registry"
+            >
+              <Package className="h-3.5 w-3.5 text-neutral-500 shrink-0" />
+              <span>GHCR Docker</span>
+              <ExternalLink className="h-3 w-3 text-neutral-400 shrink-0" />
             </a>
             <a
               href={BENTO_PDF_META.officialWebsite}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 sm:gap-1.5 rounded-lg bg-neutral-900 px-2.5 sm:px-3 py-1.5 text-xs font-medium text-white shadow-2xs hover:bg-neutral-800 transition-colors shrink-0 whitespace-nowrap"
+              title="Open Official BentoPDF Live Application"
             >
+              <Globe className="h-3.5 w-3.5 text-neutral-300 shrink-0" />
               <span className="hidden sm:inline">Live Instance</span>
               <span className="sm:hidden">Live</span>
               <ExternalLink className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
@@ -242,16 +293,53 @@ export const OpenSourceBentoPdfPage: React.FC<OpenSourceBentoPdfPageProps> = ({
         <aside className="w-full lg:w-64 xl:w-72 shrink-0 lg:sticky lg:top-20 space-y-4">
           <div className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-2xs space-y-4">
             {/* Repo Identity Capsule */}
-            <div className="pb-3 border-b border-neutral-100 space-y-1">
+            <div className="pb-3 border-b border-neutral-100 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-neutral-950 font-mono">BentoPDF</span>
-                <span className="text-[10px] font-semibold text-neutral-500 bg-neutral-100 px-2 py-0.5 rounded">
-                  {BENTO_PDF_META.license}
-                </span>
+                <a
+                  href={BENTO_PDF_META.licenseUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[10px] font-semibold text-neutral-600 bg-neutral-100 hover:bg-neutral-200/80 px-2 py-0.5 rounded transition-colors inline-flex items-center gap-1"
+                  title="View GNU AGPL-3.0 License"
+                >
+                  <span>{BENTO_PDF_META.license}</span>
+                  <ExternalLink className="h-2.5 w-2.5 text-neutral-400" />
+                </a>
               </div>
               <p className="text-[11px] text-neutral-500">
                 Client-side WebAssembly PDF toolkit
               </p>
+              {/* Quick External Links Capsule */}
+              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                <a
+                  href={BENTO_PDF_META.githubUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-[11px] font-medium text-neutral-600 hover:text-neutral-950 bg-neutral-50 hover:bg-neutral-100 border border-neutral-200/70 rounded-md px-2 py-0.5 transition-colors"
+                >
+                  <Github className="h-3 w-3 text-neutral-500" />
+                  <span>GitHub</span>
+                </a>
+                <a
+                  href={BENTO_PDF_META.officialWebsite}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-[11px] font-medium text-neutral-600 hover:text-neutral-950 bg-neutral-50 hover:bg-neutral-100 border border-neutral-200/70 rounded-md px-2 py-0.5 transition-colors"
+                >
+                  <Globe className="h-3 w-3 text-neutral-500" />
+                  <span>Live App</span>
+                </a>
+                <a
+                  href={BENTO_PDF_META.dockerPackageUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-[11px] font-medium text-neutral-600 hover:text-neutral-950 bg-neutral-50 hover:bg-neutral-100 border border-neutral-200/70 rounded-md px-2 py-0.5 transition-colors"
+                >
+                  <Package className="h-3 w-3 text-neutral-500" />
+                  <span>Docker</span>
+                </a>
+              </div>
             </div>
 
             {/* Nav Group 1: Overview */}
@@ -316,6 +404,103 @@ export const OpenSourceBentoPdfPage: React.FC<OpenSourceBentoPdfPageProps> = ({
                 );
               })}
             </div>
+
+            {/* Nav Group 3: TopSAAS Platform Hubs (Internal Links) */}
+            <div className="space-y-1 pt-2 border-t border-neutral-100">
+              <div className="px-2 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                TopSAAS Ecosystem
+              </div>
+              <a
+                href="/ideas"
+                onClick={(e) => {
+                  e.preventDefault();
+                  playSound('click', soundEnabled);
+                  navigateTo('/ideas');
+                }}
+                className="w-full flex items-center justify-between rounded-xl px-2.5 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-100 hover:text-neutral-950 transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-2 truncate">
+                  <Compass className="h-3.5 w-3.5 text-neutral-500 shrink-0" />
+                  <span className="truncate">SaaS Ideas Catalog</span>
+                </div>
+                <ArrowUpRight className="h-3 w-3 text-neutral-400 shrink-0" />
+              </a>
+              <a
+                href="/mrr-calculator"
+                onClick={(e) => {
+                  e.preventDefault();
+                  playSound('click', soundEnabled);
+                  navigateTo('/mrr-calculator');
+                }}
+                className="w-full flex items-center justify-between rounded-xl px-2.5 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-100 hover:text-neutral-950 transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-2 truncate">
+                  <Calculator className="h-3.5 w-3.5 text-neutral-500 shrink-0" />
+                  <span className="truncate">MRR Calculator</span>
+                </div>
+                <ArrowUpRight className="h-3 w-3 text-neutral-400 shrink-0" />
+              </a>
+              <a
+                href="/product-directory"
+                onClick={(e) => {
+                  e.preventDefault();
+                  playSound('click', soundEnabled);
+                  navigateTo('/product-directory');
+                }}
+                className="w-full flex items-center justify-between rounded-xl px-2.5 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-100 hover:text-neutral-950 transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-2 truncate">
+                  <FileText className="h-3.5 w-3.5 text-neutral-500 shrink-0" />
+                  <span className="truncate">Product Directory</span>
+                </div>
+                <ArrowUpRight className="h-3 w-3 text-neutral-400 shrink-0" />
+              </a>
+              <a
+                href="/trending"
+                onClick={(e) => {
+                  e.preventDefault();
+                  playSound('click', soundEnabled);
+                  navigateTo('/trending');
+                }}
+                className="w-full flex items-center justify-between rounded-xl px-2.5 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-100 hover:text-neutral-950 transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-2 truncate">
+                  <TrendingUp className="h-3.5 w-3.5 text-neutral-500 shrink-0" />
+                  <span className="truncate">Trending Launches</span>
+                </div>
+                <ArrowUpRight className="h-3 w-3 text-neutral-400 shrink-0" />
+              </a>
+              <a
+                href="/guides"
+                onClick={(e) => {
+                  e.preventDefault();
+                  playSound('click', soundEnabled);
+                  navigateTo('/guides');
+                }}
+                className="w-full flex items-center justify-between rounded-xl px-2.5 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-100 hover:text-neutral-950 transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-2 truncate">
+                  <BookOpen className="h-3.5 w-3.5 text-neutral-500 shrink-0" />
+                  <span className="truncate">Founder Build Guides</span>
+                </div>
+                <ArrowUpRight className="h-3 w-3 text-neutral-400 shrink-0" />
+              </a>
+              <a
+                href="/submit"
+                onClick={(e) => {
+                  e.preventDefault();
+                  playSound('click', soundEnabled);
+                  navigateTo('/submit');
+                }}
+                className="w-full flex items-center justify-between rounded-xl px-2.5 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-100 hover:text-neutral-950 transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-2 truncate">
+                  <Rocket className="h-3.5 w-3.5 text-neutral-500 shrink-0" />
+                  <span className="truncate">Submit Product ($5)</span>
+                </div>
+                <ArrowUpRight className="h-3 w-3 text-neutral-400 shrink-0" />
+              </a>
+            </div>
           </div>
 
           {/* Quick Architecture Spec Box */}
@@ -328,11 +513,17 @@ export const OpenSourceBentoPdfPage: React.FC<OpenSourceBentoPdfPageProps> = ({
               </div>
               <div className="flex items-center gap-1.5">
                 <Check className="h-3 w-3 text-emerald-600 shrink-0" />
-                <span>MuPDF &amp; Tesseract.js WASM</span>
+                <span>
+                  <a href={BENTO_PDF_META.mupdfUrl} target="_blank" rel="noopener noreferrer" className="text-neutral-800 font-medium hover:underline">MuPDF</a> &amp;{' '}
+                  <a href={BENTO_PDF_META.tesseractUrl} target="_blank" rel="noopener noreferrer" className="text-neutral-800 font-medium hover:underline">Tesseract.js</a> WASM
+                </span>
               </div>
               <div className="flex items-center gap-1.5">
                 <Check className="h-3 w-3 text-emerald-600 shrink-0" />
-                <span>Docker: bentopdf-simple</span>
+                <span>
+                  Docker:{' '}
+                  <a href={BENTO_PDF_META.dockerPackageUrl} target="_blank" rel="noopener noreferrer" className="text-neutral-800 font-mono hover:underline">bentopdf-simple</a>
+                </span>
               </div>
             </div>
           </div>
@@ -346,14 +537,36 @@ export const OpenSourceBentoPdfPage: React.FC<OpenSourceBentoPdfPageProps> = ({
               {/* Minimal Hero */}
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded-md bg-neutral-100 px-2.5 py-1 text-xs font-medium text-neutral-700 border border-neutral-200">
+                  <a
+                    href={BENTO_PDF_META.githubUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-md bg-neutral-100 hover:bg-neutral-200/80 px-2.5 py-1 text-xs font-medium text-neutral-700 border border-neutral-200 transition-colors"
+                  >
                     <Code2 className="h-3.5 w-3.5 text-neutral-600" />
-                    alam00000/bentopdf
-                  </span>
-                  <span className="inline-flex items-center gap-1 rounded-md bg-neutral-100 px-2.5 py-1 text-xs font-medium text-neutral-700 border border-neutral-200">
+                    <span>alam00000/bentopdf</span>
+                    <ExternalLink className="h-3 w-3 text-neutral-400" />
+                  </a>
+                  <a
+                    href={BENTO_PDF_META.wasmUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 rounded-md bg-neutral-100 hover:bg-neutral-200/80 px-2.5 py-1 text-xs font-medium text-neutral-700 border border-neutral-200 transition-colors"
+                  >
                     <ShieldCheck className="h-3.5 w-3.5 text-neutral-600" />
-                    100% Client-Side WASM
-                  </span>
+                    <span>100% Client-Side WASM</span>
+                    <ExternalLink className="h-3 w-3 text-neutral-400" />
+                  </a>
+                  <a
+                    href={BENTO_PDF_META.officialWebsite}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 rounded-md bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 px-2.5 py-1 text-xs font-medium transition-colors"
+                  >
+                    <Globe className="h-3.5 w-3.5 text-emerald-600" />
+                    <span>bentopdf.com Live</span>
+                    <ExternalLink className="h-3 w-3 text-emerald-600" />
+                  </a>
                 </div>
 
                 <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-neutral-950">
@@ -387,8 +600,15 @@ export const OpenSourceBentoPdfPage: React.FC<OpenSourceBentoPdfPageProps> = ({
 
                   <div className="rounded-xl border border-neutral-200 bg-white p-3">
                     <div className="text-[11px] font-medium text-neutral-500">Core Engine</div>
-                    <div className="text-xl font-bold text-neutral-950 mt-0.5 truncate">WebAssembly</div>
-                    <div className="text-[10px] text-neutral-400">MuPDF &amp; Tesseract.js</div>
+                    <div className="text-xl font-bold text-neutral-950 mt-0.5 truncate">
+                      <a href={BENTO_PDF_META.wasmUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                        WebAssembly
+                      </a>
+                    </div>
+                    <div className="text-[10px] text-neutral-500 truncate">
+                      <a href={BENTO_PDF_META.mupdfUrl} target="_blank" rel="noopener noreferrer" className="hover:text-neutral-900 underline">MuPDF</a> &amp;{' '}
+                      <a href={BENTO_PDF_META.tesseractUrl} target="_blank" rel="noopener noreferrer" className="hover:text-neutral-900 underline">Tesseract.js</a>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -405,16 +625,29 @@ export const OpenSourceBentoPdfPage: React.FC<OpenSourceBentoPdfPageProps> = ({
                     </p>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={handleCopyDocker}
-                    className="inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-neutral-900 px-3 py-1.5 text-xs font-mono font-medium text-neutral-200 hover:bg-neutral-800 transition-all cursor-pointer shrink-0"
-                    title="Copy Docker Run command"
-                  >
-                    <Terminal className="h-3.5 w-3.5 text-neutral-400" />
-                    <span>docker run bentopdf-simple</span>
-                    {copiedDocker ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5 text-neutral-400" />}
-                  </button>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleCopyDocker}
+                      className="inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-neutral-900 px-3 py-1.5 text-xs font-mono font-medium text-neutral-200 hover:bg-neutral-800 transition-all cursor-pointer shrink-0"
+                      title="Copy Docker Run command"
+                    >
+                      <Terminal className="h-3.5 w-3.5 text-neutral-400" />
+                      <span>docker run bentopdf-simple</span>
+                      {copiedDocker ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5 text-neutral-400" />}
+                    </button>
+                    <a
+                      href={BENTO_PDF_META.dockerPackageUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 hover:text-neutral-950 transition-colors shadow-2xs"
+                      title="Inspect Docker container package on GHCR"
+                    >
+                      <Package className="h-3.5 w-3.5 text-neutral-500" />
+                      <span>GHCR Package</span>
+                      <ExternalLink className="h-3 w-3 text-neutral-400" />
+                    </a>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -643,6 +876,98 @@ export const OpenSourceBentoPdfPage: React.FC<OpenSourceBentoPdfPageProps> = ({
                   })}
                 </div>
               </div>
+
+              {/* ── Internal & External Resources Ecosystem ── */}
+              <div className="space-y-4 pt-2">
+                <div className="border-b border-neutral-200 pb-2">
+                  <h2 className="text-base sm:text-lg font-bold text-neutral-950">
+                    Related Ecosystem &amp; Authoritative References
+                  </h2>
+                  <p className="text-xs text-neutral-500 mt-0.5">
+                    Navigate related TopSAAS directories, economic calculators, and official open-source specifications.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* TopSAAS Platform Hubs (Internal Links) */}
+                  <div className="rounded-2xl border border-neutral-200 bg-white p-5 space-y-3.5 shadow-2xs">
+                    <div className="flex items-center justify-between border-b border-neutral-100 pb-2.5">
+                      <div className="flex items-center gap-2">
+                        <Compass className="h-4 w-4 text-neutral-800" />
+                        <h3 className="text-xs sm:text-sm font-bold text-neutral-950">TopSAAS Platform Hubs</h3>
+                      </div>
+                      <span className="text-[10px] font-mono font-semibold text-neutral-500 bg-neutral-100 px-2 py-0.5 rounded">
+                        Internal
+                      </span>
+                    </div>
+
+                    <div className="space-y-2">
+                      {BENTO_INTERNAL_LINKS.map((link) => (
+                        <a
+                          key={link.url}
+                          href={link.url}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            playSound('click', soundEnabled);
+                            navigateTo(link.url);
+                          }}
+                          className="group block rounded-xl border border-neutral-100 bg-neutral-50/60 hover:bg-neutral-100/70 p-2.5 transition-all"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-xs font-semibold text-neutral-900 group-hover:text-blue-600 transition-colors">
+                              {link.title}
+                            </span>
+                            <span className="text-[10px] font-mono text-neutral-400 group-hover:text-neutral-600 shrink-0">
+                              {link.badge} &rarr;
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-neutral-500 mt-0.5 line-clamp-2 leading-relaxed">
+                            {link.description}
+                          </p>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Authoritative Technical References (External Links) */}
+                  <div className="rounded-2xl border border-neutral-200 bg-white p-5 space-y-3.5 shadow-2xs">
+                    <div className="flex items-center justify-between border-b border-neutral-100 pb-2.5">
+                      <div className="flex items-center gap-2">
+                        <ExternalLink className="h-4 w-4 text-neutral-800" />
+                        <h3 className="text-xs sm:text-sm font-bold text-neutral-950">Authoritative References</h3>
+                      </div>
+                      <span className="text-[10px] font-mono font-semibold text-neutral-500 bg-neutral-100 px-2 py-0.5 rounded">
+                        External
+                      </span>
+                    </div>
+
+                    <div className="space-y-2">
+                      {BENTO_EXTERNAL_RESOURCES.map((link) => (
+                        <a
+                          key={link.url}
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group block rounded-xl border border-neutral-100 bg-neutral-50/60 hover:bg-neutral-100/70 p-2.5 transition-all"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-xs font-semibold text-neutral-900 group-hover:text-blue-600 transition-colors flex items-center gap-1.5">
+                              {link.title}
+                              <ExternalLink className="h-3 w-3 text-neutral-400 group-hover:text-blue-600 shrink-0" />
+                            </span>
+                            <span className="text-[10px] font-mono text-neutral-400 group-hover:text-neutral-600 shrink-0">
+                              {link.badge}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-neutral-500 mt-0.5 line-clamp-2 leading-relaxed">
+                            {link.description}
+                          </p>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
@@ -691,6 +1016,25 @@ export const OpenSourceBentoPdfPage: React.FC<OpenSourceBentoPdfPageProps> = ({
                     <div className="text-sm sm:text-base font-bold text-neutral-950 mt-0.5">{activeIdea.timeToMvp}</div>
                   </div>
                 </div>
+
+                {/* Internal Link to MRR Calculator */}
+                <a
+                  href="/mrr-calculator"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    playSound('click', soundEnabled);
+                    navigateTo('/mrr-calculator');
+                  }}
+                  className="flex items-center justify-between rounded-xl border border-neutral-200 bg-neutral-50/80 hover:bg-neutral-100 p-3 text-xs text-neutral-700 transition-colors group cursor-pointer"
+                >
+                  <div className="flex items-center gap-2">
+                    <Calculator className="h-4 w-4 text-neutral-500 group-hover:text-neutral-900" />
+                    <span>Model financial unit economics, pricing sensitivity, and breakeven volume in the <strong>TopSAAS MRR Calculator</strong>.</span>
+                  </div>
+                  <span className="font-semibold text-neutral-900 shrink-0 inline-flex items-center gap-1">
+                    Calculate MRR <ArrowUpRight className="h-3 w-3" />
+                  </span>
+                </a>
               </div>
 
               {/* 1. Market & Customer ICP */}
@@ -868,6 +1212,128 @@ export const OpenSourceBentoPdfPage: React.FC<OpenSourceBentoPdfPageProps> = ({
                 <div className="rounded-xl border border-neutral-200 bg-neutral-900 p-3.5 text-xs text-neutral-300 font-mono">
                   <span className="text-neutral-400">// Architecture Note: </span>
                   {activeIdea.technicalDelta.architectureNote}
+                </div>
+              </div>
+
+              {/* Cross-Link & Next Steps */}
+              <div className="rounded-2xl border border-neutral-200 bg-white p-5 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-neutral-100 pb-3">
+                  <div>
+                    <h3 className="text-xs sm:text-sm font-bold text-neutral-950">Next Steps &amp; Ecosystem Resources</h3>
+                    <p className="text-[11px] text-neutral-500">Ready to build or explore more SaaS opportunities?</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleSelectView('overview')}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 px-3 py-1.5 text-xs font-medium text-neutral-800 transition-colors cursor-pointer self-start sm:self-auto"
+                  >
+                    <ArrowLeft className="h-3 w-3" />
+                    <span>Back to 51 Tools Roster</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5">
+                  <a
+                    href="/ideas"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      playSound('click', soundEnabled);
+                      navigateTo('/ideas');
+                    }}
+                    className="rounded-xl border border-neutral-100 bg-neutral-50/70 hover:bg-neutral-100 p-3 text-left transition-colors block"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-neutral-900">More SaaS Ideas</span>
+                      <ArrowUpRight className="h-3 w-3 text-neutral-400" />
+                    </div>
+                    <p className="text-[11px] text-neutral-500 mt-1">Browse 50+ curated open-source monetization angles.</p>
+                  </a>
+
+                  <a
+                    href="/mrr-calculator"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      playSound('click', soundEnabled);
+                      navigateTo('/mrr-calculator');
+                    }}
+                    className="rounded-xl border border-neutral-100 bg-neutral-50/70 hover:bg-neutral-100 p-3 text-left transition-colors block"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-neutral-900">MRR Calculator</span>
+                      <ArrowUpRight className="h-3 w-3 text-neutral-400" />
+                    </div>
+                    <p className="text-[11px] text-neutral-500 mt-1">Simulate revenue tiers and break-even customer volume.</p>
+                  </a>
+
+                  <a
+                    href="/guides"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      playSound('click', soundEnabled);
+                      navigateTo('/guides');
+                    }}
+                    className="rounded-xl border border-neutral-100 bg-neutral-50/70 hover:bg-neutral-100 p-3 text-left transition-colors block"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-neutral-900">Build Guides</span>
+                      <ArrowUpRight className="h-3 w-3 text-neutral-400" />
+                    </div>
+                    <p className="text-[11px] text-neutral-500 mt-1">Production playbooks on launching and acquiring users.</p>
+                  </a>
+
+                  <a
+                    href="/submit"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      playSound('click', soundEnabled);
+                      navigateTo('/submit');
+                    }}
+                    className="rounded-xl border border-neutral-100 bg-neutral-50/70 hover:bg-neutral-100 p-3 text-left transition-colors block"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-neutral-900">Submit Your SaaS</span>
+                      <ArrowUpRight className="h-3 w-3 text-neutral-400" />
+                    </div>
+                    <p className="text-[11px] text-neutral-500 mt-1">Get verified listing and dofollow SEO backlink.</p>
+                  </a>
+                </div>
+
+                <div className="pt-2 border-t border-neutral-100 flex flex-wrap items-center justify-between gap-2 text-xs text-neutral-500">
+                  <span className="text-[11px]">External references:</span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <a
+                      href={BENTO_PDF_META.githubUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-neutral-700 hover:text-neutral-950 font-medium hover:underline text-[11px]"
+                    >
+                      <Github className="h-3 w-3" />
+                      <span>alam00000/bentopdf GitHub</span>
+                      <ExternalLink className="h-2.5 w-2.5" />
+                    </a>
+                    <span className="text-neutral-300">•</span>
+                    <a
+                      href={BENTO_PDF_META.officialWebsite}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-neutral-700 hover:text-neutral-950 font-medium hover:underline text-[11px]"
+                    >
+                      <Globe className="h-3 w-3" />
+                      <span>bentopdf.com Live App</span>
+                      <ExternalLink className="h-2.5 w-2.5" />
+                    </a>
+                    <span className="text-neutral-300">•</span>
+                    <a
+                      href={BENTO_PDF_META.dockerPackageUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-neutral-700 hover:text-neutral-950 font-medium hover:underline text-[11px]"
+                    >
+                      <Package className="h-3 w-3" />
+                      <span>bentopdf-simple GHCR</span>
+                      <ExternalLink className="h-2.5 w-2.5" />
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>

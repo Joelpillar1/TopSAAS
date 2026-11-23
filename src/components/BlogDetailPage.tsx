@@ -120,7 +120,7 @@ export const BlogDetailPage: React.FC<BlogDetailPageProps> = ({
     const postUrl = `https://www.topsaas.space/blog/${post.slug}`;
 
     const blogPostingSchema = {
-      '@type': 'BlogPosting',
+      '@type': ['Article', 'BlogPosting'],
       '@id': `${postUrl}#article`,
       headline: post.title,
       description: post.tagline,

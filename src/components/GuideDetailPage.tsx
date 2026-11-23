@@ -55,6 +55,26 @@ export const GuideDetailPage: React.FC<GuideDetailPageProps> = ({
   // Head swap + HowTo / FAQPage structured data (the AEO payload for guides).
   useEffect(() => {
     if (!guide) return;
+    const article = {
+      '@type': ['Article', 'TechArticle'],
+      headline: guide.title,
+      description: guide.tagline,
+      author: {
+        '@type': 'Organization',
+        name: 'TopSAAS',
+        url: 'https://www.topsaas.space',
+      },
+      publisher: {
+        '@type': 'Organization',
+        name: 'TopSAAS',
+        url: 'https://www.topsaas.space',
+        logo: {
+          '@type': 'ImageObject',
+          url: 'https://www.topsaas.space/logo/TopSAAS%20-%20blue.png',
+        },
+      },
+      mainEntityOfPage: `https://www.topsaas.space/guides/${guide.slug}`,
+    };
     const howTo = {
       '@type': 'HowTo',
       name: guide.title,
@@ -79,7 +99,7 @@ export const GuideDetailPage: React.FC<GuideDetailPageProps> = ({
     return applyPageSeo({
       ...guideSeo(guide),
       jsonLdId: 'guide-jsonld',
-      jsonLd: { '@context': 'https://schema.org', '@graph': [howTo, faq] },
+      jsonLd: { '@context': 'https://schema.org', '@graph': [article, howTo, faq] },
     });
   }, [guide]);
 

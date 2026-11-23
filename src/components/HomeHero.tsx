@@ -182,9 +182,9 @@ export const HomeHero: React.FC<HomeHeroProps> = ({
         {/* Launch Now input and button */}
         <form
           onSubmit={handleSubmitLaunch}
-          className="relative mt-5 w-full max-w-lg flex items-center rounded-2xl border border-neutral-300 bg-white p-1.5 shadow-xs transition-all focus-within:border-mint-500 focus-within:ring-4 focus-within:ring-mint-500/10 hover:border-neutral-400"
+          className="relative mt-4 w-full max-w-lg flex items-center rounded-xl sm:rounded-2xl border border-neutral-300 bg-white p-1 shadow-2xs transition-all focus-within:border-mint-500 focus-within:ring-4 focus-within:ring-mint-500/10 hover:border-neutral-400"
         >
-          <div className="flex items-center pl-3 pr-2 text-neutral-400">
+          <div className="flex items-center pl-2.5 pr-2 text-neutral-400">
             <Globe className="h-4 w-4 shrink-0" />
           </div>
           <input
@@ -197,12 +197,12 @@ export const HomeHero: React.FC<HomeHeroProps> = ({
             placeholder={placeholderText}
             aria-label="Your SaaS website URL"
             required
-            className="w-full bg-transparent py-2.5 text-sm font-semibold text-neutral-900 placeholder-neutral-400 outline-none"
+            className="w-full bg-transparent py-1.5 text-sm font-semibold text-neutral-900 placeholder-neutral-400 outline-none"
           />
           <button
             type="submit"
             data-ml-goal="launch_cta_click"
-            className="shrink-0 btn-primary px-5 py-2.5 text-xs sm:text-sm font-bold rounded-xl"
+            className="shrink-0 btn-primary px-4 sm:px-4.5 py-1.5 text-xs sm:text-sm font-bold rounded-lg sm:rounded-xl"
           >
             Launch Now
           </button>

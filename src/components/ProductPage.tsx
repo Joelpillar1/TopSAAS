@@ -508,7 +508,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
   useEffect(() => {
     // Schema.org SoftwareApplication JSON-LD
     const app: Record<string, unknown> = {
-      '@type': 'SoftwareApplication',
+      '@type': ['Product', 'SoftwareApplication'],
       name: product.name,
       description:
         stripMarkup(product.description || '') ||
@@ -517,11 +517,16 @@ export const ProductPage: React.FC<ProductPageProps> = ({
       url: product.url,
       applicationCategory: product.category || 'BusinessApplication',
       operatingSystem: 'All',
+      brand: {
+        '@type': 'Brand',
+        name: product.name,
+      },
       offers: {
         '@type': 'Offer',
         price: '0',
         priceCurrency: 'USD',
         category: product.pricingModel || 'Freemium',
+        availability: 'https://schema.org/InStock',
       },
     };
 

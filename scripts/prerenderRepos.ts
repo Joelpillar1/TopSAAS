@@ -47,6 +47,8 @@ import {
   BENTO_PDF_ARCHITECTURE,
   BENTO_BLUEPRINTS,
   BENTO_FAQS,
+  BENTO_INTERNAL_LINKS,
+  BENTO_EXTERNAL_RESOURCES,
 } from '../src/data/bentoPdfDeepDive';
 import { LEGAL_EFFECTIVE, PRIVACY_SECTIONS, TERMS_SECTIONS, type LegalSection } from '../src/data/legalContent';
 import { getProductSlug } from '../src/utils/slug';
@@ -164,6 +166,7 @@ const staticFooter = `
             <a href="/" style="${linkStyle}">Directory</a> ·
             <a href="/product-directory" style="${linkStyle}">Product Directory</a> ·
             <a href="/ideas" style="${linkStyle}">SaaS Ideas</a> ·
+            <a href="/opensource/bentopdf" style="${linkStyle}">BentoPDF Teardown</a> ·
             <a href="/trending" style="${linkStyle}">Trending</a> ·
             <a href="/guides" style="${linkStyle}">Build Guides</a> ·
             <a href="/blog" style="${linkStyle}">Blog</a> ·
@@ -397,13 +400,20 @@ const buildRepoJsonLd = (repo: CuratedRepo): string => {
         logo: `${SITE_URL}/logo/TopSAAS%20-%20blue.png`,
       },
       {
-        '@type': 'SoftwareSourceCode',
+        '@type': ['Product', 'SoftwareSourceCode'],
         name: repo.name,
         description: plainCopy(repo.description || `${repo.full_name} on GitHub`),
         url: canonical,
         codeRepository: repo.html_url,
         author: { '@type': 'Organization', name: repo.owner.login },
+        brand: { '@type': 'Brand', name: repo.owner.login },
         keywords: repo.category,
+        offers: {
+          '@type': 'Offer',
+          price: '0',
+          priceCurrency: 'USD',
+          availability: 'https://schema.org/InStock',
+        },
         ...(repo.language ? { programmingLanguage: repo.language } : {}),
         interactionStatistic: {
           '@type': 'InteractionCounter',
@@ -916,7 +926,7 @@ ${staticFooter}
 const buildProductJsonLd = (product: Product): string => {
   const canonical = `${SITE_URL}/products/${getProductSlug(product)}`;
   const app: Record<string, unknown> = {
-    '@type': 'SoftwareApplication',
+    '@type': ['Product', 'SoftwareApplication'],
     name: product.name,
     description:
       stripMarkup(product.description || '') ||
@@ -925,11 +935,16 @@ const buildProductJsonLd = (product: Product): string => {
     url: product.url,
     applicationCategory: product.category || 'BusinessApplication',
     operatingSystem: 'All',
+    brand: {
+      '@type': 'Brand',
+      name: product.name,
+    },
     offers: {
       '@type': 'Offer',
       price: '0',
       priceCurrency: 'USD',
       category: product.pricingModel || 'Freemium',
+      availability: 'https://schema.org/InStock',
     },
   };
   if (product.logoUrl) app.image = product.logoUrl;
@@ -1269,6 +1284,25 @@ const buildGuideJsonLd = (guide: BuildGuide): string =>
     '@context': 'https://schema.org',
     '@graph': [...siteJsonLd(), 
       {
+        '@type': ['Article', 'TechArticle'],
+        headline: guide.title,
+        description: guide.tagline,
+        url: `${SITE_URL}/guides/${guide.slug}`,
+        inLanguage: 'en',
+        author: {
+          '@type': 'Organization',
+          name: 'TopSAAS',
+          url: `${SITE_URL}/`,
+        },
+        publisher: {
+          '@type': 'Organization',
+          name: 'TopSAAS',
+          url: `${SITE_URL}/`,
+          logo: `${SITE_URL}/logo/TopSAAS%20-%20blue.png`,
+        },
+        mainEntityOfPage: `${SITE_URL}/guides/${guide.slug}`,
+      },
+      {
         '@type': 'HowTo',
         name: guide.title,
         description: guide.tagline,
@@ -1539,16 +1573,14 @@ const buildOpenSourceBentoPdfBody = (): string => `
           <span aria-hidden="true">/</span>
           <a href="/ideas" style="${linkStyle}">SaaS Ideas</a>
           <span aria-hidden="true">/</span>
-          <span>Open Source</span>
-          <span aria-hidden="true">/</span>
-          <span>BentoPDF</span>
+          <span aria-current="page">BentoPDF</span>
         </nav>
         <main>
           <header style="margin-bottom:2rem">
             <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:.5rem;flex-wrap:wrap">
-              <span style="background:#f5f5f5;border:1px solid #e5e5e5;padding:.2rem .5rem;border-radius:.375rem;font-size:.75rem;font-weight:600">alam00000/bentopdf</span>
-              <span style="background:#f5f5f5;border:1px solid #e5e5e5;padding:.2rem .5rem;border-radius:.375rem;font-size:.75rem;font-weight:600">${escapeHtml(BENTO_PDF_META.license)}</span>
-              <span style="background:#f5f5f5;border:1px solid #e5e5e5;padding:.2rem .5rem;border-radius:.375rem;font-size:.75rem;font-weight:600">100% Client-Side WASM</span>
+              <a href="${BENTO_PDF_META.githubUrl}" target="_blank" rel="noopener noreferrer" style="background:#f5f5f5;border:1px solid #e5e5e5;padding:.2rem .5rem;border-radius:.375rem;font-size:.75rem;font-weight:600;color:#171717;text-decoration:none">alam00000/bentopdf ↗</a>
+              <a href="${BENTO_PDF_META.licenseUrl}" target="_blank" rel="noopener noreferrer" style="background:#f5f5f5;border:1px solid #e5e5e5;padding:.2rem .5rem;border-radius:.375rem;font-size:.75rem;font-weight:600;color:#171717;text-decoration:none">${escapeHtml(BENTO_PDF_META.license)} License ↗</a>
+              <a href="${BENTO_PDF_META.officialWebsite}" target="_blank" rel="noopener noreferrer" style="background:#ecfdf5;border:1px solid #a7f3d0;padding:.2rem .5rem;border-radius:.375rem;font-size:.75rem;font-weight:600;color:#047857;text-decoration:none">bentopdf.com Live ↗</a>
             </div>
             <h1 style="${h1Style}">BentoPDF: Codebase Architecture &amp; 51 Client-Side WASM Tools Reference</h1>
             <p style="margin:0 0 1rem;font-size:1.0625rem;color:#404040">
@@ -1572,8 +1604,8 @@ const buildOpenSourceBentoPdfBody = (): string => `
               </div>
               <div style="border:1px solid #e5e5e5;border-radius:.5rem;padding:.75rem;background:#fafafa">
                 <div style="${mutedStyle}">Core Engine</div>
-                <div style="font-size:1.25rem;font-weight:700;margin-top:.25rem">WebAssembly</div>
-                <div style="${mutedStyle}">MuPDF &amp; Tesseract.js</div>
+                <div style="font-size:1.25rem;font-weight:700;margin-top:.25rem"><a href="${BENTO_PDF_META.wasmUrl}" target="_blank" rel="noopener noreferrer" style="color:#0a0a0a;text-decoration:none">WebAssembly</a></div>
+                <div style="${mutedStyle}"><a href="${BENTO_PDF_META.mupdfUrl}" target="_blank" rel="noopener noreferrer" style="${linkStyle}">MuPDF</a> &amp; <a href="${BENTO_PDF_META.tesseractUrl}" target="_blank" rel="noopener noreferrer" style="${linkStyle}">Tesseract.js</a></div>
               </div>
             </div>
           </header>
@@ -1581,7 +1613,7 @@ const buildOpenSourceBentoPdfBody = (): string => `
           <section style="margin-bottom:2.5rem">
             <h2 style="${h2Style}">Local WebAssembly Execution Model</h2>
             <p style="margin:0 0 1rem">
-              Unlike cloud services that require users to upload documents to external compute clusters, BentoPDF compiles C/C++ rendering libraries to WebAssembly. The browser sandboxes memory, and worker threads process PDF objects on local hardware without sending bytes across the network.
+              Unlike cloud services that require users to upload documents to external compute clusters, BentoPDF compiles C/C++ rendering libraries to <a href="${BENTO_PDF_META.wasmUrl}" target="_blank" rel="noopener noreferrer" style="${linkStyle}">WebAssembly</a>. The browser sandboxes memory, and worker threads process PDF objects on local hardware without sending bytes across the network.
             </p>
             <h3 style="font-size:1rem;margin:1.25rem 0 .5rem">Architecture Pillars</h3>
             <ul style="margin:0 0 1rem;padding-left:1.25rem">
@@ -1594,7 +1626,8 @@ ${BENTO_PDF_ARCHITECTURE.corePillars
             </ul>
 
             <h3 style="font-size:1rem;margin:1.25rem 0 .5rem">Self-Hosting via Docker</h3>
-            <pre style="background:#f5f5f5;padding:.75rem 1rem;border:1px solid #e5e5e5;border-radius:.5rem;overflow-x:auto;margin:0 0 1rem"><code>docker run -d -p 8080:80 ghcr.io/alam00000/bentopdf-simple</code></pre>
+            <pre style="background:#f5f5f5;padding:.75rem 1rem;border:1px solid #e5e5e5;border-radius:.5rem;overflow-x:auto;margin:0 0 .75rem"><code>docker run -d -p 8080:80 ghcr.io/alam00000/bentopdf-simple</code></pre>
+            <p style="margin:0 0 1rem"><a href="${BENTO_PDF_META.dockerPackageUrl}" target="_blank" rel="noopener noreferrer" style="${linkStyle}">View bentopdf-simple package on GitHub Container Registry (GHCR) &rarr;</a></p>
           </section>
 
           <section style="margin-bottom:2.5rem">
@@ -1667,7 +1700,8 @@ ${BENTO_BLUEPRINTS.map(
                   <p style="margin:0 0 .5rem"><strong>Target Customer:</strong> ${escapeHtml(idea.market.target)} (${escapeHtml(idea.customer.title)})</p>
                   <p style="margin:0 0 .5rem"><strong>Core Pain:</strong> ${escapeHtml(idea.problem.corePain)}</p>
                   <p style="margin:0 0 .5rem"><strong>Product Solution:</strong> ${escapeHtml(idea.product.summary)}</p>
-                  <p style="margin:0"><strong>Search Demand:</strong> ${escapeHtml(idea.searchDemand.totalSearches)}</p>
+                  <p style="margin:0 0 .5rem"><strong>Search Demand:</strong> ${escapeHtml(idea.searchDemand.totalSearches)}</p>
+                  <p style="margin:0"><strong>Financial Modeler:</strong> Simulate unit economics in the <a href="/mrr-calculator" style="${linkStyle}">TopSAAS MRR Calculator &rarr;</a></p>
                 </div>
               </article>`
 ).join('\n')}
@@ -1677,6 +1711,38 @@ ${BENTO_BLUEPRINTS.map(
           <section style="margin-bottom:2.5rem">
             <h2 style="${h2Style}">Frequently Asked Questions</h2>
             ${faqList(BENTO_FAQS.map((f) => ({ q: f.question, a: f.answer })))}
+          </section>
+
+          <section style="margin-bottom:2.5rem;border-top:1px solid #e5e5e5;padding-top:1.5rem">
+            <h2 style="${h2Style}">Related Ecosystem &amp; Authoritative References</h2>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem;margin-top:1rem">
+              <div style="border:1px solid #e5e5e5;border-radius:.75rem;padding:1.25rem;background:#fff">
+                <h3 style="font-size:1.0625rem;font-weight:700;margin:0 0 .75rem">TopSAAS Platform Hubs (Internal Links)</h3>
+                <ul style="margin:0;padding-left:1.25rem;line-height:1.75;font-size:.875rem;color:#404040">
+                  <li><a href="/ideas" style="${linkStyle}">SaaS Ideas Catalog</a> — 50+ curated open-source monetization blueprints.</li>
+                  <li><a href="/mrr-calculator" style="${linkStyle}">MRR &amp; Pricing Calculator</a> — Model ARPU, customer volume, and breakeven.</li>
+                  <li><a href="/product-directory" style="${linkStyle}">Product Directory</a> — Directory of live tools and micro-SaaS products.</li>
+                  <li><a href="/trending" style="${linkStyle}">Trending Software</a> — This week's top software launches and votes.</li>
+                  <li><a href="/guides" style="${linkStyle}">Founder Build Guides</a> — Engineering playbooks for launching profitable apps.</li>
+                  <li><a href="/submit" style="${linkStyle}">Submit Your Product</a> — Verified review and permanent dofollow backlink.</li>
+                  <li><a href="/pricing" style="${linkStyle}">Sponsorship &amp; Featured Spots</a> — Homepage banner and sidebar placements.</li>
+                </ul>
+              </div>
+              <div style="border:1px solid #e5e5e5;border-radius:.75rem;padding:1.25rem;background:#fff">
+                <h3 style="font-size:1.0625rem;font-weight:700;margin:0 0 .75rem">Authoritative References (External Links)</h3>
+                <ul style="margin:0;padding-left:1.25rem;line-height:1.75;font-size:.875rem;color:#404040">
+                  <li><a href="${BENTO_PDF_META.githubUrl}" target="_blank" rel="noopener noreferrer" style="${linkStyle}">alam00000/bentopdf GitHub</a> — Official source repository and WASM modules.</li>
+                  <li><a href="${BENTO_PDF_META.officialWebsite}" target="_blank" rel="noopener noreferrer" style="${linkStyle}">BentoPDF Web Application</a> — Official live web deployment.</li>
+                  <li><a href="${BENTO_PDF_META.dockerPackageUrl}" target="_blank" rel="noopener noreferrer" style="${linkStyle}">bentopdf-simple on GHCR</a> — Standalone Docker image.</li>
+                  <li><a href="${BENTO_PDF_META.mupdfUrl}" target="_blank" rel="noopener noreferrer" style="${linkStyle}">MuPDF by Artifex</a> — Ultralight C/C++ PDF engine.</li>
+                  <li><a href="${BENTO_PDF_META.tesseractUrl}" target="_blank" rel="noopener noreferrer" style="${linkStyle}">Tesseract.js OCR</a> — Neural client-side OCR engine.</li>
+                  <li><a href="${BENTO_PDF_META.pdfLibUrl}" target="_blank" rel="noopener noreferrer" style="${linkStyle}">pdf-lib Library</a> — TypeScript PDF mutation and creation.</li>
+                  <li><a href="${BENTO_PDF_META.pdfJsUrl}" target="_blank" rel="noopener noreferrer" style="${linkStyle}">Mozilla PDF.js</a> — HTML5 browser document parsing standard.</li>
+                  <li><a href="${BENTO_PDF_META.licenseUrl}" target="_blank" rel="noopener noreferrer" style="${linkStyle}">GNU AGPL-3.0 License</a> — Open source terms and obligations.</li>
+                  <li><a href="${BENTO_PDF_META.wasmUrl}" target="_blank" rel="noopener noreferrer" style="${linkStyle}">W3C WebAssembly Standard</a> — High-speed client sandboxing.</li>
+                </ul>
+              </div>
+            </div>
           </section>
 
           <p style="margin:1.5rem 0 0"><a href="/ideas" style="${linkStyle}">← Back to SaaS Ideas Catalog</a></p>
@@ -1691,7 +1757,7 @@ const buildOpenSourceBentoPdfJsonLd = (): string =>
     '@graph': [
       ...siteJsonLd(),
       {
-        '@type': 'TechArticle',
+        '@type': ['Article', 'TechArticle'],
         '@id': `${SITE_URL}/opensource/bentopdf#article`,
         headline: 'BentoPDF: Codebase Architecture & 51 Client-Side WASM Tools Reference',
         description:
@@ -1704,12 +1770,17 @@ const buildOpenSourceBentoPdfJsonLd = (): string =>
           applicationCategory: 'UtilitiesApplication',
           operatingSystem: 'Any (WebAssembly Browser-Based)',
           softwareVersion: '1.0',
+          codeRepository: 'https://github.com/alam00000/bentopdf',
           offers: {
             '@type': 'Offer',
             price: '0',
             priceCurrency: 'USD',
           },
         },
+        significantLink: [
+          ...BENTO_INTERNAL_LINKS.map((l) => `${SITE_URL}${l.url}`),
+          ...BENTO_EXTERNAL_RESOURCES.map((l) => l.url),
+        ],
         author: {
           '@type': 'Organization',
           name: 'TopSAAS Research',
@@ -1852,7 +1923,7 @@ const buildBlogPostJsonLd = (post: BlogPost): string =>
     '@context': 'https://schema.org',
     '@graph': [...siteJsonLd(), 
       {
-        '@type': 'BlogPosting',
+        '@type': ['Article', 'BlogPosting'],
         headline: post.title,
         description: post.tagline,
         url: `${SITE_URL}/blog/${post.slug}`,
