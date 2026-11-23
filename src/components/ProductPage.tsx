@@ -733,9 +733,12 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                         </span>
                       )}
                       {(product.autoRelaunch || product.isRelaunched) && !product.isSponsored && (
-                        <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-blue-50 border border-blue-200/80 px-2 py-0.5 text-xs font-bold text-blue-700 shadow-2xs select-none">
-                          <span>🚀</span>
-                          <span>Weekly Relaunch</span>
+                        <span
+                          className="inline-flex shrink-0 items-center gap-1.5 text-xs font-medium text-neutral-400 select-none"
+                          title="Relaunched tool in this weekly round"
+                        >
+                          <Rocket className="h-3.5 w-3.5 text-neutral-400/80 shrink-0" />
+                          <span>Relaunched</span>
                         </span>
                       )}
                       {product.offerDiscount && (

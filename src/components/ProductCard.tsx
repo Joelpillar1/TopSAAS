@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronUp, MessageCircle } from 'lucide-react';
+import { ChevronUp, MessageCircle, Rocket } from 'lucide-react';
 import { VerifiedBadge } from './VerifiedBadge';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
@@ -81,6 +81,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             </span>
             {showVerified && product.verified && (
               <VerifiedBadge className="h-3.5 w-3.5 shrink-0" title="Verified Startup" />
+            )}
+            {(product.autoRelaunch || product.isRelaunched) && !product.isSponsored && (
+              <span
+                className="inline-flex shrink-0 items-center gap-1 text-[10px] font-medium text-neutral-400 select-none"
+                title="Relaunched tool in this weekly round"
+              >
+                <Rocket className="h-2.5 w-2.5 text-neutral-400/80 shrink-0" />
+                <span>Relaunched</span>
+              </span>
             )}
             {product.offerDiscount && (
               <span className="rounded bg-mint-50 border border-mint-200 px-1.5 py-px text-[9px] font-black text-mint-700 shrink-0">

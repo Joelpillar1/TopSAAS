@@ -1,5 +1,5 @@
 import React from 'react';
-import { MessageCircle, Flame, ChevronUp } from 'lucide-react';
+import { MessageCircle, Flame, ChevronUp, Rocket } from 'lucide-react';
 import { VerifiedBadge } from './VerifiedBadge';
 import { RankMedal } from './RankMedal';
 import { BorderBeam } from './BorderBeam';
@@ -173,6 +173,16 @@ export const ProductRow: React.FC<ProductRowProps> = ({
                   <VerifiedBadge className="h-3.5 w-3.5 shrink-0" title="Verified Startup" />
                 )}
 
+                {(product.autoRelaunch || product.isRelaunched) && !product.isSponsored && (
+                  <span
+                    className="inline-flex shrink-0 items-center gap-1 text-[10.5px] font-medium text-neutral-400 select-none"
+                    title="Relaunched tool in this weekly round"
+                  >
+                    <Rocket className="h-2.5 w-2.5 text-neutral-400/80 shrink-0" />
+                    <span>Relaunched</span>
+                  </span>
+                )}
+
                 {product.offerDiscount && (
                   <span className="inline-flex shrink-0 items-center gap-0.5 rounded bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 px-1.5 py-0.5 text-[9px] font-black text-white shadow-xs select-none">
                     <Flame className="h-2 w-2 fill-white stroke-white shrink-0" />
@@ -277,10 +287,10 @@ export const ProductRow: React.FC<ProductRowProps> = ({
             )}
             {(product.autoRelaunch || product.isRelaunched) && !product.isSponsored && (
               <span
-                className="inline-flex shrink-0 items-center gap-1 rounded-md bg-blue-50 border border-blue-200/80 px-1.5 py-0.5 text-[10px] font-bold text-blue-700 shadow-2xs select-none"
+                className="inline-flex shrink-0 items-center gap-1 text-[11px] font-medium text-neutral-400 select-none"
                 title="Relaunched tool in this weekly round"
               >
-                <span>🚀</span>
+                <Rocket className="h-3 w-3 text-neutral-400/80 shrink-0" />
                 <span>Relaunched</span>
               </span>
             )}
