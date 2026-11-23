@@ -24,7 +24,6 @@ import { uploadScreenshotToStorage } from './utils/storage';
 import { sendEmailNotification } from './utils/email';
 import { Trophy, X, Plus, ShieldCheck, Loader2, Star, MessageCircle, Flame, Search, ArrowUpRight } from 'lucide-react';
 import { FeaturedSpotModal } from './components/FeaturedSpotModal';
-import { BlackFridayModal } from './components/BlackFridayModal';
 import { SaaSIdeasSponsorModal } from './components/SaaSIdeasSponsorModal';
 import { ProductPage } from './components/ProductPage';
 import { BadgeRoute } from './components/BadgeRoute';
@@ -653,7 +652,6 @@ export default function App() {
   const [featuredInitialTier, setFeaturedInitialTier] = useState<'1wk' | '1mo' | '3mo' | '1yr' | 'trial'>('1mo');
   const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
   const [legalTab, setLegalTab] = useState<LegalTab>('privacy');
-  const [isBfModalOpen, setIsBfModalOpen] = useState(false);
 
   // Live activity feed shown in the directory side rails
   const [liveFeed, setLiveFeed] = useState<FeedEvent[]>([]);
@@ -1034,28 +1032,6 @@ export default function App() {
     } catch { }
   }, []);
 
-  // Black Friday Alert Modal auto-trigger (6s delay, suppressed for 3 days once dismissed)
-  useEffect(() => {
-    try {
-      const dismissedUntil = localStorage.getItem('topsaas_bf_dismissed_until');
-      if (dismissedUntil && Date.now() < parseInt(dismissedUntil, 10)) {
-        return;
-      }
-      const timer = setTimeout(() => {
-        if (currentRoute !== '/accept') {
-          setIsBfModalOpen(true);
-        }
-      }, 6000);
-      return () => clearTimeout(timer);
-    } catch { }
-  }, [currentRoute]);
-
-  const handleCloseBfModal = () => {
-    setIsBfModalOpen(false);
-    try {
-      localStorage.setItem('topsaas_bf_dismissed_until', String(Date.now() + 3 * 24 * 60 * 60 * 1000));
-    } catch { }
-  };
 
   // Navigation handlers
   const handleBackToLeaderboard = () => {
@@ -4735,12 +4711,6 @@ export default function App() {
         onRequireSignIn={() => setIsSignInModalOpen(true)}
       />
 
-      {/* Black Friday Alert Modal */}
-      <BlackFridayModal
-        isOpen={isBfModalOpen}
-        onClose={handleCloseBfModal}
-        soundEnabled={soundEnabled}
-      />
 
     </div>
   );
