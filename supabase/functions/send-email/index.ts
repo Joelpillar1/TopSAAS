@@ -26,7 +26,8 @@ export type EmailType =
   | "sponsor_ended"
   | "weekly_digest"
   | "welcome_founder"
-  | "welcome_user";
+  | "welcome_user"
+  | "custom";
 
 interface SendEmailPayload {
   type: EmailType;
@@ -611,6 +612,31 @@ function buildEmailContent(
           ctaUrl: `${SITE_URL}/submit`,
         }),
         text: `Welcome to TopSAAS${firstName}!\n\nWe noticed you haven't submitted a product yet. If you're building a SaaS or AI tool, you can launch it for free in under 2 minutes and start collecting upvotes and direct traffic.\n\nSubmit here: ${SITE_URL}/submit`,
+      };
+    }
+
+    case "custom": {
+      const subject = String(data.subject || "Message from TopSAAS");
+      const heading = String(data.heading || subject);
+      const preheader = String(data.preheader || subject);
+      const badge = String(data.badge || "TopSAAS Launch");
+      const bodyHtml = String(data.bodyHtml || `<p>${escapeHtml(data.text || "")}</p>`);
+      const ctaLabel = data.ctaLabel ? String(data.ctaLabel) : undefined;
+      const ctaUrl = data.ctaUrl ? String(data.ctaUrl) : undefined;
+      const text = String(data.text || "");
+
+      return {
+        subject,
+        html: wrapLayout({
+          preheader,
+          badge,
+          tone: (data.tone as BadgeTone) || "blue",
+          heading,
+          bodyHtml,
+          ctaLabel,
+          ctaUrl,
+        }),
+        text,
       };
     }
   }
