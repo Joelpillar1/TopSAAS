@@ -41,6 +41,13 @@ import {
 } from '../src/data/corePageContent';
 import { INITIAL_PRODUCTS } from '../src/data/initialProducts';
 import { BLOG_POSTS, type BlogPost } from '../src/data/blogPosts';
+import {
+  BENTO_PDF_META,
+  BENTO_TOOLS,
+  BENTO_PDF_ARCHITECTURE,
+  BENTO_BLUEPRINTS,
+  BENTO_FAQS,
+} from '../src/data/bentoPdfDeepDive';
 import { LEGAL_EFFECTIVE, PRIVACY_SECTIONS, TERMS_SECTIONS, type LegalSection } from '../src/data/legalContent';
 import { getProductSlug } from '../src/utils/slug';
 import { productFaqs } from '../src/utils/productFaqs';
@@ -1523,6 +1530,208 @@ const buildLegalJsonLd = (doc: 'privacy' | 'terms'): string => {
   });
 };
 
+/* ── open source bentopdf teardown ── */
+
+const buildOpenSourceBentoPdfBody = (): string => `
+      <div style="${pageStyle}">
+        <nav aria-label="Breadcrumb" style="${mutedStyle}margin-bottom:1.25rem">
+          <a href="/" style="${linkStyle}">Directory</a>
+          <span aria-hidden="true">/</span>
+          <a href="/ideas" style="${linkStyle}">SaaS Ideas</a>
+          <span aria-hidden="true">/</span>
+          <span>Open Source</span>
+          <span aria-hidden="true">/</span>
+          <span>BentoPDF</span>
+        </nav>
+        <main>
+          <header style="margin-bottom:2rem">
+            <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:.5rem;flex-wrap:wrap">
+              <span style="background:#f5f5f5;border:1px solid #e5e5e5;padding:.2rem .5rem;border-radius:.375rem;font-size:.75rem;font-weight:600">alam00000/bentopdf</span>
+              <span style="background:#f5f5f5;border:1px solid #e5e5e5;padding:.2rem .5rem;border-radius:.375rem;font-size:.75rem;font-weight:600">${escapeHtml(BENTO_PDF_META.license)}</span>
+              <span style="background:#f5f5f5;border:1px solid #e5e5e5;padding:.2rem .5rem;border-radius:.375rem;font-size:.75rem;font-weight:600">100% Client-Side WASM</span>
+            </div>
+            <h1 style="${h1Style}">BentoPDF: Codebase Architecture &amp; 51 Client-Side WASM Tools Reference</h1>
+            <p style="margin:0 0 1rem;font-size:1.0625rem;color:#404040">
+              A comprehensive technical teardown of BentoPDF. Learn how 51 PDF manipulation and OCR tools execute entirely inside browser memory using WebAssembly with zero file uploads, zero server compute, and automatic GDPR/HIPAA compliance.
+            </p>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.75rem;margin:1.5rem 0">
+              <div style="border:1px solid #e5e5e5;border-radius:.5rem;padding:.75rem;background:#fafafa">
+                <div style="${mutedStyle}">Total Tools</div>
+                <div style="font-size:1.25rem;font-weight:700;margin-top:.25rem">51 Tools</div>
+                <div style="${mutedStyle}">5 Categories</div>
+              </div>
+              <div style="border:1px solid #e5e5e5;border-radius:.5rem;padding:.75rem;background:#fafafa">
+                <div style="${mutedStyle}">Server Compute</div>
+                <div style="font-size:1.25rem;font-weight:700;margin-top:.25rem">Zero Backend</div>
+                <div style="${mutedStyle}">Client-side execution</div>
+              </div>
+              <div style="border:1px solid #e5e5e5;border-radius:.5rem;padding:.75rem;background:#fafafa">
+                <div style="${mutedStyle}">Data Retention</div>
+                <div style="font-size:1.25rem;font-weight:700;margin-top:.25rem">0 Bytes Stored</div>
+                <div style="${mutedStyle}">Privacy by design</div>
+              </div>
+              <div style="border:1px solid #e5e5e5;border-radius:.5rem;padding:.75rem;background:#fafafa">
+                <div style="${mutedStyle}">Core Engine</div>
+                <div style="font-size:1.25rem;font-weight:700;margin-top:.25rem">WebAssembly</div>
+                <div style="${mutedStyle}">MuPDF &amp; Tesseract.js</div>
+              </div>
+            </div>
+          </header>
+
+          <section style="margin-bottom:2.5rem">
+            <h2 style="${h2Style}">Local WebAssembly Execution Model</h2>
+            <p style="margin:0 0 1rem">
+              Unlike cloud services that require users to upload documents to external compute clusters, BentoPDF compiles C/C++ rendering libraries to WebAssembly. The browser sandboxes memory, and worker threads process PDF objects on local hardware without sending bytes across the network.
+            </p>
+            <h3 style="font-size:1rem;margin:1.25rem 0 .5rem">Architecture Pillars</h3>
+            <ul style="margin:0 0 1rem;padding-left:1.25rem">
+${BENTO_PDF_ARCHITECTURE.corePillars
+  .map(
+    (pillar) =>
+      `              <li><strong>${escapeHtml(pillar.title)}:</strong> ${escapeHtml(pillar.description)}</li>`
+  )
+  .join('\n')}
+            </ul>
+
+            <h3 style="font-size:1rem;margin:1.25rem 0 .5rem">Self-Hosting via Docker</h3>
+            <pre style="background:#f5f5f5;padding:.75rem 1rem;border:1px solid #e5e5e5;border-radius:.5rem;overflow-x:auto;margin:0 0 1rem"><code>docker run -d -p 8080:80 ghcr.io/alam00000/bentopdf-simple</code></pre>
+          </section>
+
+          <section style="margin-bottom:2.5rem">
+            <h2 style="${h2Style}">The 51 BentoPDF Tools Breakdown</h2>
+            <p style="margin:0 0 1rem">
+              Each tool operates client-side without document persistence. Below is the full dictionary explaining what each tool does in plain English, its technical implementation under the hood, and practical real-world use cases.
+            </p>
+            <div style="display:flex;flex-direction:column;gap:1.25rem;margin-top:1rem">
+${BENTO_TOOLS.map(
+  (tool) => `              <article id="tool-${escapeHtml(tool.slug)}" style="border:1px solid #e5e5e5;border-radius:.75rem;padding:1.25rem;background:#fff">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
+                  <div style="display:flex;align-items:center;gap:.5rem">
+                    <span style="background:#f5f5f5;font-family:monospace;font-weight:700;padding:.2rem .4rem;border-radius:.25rem;font-size:.8125rem">#${tool.id}</span>
+                    <h3 style="font-size:1.125rem;font-weight:700;margin:0">${escapeHtml(tool.name)}</h3>
+                    <span style="background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;font-size:.75rem;font-weight:600;padding:.15rem .4rem;border-radius:.25rem">${escapeHtml(tool.category)}</span>
+                  </div>
+                  <span style="${mutedStyle};font-size:.75rem">${escapeHtml(tool.badge)}</span>
+                </div>
+                <p style="margin:0 0 .75rem;font-weight:500;color:#262626">${escapeHtml(tool.tagline)}</p>
+                <div style="display:grid;grid-template-columns:1fr;gap:.75rem;background:#fafafa;padding:1rem;border-radius:.5rem;border:1px solid #f0f0f0">
+                  <div>
+                    <span style="font-size:.75rem;font-weight:700;text-transform:uppercase;color:#737373;display:block;margin-bottom:.25rem">Plain English</span>
+                    <p style="margin:0;font-size:.875rem;color:#404040">${escapeHtml(tool.plainEnglish)}</p>
+                  </div>
+                  <div>
+                    <span style="font-size:.75rem;font-weight:700;text-transform:uppercase;color:#737373;display:block;margin-bottom:.25rem">Under the Hood Architecture</span>
+                    <p style="margin:0;font-size:.8125rem;font-family:monospace;color:#262626">${escapeHtml(tool.underTheHood)}</p>
+                  </div>
+                  <div>
+                    <span style="font-size:.75rem;font-weight:700;text-transform:uppercase;color:#737373;display:block;margin-bottom:.25rem">Practical Real-World Use Case</span>
+                    <p style="margin:0;font-size:.875rem;color:#404040">${escapeHtml(tool.realWorldUse)}</p>
+                  </div>
+                </div>
+              </article>`
+).join('\n')}
+            </div>
+          </section>
+
+          <section style="margin-bottom:2.5rem">
+            <h2 style="${h2Style}">Curated SaaS Blueprints Built on BentoPDF</h2>
+            <p style="margin:0 0 1rem">
+              Turn generic open-source PDF utilities into specialized, high-retention vertical B2B micro-SaaS products.
+            </p>
+            <div style="display:flex;flex-direction:column;gap:1.5rem;margin-top:1rem">
+${BENTO_BLUEPRINTS.map(
+  (idea) => `              <article style="border:1px solid #e5e5e5;border-radius:.75rem;padding:1.5rem;background:#fff">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
+                  <div>
+                    <h3 style="font-size:1.25rem;font-weight:700;margin:0">${escapeHtml(idea.name)}</h3>
+                    <span style="${mutedStyle}">${escapeHtml(idea.niche)}</span>
+                  </div>
+                  <span style="background:#0a0a0a;color:#fff;font-weight:700;font-size:.8125rem;padding:.25rem .6rem;border-radius:.375rem">${escapeHtml(idea.pricing)}</span>
+                </div>
+                <p style="margin:0 0 1rem;font-size:.9375rem;color:#404040">${escapeHtml(idea.tagline)}</p>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.75rem;margin-bottom:1rem">
+                  <div style="border:1px solid #f0f0f0;background:#fafafa;padding:.5rem .75rem;border-radius:.375rem">
+                    <span style="${mutedStyle};font-size:.75rem">Target MRR</span>
+                    <div style="font-weight:700;font-size:.9375rem">${escapeHtml(idea.targetMrr)}</div>
+                  </div>
+                  <div style="border:1px solid #f0f0f0;background:#fafafa;padding:.5rem .75rem;border-radius:.375rem">
+                    <span style="${mutedStyle};font-size:.75rem">Breakeven Volume</span>
+                    <div style="font-weight:700;font-size:.9375rem">${escapeHtml(idea.customersNeeded)}</div>
+                  </div>
+                  <div style="border:1px solid #f0f0f0;background:#fafafa;padding:.5rem .75rem;border-radius:.375rem">
+                    <span style="${mutedStyle};font-size:.75rem">Estimated MVP</span>
+                    <div style="font-weight:700;font-size:.9375rem">${escapeHtml(idea.timeToMvp)}</div>
+                  </div>
+                </div>
+                <div style="font-size:.875rem;color:#404040;line-height:1.6">
+                  <p style="margin:0 0 .5rem"><strong>Target Customer:</strong> ${escapeHtml(idea.market.target)} (${escapeHtml(idea.customer.title)})</p>
+                  <p style="margin:0 0 .5rem"><strong>Core Pain:</strong> ${escapeHtml(idea.problem.corePain)}</p>
+                  <p style="margin:0 0 .5rem"><strong>Product Solution:</strong> ${escapeHtml(idea.product.summary)}</p>
+                  <p style="margin:0"><strong>Search Demand:</strong> ${escapeHtml(idea.searchDemand.totalSearches)}</p>
+                </div>
+              </article>`
+).join('\n')}
+            </div>
+          </section>
+
+          <section style="margin-bottom:2.5rem">
+            <h2 style="${h2Style}">Frequently Asked Questions</h2>
+            ${faqList(BENTO_FAQS.map((f) => ({ q: f.question, a: f.answer })))}
+          </section>
+
+          <p style="margin:1.5rem 0 0"><a href="/ideas" style="${linkStyle}">← Back to SaaS Ideas Catalog</a></p>
+        </main>
+${staticFooter}
+      </div>
+    `;
+
+const buildOpenSourceBentoPdfJsonLd = (): string =>
+  escapeJson({
+    '@context': 'https://schema.org',
+    '@graph': [
+      ...siteJsonLd(),
+      {
+        '@type': 'TechArticle',
+        '@id': `${SITE_URL}/opensource/bentopdf#article`,
+        headline: 'BentoPDF: Codebase Architecture & 51 Client-Side WASM Tools Reference',
+        description:
+          'Comprehensive technical breakdown of BentoPDF. Explore 51 client-side WebAssembly PDF tools running in browser RAM with zero server uploads, plus SaaS commercial blueprints.',
+        url: `${SITE_URL}/opensource/bentopdf`,
+        inLanguage: 'en',
+        about: {
+          '@type': 'SoftwareApplication',
+          name: 'BentoPDF',
+          applicationCategory: 'UtilitiesApplication',
+          operatingSystem: 'Any (WebAssembly Browser-Based)',
+          softwareVersion: '1.0',
+          offers: {
+            '@type': 'Offer',
+            price: '0',
+            priceCurrency: 'USD',
+          },
+        },
+        author: {
+          '@type': 'Organization',
+          name: 'TopSAAS Research',
+          url: `${SITE_URL}/`,
+        },
+        publisher: {
+          '@type': 'Organization',
+          name: 'TopSAAS',
+          url: `${SITE_URL}/`,
+          logo: `${SITE_URL}/logo/TopSAAS%20-%20blue.png`,
+        },
+      },
+      faqJsonLd(BENTO_FAQS.map((f) => ({ q: f.question, a: f.answer }))),
+      breadcrumbJsonLd([
+        ['Directory', `${SITE_URL}/`],
+        ['SaaS Ideas', `${SITE_URL}/ideas`],
+        ['Open Source', `${SITE_URL}/ideas`],
+        ['BentoPDF', `${SITE_URL}/opensource/bentopdf`],
+      ]),
+    ],
+  });
+
 /* ── 404 ── */
 
 const buildNotFoundBody = (): string => `
@@ -1956,6 +2165,21 @@ export function repoPrerenderPlugin(): Plugin {
         );
       }
 
+      // ── open source bentopdf teardown ──
+      writePage(
+        distDir,
+        ['opensource', 'bentopdf'],
+        renderPage(template, {
+          title: 'BentoPDF: Codebase Architecture & 51 Client-Side WASM Tools Reference | TopSAAS',
+          description:
+            'Comprehensive technical breakdown of BentoPDF. Explore 51 client-side WebAssembly PDF tools running in browser RAM with zero server uploads, plus SaaS commercial blueprints.',
+          canonical: `${SITE_URL}/opensource/bentopdf`,
+          body: buildOpenSourceBentoPdfBody(),
+          jsonLd: buildOpenSourceBentoPdfJsonLd(),
+          jsonLdId: 'opensource-bentopdf-jsonld',
+        })
+      );
+
       // The 404 page is served with a 404 status by vercel.json.
       const notFoundTitle = 'Page not found | TopSAAS';
       const notFoundHtml = renderPage(template, {
@@ -2000,6 +2224,7 @@ export function repoPrerenderPlugin(): Plugin {
         { loc: `${SITE_URL}/guides`, changefreq: 'weekly', priority: '0.8' },
         { loc: `${SITE_URL}/blog`, changefreq: 'weekly', priority: '0.8' },
         { loc: `${SITE_URL}/mrr-calculator`, changefreq: 'monthly', priority: '0.7' },
+        { loc: `${SITE_URL}/opensource/bentopdf`, changefreq: 'weekly', priority: '0.9' },
         { loc: `${SITE_URL}/submit`, changefreq: 'monthly', priority: '0.7' },
         { loc: `${SITE_URL}/pricing`, changefreq: 'monthly', priority: '0.7' },
         { loc: `${SITE_URL}/privacy`, changefreq: 'monthly', priority: '0.3' },
