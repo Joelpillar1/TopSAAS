@@ -9,8 +9,8 @@
     <style>html.js #seo-prerender{display:none}</style>
     <!-- Ahrefs Analytics -->
     <script src="https://analytics.ahrefs.com/analytics.js" data-key="+Ca3lPgkSAn1oGF3LMR9nQ" async></script>
-    <!-- Trackkit Analytics -->
-    <script defer src="https://trackkit-self.vercel.app/script.js" data-website-id="7ff8c98f-73a7-430a-b9b3-cf65fe25df78"></script>
+    <!-- Trackkit Analytics (Minilytics) -->
+    <script defer data-website-id="5y6c5l0e536b6o6v" src="https://minilytics.trackkit.workers.dev/js/script.js"></script>
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-87YKV94BFE"></script>
     <script>
@@ -18,85 +18,104 @@
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
 
-      gtag('config', 'G-87YKV94BFE');
-    </script>
-    <script>
-      (function() {
+<head>
+  <!-- Ahrefs Analytics -->
+  <script src="https://analytics.ahrefs.com/analytics.js" data-key="+Ca3lPgkSAn1oGF3LMR9nQ" async></script>
+  <!-- Trackkit Analytics -->
+  <script defer src="https://trackkit-self.vercel.app/script.js"
+    data-website-id="7ff8c98f-73a7-430a-b9b3-cf65fe25df78"></script>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-87YKV94BFE"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+
+    gtag('config', 'G-87YKV94BFE');
+  </script>
+  <script>
+    (function () {
+      try {
+        var originalFetch = window.fetch;
+        var _currentFetch = typeof originalFetch === 'function' ? originalFetch.bind(window) : originalFetch;
+        Object.defineProperty(window, 'fetch', {
+          get: function () {
+            return _currentFetch || originalFetch;
+          },
+          set: function (fn) {
+            _currentFetch = fn;
+          },
+          configurable: true,
+          enumerable: true,
+        });
+      } catch (e) {
         try {
-          var originalFetch = window.fetch;
-          var _currentFetch = typeof originalFetch === 'function' ? originalFetch.bind(window) : originalFetch;
-          Object.defineProperty(window, 'fetch', {
-            get: function() {
-              return _currentFetch || originalFetch;
-            },
-            set: function(fn) {
-              _currentFetch = fn;
-            },
-            configurable: true,
-            enumerable: true,
-          });
-        } catch (e) {
-          try {
-            if (typeof Window !== 'undefined' && Window.prototype) {
-              var desc = Object.getOwnPropertyDescriptor(Window.prototype, 'fetch');
-              if (desc && !desc.set) {
-                var _protoFetch = desc.get ? desc.get.call(window) : window.fetch;
-                Object.defineProperty(Window.prototype, 'fetch', {
-                  get: function() {
-                    return _protoFetch;
-                  },
-                  set: function(val) {
-                    _protoFetch = val;
-                  },
-                  configurable: true,
-                  enumerable: true,
-                });
-              }
+          if (typeof Window !== 'undefined' && Window.prototype) {
+            var desc = Object.getOwnPropertyDescriptor(Window.prototype, 'fetch');
+            if (desc && !desc.set) {
+              var _protoFetch = desc.get ? desc.get.call(window) : window.fetch;
+              Object.defineProperty(Window.prototype, 'fetch', {
+                get: function () {
+                  return _protoFetch;
+                },
+                set: function (val) {
+                  _protoFetch = val;
+                },
+                configurable: true,
+                enumerable: true,
+              });
             }
-          } catch (e2) {}
-        }
-      })();
-    </script>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="referrer" content="strict-origin-when-cross-origin" />
-    <title>TopSAAS — The Curated Directory of Modern SaaS & AI Tools</title>
-    <meta name="description" content="Discover modern SaaS products and AI tools on a community-ranked directory. Verified launches, weekly spotlights, and open-source starters." />
-    <meta name="keywords" content="SaaS directory, AI tools directory, best SaaS products, indie hacker tools, product launchpad, software leaderboard, dofollow backlink directory, open source SaaS starters, micro SaaS" />
-    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
-    <link rel="canonical" href="https://www.topsaas.space/" />
-    
-    <!-- OpenGraph / Facebook -->
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://www.topsaas.space/" />
-    <meta property="og:site_name" content="TopSAAS" />
-    <meta property="og:title" content="TopSAAS — The Curated Directory of Modern SaaS & AI Tools" />
-    <meta property="og:description" content="Discover modern SaaS products and AI tools on a community-ranked directory. Verified launches, weekly spotlights, and open-source starters." />
-    <meta property="og:image" content="https://www.topsaas.space/logo/Topsaas%20space%20image.jpg" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="TopSAAS Space — The Curated Directory of Modern SaaS &amp; AI Tools" />
+          }
+        } catch (e2) { }
+      }
+    })();
+  </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <title>TopSAAS — The Curated Directory of Modern SaaS & AI Tools</title>
+  <meta name="description"
+    content="Discover modern SaaS products and AI tools on a community-ranked directory. Verified launches, weekly spotlights, and open-source starters." />
+  <meta name="keywords"
+    content="SaaS directory, AI tools directory, best SaaS products, indie hacker tools, product launchpad, software leaderboard, dofollow backlink directory, open source SaaS starters, micro SaaS" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <link rel="canonical" href="https://www.topsaas.space/" />
 
-    <!-- Twitter / X -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:creator" content="@Joelpillar1" />
-    <link rel="me" href="https://x.com/Joelpillar1" />
-    <meta name="twitter:url" content="https://www.topsaas.space/" />
-    <meta name="twitter:title" content="TopSAAS — The Curated Directory of Modern SaaS & AI Tools" />
-    <meta name="twitter:description" content="Discover modern SaaS products and AI tools on a community-ranked directory. Verified launches, weekly spotlights, and open-source starters." />
-    <meta name="twitter:image" content="https://www.topsaas.space/logo/Topsaas%20space%20image.jpg" />
-    <meta name="twitter:image:alt" content="TopSAAS Space — The Curated Directory of Modern SaaS &amp; AI Tools" />
+  <!-- OpenGraph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://www.topsaas.space/" />
+  <meta property="og:site_name" content="TopSAAS" />
+  <meta property="og:title" content="TopSAAS — The Curated Directory of Modern SaaS & AI Tools" />
+  <meta property="og:description"
+    content="Discover, compare, and launch modern SaaS products and AI tools. Real-time community leaderboard, verified founder launches, and open-source starters." />
+  <meta property="og:image" content="https://www.topsaas.space/logo/Topsaas%20space%20image.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="TopSAAS Space — The Curated Directory of Modern SaaS &amp; AI Tools" />
 
-    <!-- Machine-Readable AI & Search Endpoints -->
-    <link rel="icon" type="image/png" href="/logo/TopSAAS%20-%20blue.png" />
-    <link rel="alternate" type="text/plain" href="/llms.txt" title="LLMs.txt" />
-    <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Schema.org Structured Data (SEO / AEO / GEO Knowledge Graph) -->
-    <script type="application/ld+json">
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:creator" content="@Joelpillar1" />
+  <link rel="me" href="https://x.com/Joelpillar1" />
+  <meta name="twitter:url" content="https://www.topsaas.space/" />
+  <meta name="twitter:title" content="TopSAAS — The Curated Directory of Modern SaaS & AI Tools" />
+  <meta name="twitter:description"
+    content="Discover, compare, and launch modern SaaS products and AI tools. Real-time community leaderboard, verified founder launches, and open-source starters." />
+  <meta name="twitter:image" content="https://www.topsaas.space/logo/Topsaas%20space%20image.jpg" />
+  <meta name="twitter:image:alt" content="TopSAAS Space — The Curated Directory of Modern SaaS &amp; AI Tools" />
+
+  <!-- Machine-Readable AI & Search Endpoints -->
+  <link rel="icon" type="image/png" href="/logo/TopSAAS%20-%20blue.png" />
+  <link rel="alternate" type="text/plain" href="/llms.txt" title="LLMs.txt" />
+  <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap"
+    rel="stylesheet">
+
+  <!-- Schema.org Structured Data (SEO / AEO / GEO Knowledge Graph) -->
+  <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@graph": [
@@ -131,34 +150,40 @@
       ]
     }
     </script>
-  </head>
-  <body class="bg-white text-neutral-900 antialiased selection:bg-mint-500/20 selection:text-neutral-900 min-h-screen">
-    <!-- Featured badges (static HTML for badge verification scanners) -->
-    <div style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">
-      <a href="https://launchit.fast" target="_blank" rel="noopener">
-        <img src="https://launchit.fast/img/launching.svg" alt="Featured on LaunchIt" width="200" height="54" />
-      </a>
-      <a href="https://spacerrapps.com/apps/topsaas?utm_source=badge&utm_medium=referral&utm_campaign=featured" target="_blank" rel="noopener">
-        <img src="https://spacerrapps.com/badge/topsaas.svg?v=2&theme=dark" alt="TopSAAS is featured on Spacerr" width="234" height="54" />
-      </a>
-      <a href="https://verifieddr.com/website/topsaas-space" target="_blank" rel="noopener">
-        <img src="https://verifieddr.com/badge/topsaas-space.svg?metric=truedr" alt="Verified DR - Verified Domain Rating for topsaas.space" width="220" height="68" />
-      </a>
-      <a href="https://getbannerbid.com/directory" target="_blank" rel="noopener">
-        <img src="https://getbannerbid.com/badges/listed-dark.svg" alt="Listed on GetBannerBid" width="200" height="54">
-      </a>
-      <a href="https://alterbase.co/" target="_blank" rel="noopener" title="Listed on AlterBase">
-        <img src="https://alterbase.co/badge/alterbase-v1-light.svg" alt="Listed on AlterBase" width="200" height="50" />
-      </a>
-      <a href="https://larklaunch.com/?ref=badge" target="_blank" rel="noopener" title="Featured on LarkLaunch">
-        <img src="https://larklaunch.com/badge/light.svg" alt="Featured on LarkLaunch" width="180" height="52" />
-      </a>
-      <a href="https://usefulshelf.co/?utm_source=topsaas.space&amp;utm_medium=referral&amp;utm_campaign=badge&amp;utm_content=lime" target="_blank" rel="nofollow noopener">
-        <img src="https://usefulshelf.co/badge/usefulshelf.svg?theme=lime" alt="Featured on UsefulShelf" width="248" height="66" />
-      </a>
-    </div>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
+</head>
 
+<body class="bg-white text-neutral-900 antialiased selection:bg-mint-500/20 selection:text-neutral-900 min-h-screen">
+  <!-- Featured badges (static HTML for badge verification scanners) -->
+  <div style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">
+    <a href="https://launchit.fast" target="_blank" rel="noopener">
+      <img src="https://launchit.fast/img/launching.svg" alt="Featured on LaunchIt" width="200" height="54" />
+    </a>
+    <a href="https://spacerrapps.com/apps/topsaas?utm_source=badge&utm_medium=referral&utm_campaign=featured"
+      target="_blank" rel="noopener">
+      <img src="https://spacerrapps.com/badge/topsaas.svg?v=2&theme=dark" alt="TopSAAS is featured on Spacerr"
+        width="234" height="54" />
+    </a>
+    <a href="https://verifieddr.com/website/topsaas-space" target="_blank" rel="noopener">
+      <img src="https://verifieddr.com/badge/topsaas-space.svg?metric=truedr"
+        alt="Verified DR - Verified Domain Rating for topsaas.space" width="220" height="68" />
+    </a>
+    <a href="https://getbannerbid.com/directory" target="_blank" rel="noopener">
+      <img src="https://getbannerbid.com/badges/listed-dark.svg" alt="Listed on GetBannerBid" width="200" height="54">
+    </a>
+    <a href="https://alterbase.co/" target="_blank" rel="noopener" title="Listed on AlterBase">
+      <img src="https://alterbase.co/badge/alterbase-v1-light.svg" alt="Listed on AlterBase" width="200" height="50" />
+    </a>
+    <a href="https://larklaunch.com/?ref=badge" target="_blank" rel="noopener" title="Featured on LarkLaunch">
+      <img src="https://larklaunch.com/badge/light.svg" alt="Featured on LarkLaunch" width="180" height="52" />
+    </a>
+    <a href="https://usefulshelf.co/?utm_source=topsaas.space&amp;utm_medium=referral&amp;utm_campaign=badge&amp;utm_content=lime"
+      target="_blank" rel="nofollow noopener">
+      <img src="https://usefulshelf.co/badge/usefulshelf.svg?theme=lime" alt="Featured on UsefulShelf" width="248"
+        height="66" />
+    </a>
+  </div>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
+</html>
