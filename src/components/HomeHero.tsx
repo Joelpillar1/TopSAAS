@@ -39,6 +39,7 @@ interface HomeHeroProps {
   dealsCount?: number;
   stealsOnly?: boolean;
   onToggleSteals?: () => void;
+  className?: string;
 }
 
 export const HomeHero: React.FC<HomeHeroProps> = ({
@@ -48,6 +49,7 @@ export const HomeHero: React.FC<HomeHeroProps> = ({
   dealsCount = 0,
   stealsOnly = false,
   onToggleSteals,
+  className,
 }) => {
   const [launchUrl, setLaunchUrl] = useState('');
   const [placeholderText, setPlaceholderText] = useState('https://yourstartup.com');
@@ -112,7 +114,13 @@ export const HomeHero: React.FC<HomeHeroProps> = ({
   };
 
   return (
-    <section className="relative overflow-hidden px-1 pt-1 sm:pt-2 pb-1" aria-label="Find the best SaaS">
+    <section
+      className={cn(
+        "relative overflow-hidden px-1 mt-0 sm:mt-5 pt-0 sm:pt-6 pb-1",
+        className
+      )}
+      aria-label="Find the best SaaS"
+    >
       {/* Background: subtle grid pattern */}
       <GridPattern
         width={32}
@@ -137,15 +145,15 @@ export const HomeHero: React.FC<HomeHeroProps> = ({
       />
       <div className="relative z-10 mx-auto flex max-w-2xl flex-col items-center text-center">
         {/* Top AI & Search Models Badge */}
-        <div className="mb-4 inline-flex items-center gap-2.5 rounded-full border border-neutral-200/90 bg-white/95 px-3.5 py-1.5 shadow-2xs backdrop-blur-xs">
-          <span className="flex items-center gap-1.5 text-[11px] font-semibold text-neutral-500 tracking-tight">
-            <span className="relative flex h-2 w-2">
+        <div className="mb-3 sm:mb-4 inline-flex items-center gap-1.5 sm:gap-2.5 rounded-full border border-neutral-200/90 bg-white/95 px-2.5 sm:px-3.5 py-1 sm:py-1.5 shadow-2xs backdrop-blur-xs max-w-full">
+          <span className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-[11px] font-semibold text-neutral-500 tracking-tight shrink-0">
+            <span className="relative flex h-1.5 w-1.5 sm:h-2 sm:w-2 shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 sm:h-2 sm:w-2 bg-emerald-500"></span>
             </span>
             Get cited by
           </span>
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
             {AI_LOGOS.map((logo, idx) => {
               const isActive = activeLogoIdx === idx;
               return (
@@ -157,8 +165,8 @@ export const HomeHero: React.FC<HomeHeroProps> = ({
                   width={18}
                   height={18}
                   className={cn(
-                    'h-[18px] w-[18px] object-contain transition-all duration-500',
-                    logo.isSquircle && 'rounded-[3px]',
+                    'h-[14px] w-[14px] sm:h-[18px] sm:w-[18px] object-contain transition-all duration-500',
+                    logo.isSquircle && 'rounded-[2px] sm:rounded-[3px]',
                     isActive
                       ? 'scale-125 -translate-y-0.5 drop-shadow-[0_2px_8px_rgba(37,99,235,0.4)] brightness-110'
                       : 'opacity-80 hover:opacity-100 hover:scale-110'

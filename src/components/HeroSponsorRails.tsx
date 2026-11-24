@@ -462,7 +462,7 @@ export const HeroSponsorRails: React.FC<HeroSponsorRailsProps> = ({
         {/* Center Hero + Directory List + Footer */}
         <div className="flex-1 w-full max-w-2xl xl:max-w-[760px] 2xl:max-w-[860px] mx-auto min-w-0 flex flex-col gap-4 pb-16 lg:pb-6">
           {/* Mobile-only Rotating Sponsor Banner at the top (Page Load) */}
-          <div ref={heroBannerRef} className="w-full mb-3 lg:hidden px-2 sm:px-3">
+          <div ref={heroBannerRef} className="w-full mb-0 lg:hidden px-2 sm:px-3">
             <SaaSIdeasMobileSponsor
               slots={DIRECTORY_MOBILE_SLOTS}
               sponsors={activeSponsors}

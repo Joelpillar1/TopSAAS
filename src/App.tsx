@@ -4612,19 +4612,21 @@ export default function App() {
                   isUpvoted={(productId) => isProductUpvoted(productId, userUpvotes)}
                 />
 
-                <BestOfSection
-                  id="last-month-best"
-                  title="Last Month's Best"
-                  subtitle={`${lastMonthLabel} · ranked by that month's upvotes and comments`}
-                  products={lastMonthBest}
-                  emptyMessage="No launches were ranked last month."
-                  soundEnabled={soundEnabled}
-                  commentCounts={commentCounts}
-                  isLoading={!productsLoaded}
-                  onOpenProduct={handleOpenProduct}
-                  onUpvote={handleUpvote}
-                  isUpvoted={(productId) => isProductUpvoted(productId, userUpvotes)}
-                />
+                {lastMonthBest.length > 0 && (
+                  <BestOfSection
+                    id="last-month-best"
+                    title="Last Month's Best"
+                    subtitle={`${lastMonthLabel} · ranked by that month's upvotes and comments`}
+                    products={lastMonthBest}
+                    emptyMessage="No launches were ranked last month."
+                    soundEnabled={soundEnabled}
+                    commentCounts={commentCounts}
+                    isLoading={!productsLoaded}
+                    onOpenProduct={handleOpenProduct}
+                    onUpvote={handleUpvote}
+                    isUpvoted={(productId) => isProductUpvoted(productId, userUpvotes)}
+                  />
+                )}
               </div>
             </HeroSponsorRails>
           </>
