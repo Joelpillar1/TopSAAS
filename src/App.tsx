@@ -2876,6 +2876,33 @@ export default function App() {
     .filter((p) => isInMonth(p.createdAt, lastMonthReference))
     .sort(compareProductsForMonth(lastMonthKey));
 
+  // Open share modal with weekly round ranking stats
+  const handleOpenShare = useCallback((p: Product) => {
+    const productRoundWeek = (selectedWeek && isProductInLaunchRound(p, selectedWeek))
+      ? selectedWeek
+      : (p.scheduledLaunchWeek != null
+          ? getWeekByNumber(Number(p.scheduledLaunchWeek))
+          : (isInWeek(p.createdAt, getWeekInfo(Date.now()))
+              ? getWeekInfo(Date.now())
+              : getWeekInfo(p.createdAt)));
+
+    const roundScopedProducts = productRoundWeek
+      ? directoryProducts
+          .filter((item) => isProductInLaunchRound(item, productRoundWeek))
+          .sort(compareProductsForWeek(productRoundWeek))
+      : sortedByRankProducts;
+
+    const rankIndex = roundScopedProducts.findIndex(
+      (item) => item.id === p.id || matchesProductIdentifier(item, p.id)
+    );
+    const weeklyRank = rankIndex >= 0 ? rankIndex + 1 : (p.rank || 1);
+
+    setShareProduct({
+      ...p,
+      rank: weeklyRank,
+    });
+  }, [selectedWeek, isProductInLaunchRound, directoryProducts, compareProductsForWeek, sortedByRankProducts]);
+
   // Reset page to 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
@@ -3248,7 +3275,7 @@ export default function App() {
             onDeleteProduct={handleDelistProduct}
             onUpdateProduct={handleUpdateProduct}
             onSelectProduct={handleOpenProduct}
-            onShareProduct={(p) => setShareProduct(p)}
+            onShareProduct={handleOpenShare}
             soundEnabled={soundEnabled}
           />
         </React.Suspense>
@@ -3316,8 +3343,24 @@ export default function App() {
       };
     }
 
+    const productRoundWeek = rawProduct
+      ? ((selectedWeek && isProductInLaunchRound(rawProduct, selectedWeek))
+          ? selectedWeek
+          : (rawProduct.scheduledLaunchWeek != null
+              ? getWeekByNumber(Number(rawProduct.scheduledLaunchWeek))
+              : (isInWeek(rawProduct.createdAt, getWeekInfo(Date.now()))
+                  ? getWeekInfo(Date.now())
+                  : getWeekInfo(rawProduct.createdAt))))
+      : null;
+
+    const roundScopedProducts = productRoundWeek
+      ? directoryProducts
+          .filter((p) => isProductInLaunchRound(p, productRoundWeek))
+          .sort(compareProductsForWeek(productRoundWeek))
+      : sortedByRankProducts;
+
     const rankIndex = rawProduct
-      ? sortedByRankProducts.findIndex(
+      ? roundScopedProducts.findIndex(
         (p) => p.id === rawProduct!.id || matchesProductIdentifier(p, rawProduct!.id)
       )
       : -1;
@@ -3495,7 +3538,7 @@ export default function App() {
                 try { window.history.pushState({}, p.name, `/products/${encodeURIComponent(slug || p.id)}`); } catch { }
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              onShare={(p) => setShareProduct(p)}
+              onShare={handleOpenShare}
               onTrackClick={handleTrackClick}
               onUpvote={handleUpvote}
               isUpvoted={isProductUpvoted(product.id, userUpvotes)}
@@ -4020,7 +4063,7 @@ export default function App() {
                   onOpenFeaturedSpotModal={() => {
                     setIsSaaSIdeasSponsorModalOpen(true);
                   }}
-                  onShareProduct={(p) => setShareProduct(p)}
+                  onShareProduct={handleOpenShare}
                   onTrackClick={handleTrackClick}
                   onUpvote={handleUpvote}
                   onOpenDetail={handleOpenProduct}
