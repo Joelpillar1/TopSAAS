@@ -3092,6 +3092,12 @@ export default function App() {
           handleOpenSubmit();
         }}
       />
+      <ShareModal
+        product={shareProduct}
+        isOpen={!!shareProduct}
+        onClose={() => setShareProduct(null)}
+        soundEnabled={soundEnabled}
+      />
     </>
   );
 
@@ -3247,12 +3253,6 @@ export default function App() {
           />
         </React.Suspense>
         {globalModals}
-        <ShareModal
-          product={shareProduct}
-          isOpen={!!shareProduct}
-          onClose={() => setShareProduct(null)}
-          soundEnabled={soundEnabled}
-        />
       </>
     );
   }
