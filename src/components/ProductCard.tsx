@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronUp, MessageCircle, Rocket } from 'lucide-react';
+import { ChevronUp, MessageCircle, Rocket, Share2 } from 'lucide-react';
 import { VerifiedBadge } from './VerifiedBadge';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
@@ -123,6 +123,21 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             <MessageCircle className="h-3 w-3 text-neutral-400 group-hover:text-neutral-600 transition-colors" />
             <span className="font-mono-num">{commentCount ?? 0}</span>
           </span>
+          {onShareProduct && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                playSound('click', soundEnabled);
+                onShareProduct(product);
+              }}
+              title="Share launch card & details"
+              className="inline-flex shrink-0 items-center justify-center h-5 w-5 rounded text-neutral-400 hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
+            >
+              <Share2 className="h-3 w-3" />
+            </button>
+          )}
         </div>
 
         {onUpvote && (

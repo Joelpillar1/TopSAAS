@@ -427,6 +427,21 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                     loading="lazy"
                   />
                 </a>
+                <a
+                  href="https://marketingdb.live"
+                  target="_blank"
+                  rel="noopener"
+                  className="transition-opacity hover:opacity-80 inline-flex items-center shrink-0"
+                >
+                  <img
+                    src="https://marketingdb.live/badge.svg"
+                    alt="Launched on MarketingDB"
+                    width={190}
+                    height={44}
+                    className="h-7.5 w-auto"
+                    loading="lazy"
+                  />
+                </a>
 
                 {/* Set 2 (for seamless infinite loop) */}
                 <a
@@ -770,6 +785,21 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                     loading="lazy"
                   />
                 </a>
+                <a
+                  href="https://marketingdb.live"
+                  target="_blank"
+                  rel="noopener"
+                  className="transition-opacity hover:opacity-80 inline-flex items-center shrink-0"
+                >
+                  <img
+                    src="https://marketingdb.live/badge.svg"
+                    alt="Launched on MarketingDB"
+                    width={190}
+                    height={44}
+                    className="h-7.5 w-auto"
+                    loading="lazy"
+                  />
+                </a>
               </div>
             </div>
           </div>
@@ -996,6 +1026,21 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                 alt="TopSAAS - Featured on AI Agents Directory"
                 width={200}
                 height={50}
+                className="h-8 w-auto"
+                loading="lazy"
+              />
+            </a>
+            <a
+              href="https://marketingdb.live"
+              target="_blank"
+              rel="noopener"
+              className="transition-opacity hover:opacity-85 inline-flex items-center shrink-0"
+            >
+              <img
+                src="https://marketingdb.live/badge.svg"
+                alt="Launched on MarketingDB"
+                width={190}
+                height={44}
                 className="h-8 w-auto"
                 loading="lazy"
               />

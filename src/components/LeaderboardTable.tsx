@@ -240,7 +240,7 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                           e.stopPropagation();
                           onShareProduct(product);
                         }}
-                        title="Share link"
+                        title="Share launch banner & details"
                         className="flex h-7 w-7 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-500 hover:text-neutral-950 hover:border-neutral-300 hover:bg-neutral-100 transition-colors cursor-pointer"
                       >
                         <Share2 className="h-3 w-3" />

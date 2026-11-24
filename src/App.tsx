@@ -57,6 +57,7 @@ import { SponsorTile } from './components/SponsorTile';
 import { HeroSponsorRails, DIRECTORY_MOBILE_SLOTS } from './components/HeroSponsorRails';
 import { WeeklyLaunchView } from './components/WeeklyLaunchView';
 import { BestOfSection } from './components/BestOfSection';
+import { AiCrawlAnalyticsSection } from './components/AiCrawlAnalyticsSection';
 import { ProductLogo } from './components/ProductLogo';
 import { SkeletonRows, SkeletonGrid, SkeletonTile } from './components/SkeletonCard';
 import { SkeletonTable } from './components/SkeletonTable';
@@ -4630,6 +4631,9 @@ export default function App() {
 
                 </div>
               </section>
+
+              {/* ── Active AI Crawlers Infinite Scroller (Cloudflare Telemetry) ── */}
+              <AiCrawlAnalyticsSection />
 
               {/* ── Period highlights ── */}
               <div className="w-full space-y-6 pb-2 pt-6">

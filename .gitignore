@@ -15,3 +15,4 @@ scripts/*
 !scripts/check-repo-data-freshness.mjs
 .freebuff/
 scratch/
+supabase/.temp/
