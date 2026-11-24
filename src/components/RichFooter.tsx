@@ -1013,39 +1013,6 @@ export const RichFooter: React.FC<RichFooterProps> = ({
             </button>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0">
-            <a
-              href="https://aiagentsdirectory.com/agent/topsaas"
-              target="_blank"
-              rel="noopener"
-              title="Discover TopSAAS on AI Agents Directory"
-              className="transition-opacity hover:opacity-85 inline-flex items-center"
-            >
-              <img
-                src="https://aiagentsdirectory.com/featured-badge.svg?v=2024"
-                alt="TopSAAS - Featured on AI Agents Directory"
-                width={200}
-                height={50}
-                className="h-8 w-auto"
-                loading="lazy"
-              />
-            </a>
-            <a
-              href="https://marketingdb.live"
-              target="_blank"
-              rel="noopener"
-              className="transition-opacity hover:opacity-85 inline-flex items-center shrink-0"
-            >
-              <img
-                src="https://marketingdb.live/badge.svg"
-                alt="Launched on MarketingDB"
-                width={190}
-                height={44}
-                className="h-8 w-auto"
-                loading="lazy"
-              />
-            </a>
-          </div>
         </div>
       </div>
     </footer>
