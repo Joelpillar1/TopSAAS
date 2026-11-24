@@ -282,6 +282,7 @@ export const SaaSIdeas: React.FC<SaaSIdeasProps> = ({
               {/* Main Hero Headline */}
               <h1 className="text-3xl font-black leading-[1.12] tracking-tight text-neutral-950 sm:text-5xl">
                 <span className="block">Launch Your SaaS</span>
+                {' '}
                 <span className="block sm:whitespace-nowrap shimmer-text-ai">On Open Source.</span>
               </h1>
 

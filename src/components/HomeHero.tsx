@@ -180,6 +180,7 @@ export const HomeHero: React.FC<HomeHeroProps> = ({
         {/* Headline: strictly 2 lines on mobile and desktop */}
         <h1 className="text-[25px] min-[390px]:text-[28px] sm:text-5xl font-black leading-[1.14] sm:leading-[1.08] tracking-tight text-neutral-950">
           <span className="block">The Launchpad Built</span>
+          {' '}
           <span className="block whitespace-nowrap shimmer-text-ai">For Humans &amp; AI Search.</span>
         </h1>
 
