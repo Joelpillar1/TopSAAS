@@ -191,16 +191,27 @@ export const AiCrawlAnalyticsSection: React.FC = () => {
   const [hoveredAllowed, setHoveredAllowed] = useState<{ label: string; value: number } | null>(null);
   const [hoveredUnsuccessful, setHoveredUnsuccessful] = useState<{ label: string; value: number } | null>(null);
 
-  // Fetch live numbers from Cloudflare API via Supabase Edge Function
+  // Fetch live numbers from Cloudflare API via Supabase Edge Function (every 30m)
   useEffect(() => {
     let isMounted = true;
-    fetchAiCrawlTelemetry().then((data) => {
-      if (isMounted && data) {
-        setTelemetry(data);
-      }
-    });
+    const loadTelemetry = (force = false) => {
+      fetchAiCrawlTelemetry(force).then((data) => {
+        if (isMounted && data) {
+          setTelemetry(data);
+        }
+      });
+    };
+
+    loadTelemetry();
+
+    // Periodic 30-minute refresh cycle
+    const interval = setInterval(() => {
+      loadTelemetry(true);
+    }, 30 * 60 * 1000);
+
     return () => {
       isMounted = false;
+      clearInterval(interval);
     };
   }, []);
 
@@ -332,7 +343,7 @@ export const AiCrawlAnalyticsSection: React.FC = () => {
             )}
           </div>
           <span className="text-[11px] sm:text-xs text-neutral-400 font-medium">
-            {telemetry.periodLabel}
+            {telemetry.periodLabel} · Updates every 30m
           </span>
         </div>
 

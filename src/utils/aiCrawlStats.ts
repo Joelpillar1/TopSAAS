@@ -168,9 +168,12 @@ export const DEFAULT_AI_CRAWL_TELEMETRY: AiCrawlTelemetryData = {
 };
 
 let cachedTelemetry: AiCrawlTelemetryData | null = null;
+let cachedTimestamp = 0;
+const CLIENT_CACHE_DURATION_MS = 30 * 60 * 1000; // 30 minutes
 
-export async function fetchAiCrawlTelemetry(): Promise<AiCrawlTelemetryData> {
-  if (cachedTelemetry) {
+export async function fetchAiCrawlTelemetry(forceRefresh = false): Promise<AiCrawlTelemetryData> {
+  const now = Date.now();
+  if (!forceRefresh && cachedTelemetry && (now - cachedTimestamp < CLIENT_CACHE_DURATION_MS)) {
     return cachedTelemetry;
   }
 
@@ -178,6 +181,7 @@ export async function fetchAiCrawlTelemetry(): Promise<AiCrawlTelemetryData> {
     const { data, error } = await supabase.functions.invoke('ai-crawl-stats');
     if (!error && data && data.metrics) {
       cachedTelemetry = data as AiCrawlTelemetryData;
+      cachedTimestamp = Date.now();
       return cachedTelemetry;
     }
   } catch (err) {
@@ -190,6 +194,7 @@ export async function fetchAiCrawlTelemetry(): Promise<AiCrawlTelemetryData> {
       const json = await res.json();
       if (json && json.metrics) {
         cachedTelemetry = json as AiCrawlTelemetryData;
+        cachedTimestamp = Date.now();
         return cachedTelemetry;
       }
     }

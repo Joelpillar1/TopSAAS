@@ -20,9 +20,9 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
 
-// 5-minute cache so live requests refresh frequently without spamming Cloudflare
+// 30-minute cache so live requests refresh periodically without spamming Cloudflare
 let memoryCache: { data: unknown; expiresAt: number } | null = null;
-const CACHE_DURATION_MS = 5 * 60 * 1000;
+const CACHE_DURATION_MS = 30 * 60 * 1000;
 
 // All AI bot regex matchers supported by Cloudflare AI Crawl Control
 const AI_BOT_MATCHERS = [
@@ -340,7 +340,7 @@ Deno.serve(async (req) => {
       crawlers: crawlersResult,
     };
 
-    // Cache in memory for 5 minutes
+    // Cache in memory for 30 minutes
     memoryCache = {
       data: result,
       expiresAt: now + CACHE_DURATION_MS,
@@ -350,7 +350,7 @@ Deno.serve(async (req) => {
       headers: {
         ...corsHeaders,
         "Content-Type": "application/json",
-        "Cache-Control": "public, max-age=300",
+        "Cache-Control": "public, max-age=1800, stale-while-revalidate=600",
       },
     });
   } catch (err: unknown) {
