@@ -411,6 +411,22 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                     onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
                   />
                 </a>
+                <a
+                  href="https://aiagentsdirectory.com/agent/topsaas"
+                  target="_blank"
+                  rel="noopener"
+                  title="Discover TopSAAS on AI Agents Directory"
+                  className="transition-opacity hover:opacity-80 inline-flex items-center shrink-0"
+                >
+                  <img
+                    src="https://aiagentsdirectory.com/featured-badge.svg?v=2024"
+                    alt="TopSAAS - Featured on AI Agents Directory"
+                    width={200}
+                    height={50}
+                    className="h-7.5 w-auto"
+                    loading="lazy"
+                  />
+                </a>
 
                 {/* Set 2 (for seamless infinite loop) */}
                 <a
@@ -738,6 +754,22 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                     onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
                   />
                 </a>
+                <a
+                  href="https://aiagentsdirectory.com/agent/topsaas"
+                  target="_blank"
+                  rel="noopener"
+                  title="Discover TopSAAS on AI Agents Directory"
+                  className="transition-opacity hover:opacity-80 inline-flex items-center shrink-0"
+                >
+                  <img
+                    src="https://aiagentsdirectory.com/featured-badge.svg?v=2024"
+                    alt="TopSAAS - Featured on AI Agents Directory"
+                    width={200}
+                    height={50}
+                    className="h-7.5 w-auto"
+                    loading="lazy"
+                  />
+                </a>
               </div>
             </div>
           </div>
@@ -949,6 +981,25 @@ export const RichFooter: React.FC<RichFooterProps> = ({
             >
               Terms of Service
             </button>
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0">
+            <a
+              href="https://aiagentsdirectory.com/agent/topsaas"
+              target="_blank"
+              rel="noopener"
+              title="Discover TopSAAS on AI Agents Directory"
+              className="transition-opacity hover:opacity-85 inline-flex items-center"
+            >
+              <img
+                src="https://aiagentsdirectory.com/featured-badge.svg?v=2024"
+                alt="TopSAAS - Featured on AI Agents Directory"
+                width={200}
+                height={50}
+                className="h-8 w-auto"
+                loading="lazy"
+              />
+            </a>
           </div>
         </div>
       </div>
