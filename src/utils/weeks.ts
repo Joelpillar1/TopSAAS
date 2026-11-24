@@ -112,8 +112,8 @@ export function formatMonthLabel(reference: number = Date.now()): string {
   return new Date(Number(reference) || Date.now()).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
 }
 
-/** Internal scale capacity per week. TopSAAS launches 25 apps each week. */
-export const MAX_WEEKLY_LAUNCH_CAP = 25;
+/** Internal scale capacity per week. TopSAAS launches 15 apps each week. */
+export const MAX_WEEKLY_LAUNCH_CAP = 15;
 
 /** True if a product belongs to a given launch week round */
 export function isProductInLaunchRound(
@@ -213,10 +213,10 @@ export function getUpcomingLaunchSlots(
     } else if (isFull) {
       statusLabel = 'Round Full';
       badgeStyle = 'bg-neutral-100 text-neutral-500 border-neutral-200';
-    } else if (count >= 20) {
+    } else if (count >= 12) {
       statusLabel = 'Filling Fast';
       badgeStyle = 'bg-amber-50 text-amber-700 border-amber-200';
-    } else if (count >= 15) {
+    } else if (count >= 9) {
       statusLabel = 'Popular';
       badgeStyle = 'bg-indigo-50 text-indigo-700 border-indigo-200';
     } else if (i === 1) {
@@ -230,7 +230,7 @@ export function getUpcomingLaunchSlots(
       statusLabel,
       badgeStyle,
       isFull,
-      isRecommended: i === 1 || (i === 0 && count < 20),
+      isRecommended: i === 1 || (i === 0 && count < 12),
     });
   }
 

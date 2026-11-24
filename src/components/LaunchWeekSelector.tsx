@@ -257,17 +257,22 @@ export const LaunchWeekSelector: React.FC<LaunchWeekSelectorProps> = ({
                     onSelectWeek(slot.weekNumber, slot.start);
                     setIsOpen(false);
                   }}
-                  className={`w-full px-3.5 py-2 text-left text-xs sm:text-[13px] transition-colors select-none ${
+                  className={`flex items-center justify-between gap-2 w-full px-3.5 py-2 text-left text-xs sm:text-[13px] transition-colors select-none ${
                     slot.isFull
-                      ? 'cursor-not-allowed text-neutral-400'
+                      ? 'cursor-not-allowed bg-neutral-50/80 text-neutral-400'
                       : isSelected
                         ? 'bg-blue-600 text-white font-medium cursor-pointer'
                         : 'cursor-pointer text-neutral-800 hover:bg-neutral-100'
                   }`}
                 >
-                  <span className="block truncate">
+                  <span className="truncate">
                     {slot.label}
                   </span>
+                  {slot.isFull && (
+                    <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-neutral-200/80 text-neutral-500">
+                      Full
+                    </span>
+                  )}
                 </button>
               );
             })}
