@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { CalendarDays, ChevronDown } from 'lucide-react';
 import { Product, WebsiteSubmission } from '../types';
 import { playSound } from '../utils/sound';
-import { MAX_WEEKLY_LAUNCH_CAP, getWeekByNumber, getWeekNumber } from '../utils/weeks';
+import { MAX_WEEKLY_LAUNCH_CAP, getWeekByNumber, getWeekNumber, isProductInLaunchRound } from '../utils/weeks';
 import { isSponsorOnlyProduct, publishedProductId } from '../utils/db';
 
 interface LaunchWeekSelectorProps {
@@ -109,14 +109,7 @@ export const LaunchWeekSelector: React.FC<LaunchWeekSelectorProps> = ({
       for (const p of products) {
         if (isSponsorOnlyProduct(p) || rejectedIds.has(p.id)) continue;
 
-        const pDate = p.scheduledLaunchDate ? Number(p.scheduledLaunchDate) : Number(p.createdAt || 0);
-        const matchesScheduledWeek = p.scheduledLaunchWeek != null
-          ? Number(p.scheduledLaunchWeek) === weekNum
-          : pDate >= startMs && pDate <= endMs;
-        const autoRelaunch = Boolean(p.autoRelaunch);
-        const inRelaunchWeeks = Array.isArray(p.relaunchWeeks) && p.relaunchWeeks.map(Number).includes(weekNum);
-
-        if (matchesScheduledWeek || autoRelaunch || inRelaunchWeeks) {
+        if (isProductInLaunchRound(p, weekInfo)) {
           activeAppIds.add(p.id);
         }
       }
@@ -176,7 +169,7 @@ export const LaunchWeekSelector: React.FC<LaunchWeekSelectorProps> = ({
 
   // Ensure the parent form has the selected week registered
   useEffect(() => {
-    if (!selectedWeekNumber && activeSlot) {
+    if (activeSlot && activeSlot.weekNumber !== selectedWeekNumber) {
       onSelectWeek(activeSlot.weekNumber, activeSlot.start);
     }
   }, [selectedWeekNumber, activeSlot, onSelectWeek]);
