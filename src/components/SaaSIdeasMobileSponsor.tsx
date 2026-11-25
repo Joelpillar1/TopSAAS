@@ -144,64 +144,45 @@ export const SaaSIdeasMobileSponsor: React.FC<SaaSIdeasMobileSponsorProps> = ({
           handleClick(e as unknown as React.MouseEvent);
         }
       }}
-      className={`group relative w-full h-[82px] min-h-[82px] max-h-[82px] box-border overflow-hidden rounded-xl border border-dashed border-neutral-300 bg-white px-3.5 py-2.5 flex flex-col justify-between text-left transition-all duration-200 cursor-pointer active:scale-[0.99] select-none ${
+      className={`group relative w-full min-h-[46px] box-border overflow-hidden rounded-xl border ${
+        currentProduct ? 'border-neutral-200/90 bg-neutral-50/70' : 'border-dashed border-neutral-300 bg-white'
+      } px-3 py-2 flex items-center justify-between gap-2.5 text-left transition-all duration-200 cursor-pointer active:scale-[0.99] select-none ${
         isFloating
-          ? 'shadow-lg shadow-neutral-900/10 ring-1 ring-black/5'
+          ? 'shadow-lg shadow-neutral-900/10 ring-1 ring-black/5 bg-white'
           : 'shadow-2xs'
       } ${className}`}
       aria-label={`Sponsored announcement: ${displayName}`}
     >
-      {/* Top Row: [Small Logo] [Brand Name] ......... [Grey "SPONSORED" text] */}
-      <div className="flex items-center justify-between gap-2.5 h-6 shrink-0">
-        <div className="flex items-center gap-2 min-w-0 flex-1">
-          {/* Logo container */}
-          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-neutral-50 p-0.5 border border-neutral-200/80 overflow-hidden">
-            {favicon ? (
-              <img
-                src={favicon}
-                alt=""
-                className={`h-full w-full object-contain rounded-xs transition-opacity duration-200 ${
-                  isFading ? 'opacity-0' : 'opacity-100'
-                }`}
-                onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).style.display = 'none';
-                }}
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center rounded-xs bg-blue-600 text-white">
-                <Megaphone className="h-3 w-3" />
-              </div>
-            )}
-          </div>
-
-          {/* Brand Name */}
-          <h3
-            className={`text-sm font-bold tracking-tight text-neutral-900 truncate transition-opacity duration-200 ${
-              isFading ? 'opacity-0' : 'opacity-100'
-            }`}
-          >
-            {displayName}
-          </h3>
+      {/* Inline Logo + Name – Tagline */}
+      <div className={`flex items-center gap-2 min-w-0 flex-1 transition-opacity duration-200 ${isFading ? 'opacity-0' : 'opacity-100'}`}>
+        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-white border border-neutral-200/80 overflow-hidden">
+          {favicon ? (
+            <img
+              src={favicon}
+              alt=""
+              className="h-full w-full object-contain rounded-xs"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).style.display = 'none';
+              }}
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center rounded-xs bg-blue-600 text-white">
+              <Megaphone className="h-2.5 w-2.5" />
+            </div>
+          )}
         </div>
 
-        {/* Grey SPONSORED Text without colored frame */}
-        <div className="shrink-0 flex items-center">
-          <span className="text-[10px] font-semibold tracking-wider text-neutral-400 uppercase select-none">
-            SPONSORED
-          </span>
-        </div>
-      </div>
-
-      {/* Description text - Fixed 2-line height container strictly identical across all cards */}
-      <div className="h-[34px] min-h-[34px] max-h-[34px] overflow-hidden flex items-start mt-1 shrink-0">
-        <p
-          className={`text-xs text-neutral-500 font-normal leading-[17px] line-clamp-2 transition-opacity duration-200 ${
-            isFading ? 'opacity-0' : 'opacity-100'
-          }`}
-        >
-          {displayTagline}
+        <p className="text-[11.5px] leading-[15px] text-neutral-600 line-clamp-2 min-w-0">
+          <span className="font-bold text-neutral-900">{displayName}</span>
+          <span className="text-neutral-400"> &ndash; </span>
+          <span>{displayTagline}</span>
         </p>
       </div>
+
+      {/* Compact Ad Pill */}
+      <span className="shrink-0 rounded-md border border-neutral-200/90 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-neutral-400 select-none">
+        Ad
+      </span>
     </div>
   );
 };

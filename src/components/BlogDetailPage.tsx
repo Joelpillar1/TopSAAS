@@ -265,45 +265,43 @@ export const BlogDetailPage: React.FC<BlogDetailPageProps> = ({
   }
 
   return (
-    <article className="min-h-screen bg-neutral-50/50 pb-20 pt-4">
-      <div className="mx-auto max-w-4xl px-4 sm:px-6">
-        {/* Navigation & Breadcrumbs */}
-        <div className="pt-4 pb-6 flex flex-wrap items-center justify-between gap-3 text-xs text-neutral-500">
-          <button
-            type="button"
-            onClick={() => {
+    <article className="w-full pb-8 pt-2 sm:pt-4">
+      <div className="w-full">
+        {/* Breadcrumb Navigation */}
+        <nav aria-label="Breadcrumb" className="pb-4 flex items-center gap-1.5 text-xs text-neutral-500 flex-wrap">
+          <a
+            href="/"
+            onClick={(e) => {
+              if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+              e.preventDefault();
+              playSound('click', soundEnabled);
+              navigateTo('/');
+            }}
+            className="hover:text-neutral-950 transition-colors cursor-pointer"
+          >
+            Home
+          </a>
+          <span className="text-neutral-300 select-none">/</span>
+          <a
+            href="/blog"
+            onClick={(e) => {
+              if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+              e.preventDefault();
               playSound('click', soundEnabled);
               navigateTo('/blog');
             }}
-            className="inline-flex items-center gap-1.5 font-bold text-neutral-700 hover:text-neutral-950 transition-colors cursor-pointer"
+            className="hover:text-neutral-950 transition-colors cursor-pointer"
           >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            Back to Blog
-          </button>
-
-          <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 font-medium">
-            <span
-              onClick={() => navigateTo('/')}
-              className="hover:text-neutral-900 cursor-pointer"
-            >
-              Home
-            </span>
-            <ChevronRight className="h-3 w-3 text-neutral-400" />
-            <span
-              onClick={() => navigateTo('/blog')}
-              className="hover:text-neutral-900 cursor-pointer"
-            >
-              Blog
-            </span>
-            <ChevronRight className="h-3 w-3 text-neutral-400" />
-            <span className="font-bold text-neutral-900 truncate max-w-[160px] sm:max-w-[280px]">
-              {post.category}
-            </span>
-          </nav>
-        </div>
+            Blog
+          </a>
+          <span className="text-neutral-300 select-none">/</span>
+          <span className="font-bold text-neutral-900 truncate max-w-[200px] sm:max-w-[320px]">
+            {post.category}
+          </span>
+        </nav>
 
         {/* Article Header */}
-        <header className="rounded-2xl border border-neutral-200 bg-white p-6 sm:p-10 shadow-xs">
+        <header className="pb-6 border-b border-neutral-200/80">
           <div className="flex flex-wrap items-center gap-2.5 mb-4">
             <span className="inline-flex items-center rounded-md bg-mint-50 px-2.5 py-1 text-xs font-bold text-mint-700">
               {post.category}
@@ -452,7 +450,7 @@ export const BlogDetailPage: React.FC<BlogDetailPageProps> = ({
         )}
 
         {/* Main Article Body */}
-        <div className="mt-8 rounded-2xl border border-neutral-200 bg-white p-6 sm:p-10 shadow-xs space-y-12">
+        <div className="mt-8 space-y-12">
           {/* Intro Paragraphs */}
           <div className="space-y-4">
             {post.intro.map((para, i) => (

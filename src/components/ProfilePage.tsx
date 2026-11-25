@@ -1191,26 +1191,26 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   ].filter((link) => link.href.trim());
 
   return (
-    <div className="min-h-screen bg-neutral-50 text-neutral-900 font-sans w-full max-w-full overflow-x-hidden">
+    <div className="min-h-screen bg-white text-neutral-900 font-sans w-full max-w-full overflow-x-hidden">
       {/* Top bar */}
-      <div className="sticky top-0 z-20 bg-white/90 backdrop-blur">
+      <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-neutral-100">
         <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 py-3 sm:px-6">
           <button
             type="button"
             onClick={onBack}
             aria-label="Back to directory"
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-all cursor-pointer shrink-0"
+            className="flex h-8 w-8 items-center justify-center rounded-xl border border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-all cursor-pointer shrink-0"
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
-          <h1 className="flex-1 truncate text-sm font-black text-neutral-950">Profile</h1>
+          <h1 className="flex-1 truncate text-sm font-black text-neutral-950">Founder Profile</h1>
           <button
             type="button"
             onClick={() => {
               playSound('click', soundEnabled);
               setActiveProfileTab('profile');
             }}
-            className="hidden items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:bg-neutral-50 transition-all cursor-pointer sm:flex"
+            className="hidden items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-1.5 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:bg-neutral-50 transition-all cursor-pointer sm:flex"
           >
             <Pencil className="h-3.5 w-3.5" />
             Edit profile
@@ -1219,7 +1219,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             <button
               type="button"
               onClick={onSignOut}
-              className="flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-bold text-neutral-600 hover:border-red-300 hover:text-red-600 hover:bg-red-50 transition-all cursor-pointer shrink-0"
+              className="flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-1.5 text-xs font-bold text-neutral-600 hover:border-red-300 hover:text-red-600 hover:bg-red-50 transition-all cursor-pointer shrink-0"
             >
               <LogOut className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Sign out</span>
@@ -1228,12 +1228,13 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         </div>
       </div>
 
-      <div className="mx-auto max-w-4xl px-3.5 sm:px-6 py-5 sm:py-7 space-y-5 sm:space-y-6">
+      <div className="mx-auto max-w-4xl px-3.5 sm:px-6 py-5 sm:py-7 space-y-6">
         {/* Profile hero */}
-        <section className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-xs">
-          <div className="relative h-32 bg-gradient-to-br from-mint-600 via-mint-500 to-blue-600 sm:h-44">
-            <GridPattern width={26} height={26} className="fill-white/15 stroke-white/20" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/15 via-transparent to-transparent" />
+        <section className="overflow-hidden rounded-2xl border border-neutral-200/90 bg-white shadow-xs">
+          <div className="relative h-32 sm:h-40 bg-gradient-to-r from-neutral-950 via-slate-900 to-emerald-950 overflow-hidden">
+            <GridPattern width={26} height={26} className="fill-white/10 stroke-white/15" />
+            <div className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full bg-mint-500/25 blur-3xl" />
+            <div className="pointer-events-none absolute left-1/3 bottom-0 h-32 w-56 rounded-full bg-blue-500/20 blur-3xl" />
           </div>
 
           <div className="px-4 pb-5 sm:px-6">
@@ -1244,10 +1245,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                     <img
                       src={avatarSrc}
                       alt={displayName || 'Profile photo'}
-                      className="h-20 w-20 rounded-full object-cover ring-4 ring-white shadow-sm sm:h-24 sm:w-24"
+                      className="h-20 w-20 rounded-full object-cover ring-4 ring-white shadow-md sm:h-24 sm:w-24 bg-white"
                     />
                   ) : (
-                    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-mint-500 text-2xl font-black text-white ring-4 ring-white shadow-sm sm:h-24 sm:w-24 sm:text-3xl">
+                    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-mint-500 text-2xl font-black text-white ring-4 ring-white shadow-md sm:h-24 sm:w-24 sm:text-3xl">
                       {(displayName?.[0] || user.email?.[0] || 'U').toUpperCase()}
                     </div>
                   )}
@@ -1259,7 +1260,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                     </h2>
                     <BadgeCheck className="h-4 w-4 shrink-0 text-mint-500 sm:h-5 sm:w-5" aria-label="Verified founder" />
                   </div>
-                  <p className="mt-0.5 truncate text-xs text-neutral-500 sm:text-sm">
+                  <p className="mt-0.5 truncate text-xs text-neutral-500 sm:text-sm font-medium">
                     @{username || 'founder'}
                     <span className="px-1.5 text-neutral-300">·</span>
                     Founder
@@ -1271,12 +1272,12 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                   type="button"
                   onClick={() => {
                     playSound('click', soundEnabled);
-                    setActiveProfileTab('profile');
+                    onOpenSubmit();
                   }}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-neutral-950 px-3.5 py-2 text-xs font-bold text-white hover:bg-neutral-800 transition-all cursor-pointer shadow-2xs sm:hidden"
+                  className="btn-primary inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold text-white shadow-xs cursor-pointer"
                 >
-                  <Pencil className="h-3.5 w-3.5" />
-                  Edit profile
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>Launch Product</span>
                 </button>
                 <button
                   type="button"
@@ -1286,7 +1287,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                   }}
                   aria-label="Profile settings"
                   title="Profile settings"
-                  className="hidden h-9 w-9 items-center justify-center rounded-xl border border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-950 transition-all cursor-pointer sm:flex"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl border border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-950 transition-all cursor-pointer"
                 >
                   <Settings2 className="h-4 w-4" />
                 </button>
@@ -1294,9 +1295,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             </div>
 
             {bio.trim() ? (
-              <p className="mt-3 max-w-2xl text-xs leading-relaxed text-neutral-600 sm:text-sm">{bio}</p>
+              <p className="mt-3.5 max-w-2xl text-xs leading-relaxed text-neutral-600 sm:text-sm">{bio}</p>
             ) : (
-              <p className="mt-3 max-w-2xl text-xs leading-relaxed text-neutral-400 sm:text-sm">
+              <p className="mt-3.5 max-w-2xl text-xs leading-relaxed text-neutral-400 sm:text-sm">
                 Add a short bio so founders and buyers know what you build.
               </p>
             )}
@@ -1316,7 +1317,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                   href={withProtocol(link.href)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-2.5 py-1 font-semibold text-neutral-600 hover:border-neutral-300 hover:text-neutral-950 transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-neutral-50/70 px-2.5 py-1 font-semibold text-neutral-700 hover:border-neutral-300 hover:bg-white hover:text-neutral-950 transition-colors"
                 >
                   <link.icon className="h-3 w-3" />
                   {link.label}
@@ -1328,53 +1329,61 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         </section>
 
         {/* Founder stats */}
-        <section className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3" aria-label="Founder stats">
-          <div className="rounded-xl border border-neutral-200 bg-white p-3.5 shadow-2xs">
+        <section className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3" aria-label="Founder stats">
+          <div className="rounded-2xl border border-neutral-200/90 bg-white p-4 shadow-2xs hover:border-neutral-300 transition-all">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Products</span>
-              <LayoutGrid className="h-3.5 w-3.5 text-neutral-300" />
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                <LayoutGrid className="h-3.5 w-3.5" />
+              </span>
             </div>
-            <div className="mt-1 text-xl font-black text-neutral-950 font-mono-num">{liveCount}</div>
-            <div className="text-[11px] text-neutral-500">{pendingSubmissions.length} pending</div>
+            <div className="mt-1.5 text-2xl font-black text-neutral-950 font-mono-num">{liveCount}</div>
+            <div className="text-[11px] text-neutral-500 mt-0.5">{pendingSubmissions.length} pending review</div>
           </div>
-          <div className="rounded-xl border border-neutral-200 bg-white p-3.5 shadow-2xs">
+          <div className="rounded-2xl border border-neutral-200/90 bg-white p-4 shadow-2xs hover:border-neutral-300 transition-all">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Upvotes</span>
-              <ArrowUpRight className="h-3.5 w-3.5 text-neutral-300" />
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                <ArrowUpRight className="h-3.5 w-3.5" />
+              </span>
             </div>
-            <div className="mt-1 text-xl font-black text-neutral-950 font-mono-num">{totalUpvotes.toLocaleString()}</div>
-            <div className="text-[11px] text-neutral-500">Across all launches</div>
+            <div className="mt-1.5 text-2xl font-black text-neutral-950 font-mono-num">{totalUpvotes.toLocaleString()}</div>
+            <div className="text-[11px] text-neutral-500 mt-0.5">Across all launches</div>
           </div>
-          <div className="rounded-xl border border-neutral-200 bg-white p-3.5 shadow-2xs">
+          <div className="rounded-2xl border border-neutral-200/90 bg-white p-4 shadow-2xs hover:border-neutral-300 transition-all">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Visits</span>
-              <Eye className="h-3.5 w-3.5 text-neutral-300" />
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-50 text-violet-600">
+                <Eye className="h-3.5 w-3.5" />
+              </span>
             </div>
-            <div className="mt-1 text-xl font-black text-neutral-950 font-mono-num">{totalClicks.toLocaleString()}</div>
-            <div className="text-[11px] text-neutral-500">Directory traffic</div>
+            <div className="mt-1.5 text-2xl font-black text-neutral-950 font-mono-num">{totalClicks.toLocaleString()}</div>
+            <div className="text-[11px] text-neutral-500 mt-0.5">Directory traffic</div>
           </div>
-          <div className="rounded-xl border border-neutral-200 bg-white p-3.5 shadow-2xs">
+          <div className="rounded-2xl border border-neutral-200/90 bg-white p-4 shadow-2xs hover:border-neutral-300 transition-all">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Best rank</span>
-              <Trophy className="h-3.5 w-3.5 text-neutral-300" />
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+                <Trophy className="h-3.5 w-3.5" />
+              </span>
             </div>
-            <div className="mt-1 text-xl font-black text-neutral-950 font-mono-num">
+            <div className="mt-1.5 text-2xl font-black text-neutral-950 font-mono-num">
               {bestRank > 0 && bestRank < 9999 ? `#${bestRank}` : 'N/A'}
             </div>
-            <div className="text-[11px] text-neutral-500">Top leaderboard spot</div>
+            <div className="text-[11px] text-neutral-500 mt-0.5">Top leaderboard spot</div>
           </div>
         </section>
 
-        {/* Profile tabs */}
-        <nav aria-label="Profile sections" className="rounded-2xl border border-neutral-200 bg-white p-1 shadow-2xs">
-          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
+        {/* Underline Profile Tabs (matching ProductPage) */}
+        <nav aria-label="Profile sections" className="border-b border-neutral-200">
+          <div className="flex items-center gap-5 sm:gap-7 overflow-x-auto no-scrollbar">
             {[
-              { key: 'overview' as const, label: 'Overview', icon: UserIcon, count: 0 },
-              { key: 'live' as const, label: 'Products', icon: LayoutGrid, count: products.length },
-              { key: 'sponsorships' as const, label: 'Sponsorships & Ads', icon: Sparkles, count: userSponsors.length },
-              { key: 'drafts' as const, label: 'Drafts', icon: FileText, count: drafts.length },
-              { key: 'pending' as const, label: 'Pending', icon: Clock, count: pendingSubmissions.length },
-              { key: 'profile' as const, label: 'Settings', icon: Settings2, count: 0 },
+              { key: 'overview' as const, label: 'Overview', count: 0 },
+              { key: 'live' as const, label: 'Products', count: products.length },
+              { key: 'sponsorships' as const, label: 'Sponsorships & Ads', count: userSponsors.length },
+              { key: 'drafts' as const, label: 'Drafts', count: drafts.length },
+              { key: 'pending' as const, label: 'Pending', count: pendingSubmissions.length },
+              { key: 'profile' as const, label: 'Settings', count: 0 },
             ].map((tab) => {
               const active = activeProfileTab === tab.key;
               return (
@@ -1386,18 +1395,15 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                     setActiveProfileTab(tab.key);
                   }}
                   aria-current={active ? 'page' : undefined}
-                  className={`flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2.5 text-xs font-bold transition-all cursor-pointer ${active
-                    ? 'bg-neutral-950 text-white shadow-xs'
-                    : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-950'
-                    }`}
+                  className={`inline-flex items-center gap-1.5 whitespace-nowrap border-b-2 -mb-px pb-2.5 text-xs sm:text-sm transition-colors cursor-pointer ${
+                    active
+                      ? 'border-neutral-950 text-neutral-950 font-semibold'
+                      : 'border-transparent text-neutral-500 hover:text-neutral-800 font-medium'
+                  }`}
                 >
-                  <tab.icon className="h-3.5 w-3.5 shrink-0" />
                   <span>{tab.label}</span>
                   {tab.count > 0 && (
-                    <span
-                      className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${active ? 'bg-white/20 text-white' : 'bg-neutral-100 text-neutral-600'
-                        }`}
-                    >
+                    <span className="text-neutral-400 font-normal font-mono-num">
                       {tab.count}
                     </span>
                   )}

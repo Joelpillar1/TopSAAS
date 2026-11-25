@@ -65,7 +65,7 @@ export const WeeklyLaunchView: React.FC<WeeklyLaunchViewProps> = ({
 
   return (
     <div
-      className={`relative lg:sticky lg:top-[53px] z-20 w-full py-2 bg-white/95 backdrop-blur-md border-b border-neutral-200/70 shadow-2xs select-none transition-all ${className}`}
+      className={`relative lg:sticky lg:top-[53px] xl:top-0 z-20 w-full py-2 bg-white/95 backdrop-blur-md border-b border-neutral-200/70 shadow-2xs select-none transition-all ${className}`}
       aria-label="Weekly launches navigation"
     >
       <div className="flex items-center justify-start sm:justify-center px-2 max-w-full">

@@ -819,6 +819,19 @@ export const RichFooter: React.FC<RichFooterProps> = ({
               </li>
               <li>
                 <a
+                  href="/categories"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    playSound('click', soundEnabled);
+                    navigateTo('/categories');
+                  }}
+                  className="text-xs text-neutral-600 hover:text-neutral-950 transition-colors cursor-pointer flex items-center gap-1.5"
+                >
+                  Categories
+                </a>
+              </li>
+              <li>
+                <a
                   href="/pricing"
                   onClick={(e) => {
                     e.preventDefault();

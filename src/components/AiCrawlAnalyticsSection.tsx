@@ -327,30 +327,34 @@ export const AiCrawlAnalyticsSection: React.FC = () => {
       {/* ── Top Analytics Card (Interactive Area Charts) ── */}
       <div className="w-full rounded-2xl border border-neutral-200/90 bg-white p-3.5 sm:p-4 shadow-2xs overflow-hidden">
         {/* Card Header */}
-        <div className="flex items-center justify-between pb-3 mb-2 border-b border-neutral-100">
-          <div className="flex items-center gap-2">
-            <span className="relative flex h-2 w-2">
+        <div className="flex items-center justify-between gap-2 pb-2.5 mb-2 border-b border-neutral-100">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="relative flex h-2 w-2 shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600" />
             </span>
-            <span className="text-xs sm:text-sm font-semibold text-neutral-800 tracking-tight">
+            <span className="text-xs sm:text-sm font-bold text-neutral-900 tracking-tight whitespace-nowrap">
               AI Crawler Analytics
             </span>
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
             {telemetry.isLive && (
-              <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">
+              <span className="inline-flex text-[9px] sm:text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100 leading-none">
                 Live
               </span>
             )}
+            <span className="text-[10.5px] sm:text-xs text-neutral-400 font-medium whitespace-nowrap">
+              <span className="sm:hidden">Last 24h</span>
+              <span className="hidden sm:inline">Last 24 hours · Updates every 30m</span>
+            </span>
           </div>
-          <span className="text-[11px] sm:text-xs text-neutral-400 font-medium">
-            {telemetry.periodLabel} · Updates every 30m
-          </span>
         </div>
 
         {/* 3 Metric Columns with Interactive Time-Series Area Graphs */}
         <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-neutral-100 pt-1">
           {/* Column 1: Total requests */}
-          <div className="relative flex flex-col justify-between pt-1 sm:pt-0 sm:pr-4 pb-2">
+          <div className="relative flex flex-col justify-between pt-1 pb-3 sm:py-0 sm:pr-4">
             <div>
               <div className="text-xs font-semibold text-neutral-800 underline decoration-dashed decoration-neutral-300 underline-offset-4 mb-1">
                 Total requests
@@ -386,7 +390,7 @@ export const AiCrawlAnalyticsSection: React.FC = () => {
           </div>
 
           {/* Column 2: Allowed requests */}
-          <div className="relative flex flex-col justify-between pt-3 sm:pt-0 sm:px-4 pb-2">
+          <div className="relative flex flex-col justify-between pt-3 pb-3 sm:py-0 sm:px-4">
             <div>
               <div className="text-xs font-semibold text-neutral-800 underline decoration-dashed decoration-neutral-300 underline-offset-4 mb-1">
                 Allowed requests
@@ -422,7 +426,7 @@ export const AiCrawlAnalyticsSection: React.FC = () => {
           </div>
 
           {/* Column 3: Unsuccessful requests */}
-          <div className="relative flex flex-col justify-between pt-3 sm:pt-0 sm:pl-4 pb-2">
+          <div className="relative flex flex-col justify-between pt-3 pb-1 sm:py-0 sm:pl-4">
             <div>
               <div className="text-xs font-semibold text-neutral-800 underline decoration-dashed decoration-neutral-300 underline-offset-4 mb-1">
                 Unsuccessful requests

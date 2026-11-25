@@ -10,7 +10,7 @@ import { openOutboundUrl } from '../utils/referral';
 
 import { SponsorRailCard } from './SponsorRailCard';
 import { SaaSIdeasMobileSponsor, MobileSponsorSlotDef } from './SaaSIdeasMobileSponsor';
-import { LastWeekTopThreeCard, DirectoryPromoRailCard } from './RightRailCards';
+import { LastWeekTopThreeCard, DirectoryPromoRailCard, LaunchProductRailCard } from './RightRailCards';
 
 export const DIRECTORY_MOBILE_SLOTS: MobileSponsorSlotDef[] = [
   { id: 'dir-1', title: 'Advertise your product', subtitle: 'Your product on a Sponsor card across the site, for 30 days.' },
@@ -31,9 +31,14 @@ interface HeroSponsorRailsProps {
   onOpenProduct?: (product: Product) => void;
   onOpenFeaturedSpotModal?: () => void;
   onNavigateToDirectory?: () => void;
+  onOpenSubmit?: () => void;
+  onSeeListing?: () => void;
+  onNavigateToBlog?: () => void;
+  onOpenPricing?: () => void;
   children: React.ReactNode; // The HomeHero and leaderboard components in the center
   footer?: React.ReactNode;
   enabled?: boolean;
+  fixedRails?: boolean;
 }
 
 interface OpenAdCardProps {
@@ -344,9 +349,14 @@ export const HeroSponsorRails: React.FC<HeroSponsorRailsProps> = ({
   onOpenProduct,
   onOpenFeaturedSpotModal,
   onNavigateToDirectory,
+  onOpenSubmit,
+  onSeeListing,
+  onNavigateToBlog,
+  onOpenPricing,
   children,
   footer,
   enabled = true,
+  fixedRails = false,
 }) => {
   if (!enabled) {
     return (
@@ -384,7 +394,7 @@ export const HeroSponsorRails: React.FC<HeroSponsorRailsProps> = ({
   }, []);
 
   return (
-    <div className="relative w-full">
+    <div className={`relative w-full ${fixedRails ? 'xl:h-full xl:min-h-0' : ''}`}>
       {/* Mobile Floating Sticky Sponsor under Top Nav when scrolled down */}
       {isStickySponsorVisible && (
         <div className="fixed top-[62px] left-3.5 right-3.5 sm:left-6 sm:right-6 z-30 lg:hidden pointer-events-none flex justify-center animate-fadeIn">
@@ -402,11 +412,11 @@ export const HeroSponsorRails: React.FC<HeroSponsorRailsProps> = ({
         </div>
       )}
 
-      <div className="flex flex-col xl:flex-row items-center xl:items-start justify-between gap-4 xl:gap-6 2xl:gap-8 w-full">
+      <div className={`flex flex-col xl:flex-row items-center xl:items-start justify-between gap-4 xl:gap-6 2xl:gap-8 w-full ${fixedRails ? 'xl:h-full xl:min-h-0 no-scrollbar' : ''}`}>
         {/* Left Side Rail (Desktop - stays static in viewport while page scrolls, like SaaS Ideas) */}
         <aside
           aria-label="Sponsors"
-          className="hidden xl:flex flex-col w-[280px] 2xl:w-[320px] shrink-0 sticky top-[58px] sm:top-[60px] h-[calc(100vh-4.25rem)] max-h-[calc(100vh-4.25rem)] self-start py-0.5 overflow-hidden"
+          className={`hidden xl:flex flex-col w-[280px] 2xl:w-[320px] shrink-0 py-0.5 overflow-hidden ${fixedRails ? 'xl:h-full no-scrollbar' : 'sticky top-[58px] sm:top-[60px] h-[calc(100vh-4.25rem)] max-h-[calc(100vh-4.25rem)] self-start'}`}
         >
           <div className="w-full h-full rounded-2xl xl:rounded-3xl border border-neutral-200/90 bg-white p-2.5 xl:p-3 shadow-xs flex flex-col justify-between overflow-hidden">
             {/* Header: ─── SPONSORED ─── */}
@@ -460,9 +470,9 @@ export const HeroSponsorRails: React.FC<HeroSponsorRailsProps> = ({
         </aside>
 
         {/* Center Hero + Directory List + Footer */}
-        <div className="flex-1 w-full max-w-2xl xl:max-w-[760px] 2xl:max-w-[860px] mx-auto min-w-0 flex flex-col gap-4 pb-16 lg:pb-6">
+        <div className={`flex-1 w-full max-w-2xl xl:max-w-[760px] 2xl:max-w-[860px] mx-auto min-w-0 space-y-4 pb-16 lg:pb-6 ${fixedRails ? 'xl:h-full xl:min-h-0 xl:overflow-y-auto no-scrollbar' : ''}`}>
           {/* Mobile-only Rotating Sponsor Banner at the top (Page Load) */}
-          <div ref={heroBannerRef} className="w-full mb-0 lg:hidden px-2 sm:px-3">
+          <div ref={heroBannerRef} className="w-full mb-2.5 sm:mb-3 lg:hidden px-2 sm:px-3">
             <SaaSIdeasMobileSponsor
               slots={DIRECTORY_MOBILE_SLOTS}
               sponsors={activeSponsors}
@@ -478,10 +488,10 @@ export const HeroSponsorRails: React.FC<HeroSponsorRailsProps> = ({
           {footer}
         </div>
 
-        {/* Right Side Rail (Desktop - Last Week's Top 3 + Backlinks Directory Guide) */}
+        {/* Right Side Rail (Desktop - Last Week's Top 3 + Backlinks Directory Guide + Verified Launch Offer) */}
         <aside
-          aria-label="Community highlights and backlinks guide"
-          className="hidden xl:flex flex-col gap-3 w-[280px] 2xl:w-[320px] shrink-0 sticky top-[58px] sm:top-[60px] self-start py-0.5"
+          aria-label="Community highlights, directory hub and verified launch offer"
+          className={`hidden xl:flex flex-col gap-3 w-[280px] 2xl:w-[320px] shrink-0 py-0.5 overflow-y-auto no-scrollbar ${fixedRails ? 'xl:h-full' : 'sticky top-[58px] sm:top-[60px] self-start max-h-[calc(100vh-4.25rem)]'}`}
         >
           <LastWeekTopThreeCard
             products={lastWeeksTop3}
@@ -493,6 +503,11 @@ export const HeroSponsorRails: React.FC<HeroSponsorRailsProps> = ({
           <DirectoryPromoRailCard
             soundEnabled={soundEnabled}
             onNavigateToDirectory={onNavigateToDirectory}
+          />
+          <LaunchProductRailCard
+            soundEnabled={soundEnabled}
+            onOpenSubmit={onOpenSubmit}
+            onOpenPricing={onOpenPricing}
           />
         </aside>
       </div>

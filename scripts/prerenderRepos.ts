@@ -68,7 +68,8 @@ import {
   termsSeo,
   trendingSeo,
 } from '../src/utils/coreSeo';
-import type { Product } from '../src/types';
+import { SUBMISSION_CATEGORIES, type Product } from '../src/types';
+import { SAAS_IDEA_CATEGORIES } from '../src/data/categoriesData';
 
 /**
  * Static prerender for repo pages, the /ideas index, and the product directory.
@@ -2251,6 +2252,130 @@ export function repoPrerenderPlugin(): Plugin {
         })
       );
 
+      // ── categories directory ──
+      const categoriesFaqs = [
+        {
+          q: 'What is included in TopSAAS Directory Categories?',
+          a: `TopSAAS organizes launched SaaS products, AI tools, and indie software across ${SUBMISSION_CATEGORIES.length} directory categories—including AI Tools, Developer Tools, Productivity, SaaS & Indie, Marketing & SEO, and Finance & Fintech. Clicking any category opens the live directory filtered to that niche.`,
+        },
+        {
+          q: 'What are Open Source SaaS Idea Categories?',
+          a: `Open Source SaaS Idea Categories group ${uniqueRepos.length.toLocaleString('en-US')}+ curated GitHub repositories across ${SAAS_IDEA_CATEGORIES.length} technical verticals such as SaaS Starters, Auth & Identity, Databases, AI & ML, DevOps & Infra, and Payments & Billing so founders can inspect star counts, health scores, and self-hosting options.`,
+        },
+        {
+          q: 'How do I browse products or repositories in a specific category?',
+          a: 'Click any category row on this page to jump straight to the filtered product directory or open-source SaaS ideas catalog with all matching listings and starter codebases.',
+        },
+      ];
+
+      const ideaCategoryCounts: Record<string, number> = {};
+      for (const repo of uniqueRepos) {
+        const key = repo.category.toLowerCase();
+        ideaCategoryCounts[key] = (ideaCategoryCounts[key] || 0) + 1;
+      }
+
+      const categoriesBody = `
+        <div style="${pageStyle}">
+          <nav aria-label="Breadcrumb" style="${mutedStyle}margin-bottom:1.25rem">
+            <a href="/" style="${linkStyle}">Home</a>
+            <span aria-hidden="true">/</span>
+            <span>Categories</span>
+          </nav>
+          <main>
+            <h1 style="${h1Style}">SaaS Directory &amp; Open Source Idea Categories</h1>
+            <p style="margin:0 0 1.25rem">Discover launched SaaS products and clonable open-source starter codebases by niche. Pick any directory or open-source idea category to browse every matching tool and repository.</p>
+            <h2 style="${h2Style}">Directory Categories (${SUBMISSION_CATEGORIES.length})</h2>
+            <ul style="margin:0 0 1.5rem;padding-left:1.25rem">
+${SUBMISSION_CATEGORIES.map(
+  (cat) =>
+    `              <li><a href="/?category=${encodeURIComponent(cat)}" style="${linkStyle}">${escapeHtml(cat)}</a></li>`
+).join('\n')}
+            </ul>
+            <h2 style="${h2Style}">Open Source SaaS Idea Categories (${SAAS_IDEA_CATEGORIES.length})</h2>
+            <ul style="margin:0 0 1.5rem;padding-left:1.25rem">
+${SAAS_IDEA_CATEGORIES.map(
+  (cat) =>
+    `              <li><a href="/ideas?category=${encodeURIComponent(cat)}" style="${linkStyle}">${escapeHtml(cat)}</a> (${ideaCategoryCounts[cat.toLowerCase()] || 0} repos)</li>`
+).join('\n')}
+            </ul>
+            <h2 style="${h2Style}">About TopSAAS Categories</h2>
+            <dl style="margin:0">
+${categoriesFaqs
+  .map(
+    (faq) =>
+      `              <dt style="font-weight:700;margin-top:0.75rem">${escapeHtml(faq.q)}</dt>\n              <dd style="margin:0.25rem 0 0">${escapeHtml(faq.a)}</dd>`
+  )
+  .join('\n')}
+            </dl>
+          </main>
+${staticFooter}
+        </div>
+      `;
+
+      const categoriesJsonLd = escapeJson({
+        '@context': 'https://schema.org',
+        '@graph': [
+          ...siteJsonLd(),
+          {
+            '@type': 'CollectionPage',
+            '@id': `${SITE_URL}/categories#webpage`,
+            url: `${SITE_URL}/categories`,
+            name: 'SaaS Directory & Open Source Idea Categories | TopSAAS',
+            description:
+              'Explore 28 SaaS product directory categories and 23 open-source SaaS idea categories on TopSAAS.',
+            isPartOf: { '@id': `${SITE_URL}/#website` },
+          },
+          breadcrumbJsonLd([
+            ['Home', `${SITE_URL}/`],
+            ['Categories', `${SITE_URL}/categories`],
+          ]),
+          {
+            '@type': 'ItemList',
+            name: 'SaaS Directory Categories',
+            numberOfItems: SUBMISSION_CATEGORIES.length,
+            itemListElement: SUBMISSION_CATEGORIES.map((cat, idx) => ({
+              '@type': 'ListItem',
+              position: idx + 1,
+              name: cat,
+              url: `${SITE_URL}/?category=${encodeURIComponent(cat)}`,
+            })),
+          },
+          {
+            '@type': 'ItemList',
+            name: 'Open Source SaaS Idea Categories',
+            numberOfItems: SAAS_IDEA_CATEGORIES.length,
+            itemListElement: SAAS_IDEA_CATEGORIES.map((cat, idx) => ({
+              '@type': 'ListItem',
+              position: idx + 1,
+              name: cat,
+              url: `${SITE_URL}/ideas?category=${encodeURIComponent(cat)}`,
+            })),
+          },
+          {
+            '@type': 'FAQPage',
+            mainEntity: categoriesFaqs.map((faq) => ({
+              '@type': 'Question',
+              name: faq.q,
+              acceptedAnswer: { '@type': 'Answer', text: faq.a },
+            })),
+          },
+        ],
+      });
+
+      writePage(
+        distDir,
+        ['categories'],
+        renderPage(template, {
+          title: 'SaaS Directory & Open Source Idea Categories | TopSAAS',
+          description:
+            'Explore 28 SaaS product directory categories and 23 open-source SaaS idea categories on TopSAAS. Jump directly to curated tools, verified launches, and clonable starter codebases.',
+          canonical: `${SITE_URL}/categories`,
+          body: categoriesBody,
+          jsonLd: categoriesJsonLd,
+          jsonLdId: 'categories-jsonld',
+        })
+      );
+
       // The 404 page is served with a 404 status by vercel.json.
       const notFoundTitle = 'Page not found | TopSAAS';
       const notFoundHtml = renderPage(template, {
@@ -2289,6 +2414,7 @@ export function repoPrerenderPlugin(): Plugin {
       const sitemapLastmod = new Date().toISOString();
       const corePages: SitemapEntry[] = [
         { loc: `${SITE_URL}/`, changefreq: 'daily', priority: '1.0' },
+        { loc: `${SITE_URL}/categories`, changefreq: 'weekly', priority: '0.9' },
         { loc: `${SITE_URL}/ideas`, changefreq: 'daily', priority: '0.9' },
         { loc: `${SITE_URL}/trending`, changefreq: 'daily', priority: '0.9' },
         { loc: `${SITE_URL}/product-directory`, changefreq: 'weekly', priority: '0.9' },

@@ -414,6 +414,10 @@
       "dest": "/ideas/index.html"
     },
     {
+      "src": "/categories",
+      "dest": "/categories/index.html"
+    },
+    {
       "src": "/product-directory",
       "dest": "/product-directory/index.html"
     },

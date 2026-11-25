@@ -46,6 +46,8 @@ import {
   MousePointerClick,
   Award,
   Download,
+  ArrowUpRight,
+  Triangle,
 } from 'lucide-react';
 import { playSound } from '../utils/sound';
 import { ProductLogo } from './ProductLogo';
@@ -61,6 +63,7 @@ import { formatOutboundUrl, trackOutboundClick } from '../utils/referral';
 import { redirectToCheckout } from '../utils/whop';
 import { getWeekInfo, getWeekByNumber, formatWeekDateRange, isInWeek } from '../utils/weeks';
 import { getProductSlug } from '../utils/slug';
+import { navigateTo } from '../utils/nav';
 
 function getVideoEmbedUrl(url?: string): { type: 'iframe' | 'video' | 'link'; embedUrl: string } | null {
   if (!url) return null;
@@ -242,7 +245,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
   hasPaidAccess = false,
   onOpenPricing,
 }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'analytics'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'discussion' | 'analytics'>('overview');
   const [analyticsRange, setAnalyticsRange] = useState<'7d' | '30d' | '90d'>('30d');
   const [commentText, setCommentText] = useState('');
   const [commentUpvotes, setCommentUpvotes] = useState<Record<string, number>>({});
@@ -250,6 +253,30 @@ export const ProductPage: React.FC<ProductPageProps> = ({
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [copiedOffer, setCopiedOffer] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+
+  const handleCopyLink = () => {
+    playSound('click', soundEnabled);
+    try {
+      if (typeof window !== 'undefined') {
+        navigator.clipboard.writeText(window.location.href);
+        setLinkCopied(true);
+        setTimeout(() => setLinkCopied(false), 2000);
+      }
+    } catch {}
+    onShare(product);
+  };
+
+  const primaryCategory = useMemo(() => {
+    if (!product.category) return 'SaaS';
+    return product.category.split(',')[0].trim() || 'SaaS';
+  }, [product.category]);
+
+  const launchWeekInfo = useMemo(() => {
+    return product.scheduledLaunchWeek
+      ? getWeekByNumber(product.scheduledLaunchWeek)
+      : getWeekInfo(product.createdAt);
+  }, [product.scheduledLaunchWeek, product.createdAt]);
 
   // Owner verification: only the owner of this product sees the relaunch control
   const isOwner = Boolean(
@@ -685,281 +712,323 @@ export const ProductPage: React.FC<ProductPageProps> = ({
   return (
     <div className="w-full space-y-4 sm:space-y-5 min-w-0 font-sans pb-6">
       {/* Top Breadcrumb Navigation */}
-      <div className="flex items-center justify-between text-xs py-1">
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-neutral-500 py-1">
         <button
           type="button"
-          onClick={onBack}
-          className="inline-flex items-center gap-1.5 font-bold text-neutral-600 hover:text-neutral-950 transition-colors cursor-pointer"
+          onClick={() => {
+            playSound('click', soundEnabled);
+            navigateTo('/');
+          }}
+          className="hover:text-neutral-950 transition-colors cursor-pointer font-normal"
         >
-          <ChevronLeft className="h-4 w-4" />
-          <span>Back to Directory</span>
+          Home
         </button>
-        <div className="flex items-center gap-2 text-neutral-400 text-[11px] truncate">
-          <button
-            type="button"
-            onClick={onBack}
-            className="hidden sm:inline hover:text-neutral-900 hover:underline cursor-pointer"
-          >
-            Directory
-          </button>
-          <span className="hidden sm:inline">/</span>
-          <span className="text-neutral-600 font-semibold">{product.category}</span>
-          <span>/</span>
-          <span className="text-neutral-900 font-bold truncate max-w-[140px] sm:max-w-xs">{product.name}</span>
-        </div>
-      </div>
+        <span className="text-neutral-300 select-none">/</span>
+        <button
+          type="button"
+          onClick={() => {
+            playSound('click', soundEnabled);
+            navigateTo('/categories');
+          }}
+          className="hover:text-neutral-950 transition-colors cursor-pointer font-normal"
+        >
+          Categories
+        </button>
+        <span className="text-neutral-300 select-none">/</span>
+        <button
+          type="button"
+          onClick={() => {
+            playSound('click', soundEnabled);
+            navigateTo(`/?category=${encodeURIComponent(primaryCategory)}`);
+          }}
+          className="hover:text-neutral-950 transition-colors cursor-pointer font-normal"
+        >
+          {primaryCategory}
+        </button>
+        <span className="text-neutral-300 select-none">/</span>
+        <span className="text-neutral-950 font-bold truncate max-w-[160px] sm:max-w-md">
+          {product.name}
+        </span>
+      </nav>
 
       {/* Main Single-Column Document Flow */}
-      <div className="w-full space-y-4 sm:space-y-5 min-w-0">
-            {/* Header Hero Section */}
-            <div className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-7 shadow-xs space-y-5 sm:space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 sm:gap-5">
-                {/* Logo and titles */}
-                <div className="flex items-start gap-3.5 sm:gap-4 min-w-0">
-                  <ProductLogo
-                    src={product.logoUrl}
-                    alt={product.name}
-                    containerClassName="relative h-16 w-16 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-2xs flex items-center justify-center"
-                    iconClassName="h-8 w-8 text-neutral-500 shrink-0"
-                  />
+      <div className="w-full space-y-5 sm:space-y-6 min-w-0">
+        {/* Header Hero Section */}
+        <div className="pt-2 sm:pt-3">
+          <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-5">
+            {/* Logo */}
+            <div className="relative h-18 w-18 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-2xl border border-neutral-200/90 bg-white p-2.5 shadow-2xs flex items-center justify-center">
+              <ProductLogo
+                src={product.logoUrl}
+                alt={product.name}
+                containerClassName="flex h-full w-full items-center justify-center bg-transparent relative"
+                iconClassName="h-8 w-8 sm:h-10 sm:w-10 text-neutral-500 shrink-0"
+              />
+            </div>
 
-                  <div className="space-y-1.5 min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                      <h1 className="text-xl sm:text-3xl font-black tracking-tight text-neutral-950 truncate">
-                        {product.name}
-                      </h1>
-                      {product.verified && (
-                        <VerifiedBadge className="h-5 w-5 sm:h-6 sm:w-6 shrink-0" title="Verified Startup" />
+            {/* Titles, Tagline, Metadata & Actions */}
+            <div className="space-y-1.5 sm:space-y-2 min-w-0 flex-1">
+              {/* Product Name & Badges */}
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-neutral-950 truncate">
+                  {product.name}
+                </h1>
+                {product.verified && (
+                  <VerifiedBadge className="h-5 w-5 sm:h-6 sm:w-6 shrink-0" title="Verified Startup" />
+                )}
+                {product.isSponsored && (
+                  <span className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-neutral-900 px-2 py-0.5 text-xs font-bold tracking-tight text-white shadow-xs select-none">
+                    <VerifiedBadge variant="gold" className="h-3.5 w-3.5 shrink-0" />
+                    <span>Sponsored</span>
+                  </span>
+                )}
+                {(product.autoRelaunch || product.isRelaunched) && !product.isSponsored && (
+                  <span
+                    className="inline-flex shrink-0 items-center gap-1.5 text-xs font-medium text-neutral-400 select-none"
+                    title="Relaunched tool in this weekly round"
+                  >
+                    <Rocket className="h-3.5 w-3.5 text-neutral-400/80 shrink-0" />
+                    <span>Relaunched</span>
+                  </span>
+                )}
+                {product.offerDiscount && (
+                  <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 px-2 py-0.5 text-xs font-black tracking-tight text-white shadow-xs shadow-orange-500/25 select-none">
+                    <Flame className="h-3 w-3 fill-white stroke-white shrink-0" />
+                    <span>{product.offerDiscount}</span>
+                  </span>
+                )}
+              </div>
+
+              {/* Tagline */}
+              <p className="text-sm sm:text-base font-normal text-neutral-600 max-w-2xl leading-relaxed">
+                {product.tagline}
+              </p>
+
+              {/* Metadata Line: Paid · SaaS · Week 48 */}
+              <div className="flex items-center flex-wrap gap-2 text-xs sm:text-sm text-neutral-500 font-normal pt-0.5">
+                <span>{product.pricingModel || 'Paid'}</span>
+                <span className="text-neutral-300 select-none">·</span>
+                <span>{primaryCategory}</span>
+                <span className="text-neutral-300 select-none">·</span>
+                <span>Week {launchWeekInfo.weekNumber}</span>
+
+                {/* Built By Founder Hero Badge */}
+                {product.creatorName && (
+                  <>
+                    <span className="text-neutral-300 select-none">·</span>
+                    <span className="inline-flex items-center gap-1.5 text-neutral-600 font-medium">
+                      {product.creatorAvatar && (
+                        <CommentAvatar
+                          avatarUrl={product.creatorAvatar}
+                          name={product.creatorName}
+                          className="h-4 w-4 shrink-0 rounded-full object-cover border border-neutral-200"
+                          fallbackClassName="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-mint-500 text-[8px] font-black text-white"
+                        />
                       )}
-                      {product.isSponsored && (
-                        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-neutral-900 px-2 py-0.5 text-xs font-bold tracking-tight text-white shadow-xs select-none">
-                          <VerifiedBadge variant="gold" className="h-3.5 w-3.5 shrink-0" />
-                          <span>Sponsored</span>
+                      <span className="text-neutral-400">Built by</span>
+                      <span className="font-semibold text-neutral-900">{product.creatorName}</span>
+                      {product.creatorRole && (
+                        <span className="text-[9px] font-semibold text-mint-600 bg-mint-500/10 border border-mint-500/25 px-1.5 py-0.2 rounded whitespace-nowrap">
+                          {product.creatorRole}
                         </span>
                       )}
-                      {(product.autoRelaunch || product.isRelaunched) && !product.isSponsored && (
-                        <span
-                          className="inline-flex shrink-0 items-center gap-1.5 text-xs font-medium text-neutral-400 select-none"
-                          title="Relaunched tool in this weekly round"
-                        >
-                          <Rocket className="h-3.5 w-3.5 text-neutral-400/80 shrink-0" />
-                          <span>Relaunched</span>
-                        </span>
-                      )}
-                      {product.offerDiscount && (
-                        <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 px-2 py-0.5 text-xs font-black tracking-tight text-white shadow-xs shadow-orange-500/25 select-none">
-                          <Flame className="h-3 w-3 fill-white stroke-white shrink-0" />
-                          <span>{product.offerDiscount}</span>
-                        </span>
-                      )}
-                    </div>
+                    </span>
+                  </>
+                )}
+              </div>
 
-                    <p className="text-xs sm:text-base font-medium text-neutral-500 max-w-2xl leading-relaxed">
-                      {product.tagline}
-                    </p>
-
-                    {/* Built By Founder Hero Badge (from Step 3: Founder) */}
-                    {(product.creatorName || product.creatorAvatar) && (
-                      <div className="flex items-center gap-2 pt-0.5 min-w-0 max-w-full">
-                        <div className="inline-flex items-center gap-1.5 rounded-lg bg-white border border-neutral-200 pl-1.5 pr-2 py-1 text-xs shadow-2xs min-w-0 max-w-full">
-                          <CommentAvatar
-                            avatarUrl={product.creatorAvatar}
-                            name={product.creatorName || 'Founder'}
-                            className="h-5 w-5 shrink-0 rounded-full object-cover border border-neutral-200"
-                            fallbackClassName="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-mint-500 text-[9px] font-black text-white"
-                          />
-                          <span className="text-neutral-500 font-medium text-[11px] whitespace-nowrap shrink-0">Built by</span>
-                          <span className="font-bold text-neutral-900 text-[11px] whitespace-nowrap truncate min-w-0 max-w-[120px] xs:max-w-[160px] sm:max-w-none">
-                            {product.creatorName}
-                          </span>
-                          {product.creatorRole && (
-                            <span className="text-[9px] font-semibold text-mint-600 bg-mint-500/10 border border-mint-500/25 px-1.5 py-0.5 rounded-md whitespace-nowrap shrink-0">
-                              {product.creatorRole}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Social Links */}
-                    {(product.twitterHandle || (product.socials && product.socials.length > 0)) && (
-                      <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 pt-1 text-xs">
-                        {product.twitterHandle && !product.socials?.some((s) => s.platform === 'x') && (
-                          <a
-                            href={`https://x.com/${product.twitterHandle.replace('@', '')}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-700 hover:border-gray-300 hover:bg-gray-200 hover:text-gray-900 transition-colors"
-                          >
-                            <span>X {product.twitterHandle.startsWith('@') ? product.twitterHandle : `@${product.twitterHandle}`}</span>
-                          </a>
-                        )}
-
-                        {product.socials?.map((s, idx) => {
-                          const name = (() => {
-                            switch (s.platform) {
-                              case 'x': return 'X (Twitter)';
-                              case 'linkedin': return 'LinkedIn';
-                              case 'youtube': return 'YouTube';
-                              case 'reddit': return 'Reddit';
-                              case 'product_hunt': return 'Product Hunt';
-                              case 'github': return 'GitHub';
-                              case 'discord': return 'Discord';
-                              case 'app_store': return 'App Store';
-                              case 'play_store': return 'Google Play';
-                              case 'chrome_web_store': return 'Chrome Extension';
-                              default: return s.platform;
-                            }
-                          })();
-                          return (
-                            <a
-                              key={`${s.platform}-${idx}`}
-                              href={s.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-700 hover:border-gray-300 hover:bg-gray-200 hover:text-gray-900 transition-colors"
-                            >
-                              <span>{name}</span>
-                              <ExternalLink className="h-2.5 w-2.5 opacity-60" />
-                            </a>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex flex-nowrap items-center gap-1.5 sm:flex-wrap sm:gap-2 pt-2 sm:pt-0 w-full sm:w-auto sm:shrink-0">
-                  {onUpvote ? (
-                    <button
-                      type="button"
-                      onClick={() => onUpvote(product)}
-                      className={`inline-flex items-center gap-1.5 rounded-xl px-2.5 sm:px-3.5 py-3 text-xs font-bold transition-all cursor-pointer active:scale-95 border min-h-[44px] sm:min-h-[38px] ${
-                        isUpvoted
-                          ? 'bg-mint-500 border-mint-400 text-white'
-                          : 'bg-white border-neutral-200 text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50'
-                      }`}
-                      title={!isSignedIn ? 'Sign in to upvote' : (isUpvoted ? 'Remove upvote' : 'Upvote product')}
+              {/* Social Links (if any) */}
+              {(product.twitterHandle || (product.socials && product.socials.length > 0)) && (
+                <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
+                  {product.twitterHandle && !product.socials?.some((s) => s.platform === 'x') && (
+                    <a
+                      href={`https://x.com/${product.twitterHandle.replace('@', '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 rounded-md border border-neutral-200 bg-neutral-50 px-2 py-0.5 text-[11px] font-semibold text-neutral-700 hover:border-neutral-300 hover:bg-neutral-100 hover:text-neutral-900 transition-colors"
                     >
-                      <ChevronUp className="h-4 w-4" />
-                      <span className="font-mono-num font-black text-sm">{(product.upvotes ?? 0).toLocaleString()}</span>
-                    </button>
-                  ) : (
-                    <div className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-2.5 sm:px-3.5 py-3 text-xs font-bold text-neutral-900 min-h-[44px] sm:min-h-[38px]">
-                      <ChevronUp className="h-4 w-4 text-mint-600" />
-                      <span className="font-mono-num font-black text-sm">{(product.upvotes ?? 0).toLocaleString()}</span>
-                    </div>
+                      <span>X {product.twitterHandle.startsWith('@') ? product.twitterHandle : `@${product.twitterHandle}`}</span>
+                    </a>
                   )}
 
+                  {product.socials?.map((s, idx) => {
+                    const name = (() => {
+                      switch (s.platform) {
+                        case 'x': return 'X (Twitter)';
+                        case 'linkedin': return 'LinkedIn';
+                        case 'youtube': return 'YouTube';
+                        case 'reddit': return 'Reddit';
+                        case 'product_hunt': return 'Product Hunt';
+                        case 'github': return 'GitHub';
+                        case 'discord': return 'Discord';
+                        case 'app_store': return 'App Store';
+                        case 'play_store': return 'Google Play';
+                        case 'chrome_web_store': return 'Chrome Extension';
+                        default: return s.platform;
+                      }
+                    })();
+                    return (
+                      <a
+                        key={`${s.platform}-${idx}`}
+                        href={s.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 rounded-md border border-neutral-200 bg-neutral-50 px-2 py-0.5 text-[11px] font-semibold text-neutral-700 hover:border-neutral-300 hover:bg-neutral-100 hover:text-neutral-900 transition-colors"
+                      >
+                        <span>{name}</span>
+                        <ExternalLink className="h-2.5 w-2.5 opacity-60" />
+                      </a>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Action Buttons Row */}
+              <div className="flex flex-nowrap items-center gap-1.5 sm:gap-2.5 pt-3">
+                {/* Visit website */}
+                <a
+                  href={formatOutboundUrl(product.url, { campaign: 'product_page' })}
+                  target="_blank"
+                  rel="noopener"
+                  onClick={() => {
+                    playSound('click', soundEnabled);
+                    trackOutboundClick(product.id, product.url, product.name, onTrackClick);
+                  }}
+                  className="btn-primary inline-flex items-center justify-center gap-1 sm:gap-1.5 rounded-xl px-3 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-bold text-white shadow-xs cursor-pointer min-h-[38px] sm:min-h-[42px] whitespace-nowrap shrink-0"
+                >
+                  <span>Visit website</span>
+                  <ArrowUpRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                </a>
+
+                {/* Upvote button */}
+                {onUpvote ? (
                   <button
                     type="button"
                     onClick={() => {
+                      playSound('click', soundEnabled);
+                      onUpvote(product);
+                    }}
+                    className={`inline-flex items-center gap-1.5 sm:gap-2 rounded-xl px-2.5 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-bold transition-all cursor-pointer active:scale-95 border min-h-[38px] sm:min-h-[42px] shadow-2xs whitespace-nowrap shrink-0 ${
+                      isUpvoted
+                        ? 'bg-mint-500 border-mint-400 text-white'
+                        : 'bg-white border-neutral-200 text-neutral-800 hover:border-neutral-300 hover:bg-neutral-50'
+                    }`}
+                    title={!isSignedIn ? 'Sign in to upvote' : (isUpvoted ? 'Remove upvote' : 'Upvote product')}
+                  >
+                    <Triangle className={`h-3 w-3 fill-current ${isUpvoted ? 'text-white' : 'text-neutral-700'}`} />
+                    <span className="font-mono-num font-black">{(product.upvotes ?? 0).toLocaleString()}</span>
+                  </button>
+                ) : (
+                  <div className="inline-flex items-center gap-1.5 sm:gap-2 rounded-xl border border-neutral-200 bg-white px-2.5 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-bold text-neutral-900 min-h-[38px] sm:min-h-[42px] shadow-2xs whitespace-nowrap shrink-0">
+                    <Triangle className="h-3 w-3 fill-current text-neutral-700" />
+                    <span className="font-mono-num font-black">{(product.upvotes ?? 0).toLocaleString()}</span>
+                  </div>
+                )}
+
+                {/* Share button */}
+                <button
+                  type="button"
+                  onClick={handleCopyLink}
+                  className="relative inline-flex items-center justify-center h-[38px] w-[38px] sm:h-[42px] sm:w-[42px] shrink-0 rounded-xl border border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300 hover:bg-neutral-50 transition-all cursor-pointer shadow-2xs"
+                  title={linkCopied ? 'Link copied to clipboard!' : 'Share product & copy link'}
+                  aria-label={linkCopied ? 'Link copied to clipboard!' : 'Share product & copy link'}
+                >
+                  {linkCopied ? (
+                    <Check className="h-4 w-4 text-emerald-600" />
+                  ) : (
+                    <Share2 className="h-4 w-4 text-neutral-600" />
+                  )}
+                </button>
+
+                {/* Jump to comments button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    playSound('click', soundEnabled);
+                    setActiveTab('discussion');
+                    setTimeout(() => {
                       const el = document.getElementById('product-discussion-section');
-                      if (el) el.scrollIntoView({ behavior: 'smooth' });
-                    }}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-2.5 sm:px-3.5 py-3 text-xs font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-all cursor-pointer min-h-[44px] sm:min-h-[38px]"
-                    title="Jump to discussion"
-                  >
-                    <MessageCircle className="h-4 w-4 text-blue-600" />
-                    <span className="font-mono-num font-black text-sm">{comments.length.toLocaleString()}</span>
-                  </button>
+                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 40);
+                  }}
+                  className="inline-flex items-center gap-1 sm:gap-1.5 h-[38px] sm:h-[42px] shrink-0 rounded-xl border border-neutral-200 bg-white px-2.5 sm:px-3 text-xs sm:text-sm font-bold text-neutral-700 hover:border-neutral-300 hover:text-neutral-950 hover:bg-neutral-50 transition-all cursor-pointer shadow-2xs whitespace-nowrap"
+                  title="Jump to discussion"
+                >
+                  <MessageCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-600" />
+                  <span className="font-mono-num font-black">{comments.length.toLocaleString()}</span>
+                </button>
+              </div>
+            </div>
+          </div>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      playSound('click', soundEnabled);
-                      onShare(product);
-                    }}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-2.5 sm:px-3.5 py-3 text-xs font-bold text-neutral-700 hover:border-blue-300 hover:text-blue-700 hover:bg-blue-50/50 transition-all cursor-pointer min-h-[44px] sm:min-h-[38px]"
-                    title="Share & download social banner"
-                  >
-                    <Share2 className="h-4 w-4 text-blue-600" />
-                    <span className="hidden sm:inline">Share</span>
-                  </button>
+          {/* Divider line like in image 1 */}
+          <div className="border-b border-neutral-200/90 pt-5 sm:pt-6" />
+        </div>
 
-                  <a
-                    href={formatOutboundUrl(product.url, { campaign: 'product_page' })}
-                    target="_blank"
-                    rel="noopener"
-                    onClick={() => {
-                      playSound('click', soundEnabled);
-                      trackOutboundClick(product.id, product.url, product.name, onTrackClick);
-                    }}
-                    className="btn-primary flex-1 sm:flex-none justify-center whitespace-nowrap px-3 sm:px-5 py-2.5 text-xs font-bold text-center min-h-[42px] sm:min-h-[38px]"
-                  >
-                    <span>Visit Website</span>
-                    <ExternalLink className="h-3.5 w-3.5" />
-                  </a>
+        {/* Exclusive Offer / Viewer Deal Banner */}
+        {(product.offerDiscount || product.offerCode) && (
+          <div className="relative overflow-hidden rounded-2xl border border-mint-500/40 bg-mint-50/70 p-4 sm:p-5">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-3 min-w-0">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-mint-500 text-white">
+                  <Tag className="h-5 w-5 fill-white stroke-white" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="rounded-full bg-mint-500 text-white px-2 py-0.5 text-[10px] font-bold">
+                      Exclusive TopSAAS deal
+                    </span>
+                    {product.offerDiscount && (
+                      <span className="text-sm sm:text-base font-black text-mint-600">
+                        {product.offerDiscount}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-neutral-700 mt-1 font-medium">
+                    {product.offerDetails || `Special discount available for TopSAAS viewers.`}
+                  </p>
                 </div>
               </div>
 
-              {/* Exclusive Offer / Viewer Deal Banner */}
-              {(product.offerDiscount || product.offerCode) && (
-                <div className="relative overflow-hidden rounded-2xl border border-mint-500/40 bg-mint-50/70 p-4 sm:p-5">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div className="flex items-start gap-3 min-w-0">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-mint-500 text-white">
-                        <Tag className="h-5 w-5 fill-white stroke-white" />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="rounded-full bg-mint-500 text-white px-2 py-0.5 text-[10px] font-bold">
-                            Exclusive TopSAAS deal
-                          </span>
-                          {product.offerDiscount && (
-                            <span className="text-sm sm:text-base font-black text-mint-600">
-                              {product.offerDiscount}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-neutral-700 mt-1 font-medium">
-                          {product.offerDetails || `Special discount available for TopSAAS viewers.`}
-                        </p>
-                      </div>
-                    </div>
+              <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+                {product.offerCode && (
+                  <button
+                    type="button"
+                    onClick={() => handleCopyOfferCode(product.offerCode!)}
+                    className="flex-1 sm:flex-initial flex items-center justify-center gap-2 rounded-xl border border-dashed border-mint-500/60 bg-white px-3.5 py-2.5 text-xs font-mono font-bold text-mint-700 hover:bg-mint-500/10 hover:border-mint-400 transition-all cursor-pointer min-h-[40px]"
+                    title="Click to copy promo code"
+                  >
+                    <span>{product.offerCode}</span>
+                    {copiedOffer ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-sans font-black text-mint-700 bg-mint-500/15 px-1.5 py-0.5 rounded">
+                        <Check className="h-3 w-3" /> Copied!
+                      </span>
+                    ) : (
+                      <Copy className="h-3.5 w-3.5 text-neutral-500" />
+                    )}
+                  </button>
+                )}
 
-                    <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
-                      {product.offerCode && (
-                        <button
-                          type="button"
-                          onClick={() => handleCopyOfferCode(product.offerCode!)}
-                          className="flex-1 sm:flex-initial flex items-center justify-center gap-2 rounded-xl border border-dashed border-mint-500/60 bg-white px-3.5 py-2.5 text-xs font-mono font-bold text-mint-700 hover:bg-mint-500/10 hover:border-mint-400 transition-all cursor-pointer min-h-[40px]"
-                          title="Click to copy promo code"
-                        >
-                          <span>{product.offerCode}</span>
-                          {copiedOffer ? (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-sans font-black text-mint-700 bg-mint-500/15 px-1.5 py-0.5 rounded">
-                              <Check className="h-3 w-3" /> Copied!
-                            </span>
-                          ) : (
-                            <Copy className="h-3.5 w-3.5 text-neutral-500" />
-                          )}
-                        </button>
-                      )}
-
-                      <a
-                        href={formatOutboundUrl(product.offerUrl || product.url, { campaign: 'product_deal' })}
-                        target="_blank"
-                        rel="noopener"
-                        onClick={() => {
-                          playSound('click', soundEnabled);
-                          trackOutboundClick(product.id, product.offerUrl || product.url, product.name, onTrackClick);
-                        }}
-                        className="flex-1 sm:flex-initial btn-primary px-4 py-2 text-xs font-bold min-h-[40px]"
-                      >
-                        <span>Redeem Deal</span>
-                        <ExternalLink className="h-3.5 w-3.5" />
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              )}
+                <a
+                  href={formatOutboundUrl(product.offerUrl || product.url, { campaign: 'product_deal' })}
+                  target="_blank"
+                  rel="noopener"
+                  onClick={() => {
+                    playSound('click', soundEnabled);
+                    trackOutboundClick(product.id, product.offerUrl || product.url, product.name, onTrackClick);
+                  }}
+                  className="flex-1 sm:flex-initial btn-primary px-4 py-2 text-xs font-bold min-h-[40px]"
+                >
+                  <span>Redeem Deal</span>
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              </div>
             </div>
+          </div>
+        )}
 
-            {/* Product Details Tabs: Overview & Analytics (visible only to owner or admin) */}
-            {canSeeAnalyticsTab && (
-              <div className="flex items-center gap-1.5 rounded-2xl border border-neutral-200 bg-white p-1.5 shadow-2xs w-fit" role="tablist" aria-label="Product sections">
+            {/* Product Details Tabs: Overview, Discussion & Analytics */}
+            <div className="flex items-center gap-6 border-b border-neutral-200" role="tablist" aria-label="Product sections">
               <button
                 type="button"
                 role="tab"
@@ -968,40 +1037,57 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                   playSound('click', soundEnabled);
                   setActiveTab('overview');
                 }}
-                className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                className={`inline-flex items-center gap-1.5 border-b-2 -mb-px pb-2.5 text-sm transition-colors cursor-pointer ${
                   activeTab === 'overview'
-                    ? 'bg-neutral-950 text-white shadow-xs'
-                    : 'text-neutral-600 hover:text-neutral-950 hover:bg-neutral-100/80'
+                    ? 'border-neutral-950 text-neutral-950 font-semibold'
+                    : 'border-transparent text-neutral-500 hover:text-neutral-800 font-medium'
                 }`}
               >
-                <Layers className="h-4 w-4" />
                 <span>Overview</span>
               </button>
 
               <button
                 type="button"
                 role="tab"
-                aria-selected={activeTab === 'analytics'}
+                aria-selected={activeTab === 'discussion'}
                 onClick={() => {
                   playSound('click', soundEnabled);
-                  setActiveTab('analytics');
+                  setActiveTab('discussion');
                 }}
-                className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs sm:text-sm font-bold transition-all cursor-pointer ${
-                  activeTab === 'analytics'
-                    ? 'bg-neutral-950 text-white shadow-xs'
-                    : 'text-neutral-600 hover:text-neutral-950 hover:bg-neutral-100/80'
+                className={`inline-flex items-center gap-1.5 border-b-2 -mb-px pb-2.5 text-sm transition-colors cursor-pointer ${
+                  activeTab === 'discussion'
+                    ? 'border-neutral-950 text-neutral-950 font-semibold'
+                    : 'border-transparent text-neutral-500 hover:text-neutral-800 font-medium'
                 }`}
               >
-                <BarChart3 className="h-4 w-4" />
-                <span>Analytics</span>
-                {!hasPaidAccess && (
-                  <Lock className={`h-3.5 w-3.5 ${activeTab === 'analytics' ? 'text-neutral-300' : 'text-neutral-400'}`} />
-                )}
+                <span>Discussion</span>
+                <span className="text-neutral-400 font-normal font-mono-num">{comments.length}</span>
               </button>
-              </div>
-            )}
 
-            {(!canSeeAnalyticsTab || activeTab === 'overview') && (
+              {canSeeAnalyticsTab && (
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === 'analytics'}
+                  onClick={() => {
+                    playSound('click', soundEnabled);
+                    setActiveTab('analytics');
+                  }}
+                  className={`inline-flex items-center gap-1.5 border-b-2 -mb-px pb-2.5 text-sm transition-colors cursor-pointer ${
+                    activeTab === 'analytics'
+                      ? 'border-neutral-950 text-neutral-950 font-semibold'
+                      : 'border-transparent text-neutral-500 hover:text-neutral-800 font-medium'
+                  }`}
+                >
+                  <span>Analytics</span>
+                  {!hasPaidAccess && (
+                    <Lock className={`h-3.5 w-3.5 ${activeTab === 'analytics' ? 'text-neutral-700' : 'text-neutral-400'}`} />
+                  )}
+                </button>
+              )}
+            </div>
+
+            {activeTab === 'overview' && (
               <>
             {/* Founder Relaunch Banner (Owner only — shown when approaching next week or inactive) */}
             {shouldShowRelaunchBanner && (
@@ -1242,17 +1328,10 @@ export const ProductPage: React.FC<ProductPageProps> = ({
               }
 
               return (
-                <div className="rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
-                  <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
-                    <div>
-                      <h2 className="text-base sm:text-lg font-bold text-neutral-950">
-                        About {product.name}
-                      </h2>
-                      <p className="text-xs text-neutral-500 font-normal">
-                        Overview and background of the product
-                      </p>
-                    </div>
-                  </div>
+                <div className="pt-6 border-t border-neutral-200/80 space-y-3">
+                  <h2 className="text-base sm:text-lg font-bold text-neutral-950">
+                    About {product.name}
+                  </h2>
 
                   {displayDescription && (
                     <div className="pt-1">
@@ -1277,17 +1356,10 @@ export const ProductPage: React.FC<ProductPageProps> = ({
 
             {/* 2. Problem Section (from Step 2 of /submit: Problem it solves) */}
             {Boolean(sanitizeRichText(product.problemItSolves)) && (
-              <div className="rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
-                <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
-                  <div>
-                    <h2 className="text-base sm:text-lg font-bold text-neutral-950">
-                      Problem It Solves
-                    </h2>
-                    <p className="text-xs text-neutral-500 font-normal">
-                      The core challenges and pain points {product.name} addresses
-                    </p>
-                  </div>
-                </div>
+              <div className="pt-6 border-t border-neutral-200/80 space-y-3">
+                <h2 className="text-base sm:text-lg font-bold text-neutral-950">
+                  Problem It Solves
+                </h2>
 
                 <div className="pt-1">
                   <RichText
@@ -1300,17 +1372,10 @@ export const ProductPage: React.FC<ProductPageProps> = ({
 
             {/* 3. Solution Section (from Step 2 of /submit: Your solution) */}
             {Boolean(sanitizeRichText(product.solution)) && (
-              <div className="rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
-                <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
-                  <div>
-                    <h2 className="text-base sm:text-lg font-bold text-neutral-950">
-                      The Solution
-                    </h2>
-                    <p className="text-xs text-neutral-500 font-normal">
-                      How {product.name} solves this problem
-                    </p>
-                  </div>
-                </div>
+              <div className="pt-6 border-t border-neutral-200/80 space-y-3">
+                <h2 className="text-base sm:text-lg font-bold text-neutral-950">
+                  The Solution
+                </h2>
 
                 <div className="pt-1">
                   <RichText
@@ -1323,17 +1388,10 @@ export const ProductPage: React.FC<ProductPageProps> = ({
 
             {/* 4. Why Different Section (from Step 2 of /submit: What makes it different) */}
             {Boolean(sanitizeRichText(product.uniqueSellingPoint)) && (
-              <div className="rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
-                <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
-                  <div>
-                    <h2 className="text-base sm:text-lg font-bold text-neutral-950">
-                      Why {product.name} is Different
-                    </h2>
-                    <p className="text-xs text-neutral-500 font-normal">
-                      Key differentiators and competitive advantage
-                    </p>
-                  </div>
-                </div>
+              <div className="pt-6 border-t border-neutral-200/80 space-y-3">
+                <h2 className="text-base sm:text-lg font-bold text-neutral-950">
+                  Why {product.name} is Different
+                </h2>
 
                 <div className="pt-1">
                   <RichText
@@ -1346,17 +1404,10 @@ export const ProductPage: React.FC<ProductPageProps> = ({
 
             {/* 5. Target Audience Section (if provided in Step 2) */}
             {Boolean(product.targetAudience && product.targetAudience.trim()) && (
-              <div className="rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
-                <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
-                  <div>
-                    <h2 className="text-base sm:text-lg font-bold text-neutral-950">
-                      Target Audience
-                    </h2>
-                    <p className="text-xs text-neutral-500 font-normal">
-                      Who {product.name} is designed for
-                    </p>
-                  </div>
-                </div>
+              <div className="pt-6 border-t border-neutral-200/80 space-y-3">
+                <h2 className="text-base sm:text-lg font-bold text-neutral-950">
+                  Target Audience
+                </h2>
 
                 <div className="space-y-2 pt-1">
                   <p className="text-xs sm:text-sm text-neutral-700 leading-relaxed font-normal">
@@ -1381,15 +1432,10 @@ export const ProductPage: React.FC<ProductPageProps> = ({
 
             {/* Real-World Use Cases (if custom use cases were provided) */}
             {product.useCases && product.useCases.length > 0 && product.useCases.some((uc) => uc.description && uc.description !== product.targetAudience && !uc.description.includes(product.targetAudience || '___')) && (
-              <div className="rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
-                <div className="border-b border-neutral-100 pb-3.5">
-                  <h2 className="text-base sm:text-lg font-bold text-neutral-950">
-                    Who uses it and real-world use cases
-                  </h2>
-                  <p className="text-xs text-neutral-500 font-normal">
-                    Who {product.name} is designed for and how teams leverage it
-                  </p>
-                </div>
+              <div className="pt-6 border-t border-neutral-200/80 space-y-3">
+                <h2 className="text-base sm:text-lg font-bold text-neutral-950">
+                  Who uses it and real-world use cases
+                </h2>
 
                 <div className="space-y-3">
                   {product.useCases.map((uc, idx) => (
@@ -1416,42 +1462,74 @@ export const ProductPage: React.FC<ProductPageProps> = ({
               </div>
             )}
 
-            {/* Discussion & Comments (Modern Card-Based Discussion matching reference) */}
-            <div id="product-discussion-section" className="rounded-2xl border border-neutral-200/90 bg-white p-5 sm:p-7 shadow-xs space-y-4">
-              {/* Header */}
-              <div className="flex items-center justify-between pb-3.5 border-b border-neutral-200">
-                <h2 className="text-lg sm:text-xl font-bold text-neutral-950">
-                  Discussion
-                </h2>
-                <span className="text-xs sm:text-sm font-medium text-neutral-500">
-                  {comments.length} {comments.length === 1 ? 'comment' : 'comments'}
-                </span>
-              </div>
-
-              {/* Composer Box (Clean Modern Card matching screenshot) */}
-              <div className="rounded-xl border border-neutral-200/90 bg-white p-4 sm:p-5 space-y-3.5">
-                {/* User Info Header: Avatar + Name + Verified Badge + Email */}
-                <div className="flex items-center gap-3">
-                  <CommentAvatar
-                    avatarUrl={userAvatar}
-                    name={userName || userEmail?.split('@')[0] || (isSignedIn ? 'User' : 'Guest')}
-                    className="h-10 w-10 shrink-0 rounded-full object-cover border border-neutral-200 shadow-2xs"
-                    fallbackClassName="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#00897b] text-base font-bold text-white shadow-2xs select-none"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-neutral-900 truncate">
-                        {isSignedIn ? (userName || userEmail?.split('@')[0] || 'User') : 'Guest User'}
-                      </span>
-                    </div>
-                    <p className="text-xs text-neutral-400 truncate mt-0.5">
-                      {isSignedIn ? (userEmail || '') : 'Sign in to join the conversation'}
-                    </p>
-                  </div>
+            {/* Explore Related Websites */}
+            {relatedProducts.length > 0 && (
+              <div className="pt-6 border-t border-neutral-200/80 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-bold text-neutral-950">
+                    Explore more websites
+                  </h2>
+                  <button
+                    onClick={onBack}
+                    className="text-xs font-bold text-neutral-500 hover:text-neutral-950 flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>Back to Home</span>
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </button>
                 </div>
 
-                {/* Textarea container */}
-                <div className="rounded-xl border border-neutral-200 bg-white p-3.5 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  {relatedProducts.map((rel) => (
+                    <div
+                      key={rel.id}
+                      onClick={() => {
+                        playSound('click', soundEnabled);
+                        onSelectProduct(rel);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className="rounded-xl border border-neutral-200 bg-white p-4 hover:border-neutral-600 hover:bg-neutral-100 transition-all cursor-pointer space-y-2 group shadow-2xs"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="h-8 w-8 rounded-lg overflow-hidden border border-neutral-200 bg-white flex items-center justify-center shrink-0 shadow-2xs">
+                            {rel.logoUrl ? (
+                              <img src={rel.logoUrl} alt={rel.name} width={40} height={40} className="h-full w-full object-cover" />
+                            ) : (
+                              <span className="text-xs font-black text-white">{rel.name.slice(0, 2)}</span>
+                            )}
+                          </div>
+                          <div>
+                            <h3 className="text-xs font-black text-neutral-900 group-hover:underline">
+                              {rel.name}
+                            </h3>
+                            <span className="text-[10px] text-neutral-500">{rel.category}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <p className="text-[11px] text-neutral-400 line-clamp-2 leading-relaxed">
+                        {rel.tagline}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+              </>
+            )}
+
+            {activeTab === 'discussion' && (
+            <div id="product-discussion-section" className="pt-2 space-y-6">
+              {/* Composer Box (Clean avatar + grey textarea + Cancel / Post pill) */}
+              <div className="flex items-start gap-3">
+                <CommentAvatar
+                  avatarUrl={userAvatar}
+                  name={userName || userEmail?.split('@')[0] || (isSignedIn ? 'User' : 'Guest')}
+                  className="h-9 w-9 shrink-0 rounded-full object-cover border border-neutral-200 mt-0.5"
+                  fallbackClassName="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#00897b] text-sm font-bold text-white select-none mt-0.5"
+                />
+
+                <div className="flex-1 min-w-0 space-y-2.5">
                   <textarea
                     ref={commentInputRef}
                     value={commentText}
@@ -1470,41 +1548,54 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                         onOpenSignIn?.();
                       }
                     }}
-                    placeholder={`Ask a question or leave a comment about ${product.name}...`}
+                    placeholder={`What do you think of ${product.name}${product.creatorName ? ` by ${product.creatorName}` : ''}? Ask a question or share feedback...`}
                     rows={3}
                     maxLength={2000}
-                    className="w-full bg-transparent border-0 p-0 text-sm text-neutral-800 placeholder:text-neutral-400 focus:outline-none focus:ring-0 resize-none min-h-[64px] leading-relaxed"
+                    className="w-full rounded-xl border border-neutral-200 bg-neutral-50/70 px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:bg-white focus:border-neutral-300 focus:outline-none resize-none min-h-[86px] leading-relaxed transition-colors"
                   />
+
+                  {/* Bottom Row: Helper Text & Cancel / Post Actions */}
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-xs text-neutral-400">
+                      {hasLinks ? (
+                        <span className="text-rose-500 font-medium">Links aren't allowed in comments.</span>
+                      ) : commentText.trim().length < 15 ? (
+                        `${15 - commentText.trim().length} more to count as a real comment`
+                      ) : (
+                        `${commentText.length}/2000`
+                      )}
+                    </span>
+
+                    <div className="flex items-center gap-3 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playSound('click', soundEnabled);
+                          setCommentText('');
+                        }}
+                        className="text-xs font-medium text-neutral-600 hover:text-neutral-950 transition-colors cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handlePostComment}
+                        disabled={!commentText.trim() || hasLinks}
+                        className={`rounded-xl px-4 py-1.5 text-xs font-semibold transition-all ${
+                          commentText.trim() && !hasLinks
+                            ? 'bg-neutral-950 hover:bg-neutral-800 text-white cursor-pointer active:scale-95'
+                            : 'bg-neutral-100 text-neutral-400 cursor-not-allowed'
+                        }`}
+                      >
+                        Post
+                      </button>
+                    </div>
+                  </div>
                 </div>
-
-                {/* Bottom Row: Counter & Post Comment Button */}
-                <div className="flex items-center justify-between pt-1">
-                  <span className="text-xs font-medium text-neutral-400">
-                    {commentText.length}/2000
-                  </span>
-
-                  <button
-                    type="button"
-                    onClick={handlePostComment}
-                    disabled={!commentText.trim() || hasLinks}
-                    className={`rounded-xl px-6 py-2.5 text-xs sm:text-sm font-semibold transition-all shadow-2xs ${
-                      commentText.trim() && !hasLinks
-                        ? 'bg-[#8faefa] hover:bg-blue-500 text-white cursor-pointer active:scale-95'
-                        : 'bg-[#b8cbfb]/70 text-white cursor-not-allowed'
-                    }`}
-                  >
-                    Post comment
-                  </button>
-                </div>
-
-                {hasLinks && (
-                  <p className="text-[11px] text-rose-500 font-medium">
-                    ⚠️ Links aren't allowed in comments.
-                  </p>
-                )}
               </div>
 
-              {/* Comments List: Each comment in its own clean card */}
+              {/* Comments List */}
               <div className="space-y-3 pt-1">
                 {comments.length === 0 ? (
                   <div className="rounded-xl border border-neutral-200/70 bg-neutral-50/50 p-8 text-center">
@@ -1588,61 +1679,6 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                 )}
               </div>
             </div>
-
-            {/* Explore Related Websites */}
-            {relatedProducts.length > 0 && (
-              <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-xs space-y-4">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-bold text-neutral-950">
-                    Explore more websites
-                  </h2>
-                  <button
-                    onClick={onBack}
-                    className="text-xs font-bold text-neutral-500 hover:text-neutral-950 flex items-center gap-1 cursor-pointer"
-                  >
-                    <span>Back to Home</span>
-                    <ChevronRight className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                  {relatedProducts.map((rel) => (
-                    <div
-                      key={rel.id}
-                      onClick={() => {
-                        playSound('click', soundEnabled);
-                        onSelectProduct(rel);
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }}
-                      className="rounded-xl border border-neutral-200 bg-white p-4 hover:border-neutral-600 hover:bg-neutral-100 transition-all cursor-pointer space-y-2 group shadow-2xs"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="h-8 w-8 rounded-lg overflow-hidden border border-neutral-200 bg-white flex items-center justify-center shrink-0 shadow-2xs">
-                            {rel.logoUrl ? (
-                              <img src={rel.logoUrl} alt={rel.name} width={40} height={40} className="h-full w-full object-cover" />
-                            ) : (
-                              <span className="text-xs font-black text-white">{rel.name.slice(0, 2)}</span>
-                            )}
-                          </div>
-                          <div>
-                            <h3 className="text-xs font-black text-neutral-900 group-hover:underline">
-                              {rel.name}
-                            </h3>
-                            <span className="text-[10px] text-neutral-500">{rel.category}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <p className="text-[11px] text-neutral-400 line-clamp-2 leading-relaxed">
-                        {rel.tagline}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-              </>
             )}
 
             {canSeeAnalyticsTab && activeTab === 'analytics' && (() => {
@@ -1991,8 +2027,8 @@ export const ProductPage: React.FC<ProductPageProps> = ({
 
 
             {/* 2. Quick Specs & Highlights (Website Specifications) */}
-            <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-xs space-y-3.5">
-              <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold text-neutral-950 border-b border-neutral-100 pb-2.5">
+            <div className="pt-4 border-t border-neutral-200/80 space-y-3.5">
+              <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold text-neutral-950 pb-1">
                 <SlidersHorizontal className="h-4 w-4 shrink-0 text-neutral-400" />
                 Website specifications
               </h2>
@@ -2111,10 +2147,10 @@ export const ProductPage: React.FC<ProductPageProps> = ({
               </div>
             </div>
 
-            {/* 3. Founder / Maker Spotlight Card (from Step 3 of /submit) */}
+            {/* 3. Founder / Maker Spotlight (from Step 3 of /submit) */}
             {(product.creatorName || product.creatorAvatar || product.creatorXHandle) && (
-              <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-xs space-y-3.5">
-                <div className="flex items-center justify-between border-b border-neutral-100 pb-2.5">
+              <div className="pt-5 border-t border-neutral-200/80 space-y-3.5">
+                <div className="flex items-center justify-between pb-1">
                   <div>
                     <h2 className="text-sm sm:text-base font-bold text-neutral-950">
                       Meet the founder
@@ -2157,8 +2193,8 @@ export const ProductPage: React.FC<ProductPageProps> = ({
             )}
 
             {/* 4. Quick Access Shortcuts */}
-            <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-xs space-y-3">
-              <h3 className="text-sm sm:text-base font-black text-neutral-950 border-b border-neutral-100 pb-2.5">
+            <div className="pt-5 border-t border-neutral-200/80 space-y-3">
+              <h3 className="text-sm sm:text-base font-black text-neutral-950 pb-1">
                 Quick Access
               </h3>
               <div className="space-y-1">

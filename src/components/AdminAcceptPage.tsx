@@ -226,7 +226,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
     // 1. Add queued directory products (approved products whose launch timestamp is in the future)
     for (const p of queuedDirectoryProducts) {
       const targetMs = getTargetLaunchMs(p);
-      const targetWeek = p.scheduledLaunchWeek != null ? Number(p.scheduledLaunchWeek) : getWeekInfo(new Date(targetMs)).weekNumber;
+      const targetWeek = p.scheduledLaunchWeek != null ? Number(p.scheduledLaunchWeek) : getWeekInfo(targetMs).weekNumber;
       list.push({
         id: p.id,
         sourceType: 'product',
@@ -281,7 +281,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
       // Check if future scheduled
       if (!isLaunched(s)) {
         const targetMs = getTargetLaunchMs(s);
-        const targetWeek = s.scheduledLaunchWeek != null ? Number(s.scheduledLaunchWeek) : getWeekInfo(new Date(targetMs)).weekNumber;
+        const targetWeek = s.scheduledLaunchWeek != null ? Number(s.scheduledLaunchWeek) : getWeekInfo(targetMs).weekNumber;
         list.push({
           id: s.id,
           sourceType: 'submission',
@@ -741,6 +741,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
         creatorName: p.creatorName,
         creatorUsername: p.creatorUsername,
         creatorAvatar: p.creatorAvatar,
+        backerName: p.creatorName || p.submittedBy || 'Creator',
         submittedBy: p.submittedBy,
         offerDiscount: p.offerDiscount,
         offerCode: p.offerCode,
@@ -751,7 +752,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
         scheduledLaunchWeek: p.scheduledLaunchWeek,
         scheduledLaunchDate: p.scheduledLaunchDate,
         status: 'approved',
-        createdAt: p.createdAt || Date.now(),
+        submittedAt: p.createdAt || Date.now(),
       };
       setViewingDetailsSubmission(syntheticSub);
     }
@@ -1693,7 +1694,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                   {filteredFutureLaunches.map((item) => {
                     const logoSrc = item.logoUrl || getWebsiteFavicon(item.url);
                     const weekInfo = getWeekByNumber(item.targetWeekNumber);
-                    const dateRangeStr = formatWeekDateRange(weekInfo.start, weekInfo.end);
+                    const dateRangeStr = formatWeekDateRange(weekInfo);
                     const remainingMs = Math.max(0, item.targetLaunchMs - Date.now());
                     const targetDateStr = new Date(item.targetLaunchMs).toLocaleDateString('en-US', {
                       weekday: 'short',
@@ -3773,7 +3774,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
             <div className="space-y-3">
               <div className="rounded-xl bg-neutral-50 p-3 border border-neutral-200 text-xs text-neutral-600">
                 <span className="font-bold text-neutral-900">Current Schedule: </span>
-                Week {reschedulingItem.targetWeekNumber} ({formatWeekDateRange(getWeekByNumber(reschedulingItem.targetWeekNumber).start, getWeekByNumber(reschedulingItem.targetWeekNumber).end)})
+                Week {reschedulingItem.targetWeekNumber} ({formatWeekDateRange(getWeekByNumber(reschedulingItem.targetWeekNumber))})
               </div>
 
               <div>
@@ -3828,7 +3829,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                               )}
                             </div>
                             <div className="text-[11px] text-neutral-500 font-normal">
-                              {formatWeekDateRange(w.start, w.end)}
+                              {formatWeekDateRange(w)}
                             </div>
                           </div>
                         </div>

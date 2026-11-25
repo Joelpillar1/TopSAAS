@@ -28,24 +28,45 @@ import { SaaSIdeasSponsorModal } from './components/SaaSIdeasSponsorModal';
 import { ProductPage } from './components/ProductPage';
 import { BadgeRoute } from './components/BadgeRoute';
 
-// Lazy-load secondary pages to keep the homepage bundle ultra-lightweight
-const AdminAcceptPage = React.lazy(() => import('./components/AdminAcceptPage').then((m) => ({ default: m.AdminAcceptPage })));
-const ProfilePage = React.lazy(() => import('./components/ProfilePage').then((m) => ({ default: m.ProfilePage })));
-const PaymentSuccess = React.lazy(() => import('./components/PaymentSuccess').then((m) => ({ default: m.PaymentSuccess })));
-const SubmitPage = React.lazy(() => import('./components/SubmitPage').then((m) => ({ default: m.SubmitPage })));
-const SaaSIdeas = React.lazy(() => import('./components/SaaSIdeas').then((m) => ({ default: m.SaaSIdeas })));
-const TrendingPage = React.lazy(() => import('./components/TrendingPage').then((m) => ({ default: m.TrendingPage })));
-const GuidesListPage = React.lazy(() => import('./components/GuidesListPage').then((m) => ({ default: m.GuidesListPage })));
-const GuideDetailPage = React.lazy(() => import('./components/GuideDetailPage').then((m) => ({ default: m.GuideDetailPage })));
-const DirectoriesListPage = React.lazy(() => import('./components/DirectoriesListPage').then((m) => ({ default: m.DirectoriesListPage })));
-const DirectoryDetailPage = React.lazy(() => import('./components/DirectoryDetailPage').then((m) => ({ default: m.DirectoryDetailPage })));
-const MrrCalculatorPage = React.lazy(() => import('./components/MrrCalculatorPage').then((m) => ({ default: m.MrrCalculatorPage })));
-const BlogListPage = React.lazy(() => import('./components/BlogListPage').then((m) => ({ default: m.BlogListPage })));
-const BlogDetailPage = React.lazy(() => import('./components/BlogDetailPage').then((m) => ({ default: m.BlogDetailPage })));
-const LegalPage = React.lazy(() => import('./components/LegalPage').then((m) => ({ default: m.LegalPage })));
-const PricingPage = React.lazy(() => import('./components/PricingPage').then((m) => ({ default: m.PricingPage })));
-const RepoDetailPage = React.lazy(() => import('./components/RepoDetailPage').then((m) => ({ default: m.RepoDetailPage })));
-const OpenSourceBentoPdfPage = React.lazy(() => import('./components/OpenSourceBentoPdfPage').then((m) => ({ default: m.OpenSourceBentoPdfPage })));
+// Preloadable lazy-route loaders so idle/hover prefetching eliminates navigation wait
+const loadAdminAcceptPage = () => import('./components/AdminAcceptPage');
+const loadProfilePage = () => import('./components/ProfilePage');
+const loadPaymentSuccess = () => import('./components/PaymentSuccess');
+const loadSubmitPage = () => import('./components/SubmitPage');
+const loadSaaSIdeas = () => import('./components/SaaSIdeas');
+const loadTrendingPage = () => import('./components/TrendingPage');
+const loadGuidesListPage = () => import('./components/GuidesListPage');
+const loadGuideDetailPage = () => import('./components/GuideDetailPage');
+const loadDirectoriesListPage = () => import('./components/DirectoriesListPage');
+const loadDirectoryDetailPage = () => import('./components/DirectoryDetailPage');
+const loadMrrCalculatorPage = () => import('./components/MrrCalculatorPage');
+const loadBlogListPage = () => import('./components/BlogListPage');
+const loadBlogDetailPage = () => import('./components/BlogDetailPage');
+const loadLegalPage = () => import('./components/LegalPage');
+const loadPricingPage = () => import('./components/PricingPage');
+const loadRepoDetailPage = () => import('./components/RepoDetailPage');
+const loadOpenSourceBentoPdfPage = () => import('./components/OpenSourceBentoPdfPage');
+const loadCategoriesPage = () => import('./components/CategoriesPage');
+
+// Lazy-load secondary pages to keep the initial homepage bundle ultra-lightweight
+const AdminAcceptPage = React.lazy(() => loadAdminAcceptPage().then((m) => ({ default: m.AdminAcceptPage })));
+const ProfilePage = React.lazy(() => loadProfilePage().then((m) => ({ default: m.ProfilePage })));
+const PaymentSuccess = React.lazy(() => loadPaymentSuccess().then((m) => ({ default: m.PaymentSuccess })));
+const SubmitPage = React.lazy(() => loadSubmitPage().then((m) => ({ default: m.SubmitPage })));
+const SaaSIdeas = React.lazy(() => loadSaaSIdeas().then((m) => ({ default: m.SaaSIdeas })));
+const TrendingPage = React.lazy(() => loadTrendingPage().then((m) => ({ default: m.TrendingPage })));
+const GuidesListPage = React.lazy(() => loadGuidesListPage().then((m) => ({ default: m.GuidesListPage })));
+const GuideDetailPage = React.lazy(() => loadGuideDetailPage().then((m) => ({ default: m.GuideDetailPage })));
+const DirectoriesListPage = React.lazy(() => loadDirectoriesListPage().then((m) => ({ default: m.DirectoriesListPage })));
+const DirectoryDetailPage = React.lazy(() => loadDirectoryDetailPage().then((m) => ({ default: m.DirectoryDetailPage })));
+const MrrCalculatorPage = React.lazy(() => loadMrrCalculatorPage().then((m) => ({ default: m.MrrCalculatorPage })));
+const BlogListPage = React.lazy(() => loadBlogListPage().then((m) => ({ default: m.BlogListPage })));
+const BlogDetailPage = React.lazy(() => loadBlogDetailPage().then((m) => ({ default: m.BlogDetailPage })));
+const LegalPage = React.lazy(() => loadLegalPage().then((m) => ({ default: m.LegalPage })));
+const PricingPage = React.lazy(() => loadPricingPage().then((m) => ({ default: m.PricingPage })));
+const RepoDetailPage = React.lazy(() => loadRepoDetailPage().then((m) => ({ default: m.RepoDetailPage })));
+const OpenSourceBentoPdfPage = React.lazy(() => loadOpenSourceBentoPdfPage().then((m) => ({ default: m.OpenSourceBentoPdfPage })));
+const CategoriesPage = React.lazy(() => loadCategoriesPage().then((m) => ({ default: m.CategoriesPage })));
 import { type CuratedRepo } from './data/curatedRepos';
 import { IdeasSponsorCard, IDEAS_SPONSOR_SLOTS } from './components/IdeasSponsorCard';
 import { SaaSIdeasMobileSponsor } from './components/SaaSIdeasMobileSponsor';
@@ -64,6 +85,14 @@ import { SkeletonTable } from './components/SkeletonTable';
 import { SkeletonProductPage } from './components/SkeletonProductPage';
 import { SkeletonSaaSIdeas } from './components/SkeletonSaaSIdeas';
 import { SkeletonRepoDetail } from './components/SkeletonRepoDetail';
+import {
+  SkeletonCategories,
+  SkeletonBlogList,
+  SkeletonArticleDetail,
+  SkeletonMrrCalculator,
+  SkeletonDirectoryList,
+  SkeletonProfile,
+} from './components/RouteSkeletons';
 import { AdminLoginGate } from './components/AdminLoginGate';
 import { isAdminSessionActive, clearAdminSession } from './utils/adminAuth';
 
@@ -277,6 +306,9 @@ export default function App() {
       }
       if (path === '/submit' || hash === '#submit' || hash === '#/submit') {
         return '/submit';
+      }
+      if (path === '/categories' || hash === '#categories' || hash === '#/categories') {
+        return '/categories';
       }
       if (path === '/ideas' || path === '/saas-ideas' || hash === '#ideas' || hash === '#/ideas' || hash === '#saas-ideas' || hash === '#/saas-ideas') {
         return '/ideas';
@@ -622,20 +654,34 @@ export default function App() {
   const activeTab: DirectoryTab | null =
     currentRoute === '/'
       ? 'directory'
-      : currentRoute === '/product-directory' || currentRoute === '/product-directory-detail'
-        ? 'product-directory'
-        : currentRoute === '/ideas'
-          ? 'saas-ideas'
-          : currentRoute === '/mrr-calculator'
-            ? 'mrr-calculator'
-            : currentRoute === 'blog' || currentRoute === '/blog' || currentRoute === 'blog-post' || currentRoute === '/blog-post'
-              ? 'blog'
-              : null;
+      : currentRoute === '/categories'
+        ? 'categories'
+        : currentRoute === '/product-directory' || currentRoute === '/product-directory-detail'
+          ? 'product-directory'
+          : currentRoute === '/ideas'
+            ? 'saas-ideas'
+            : currentRoute === '/mrr-calculator'
+              ? 'mrr-calculator'
+              : currentRoute === 'blog' || currentRoute === '/blog' || currentRoute === 'blog-post' || currentRoute === '/blog-post'
+                ? 'blog'
+                : null;
 
   // View layout — single-column row list (the bento grid was retired)
   // Search and Category filtering state
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [selectedCategory, setSelectedCategory] = useState<Category>('All');
+  const [searchQuery, setSearchQuery] = useState<string>(() => {
+    try {
+      return new URLSearchParams(window.location.search).get('q') ?? '';
+    } catch {
+      return '';
+    }
+  });
+  const [selectedCategory, setSelectedCategory] = useState<Category>(() => {
+    try {
+      return (new URLSearchParams(window.location.search).get('category') as Category) || 'All';
+    } catch {
+      return 'All';
+    }
+  });
   // One-Click Deals filter state ("Steals Only")
   const [stealsOnly, setStealsOnly] = useState<boolean>(false);
 
@@ -865,6 +911,8 @@ export default function App() {
         setCurrentRoute('/profile');
       } else if (path === '/submit' || hash === '#submit' || hash === '#/submit') {
         setCurrentRoute('/submit');
+      } else if (path === '/categories' || hash === '#categories' || hash === '#/categories') {
+        setCurrentRoute('/categories');
       } else if (path === '/ideas' || path === '/saas-ideas' || hash === '#ideas' || hash === '#/ideas' || hash === '#saas-ideas' || hash === '#/saas-ideas') {
         setCurrentRoute('/ideas');
       } else if (path === '/mrr-calculator' || hash === '#mrr-calculator' || hash === '#/mrr-calculator') {
@@ -875,6 +923,13 @@ export default function App() {
         setCurrentRoute('/terms');
       } else {
         setCurrentRoute('/');
+        try {
+          const params = new URLSearchParams(window.location.search);
+          const cat = params.get('category') as Category | null;
+          const q = params.get('q');
+          if (cat) setSelectedCategory(cat);
+          if (q !== null) setSearchQuery(q);
+        } catch { }
       }
     };
 
@@ -1033,6 +1088,45 @@ export default function App() {
     } catch { }
   }, []);
 
+
+  // Background-prefetch primary secondary routes once the browser is idle so
+  // navigating to Blog, MRR Calculator, Categories, SaaS Ideas, or detail pages is instant.
+  useEffect(() => {
+    let cancelled = false;
+    const prefetchAll = () => {
+      if (cancelled) return;
+      // Lightweight routes first
+      void loadBlogListPage();
+      void loadBlogDetailPage();
+      void loadMrrCalculatorPage();
+      void loadCategoriesPage();
+      // Heavier catalog routes right after
+      setTimeout(() => {
+        if (cancelled) return;
+        void loadSaaSIdeas();
+        void loadRepoDetailPage();
+      }, 600);
+    };
+
+    const w = window as unknown as {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+
+    if (typeof w.requestIdleCallback === 'function') {
+      const idleId = w.requestIdleCallback(prefetchAll, { timeout: 2500 });
+      return () => {
+        cancelled = true;
+        w.cancelIdleCallback?.(idleId);
+      };
+    }
+
+    const timer = window.setTimeout(prefetchAll, 1200);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, []);
 
   // Navigation handlers
   const handleBackToLeaderboard = () => {
@@ -2033,7 +2127,7 @@ export default function App() {
         if (loaded?.screenshots && loaded.screenshots.length > 0) {
           fullSub = { ...fullSub, screenshots: loaded.screenshots };
         }
-      } catch {}
+      } catch { }
     }
 
     // 1. Mark the submission approved (queue + Supabase)
@@ -2223,13 +2317,13 @@ export default function App() {
     // sponsors table, never on a product row.
     const sponsor = sponsors.find((s) => s.id === productId);
     if (sponsor) {
-      incrementSponsorClicks(sponsor.id).catch(() => {});
+      incrementSponsorClicks(sponsor.id).catch(() => { });
       setSponsors((prev) =>
         prev.map((s) => (s.id === sponsor.id ? { ...s, clicks: (s.clicks || 0) + 1 } : s))
       );
     } else {
       // Persist click increment to database atomically
-      incrementProductClicksDirect(productId).catch(() => {});
+      incrementProductClicksDirect(productId).catch(() => { });
       setProducts((prev) =>
         prev.map((p) => {
           if (p.id !== productId) return p;
@@ -2251,7 +2345,7 @@ export default function App() {
   // Update a single product in state and database. Sponsorship is separate and
   // must never be written through a product update.
   const handleUpdateProduct = (updatedProduct: Product) => {
-    updateProductDirect(updatedProduct).catch(() => {});
+    updateProductDirect(updatedProduct).catch(() => { });
     setProducts((prev) => {
       const exists = prev.some((p) => p.id === updatedProduct.id);
       const next = exists
@@ -2882,15 +2976,15 @@ export default function App() {
     const productRoundWeek = (selectedWeek && isProductInLaunchRound(p, selectedWeek))
       ? selectedWeek
       : (p.scheduledLaunchWeek != null
-          ? getWeekByNumber(Number(p.scheduledLaunchWeek))
-          : (isInWeek(p.createdAt, getWeekInfo(Date.now()))
-              ? getWeekInfo(Date.now())
-              : getWeekInfo(p.createdAt)));
+        ? getWeekByNumber(Number(p.scheduledLaunchWeek))
+        : (isInWeek(p.createdAt, getWeekInfo(Date.now()))
+          ? getWeekInfo(Date.now())
+          : getWeekInfo(p.createdAt)));
 
     const roundScopedProducts = productRoundWeek
       ? directoryProducts
-          .filter((item) => isProductInLaunchRound(item, productRoundWeek))
-          .sort(compareProductsForWeek(productRoundWeek))
+        .filter((item) => isProductInLaunchRound(item, productRoundWeek))
+        .sort(compareProductsForWeek(productRoundWeek))
       : sortedByRankProducts;
 
     const rankIndex = roundScopedProducts.findIndex(
@@ -2927,27 +3021,31 @@ export default function App() {
     const nextRoute =
       tab === 'directory'
         ? '/'
-        : tab === 'product-directory'
-          ? '/product-directory'
-          : tab === 'saas-ideas'
-            ? '/ideas'
-            : tab === 'mrr-calculator'
-              ? '/mrr-calculator'
-              : tab === 'blog'
-                ? '/blog'
-                : '/pricing';
+        : tab === 'categories'
+          ? '/categories'
+          : tab === 'product-directory'
+            ? '/product-directory'
+            : tab === 'saas-ideas'
+              ? '/ideas'
+              : tab === 'mrr-calculator'
+                ? '/mrr-calculator'
+                : tab === 'blog'
+                  ? '/blog'
+                  : '/pricing';
     const pageTitle =
       tab === 'directory'
         ? 'Directory'
-        : tab === 'product-directory'
-          ? 'Product Directory'
-          : tab === 'pricing'
-            ? 'Pricing'
-            : tab === 'blog'
-              ? 'Blog'
-              : tab === 'saas-ideas'
-                ? 'SaaS Ideas'
-                : 'SaaS MRR Calculator';
+        : tab === 'categories'
+          ? 'Categories'
+          : tab === 'product-directory'
+            ? 'Product Directory'
+            : tab === 'pricing'
+              ? 'Pricing'
+              : tab === 'blog'
+                ? 'Blog'
+                : tab === 'saas-ideas'
+                  ? 'SaaS Ideas'
+                  : 'SaaS MRR Calculator';
     if (tab === 'blog') {
       setBlogSlug(null);
       setCurrentRoute('blog');
@@ -2982,9 +3080,9 @@ export default function App() {
   // rows, ordered by admin custom order (and allowed alongside Featured).
   const activeRailSponsors = sponsorRailsEnabled
     ? sortSponsorsByOrder(
-        sponsors.filter((s) => isLiveSponsor(s)),
-        sponsorOrderIds
-      ).map(sponsorToDisplayProduct)
+      sponsors.filter((s) => isLiveSponsor(s)),
+      sponsorOrderIds
+    ).map(sponsorToDisplayProduct)
     : [];
 
   // Dedicated sponsor for first side rail: CVArchitect.app
@@ -3237,18 +3335,7 @@ export default function App() {
       return (
         <>
           {globalHeader}
-          <div className="min-h-screen bg-white text-neutral-900 font-sans">
-            <div className="mx-auto w-full max-w-4xl px-4 py-8 space-y-6">
-              <div className="flex items-center gap-4">
-                <div className="h-16 w-16 rounded-full bg-neutral-200 animate-pulse" />
-                <div className="space-y-2">
-                  <div className="h-5 w-40 rounded bg-neutral-200 animate-pulse" />
-                  <div className="h-3 w-56 rounded bg-neutral-200 animate-pulse" />
-                </div>
-              </div>
-              <SkeletonRows count={3} />
-            </div>
-          </div>
+          <SkeletonProfile />
           {globalModals}
         </>
       );
@@ -3261,7 +3348,7 @@ export default function App() {
     return (
       <>
         {globalHeader}
-        <React.Suspense fallback={<div className="mx-auto w-full max-w-4xl px-4 py-8"><SkeletonRows count={3} /></div>}>
+        <React.Suspense fallback={<SkeletonProfile />}>
           <ProfilePage
             user={user}
             allProducts={products}
@@ -3346,18 +3433,18 @@ export default function App() {
 
     const productRoundWeek = rawProduct
       ? ((selectedWeek && isProductInLaunchRound(rawProduct, selectedWeek))
-          ? selectedWeek
-          : (rawProduct.scheduledLaunchWeek != null
-              ? getWeekByNumber(Number(rawProduct.scheduledLaunchWeek))
-              : (isInWeek(rawProduct.createdAt, getWeekInfo(Date.now()))
-                  ? getWeekInfo(Date.now())
-                  : getWeekInfo(rawProduct.createdAt))))
+        ? selectedWeek
+        : (rawProduct.scheduledLaunchWeek != null
+          ? getWeekByNumber(Number(rawProduct.scheduledLaunchWeek))
+          : (isInWeek(rawProduct.createdAt, getWeekInfo(Date.now()))
+            ? getWeekInfo(Date.now())
+            : getWeekInfo(rawProduct.createdAt))))
       : null;
 
     const roundScopedProducts = productRoundWeek
       ? directoryProducts
-          .filter((p) => isProductInLaunchRound(p, productRoundWeek))
-          .sort(compareProductsForWeek(productRoundWeek))
+        .filter((p) => isProductInLaunchRound(p, productRoundWeek))
+        .sort(compareProductsForWeek(productRoundWeek))
       : sortedByRankProducts;
 
     const rankIndex = rawProduct
@@ -3370,10 +3457,11 @@ export default function App() {
     if (!product) {
       if (!productsLoaded) {
         return (
-          <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between font-sans">
+          <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between font-sans xl:h-screen xl:overflow-hidden pb-0 no-scrollbar">
             {globalHeader}
-            <main className="flex-1 max-w-7xl 2xl:max-w-[1600px] w-full mx-auto px-4 sm:px-6 pt-2 pb-6">
+            <main className="mx-auto w-full max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 flex-1 pt-1 sm:pt-2 pb-6 xl:min-h-0 xl:h-[calc(100vh-4.25rem)] xl:overflow-hidden xl:pb-0 no-scrollbar">
               <HeroSponsorRails
+                fixedRails
                 enabled={sponsorRailsEnabled}
                 sponsors={activeRailSponsors}
                 lastWeeksTop3={topThreeLastWeek}
@@ -3396,10 +3484,11 @@ export default function App() {
         );
       }
       return (
-        <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between font-sans">
+        <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between font-sans xl:h-screen xl:overflow-hidden pb-0 no-scrollbar">
           {globalHeader}
-          <main className="flex-1 max-w-7xl 2xl:max-w-[1600px] w-full mx-auto px-4 sm:px-6 pt-2 pb-6">
+          <main className="mx-auto w-full max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 flex-1 pt-1 sm:pt-2 pb-6 xl:min-h-0 xl:h-[calc(100vh-4.25rem)] xl:overflow-hidden xl:pb-0 no-scrollbar">
             <HeroSponsorRails
+              fixedRails
               enabled={sponsorRailsEnabled}
               sponsors={activeRailSponsors}
               lastWeeksTop3={topThreeLastWeek}
@@ -3462,10 +3551,11 @@ export default function App() {
     const canViewAnalytics = Boolean(isAdmin || (isProductOwner && isThisProductPaid));
 
     return (
-      <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between font-sans">
+      <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between font-sans xl:h-screen xl:overflow-hidden pb-0 no-scrollbar">
         {globalHeader}
-        <main className="flex-1 max-w-7xl 2xl:max-w-[1600px] w-full mx-auto px-4 sm:px-6 pt-2 pb-6">
+        <main className="mx-auto w-full max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 flex-1 pt-1 sm:pt-2 pb-6 xl:min-h-0 xl:h-[calc(100vh-4.25rem)] xl:overflow-hidden xl:pb-0 no-scrollbar">
           <HeroSponsorRails
+            fixedRails
             enabled={sponsorRailsEnabled}
             sponsors={activeRailSponsors}
             lastWeeksTop3={topThreeLastWeek}
@@ -3483,6 +3573,18 @@ export default function App() {
                 setIsFeaturedSpotModalOpen(true);
               }
             }}
+            onOpenSubmit={handleOpenSubmit}
+            onSeeListing={() => {
+              if (topThreeLastWeek && topThreeLastWeek.length > 0) {
+                handleOpenProduct(topThreeLastWeek[0]);
+              }
+            }}
+            onNavigateToBlog={() => {
+              setCurrentRoute('/blog');
+              try { window.history.pushState('', document.title, '/blog'); } catch { }
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onOpenPricing={handleOpenPricing}
             footer={
               <RichFooter
                 totalProducts={directoryProducts.length}
@@ -3556,6 +3658,66 @@ export default function App() {
       </div>
     );
   }
+
+  // Shared directory side-rail chrome (fixed left & right rails + scrollable center) used throughout the app
+  const renderDirectoryRailsChrome = (page: React.ReactNode, fallback?: React.ReactNode) => (
+    <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between selection:bg-mint-500/20 selection:text-neutral-900 font-sans xl:h-screen xl:overflow-hidden pb-0 no-scrollbar">
+      {globalHeader}
+      <main className="mx-auto w-full max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 flex-1 pt-1 sm:pt-2 xl:min-h-0 xl:h-[calc(100vh-4.25rem)] xl:overflow-hidden pb-0 no-scrollbar">
+        <HeroSponsorRails
+          fixedRails
+          enabled={sponsorRailsEnabled}
+          sponsors={activeRailSponsors}
+          lastWeeksTop3={topThreeLastWeek}
+          lastWeekLabel={lastWeekInfo?.label}
+          onNavigateToDirectory={() => handleTabChange('product-directory')}
+          soundEnabled={soundEnabled}
+          isLoading={!productsLoaded}
+          onTrackClick={handleTrackClick}
+          onOpenProduct={handleOpenProduct}
+          onOpenFeaturedSpotModal={() => {
+            setFeaturedModalMode('sponsor');
+            if (!user) {
+              setIsSignInModalOpen(true);
+            } else {
+              setIsFeaturedSpotModalOpen(true);
+            }
+          }}
+          onOpenSubmit={handleOpenSubmit}
+          onSeeListing={() => {
+            if (topThreeLastWeek && topThreeLastWeek.length > 0) {
+              handleOpenProduct(topThreeLastWeek[0]);
+            } else {
+              handleTabChange('directory');
+            }
+          }}
+          onNavigateToBlog={() => {
+            setCurrentRoute('/blog');
+            try { window.history.pushState('', document.title, '/blog'); } catch { }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          onOpenPricing={handleOpenPricing}
+          footer={
+            <RichFooter
+              totalProducts={directoryProducts.length}
+              soundEnabled={soundEnabled}
+              onOpenSubmit={handleOpenSubmit}
+              onSelectCategory={setSelectedCategory}
+              onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
+              onOpenPrivacy={() => handleNavigateLegal('privacy')}
+              onOpenTerms={() => handleNavigateLegal('terms')}
+              onOpenPricing={handleOpenPricing}
+            />
+          }
+        >
+          <React.Suspense fallback={fallback ?? <SkeletonDirectoryList />}>
+            {page}
+          </React.Suspense>
+        </HeroSponsorRails>
+      </main>
+      {globalModals}
+    </div>
+  );
 
   // Shared persistent 3-column Ideas & Repo chrome for /repo/:id, /trending, /guides, /guides/:slug
   const renderRepoChrome = (content: React.ReactNode) => (
@@ -3682,35 +3844,34 @@ export default function App() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    return renderRepoChrome(
-      <React.Suspense fallback={<SkeletonRepoDetail />}>
-              <RepoDetailPage
-                key={repoId}
-                repoId={repoId}
-                soundEnabled={soundEnabled}
-                onBack={backToSaaSIdeas}
-                onSelectRepo={handleOpenRepo}
-                allProducts={sortedByRankProducts.map((p, idx) => ({ ...markOwnership(p), rank: idx + 1 }))}
-                sponsors={sortSponsorsByOrder(
-                  sponsors.filter((s) => isLiveSponsor(s)),
-                  sponsorOrderIds
-                ).map(sponsorToDisplayProduct)}
-                onSelectProduct={handleOpenProduct}
-                onTrackClick={handleTrackClick}
-                onOpenFeaturedSpotModal={() => {
-                  setFeaturedModalMode('sponsor');
-                  setIsFeaturedSpotModalOpen(true);
-                }}
-                onOpenFeatured={() => {
-                  setFeaturedModalMode('featured');
-                  if (!user) {
-                    setIsSignInModalOpen(true);
-                  } else {
-                    setIsFeaturedSpotModalOpen(true);
-                  }
-                }}
-              />
-            </React.Suspense>
+    return renderDirectoryRailsChrome(
+      <RepoDetailPage
+        key={repoId}
+        repoId={repoId}
+        soundEnabled={soundEnabled}
+        onBack={backToSaaSIdeas}
+        onSelectRepo={handleOpenRepo}
+        allProducts={sortedByRankProducts.map((p, idx) => ({ ...markOwnership(p), rank: idx + 1 }))}
+        sponsors={sortSponsorsByOrder(
+          sponsors.filter((s) => isLiveSponsor(s)),
+          sponsorOrderIds
+        ).map(sponsorToDisplayProduct)}
+        onSelectProduct={handleOpenProduct}
+        onTrackClick={handleTrackClick}
+        onOpenFeaturedSpotModal={() => {
+          setFeaturedModalMode('sponsor');
+          setIsFeaturedSpotModalOpen(true);
+        }}
+        onOpenFeatured={() => {
+          setFeaturedModalMode('featured');
+          if (!user) {
+            setIsSignInModalOpen(true);
+          } else {
+            setIsFeaturedSpotModalOpen(true);
+          }
+        }}
+      />,
+      <SkeletonRepoDetail />
     );
   }
 
@@ -3935,48 +4096,82 @@ export default function App() {
     </div>
   );
 
-  // 1.7 TRENDING ROUTE (/trending) — rendered inside persistent 3-col Ideas layout
+  // 1.7 TRENDING ROUTE (/trending)
   if (currentRoute === 'trending') {
-    return renderRepoChrome(<TrendingPage soundEnabled={soundEnabled} onOpenRepo={handleOpenRepo} />);
+    return renderDirectoryRailsChrome(
+      <TrendingPage soundEnabled={soundEnabled} onOpenRepo={handleOpenRepo} />,
+      <SkeletonDirectoryList />
+    );
   }
 
-  // 1.8 BUILD GUIDES LIST ROUTE (/guides) — rendered inside persistent 3-col Ideas layout
+  // 1.8 BUILD GUIDES LIST ROUTE (/guides)
   if (currentRoute === 'guides') {
-    return renderRepoChrome(<GuidesListPage soundEnabled={soundEnabled} />);
+    return renderDirectoryRailsChrome(
+      <GuidesListPage soundEnabled={soundEnabled} />,
+      <SkeletonDirectoryList />
+    );
   }
 
-  // 1.9 BUILD GUIDE DETAIL ROUTE (/guides/:slug) — rendered inside persistent 3-col Ideas layout
+  // 1.9 BUILD GUIDE DETAIL ROUTE (/guides/:slug)
   if (currentRoute === 'guide') {
-    return renderRepoChrome(
-      <GuideDetailPage slug={guideSlug} soundEnabled={soundEnabled} onOpenRepo={handleOpenRepo} />
+    return renderDirectoryRailsChrome(
+      <GuideDetailPage slug={guideSlug} soundEnabled={soundEnabled} onOpenRepo={handleOpenRepo} />,
+      <SkeletonArticleDetail />
     );
   }
 
   // 1.9.1 PRODUCT DIRECTORY ROUTE (/product-directory and filter hubs)
   if (currentRoute === '/product-directory') {
-    return routeChrome(
+    return renderDirectoryRailsChrome(
       <DirectoriesListPage
         soundEnabled={soundEnabled}
         onOpenSubmit={handleOpenSubmit}
         hubSlug={directoryHubSlug}
-      />
+      />,
+      <SkeletonDirectoryList />
+    );
+  }
+
+  // 1.9.15 CATEGORIES DIRECTORY ROUTE (/categories)
+  if (currentRoute === '/categories') {
+    return renderDirectoryRailsChrome(
+      <CategoriesPage
+        products={directoryProducts}
+        soundEnabled={soundEnabled}
+        onSelectCategory={(cat) => {
+          setSelectedCategory(cat);
+          setCurrentRoute('/');
+          try { window.history.pushState({}, document.title, `/?category=${encodeURIComponent(cat)}`); } catch { }
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        onSelectIdeaCategory={(ideaCat) => {
+          setCurrentRoute('/ideas');
+          try { window.history.pushState({}, document.title, `/ideas?category=${encodeURIComponent(ideaCat)}`); } catch { }
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+      />,
+      <SkeletonCategories />
     );
   }
 
   // 1.9.2 PRODUCT DIRECTORY DETAIL ROUTE (/product-directory/:slug)
   if (currentRoute === '/product-directory-detail') {
-    return routeChrome(
+    return renderDirectoryRailsChrome(
       <DirectoryDetailPage
         slug={directorySlug}
         soundEnabled={soundEnabled}
         onOpenSubmit={handleOpenSubmit}
-      />
+      />,
+      <SkeletonArticleDetail />
     );
   }
 
   // 1.10 SAAS MRR CALCULATOR ROUTE (/mrr-calculator)
   if (currentRoute === '/mrr-calculator') {
-    return routeChrome(<MrrCalculatorPage soundEnabled={soundEnabled} />);
+    return renderDirectoryRailsChrome(
+      <MrrCalculatorPage soundEnabled={soundEnabled} />,
+      <SkeletonMrrCalculator />
+    );
   }
 
   // 1.105 OPEN SOURCE TEARDOWN ROUTE (/opensource/:slug)
@@ -3989,89 +4184,74 @@ export default function App() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    return routeChrome(
+    return renderDirectoryRailsChrome(
       <OpenSourceBentoPdfPage
         soundEnabled={soundEnabled}
         onBack={backToSaaSIdeas}
         onSelectProduct={handleOpenProduct}
-      />
+      />,
+      <SkeletonArticleDetail />
     );
   }
 
   // 1.11 BLOG LIST ROUTE (/blog)
   if (currentRoute === 'blog' || currentRoute === '/blog') {
-    return routeChrome(<BlogListPage soundEnabled={soundEnabled} />);
+    return renderDirectoryRailsChrome(
+      <BlogListPage soundEnabled={soundEnabled} />,
+      <SkeletonBlogList />
+    );
   }
 
   // 1.12 BLOG DETAIL ROUTE (/blog/:slug)
   if (currentRoute === 'blog-post' || currentRoute === '/blog-post') {
-    return routeChrome(<BlogDetailPage slug={blogSlug} soundEnabled={soundEnabled} />);
+    return renderDirectoryRailsChrome(
+      <BlogDetailPage slug={blogSlug} soundEnabled={soundEnabled} />,
+      <SkeletonArticleDetail />
+    );
   }
 
   // 2. MAIN DIRECTORY HOMEPAGE ROUTE
   return (
-    <div className={`min-h-screen bg-white text-neutral-900 flex flex-col justify-between selection:bg-mint-500/20 selection:text-neutral-900 font-sans ${activeTab === 'saas-ideas' ? 'xl:h-screen xl:overflow-hidden pb-0 no-scrollbar' : 'pb-16 lg:pb-0'}`}>
+    <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between selection:bg-mint-500/20 selection:text-neutral-900 font-sans xl:h-screen xl:overflow-hidden pb-16 lg:pb-0 xl:pb-0 no-scrollbar">
       {globalHeader}
       {/* Main Content Area */}
-      <main className={`mx-auto w-full max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 flex-1 ${activeTab === 'saas-ideas' ? 'pt-1 sm:pt-2 xl:min-h-0 xl:h-[calc(100vh-4.25rem)] xl:overflow-hidden pb-0 no-scrollbar' : 'pt-1 sm:pt-2 pb-16'}`}>
+      <main className="mx-auto w-full max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 flex-1 pt-1 sm:pt-2 pb-16 xl:min-h-0 xl:h-[calc(100vh-4.25rem)] xl:overflow-hidden xl:pb-0 no-scrollbar">
 
         {activeTab === 'saas-ideas' ? (
-          <div className="flex flex-row items-start gap-4 xl:gap-6 xl:h-full xl:min-h-0 no-scrollbar">
-
-            {/* ── Left Side Rail (Desktop xl+) ── */}
-            <aside className="hidden xl:flex flex-col w-[280px] 2xl:w-[320px] shrink-0 xl:h-full xl:overflow-hidden no-scrollbar py-0.5" aria-label="Sponsor rail">
-              <div className="w-full h-full rounded-2xl xl:rounded-3xl border border-neutral-200/90 bg-white p-2.5 xl:p-3 shadow-xs flex flex-col justify-between overflow-hidden">
-                {/* Header: ─── SPONSORED ─── */}
-                <div className="relative flex items-center justify-center my-0.5 shrink-0">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-neutral-200" />
-                  </div>
-                  <span className="relative bg-white px-2.5 py-0.5 rounded-full border border-neutral-300 text-[10px] font-bold text-neutral-500 uppercase tracking-wider select-none">
-                    SPONSORED
-                  </span>
-                </div>
-
-                {/* 5 Cards fitting evenly into viewport without scrolling */}
-                <div className="flex flex-col justify-between flex-1 gap-1.5 xl:gap-2 my-1 overflow-hidden min-h-0">
-                  {IDEAS_SPONSOR_SLOTS.slice(0, 5).map((slot, index) => (
-                    <IdeasSponsorCard
-                      key={slot.id}
-                      slot={slot}
-                      product={ideasSponsors[index]}
-                      soundEnabled={soundEnabled}
-                      onTrackClick={handleTrackClick}
-                      onOpenProduct={handleOpenProduct}
-                      onOpenFeaturedSpotModal={() => {
-                        setIsSaaSIdeasSponsorModalOpen(true);
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-            </aside>
-
-            {/* ── Center Column: SaaSIdeas + RichFooter ── */}
-            <div className="flex-1 min-w-0 max-w-full flex flex-col gap-6 pb-16 xl:pb-6 xl:h-full xl:min-h-0 xl:overflow-y-auto no-scrollbar">
-              <React.Suspense fallback={<SkeletonSaaSIdeas />}>
-                <SaaSIdeas
-                  soundEnabled={soundEnabled}
-                  sponsors={ideasSponsors}
-                  topProducts={topThreeProducts}
-                  productsLoaded={productsLoaded}
-                  featuredProductId={saasIdeasFeaturedProductId}
-                  featuredProduct={saasIdeasFeaturedProduct}
-                  commentCounts={commentCounts}
-                  onOpenFeaturedSpotModal={() => {
-                    setIsSaaSIdeasSponsorModalOpen(true);
-                  }}
-                  onShareProduct={handleOpenShare}
-                  onTrackClick={handleTrackClick}
-                  onUpvote={handleUpvote}
-                  onOpenDetail={handleOpenProduct}
-                  onOpenRepo={handleOpenRepo}
-                  upvotedIds={userUpvotes}
-                />
-              </React.Suspense>
+          <HeroSponsorRails
+            fixedRails
+            enabled={sponsorRailsEnabled}
+            sponsors={activeRailSponsors}
+            lastWeeksTop3={topThreeLastWeek}
+            lastWeekLabel={lastWeekInfo?.label}
+            onNavigateToDirectory={() => handleTabChange('product-directory')}
+            soundEnabled={soundEnabled}
+            isLoading={!productsLoaded}
+            onTrackClick={handleTrackClick}
+            onOpenProduct={handleOpenProduct}
+            onOpenFeaturedSpotModal={() => {
+              setFeaturedModalMode('sponsor');
+              if (!user) {
+                setIsSignInModalOpen(true);
+              } else {
+                setIsFeaturedSpotModalOpen(true);
+              }
+            }}
+            onOpenSubmit={handleOpenSubmit}
+            onSeeListing={() => {
+              if (topThreeLastWeek && topThreeLastWeek.length > 0) {
+                handleOpenProduct(topThreeLastWeek[0]);
+              } else {
+                handleTabChange('directory');
+              }
+            }}
+            onNavigateToBlog={() => {
+              setCurrentRoute('/blog');
+              try { window.history.pushState('', document.title, '/blog'); } catch { }
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onOpenPricing={handleOpenPricing}
+            footer={
               <RichFooter
                 totalProducts={directoryProducts.length}
                 soundEnabled={soundEnabled}
@@ -4090,43 +4270,39 @@ export default function App() {
                 }}
                 onOpenPricing={handleOpenPricing}
               />
-            </div>
-
-            {/* ── Right Side Rail (Desktop xl+) ── */}
-            <aside className="hidden xl:flex flex-col w-[280px] 2xl:w-[320px] shrink-0 xl:h-full xl:overflow-y-auto no-scrollbar py-0.5" aria-label="Top picks side rail">
-              <div className="w-full rounded-3xl border border-neutral-200/90 bg-white p-3 2xl:p-3.5 shadow-xs space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-neutral-100 px-1">
-                  <div className="flex items-center gap-1.5">
-                    <span className="flex h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
-                    <h3 className="text-xs font-bold text-neutral-900">Top Pick For You</h3>
-                  </div>
-                  <span className="text-[10px] font-medium text-neutral-400">Curated ideas</span>
-                </div>
-                <div className="space-y-3">
-                  {FEATURED_SIDEBAR_OPPORTUNITIES.map((opp) => (
-                    <SaaSOpportunityCard
-                      key={opp.id}
-                      opportunity={opp}
-                      soundEnabled={soundEnabled}
-                      onOpenRepo={(fullName) => {
-                        handleOpenRepoByFullName(fullName);
-                      }}
-                    />
-                  ))}
-                </div>
-                <div className="pt-2 border-t border-neutral-100">
-                  <p className="text-[10.5px] text-neutral-500 leading-relaxed text-center font-medium">
-                    ⚡ Fork proven codebases to ship 4x faster without building auth &amp; plumbing from scratch.
-                  </p>
-                </div>
-              </div>
-            </aside>
-
-          </div>
+            }
+          >
+            <React.Suspense fallback={<SkeletonSaaSIdeas />}>
+              <SaaSIdeas
+                soundEnabled={soundEnabled}
+                sponsors={activeRailSponsors}
+                topProducts={topThreeProducts}
+                productsLoaded={productsLoaded}
+                featuredProductId={saasIdeasFeaturedProductId}
+                featuredProduct={saasIdeasFeaturedProduct}
+                commentCounts={commentCounts}
+                onOpenFeaturedSpotModal={() => {
+                  setFeaturedModalMode('sponsor');
+                  if (!user) {
+                    setIsSignInModalOpen(true);
+                  } else {
+                    setIsFeaturedSpotModalOpen(true);
+                  }
+                }}
+                onShareProduct={handleOpenShare}
+                onTrackClick={handleTrackClick}
+                onUpvote={handleUpvote}
+                onOpenDetail={handleOpenProduct}
+                onOpenRepo={handleOpenRepo}
+                upvotedIds={userUpvotes}
+              />
+            </React.Suspense>
+          </HeroSponsorRails>
         ) : (
           <>
             {/* ── Hero: brand statement + search ── */}
             <HeroSponsorRails
+              fixedRails
               enabled={sponsorRailsEnabled}
               sponsors={activeRailSponsors}
               lastWeeksTop3={topThreeLastWeek}
@@ -4143,6 +4319,25 @@ export default function App() {
                 } else {
                   setIsFeaturedSpotModalOpen(true);
                 }
+              }}
+              onOpenSubmit={handleOpenSubmit}
+              onSeeListing={() => {
+                if (topThreeLastWeek && topThreeLastWeek.length > 0) {
+                  handleOpenProduct(topThreeLastWeek[0]);
+                } else {
+                  const el = document.getElementById('leaderboard-section');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }
+              }}
+              onNavigateToBlog={() => {
+                setCurrentRoute('/blog');
+                try { window.history.pushState('', document.title, '/blog'); } catch { }
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              onOpenPricing={() => {
+                setCurrentRoute('/pricing');
+                try { window.history.pushState('', document.title, '/pricing'); } catch { }
+                window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
               footer={
                 <RichFooter
@@ -4569,8 +4764,8 @@ export default function App() {
                                   ? selectedWeek?.isCurrent
                                     ? 'amber'
                                     : selectedWeek
-                                    ? 'blue'
-                                    : 'none'
+                                      ? 'blue'
+                                      : 'none'
                                   : 'none'
                               }
                               soundEnabled={soundEnabled}

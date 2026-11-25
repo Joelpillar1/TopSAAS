@@ -3,7 +3,7 @@ import { Trophy, Menu, X, User as UserIcon, Zap, TrendingUp, BookOpen, Plus, New
 import { User } from '@supabase/supabase-js';
 import { navigateTo } from '../utils/nav';
 
-export type DirectoryTab = 'directory' | 'product-directory' | 'saas-ideas' | 'mrr-calculator' | 'pricing' | 'blog';
+export type DirectoryTab = 'directory' | 'categories' | 'product-directory' | 'saas-ideas' | 'mrr-calculator' | 'pricing' | 'blog';
 
 interface HeaderProps {
   onGoHome?: () => void;
@@ -24,6 +24,7 @@ interface TabSwitcherProps {
 // Top-level sections in the top bar with real URLs for copyable links & SEO
 const TABS: { key: DirectoryTab; label: string; href: string }[] = [
   { key: 'directory', label: 'Directory', href: '/' },
+  { key: 'categories', label: 'Categories', href: '/categories' },
   { key: 'saas-ideas', label: 'SaaS Ideas', href: '/ideas' },
   { key: 'mrr-calculator', label: 'MRR Calculator', href: '/mrr-calculator' },
   { key: 'blog', label: 'Blog', href: '/blog' },

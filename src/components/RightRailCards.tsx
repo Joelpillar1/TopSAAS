@@ -1,8 +1,15 @@
 import React from 'react';
-import { Trophy, Flame, ArrowRight, ArrowUpRight, Sparkles } from 'lucide-react';
+import {
+  Trophy,
+  Flame,
+  ArrowRight,
+  Sparkles,
+  Check,
+} from 'lucide-react';
 import { Product } from '../types';
 import { playSound } from '../utils/sound';
 import { RankMedal } from './RankMedal';
+import { VerifiedBadge } from './VerifiedBadge';
 
 export interface LastWeekTopThreeCardProps {
   products: Product[];
@@ -219,6 +226,100 @@ export const DirectoryPromoRailCard: React.FC<DirectoryPromoRailCardProps> = ({
         <span>Explore Backlink Directory</span>
         <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
       </div>
+    </div>
+  );
+};
+
+export interface LaunchProductRailCardProps {
+  soundEnabled: boolean;
+  onOpenSubmit?: () => void;
+  onOpenPricing?: () => void;
+}
+
+/**
+ * LaunchProductRailCard
+ * --------------------
+ * Sidebar card informing founders of what they receive as a premium verified user:
+ * - 24h express approval, permanent dofollow backlink, verified badge,
+ * - category top-3 placement, dedicated blog review, and AI search indexing.
+ */
+export const LaunchProductRailCard: React.FC<LaunchProductRailCardProps> = ({
+  soundEnabled,
+  onOpenSubmit,
+}) => {
+  return (
+    <div className="w-full rounded-2xl xl:rounded-3xl border border-neutral-200/90 bg-white p-3.5 xl:p-4 text-left shadow-2xs hover:shadow-xs transition-shadow select-none">
+      {/* ── Header ── */}
+      <div className="flex items-center gap-1.5 pb-2 border-b border-neutral-100">
+        <h3 className="text-xs xl:text-[13px] font-black tracking-tight text-neutral-900 truncate">
+          Launch your product
+        </h3>
+        <VerifiedBadge className="h-3.5 w-3.5 shrink-0" />
+      </div>
+
+      {/* ── Subtitle informing what premium unlocks ── */}
+      <p className="text-[11px] xl:text-[11.5px] text-neutral-500 leading-snug mt-2">
+        What you get when you launch as a verified premium product:
+      </p>
+
+      {/* ── Checklist: What users get with Premium ── */}
+      <ul className="mt-2.5 space-y-2 text-[11px] xl:text-[11.5px] text-neutral-700 font-medium">
+        <li className="flex items-start gap-2">
+          <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0 mt-0.5">
+            <Check className="h-2.5 w-2.5 stroke-[3]" />
+          </div>
+          <span><strong>Live within 24 hours</strong> (skip 14-day queue)</span>
+        </li>
+        <li className="flex items-start gap-2">
+          <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0 mt-0.5">
+            <Check className="h-2.5 w-2.5 stroke-[3]" />
+          </div>
+          <span><strong>Permanent DoFollow backlink</strong> for SEO</span>
+        </li>
+        <li className="flex items-start gap-2">
+          <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0 mt-0.5">
+            <Check className="h-2.5 w-2.5 stroke-[3]" />
+          </div>
+          <span><strong>Official Verified Badge</strong> on card & profile</span>
+        </li>
+        <li className="flex items-start gap-2">
+          <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0 mt-0.5">
+            <Check className="h-2.5 w-2.5 stroke-[3]" />
+          </div>
+          <span><strong>Pinned Top 3</strong> in primary category (7 Days)</span>
+        </li>
+        <li className="flex items-start gap-2">
+          <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0 mt-0.5">
+            <Check className="h-2.5 w-2.5 stroke-[3]" />
+          </div>
+          <span><strong>Dedicated review story</strong> published on /blog</span>
+        </li>
+        <li className="flex items-start gap-2">
+          <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0 mt-0.5">
+            <Check className="h-2.5 w-2.5 stroke-[3]" />
+          </div>
+          <span>Indexed in <strong>/llms.txt</strong> for AI search</span>
+        </li>
+        <li className="flex items-start gap-2">
+          <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0 mt-0.5">
+            <Check className="h-2.5 w-2.5 stroke-[3]" />
+          </div>
+          <span>Lifetime listing — <strong>zero recurring fees</strong></span>
+        </li>
+      </ul>
+
+      {/* ── App Theme Tactile Button ── */}
+      <button
+        type="button"
+        onClick={() => {
+          playSound('click', soundEnabled);
+          onOpenSubmit?.();
+        }}
+        className="btn-primary w-full mt-3.5 py-2.5 px-4 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+      >
+        <span>Launch Now</span>
+        <ArrowRight className="h-3.5 w-3.5" />
+      </button>
     </div>
   );
 };

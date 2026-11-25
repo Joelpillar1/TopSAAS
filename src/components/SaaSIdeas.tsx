@@ -100,8 +100,53 @@ export const SaaSIdeas: React.FC<SaaSIdeasProps> = ({
   onOpenRepo,
   upvotedIds: _upvotedIds,
 }) => {
-  const [selectedCategory, setSelectedCategory] = useState<RepoCategory>('All');
+  const [selectedCategory, setSelectedCategory] = useState<RepoCategory>(() => {
+    try {
+      const cat = new URLSearchParams(window.location.search).get('category') as RepoCategory | null;
+      return cat && CATEGORIES.includes(cat) ? cat : 'All';
+    } catch {
+      return 'All';
+    }
+  });
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Sync category from ?category= on popstate or mount and scroll to the repo list if a category was chosen
+  useEffect(() => {
+    const syncFromUrl = () => {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const cat = params.get('category') as RepoCategory | null;
+        if (cat && CATEGORIES.includes(cat)) {
+          setSelectedCategory(cat);
+          setCurrentPage(1);
+          setTimeout(() => {
+            const target = document.getElementById('repos-directory-section');
+            if (target) {
+              target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          }, 120);
+        } else if (!cat) {
+          setSelectedCategory('All');
+        }
+      } catch { }
+    };
+
+    // Scroll on initial mount if ?category= was provided
+    try {
+      const initialCat = new URLSearchParams(window.location.search).get('category') as RepoCategory | null;
+      if (initialCat && CATEGORIES.includes(initialCat)) {
+        setTimeout(() => {
+          const target = document.getElementById('repos-directory-section');
+          if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 120);
+      }
+    } catch { }
+
+    window.addEventListener('popstate', syncFromUrl);
+    return () => window.removeEventListener('popstate', syncFromUrl);
+  }, []);
 
   // Seed the search from ?q= deep links (the SearchAction target in the
   // homepage JSON-LD), so engine site-search results land pre-filtered.
@@ -215,23 +260,6 @@ export const SaaSIdeas: React.FC<SaaSIdeasProps> = ({
 
   return (
     <div className="relative w-full font-sans space-y-6">
-      {/* Mobile Floating Sticky Sponsor under Top Nav when scrolled down */}
-      {isStickySponsorVisible && (
-        <div className="fixed top-[62px] left-3.5 right-3.5 sm:left-6 sm:right-6 z-30 xl:hidden pointer-events-none flex justify-center animate-fadeIn">
-          <div className="pointer-events-auto w-full max-w-xl">
-            <SaaSIdeasMobileSponsor
-              slots={IDEAS_SPONSOR_SLOTS.slice(0, 5)}
-              sponsors={sponsors}
-              soundEnabled={soundEnabled}
-              onTrackClick={onTrackClick}
-              onOpenProduct={onOpenDetail}
-              onOpenFeaturedSpotModal={onOpenFeaturedSpotModal}
-              isFloating
-            />
-          </div>
-        </div>
-      )}
-
       {/* Hero: brand statement + search */}
       <section className="relative overflow-hidden px-1 pt-6 sm:pt-10" aria-label="Find the best SaaS idea">
             <GridPattern
