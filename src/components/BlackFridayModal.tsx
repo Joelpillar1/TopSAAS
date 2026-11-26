@@ -11,9 +11,15 @@ interface BlackFridayModalProps {
 }
 
 // Target end of Cyber Monday (Nov 30, 2026 23:59:59 UTC)
-const SALE_END_TIMESTAMP = Date.UTC(2026, 10, 30, 23, 59, 59);
+export const SALE_END_TIMESTAMP = Date.UTC(2026, 10, 30, 23, 59, 59);
 
-function getRemainingTime(targetMs: number) {
+export function getOfferDeadline(): number {
+  return SALE_END_TIMESTAMP > Date.now()
+    ? SALE_END_TIMESTAMP
+    : Date.now() + 48 * 60 * 60 * 1000;
+}
+
+export function getRemainingTime(targetMs: number) {
   const diff = Math.max(0, targetMs - Date.now());
   const totalSeconds = Math.floor(diff / 1000);
   const hours = Math.floor(totalSeconds / 3600);
@@ -33,11 +39,7 @@ export const BlackFridayModal: React.FC<BlackFridayModalProps> = ({
   onSeePricing,
   soundEnabled,
 }) => {
-  const [targetMs] = useState<number>(() =>
-    SALE_END_TIMESTAMP > Date.now()
-      ? SALE_END_TIMESTAMP
-      : Date.now() + 48 * 60 * 60 * 1000
-  );
+  const [targetMs] = useState<number>(() => getOfferDeadline());
   const [timeLeft, setTimeLeft] = useState(() => getRemainingTime(targetMs));
 
   useEffect(() => {

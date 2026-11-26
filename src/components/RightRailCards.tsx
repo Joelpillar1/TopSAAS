@@ -11,6 +11,7 @@ import { playSound } from '../utils/sound';
 import { RankMedal } from './RankMedal';
 import { VerifiedBadge } from './VerifiedBadge';
 import { BorderBeam } from './BorderBeam';
+import { getOfferDeadline, getRemainingTime } from './BlackFridayModal';
 
 export interface LastWeekTopThreeCardProps {
   products: Product[];
@@ -244,53 +245,26 @@ export interface LaunchProductRailCardProps {
  * - 24h express approval, permanent dofollow backlink, verified badge,
  * - category top-3 placement, dedicated blog review, and AI search indexing.
  */
-const OFFER_DEADLINE_KEY = 'topsaas_bf_offer_deadline_v1';
-const OFFER_DURATION_MS = 72 * 60 * 60 * 1000;
-
-function getOrCreateOfferDeadline(): number {
-  if (typeof window === 'undefined') return Date.now() + OFFER_DURATION_MS;
-  try {
-    const raw = localStorage.getItem(OFFER_DEADLINE_KEY);
-    const parsed = raw ? Number(raw) : 0;
-    if (Number.isFinite(parsed) && parsed > Date.now()) {
-      return parsed;
-    }
-    const next = Date.now() + OFFER_DURATION_MS;
-    localStorage.setItem(OFFER_DEADLINE_KEY, String(next));
-    return next;
-  } catch {
-    return Date.now() + OFFER_DURATION_MS;
-  }
-}
-
-function formatOfferCountdown(deadlineMs: number) {
-  const diff = Math.max(0, deadlineMs - Date.now());
-  const totalSeconds = Math.floor(diff / 1000);
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  return {
-    hours: String(hours).padStart(2, '0'),
-    minutes: String(minutes).padStart(2, '0'),
-    seconds: String(seconds).padStart(2, '0'),
-  };
-}
-
 export const LaunchProductRailCard: React.FC<LaunchProductRailCardProps> = ({
   soundEnabled,
   onOpenSubmit,
 }) => {
-  const [deadlineMs, setDeadlineMs] = useState<number>(() => getOrCreateOfferDeadline());
-  const [timeLeft, setTimeLeft] = useState(() => formatOfferCountdown(deadlineMs));
+  const [deadlineMs, setDeadlineMs] = useState<number>(() => {
+    try {
+      localStorage.removeItem('topsaas_bf_offer_deadline_v1');
+    } catch { }
+    return getOfferDeadline();
+  });
+  const [timeLeft, setTimeLeft] = useState(() => getRemainingTime(deadlineMs));
 
   useEffect(() => {
     const timer = setInterval(() => {
       if (Date.now() >= deadlineMs) {
-        const next = getOrCreateOfferDeadline();
+        const next = getOfferDeadline();
         setDeadlineMs(next);
-        setTimeLeft(formatOfferCountdown(next));
+        setTimeLeft(getRemainingTime(next));
       } else {
-        setTimeLeft(formatOfferCountdown(deadlineMs));
+        setTimeLeft(getRemainingTime(deadlineMs));
       }
     }, 1000);
     return () => clearInterval(timer);

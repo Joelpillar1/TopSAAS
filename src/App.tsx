@@ -3202,7 +3202,7 @@ export default function App() {
     } catch { }
     const timer = setTimeout(() => {
       setIsBlackFridayModalOpen(true);
-    }, 800);
+    }, 4000);
     return () => clearTimeout(timer);
   }, []);
 
