@@ -1,30 +1,37 @@
 <!doctype html>
 <html lang="en" class="scroll-smooth">
-  <head>
-    <script>
-      // Runs before first paint: marks the document as JS-capable so the
-      // prerendered body stays hidden while remaining real markup for crawlers.
-      document.documentElement.classList.add('js');
-    </script>
-    <style>html.js #seo-prerender{display:none}</style>
-    <!-- Ahrefs Analytics -->
-    <script src="https://analytics.ahrefs.com/analytics.js" data-key="+Ca3lPgkSAn1oGF3LMR9nQ" async></script>
-    <!-- Trackkit Analytics & Recorder (Vercel) -->
-    <script defer src="https://trackkit-self.vercel.app/script.js" data-website-id="7ff8c98f-73a7-430a-b9b3-cf65fe25df78"></script>
-    <script defer src="https://trackkit-self.vercel.app/recorder.js" data-website-id="7ff8c98f-73a7-430a-b9b3-cf65fe25df78"></script>
-    <!-- Minilytics Analytics -->
-    <script defer data-website-id="5y6c5l0e536b6o6v" src="https://minilytics.trackkit.workers.dev/js/script.js"></script>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-87YKV94BFE"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() { dataLayer.push(arguments); }
-      gtag('js', new Date());
 
-      gtag('config', 'G-87YKV94BFE');
-    </script>
+<head>
   <script>
-        (function () {
+    // Runs before first paint: marks the document as JS-capable so the
+    // prerendered body stays hidden while remaining real markup for crawlers.
+    document.documentElement.classList.add('js');
+  </script>
+  <style>
+    html.js #seo-prerender {
+      display: none
+    }
+  </style>
+  <!-- Ahrefs Analytics -->
+  <script src="https://analytics.ahrefs.com/analytics.js" data-key="+Ca3lPgkSAn1oGF3LMR9nQ" async></script>
+  <!-- Trackkit Analytics & Recorder (Vercel) -->
+  <script defer src="https://trackkit-self.vercel.app/script.js"
+    data-website-id="7ff8c98f-73a7-430a-b9b3-cf65fe25df78"></script>
+  <script defer src="https://trackkit-self.vercel.app/recorder.js"
+    data-website-id="7ff8c98f-73a7-430a-b9b3-cf65fe25df78"></script>
+  <!-- Minilytics Analytics -->
+  <script defer data-website-id="5y6c5l0e536b6o6v" src="https://minilytics.trackkit.workers.dev/js/script.js"></script>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-87YKV94BFE"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+
+    gtag('config', 'G-87YKV94BFE');
+  </script>
+  <script>
+    (function () {
       try {
         var originalFetch = window.fetch;
         var _currentFetch = typeof originalFetch === 'function' ? originalFetch.bind(window) : originalFetch;
@@ -32,27 +39,27 @@
           get: function () {
             return _currentFetch || originalFetch;
           },
-        set: function (fn) {
-          _currentFetch = fn;
+          set: function (fn) {
+            _currentFetch = fn;
           },
-        configurable: true,
-        enumerable: true,
+          configurable: true,
+          enumerable: true,
         });
       } catch (e) {
         try {
           if (typeof Window !== 'undefined' && Window.prototype) {
             var desc = Object.getOwnPropertyDescriptor(Window.prototype, 'fetch');
-        if (desc && !desc.set) {
+            if (desc && !desc.set) {
               var _protoFetch = desc.get ? desc.get.call(window) : window.fetch;
-        Object.defineProperty(Window.prototype, 'fetch', {
-          get: function () {
+              Object.defineProperty(Window.prototype, 'fetch', {
+                get: function () {
                   return _protoFetch;
                 },
-        set: function (val) {
-          _protoFetch = val;
+                set: function (val) {
+                  _protoFetch = val;
                 },
-        configurable: true,
-        enumerable: true,
+                configurable: true,
+                enumerable: true,
               });
             }
           }
@@ -69,6 +76,7 @@
   <meta name="keywords"
     content="SaaS directory, AI tools directory, best SaaS products, indie hacker tools, product launchpad, software leaderboard, dofollow backlink directory, open source SaaS starters, micro SaaS" />
   <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="yandex-verification" content="acda07c5356d09ad" />
   <link rel="canonical" href="https://www.topsaas.space/" />
 
   <!-- OpenGraph / Facebook -->
