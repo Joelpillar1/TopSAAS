@@ -16,7 +16,6 @@ import { DIRECTORY_REPOS, UNIQUE_REPOS } from '../data/repoCatalog';
 import { FEATURED_SIDEBAR_OPPORTUNITIES } from '../data/saasOpportunities';
 import { SaaSOpportunityCard } from './SaaSOpportunityCard';
 import { IdeasSponsorCard, IDEAS_SPONSOR_SLOTS } from './IdeasSponsorCard';
-import { SaaSIdeasMobileSponsor } from './SaaSIdeasMobileSponsor';
 import { navigateTo } from '../utils/nav';
 import { applyPageSeo } from '../utils/pageSeo';
 import { ideasSeo } from '../utils/coreSeo';
@@ -158,21 +157,6 @@ export const SaaSIdeas: React.FC<SaaSIdeasProps> = ({
     }
   });
   const searchInputRef = useRef<HTMLInputElement | null>(null);
-  const heroBannerRef = useRef<HTMLDivElement | null>(null);
-  const [isStickySponsorVisible, setIsStickySponsorVisible] = useState(false);
-
-  // Show sticky sponsor under top nav when user scrolls past the hero banner on mobile
-  useEffect(() => {
-    const handleScroll = () => {
-      if (!heroBannerRef.current) return;
-      const rect = heroBannerRef.current.getBoundingClientRect();
-      setIsStickySponsorVisible(rect.bottom < 52);
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   // Ctrl/Cmd + K focuses the ideas search
   useEffect(() => {
@@ -262,40 +246,28 @@ export const SaaSIdeas: React.FC<SaaSIdeasProps> = ({
     <div className="relative w-full font-sans space-y-6">
       {/* Hero: brand statement + search */}
       <section className="relative overflow-hidden px-1 pt-6 sm:pt-10" aria-label="Find the best SaaS idea">
-            <GridPattern
-              width={32}
-              height={32}
-              x={-1}
-              y={-1}
-              strokeDasharray="3 3"
-              squares={[
-                [4, 4],
-                [5, 1],
-                [8, 2],
-                [5, 3],
-                [5, 5],
-                [10, 10],
-                [12, 15],
-              ]}
-              className={cn(
-                '[mask-image:radial-gradient(560px_circle_at_center,white,transparent)]',
-                'inset-x-0 inset-y-[-30%] h-[200%] skew-y-12',
-                'fill-neutral-300/30 stroke-neutral-300/40',
-              )}
-            />
-            <div className="relative z-10 mx-auto flex max-w-3xl flex-col items-center text-center">
-              {/* Mobile-only Rotating Sponsor Banner (above "Don't Start From Zero.") */}
-              <div ref={heroBannerRef} className="w-full mb-3.5 xl:hidden px-2">
-                <SaaSIdeasMobileSponsor
-                  slots={IDEAS_SPONSOR_SLOTS.slice(0, 5)}
-                  sponsors={sponsors}
-                  soundEnabled={soundEnabled}
-                  onTrackClick={onTrackClick}
-                  onOpenProduct={onOpenDetail}
-                  onOpenFeaturedSpotModal={onOpenFeaturedSpotModal}
-                />
-              </div>
-
+        <GridPattern
+          width={32}
+          height={32}
+          x={-1}
+          y={-1}
+          strokeDasharray="3 3"
+          squares={[
+            [4, 4],
+            [5, 1],
+            [8, 2],
+            [5, 3],
+            [5, 5],
+            [10, 10],
+            [12, 15],
+          ]}
+          className={cn(
+            '[mask-image:radial-gradient(560px_circle_at_center,white,transparent)]',
+            'inset-x-0 inset-y-[-30%] h-[200%] skew-y-12',
+            'fill-neutral-300/30 stroke-neutral-300/40',
+          )}
+        />
+        <div className="relative z-10 mx-auto flex max-w-3xl flex-col items-center text-center">
               {/* Badge */}
               <div className="mb-3.5 inline-flex items-center gap-2 rounded-full border border-neutral-200/90 bg-white/95 px-3.5 py-1.5 shadow-2xs backdrop-blur-xs">
                 <span className="relative flex h-2 w-2">
@@ -611,6 +583,6 @@ export const SaaSIdeas: React.FC<SaaSIdeasProps> = ({
               </div>
             )}
           </section>
-    </div>
-  );
+        </div>
+        );
 };

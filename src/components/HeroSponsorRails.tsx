@@ -39,6 +39,7 @@ interface HeroSponsorRailsProps {
   footer?: React.ReactNode;
   enabled?: boolean;
   fixedRails?: boolean;
+  hideMobileSponsor?: boolean;
 }
 
 interface OpenAdCardProps {
@@ -357,6 +358,7 @@ export const HeroSponsorRails: React.FC<HeroSponsorRailsProps> = ({
   footer,
   enabled = true,
   fixedRails = false,
+  hideMobileSponsor = false,
 }) => {
   if (!enabled) {
     return (
@@ -396,7 +398,7 @@ export const HeroSponsorRails: React.FC<HeroSponsorRailsProps> = ({
   return (
     <div className={`relative w-full ${fixedRails ? 'xl:h-full xl:min-h-0' : ''}`}>
       {/* Mobile Floating Sticky Sponsor under Top Nav when scrolled down */}
-      {isStickySponsorVisible && (
+      {!hideMobileSponsor && isStickySponsorVisible && (
         <div className="fixed top-[62px] left-3.5 right-3.5 sm:left-6 sm:right-6 z-30 lg:hidden pointer-events-none flex justify-center animate-fadeIn">
           <div className="pointer-events-auto w-full max-w-xl">
             <SaaSIdeasMobileSponsor
@@ -472,16 +474,23 @@ export const HeroSponsorRails: React.FC<HeroSponsorRailsProps> = ({
         {/* Center Hero + Directory List + Footer */}
         <div className={`flex-1 w-full max-w-2xl xl:max-w-[760px] 2xl:max-w-[860px] mx-auto min-w-0 space-y-4 pb-16 lg:pb-6 ${fixedRails ? 'xl:h-full xl:min-h-0 xl:overflow-y-auto no-scrollbar' : ''}`}>
           {/* Mobile-only Rotating Sponsor Banner at the top (Page Load) */}
-          <div ref={heroBannerRef} className="w-full mb-2.5 sm:mb-3 lg:hidden px-2 sm:px-3">
-            <SaaSIdeasMobileSponsor
-              slots={DIRECTORY_MOBILE_SLOTS}
-              sponsors={activeSponsors}
-              soundEnabled={soundEnabled}
-              onTrackClick={onTrackClick}
-              onOpenProduct={onOpenProduct}
-              onOpenFeaturedSpotModal={onOpenFeaturedSpotModal}
-            />
-          </div>
+          {!hideMobileSponsor && (
+            <div
+              ref={heroBannerRef}
+              className={`w-full mb-2.5 sm:mb-3 lg:hidden px-2 sm:px-3 transition-opacity duration-150 ${
+                isStickySponsorVisible ? 'opacity-0 pointer-events-none' : 'opacity-100'
+              }`}
+            >
+              <SaaSIdeasMobileSponsor
+                slots={DIRECTORY_MOBILE_SLOTS}
+                sponsors={activeSponsors}
+                soundEnabled={soundEnabled}
+                onTrackClick={onTrackClick}
+                onOpenProduct={onOpenProduct}
+                onOpenFeaturedSpotModal={onOpenFeaturedSpotModal}
+              />
+            </div>
+          )}
 
           {children}
 

@@ -1,5 +1,9 @@
 import React from 'react';
 import { playSound } from '../utils/sound';
+import chatgptPng from '../assets/llms/chatgpt.png';
+import claudePng from '../assets/llms/claude.png';
+import perplexityPng from '../assets/llms/perplexity.png';
+import grokPng from '../assets/llms/grok.png';
 
 interface AiAgentsSectionProps {
   soundEnabled?: boolean;
@@ -11,10 +15,10 @@ export const AiAgentsSection: React.FC<AiAgentsSectionProps> = ({ soundEnabled =
   );
 
   const aiLinks = [
-    { name: 'ChatGPT', url: `https://chatgpt.com/?q=${queryPrompt}` },
-    { name: 'Claude', url: `https://claude.ai/new?q=${queryPrompt}` },
-    { name: 'Perplexity', url: `https://www.perplexity.ai/search?q=${queryPrompt}` },
-    { name: 'Grok', url: `https://x.com/i/grok?text=${queryPrompt}` },
+    { name: 'ChatGPT', icon: chatgptPng, url: `https://chatgpt.com/?q=${queryPrompt}` },
+    { name: 'Claude', icon: claudePng, url: `https://claude.ai/new?q=${queryPrompt}` },
+    { name: 'Perplexity', icon: perplexityPng, url: `https://www.perplexity.ai/search?q=${queryPrompt}` },
+    { name: 'Grok', icon: grokPng, isSquircle: true, url: `https://x.com/i/grok?text=${queryPrompt}` },
   ];
 
   return (
@@ -33,9 +37,16 @@ export const AiAgentsSection: React.FC<AiAgentsSectionProps> = ({ soundEnabled =
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => playSound('click', soundEnabled)}
-              className="inline-flex items-center px-3 py-1 rounded-lg border border-neutral-200 bg-white text-xs font-medium text-neutral-700 hover:text-neutral-950 hover:border-neutral-300 hover:bg-neutral-50 shadow-2xs transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border border-neutral-200 bg-white text-xs font-medium text-neutral-700 hover:text-neutral-950 hover:border-neutral-300 hover:bg-neutral-50 shadow-2xs transition-colors cursor-pointer"
             >
-              {ai.name}
+              <img
+                src={ai.icon}
+                alt=""
+                width={14}
+                height={14}
+                className={`h-3.5 w-3.5 object-contain shrink-0 ${ai.isSquircle ? 'rounded-[3px]' : ''}`}
+              />
+              <span>{ai.name}</span>
             </a>
           ))}
         </div>

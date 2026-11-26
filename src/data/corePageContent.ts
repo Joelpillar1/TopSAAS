@@ -107,12 +107,12 @@ export const MRR_FAQS: CoreFaq[] = [
 
 export const PRICING_FAQS: CoreFaq[] = [
   {
-    q: 'What is the difference between Free and the $5 Verified Launch?',
-    a: 'Free submissions enter a manual queue that takes 7–14 days, with a standard nofollow backlink. The $5 Verified Launch gives you fast-track review within 24 hours, permanent high-authority DoFollow backlink, official Verified Mint Badge on card & profile, category top-3 pinned spot (7 Days), a dedicated 1,000+ word story on /blog, and /llms.txt AI search inclusion (ChatGPT, Perplexity and more).',
+    q: 'What is the difference between Free and the $9 Verified Launch?',
+    a: 'Free submissions enter a manual queue that takes 7–14 days, with a standard nofollow backlink. The $9 Verified Launch (normally $15) gives you fast-track review within 24 hours, permanent high-authority DoFollow backlink, official Verified Mint Badge on card & profile, category top-3 pinned spot (7 Days), a dedicated 1,000+ word story on /blog, and /llms.txt AI search inclusion (ChatGPT, Perplexity and more).',
   },
   {
-    q: 'Is the $5 Verified Launch a recurring subscription?',
-    a: 'No! The Verified Launch is a simple one-time payment of $5 per product. You get permanent lifetime directory listing, verified badge, and dofollow backlink with zero recurring subscription fees.',
+    q: 'Is the $9 Verified Launch a recurring subscription?',
+    a: 'No! The Verified Launch is a simple one-time payment of $9 per product (limited offer from $15). You get permanent lifetime directory listing, verified badge, and dofollow backlink with zero recurring subscription fees.',
   },
   {
     q: 'What is the difference between Featured Spot and Sidebar Sponsor?',
@@ -147,6 +147,6 @@ export const SUBMIT_STEPS: Array<{ title: string; body: string }> = [
   },
   {
     title: 'Launch',
-    body: 'Choose a launch week, pick free or the $5 Verified Launch, and submit. Free reviews take 7–14 days; Verified Launch reviews are fast-tracked within 24 hours.',
+    body: 'Choose a launch week, pick free or the $9 Verified Launch, and submit. Free reviews take 7–14 days; Verified Launch reviews are fast-tracked within 24 hours.',
   },
 ];

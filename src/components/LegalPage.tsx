@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowLeft, ShieldCheck, FileText, Lock, CheckCircle2, ChevronRight } from 'lucide-react';
-import { RichFooter } from './RichFooter';
 import { playSound } from '../utils/sound';
 import { Category } from '../types';
 import { applyPageSeo } from '../utils/pageSeo';
@@ -200,17 +199,6 @@ export const LegalPage: React.FC<LegalPageProps> = ({
           </button>
         </div>
       </main>
-
-      <RichFooter
-        totalProducts={totalProducts}
-        soundEnabled={soundEnabled}
-        onOpenSubmit={onOpenSubmit}
-        onOpenHowItWorks={onOpenHowItWorks}
-        onSelectCategory={onSelectCategory}
-        onOpenPrivacy={() => handleDocSwitch('privacy')}
-        onOpenTerms={() => handleDocSwitch('terms')}
-        onOpenPricing={onOpenPricing}
-      />
     </div>
   );
 };

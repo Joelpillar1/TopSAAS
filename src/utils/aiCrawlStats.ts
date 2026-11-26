@@ -29,6 +29,14 @@ export interface AiCrawlTelemetryData {
   source: 'cloudflare_graphql' | 'verified_snapshot';
   lastUpdated: string;
   periodLabel: string;
+  weeklyAiCrawls?: {
+    value: string;
+    count: number;
+  };
+  monthlyVisits?: {
+    value: string;
+    count: number;
+  };
   metrics: {
     totalRequests: MetricSummary;
     allowedRequests: MetricSummary;
@@ -48,6 +56,14 @@ export const DEFAULT_AI_CRAWL_TELEMETRY: AiCrawlTelemetryData = {
   source: 'verified_snapshot',
   lastUpdated: new Date().toISOString(),
   periodLabel: 'Last 24 hours',
+  weeklyAiCrawls: {
+    value: '28k',
+    count: 28000,
+  },
+  monthlyVisits: {
+    value: '15k+',
+    count: 15000,
+  },
   metrics: {
     totalRequests: {
       value: '4k',

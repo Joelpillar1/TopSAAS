@@ -77,7 +77,7 @@ export const submitSeo = (): SeoCopy =>
 export const pricingSeo = (): SeoCopy =>
   copy(
     'Pricing & Launch Plans | TopSAAS',
-    'Explore TopSAAS launch plans: free submission or the $5 Verified Launch with a dofollow backlink, verified badge, and AI search inclusion.',
+    'Explore TopSAAS launch plans: free submission or the $9 Verified Launch with a dofollow backlink, verified badge, and AI search inclusion.',
     `${SITE_URL}/pricing`
   );
 

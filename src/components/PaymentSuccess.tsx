@@ -159,7 +159,7 @@ export const PaymentSuccess: React.FC<PaymentSuccessProps> = ({
   const planInfo = (() => {
     const p = params.plan;
     if (p === 'onetime' || p === 'verified_launch' || p === 'per_product_pass') {
-      return { name: 'Fast-Track Launch ($5)', price: '$5' };
+      return { name: 'Fast-Track Launch ($9)', price: '$9' };
     }
     if (p === 'weekly_relaunch') {
       return { name: 'Auto Weekly Relaunch', price: '$5/week' };
@@ -192,7 +192,7 @@ export const PaymentSuccess: React.FC<PaymentSuccessProps> = ({
           </h1>
           <p className="text-sm text-neutral-600 mb-6">
             {params.plan === 'onetime' || params.plan === 'verified_launch' || params.plan === 'per_product_pass'
-              ? 'Your $5 Verified Launch has been activated. Your product is prioritized for 24-hour review with an official verified badge and permanent DoFollow SEO backlink!'
+              ? 'Your $9 Verified Launch has been activated. Your product is prioritized for 24-hour review with an official verified badge and permanent DoFollow SEO backlink!'
               : 'Your sponsorship has been activated. You are now prominently featured on TopSAAS!'}
           </p>
 

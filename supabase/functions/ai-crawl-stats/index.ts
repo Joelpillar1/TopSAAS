@@ -90,19 +90,33 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Windows: Current 24h (now - 24h to now) and Prior 24h (now - 48h to now - 24h)
+    // Windows: Current 24h (now - 24h to now), Prior 24h (now - 48h to now - 24h), 7d weekly, and 30d monthly
     const nowDate = new Date();
     const past24hDate = new Date(nowDate.getTime() - 24 * 60 * 60 * 1000);
     const past48hDate = new Date(nowDate.getTime() - 48 * 60 * 60 * 1000);
+    const past7dDate = new Date(nowDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const past30dDate = new Date(nowDate.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     const since = past24hDate.toISOString();
     const until = nowDate.toISOString();
     const priorSince = past48hDate.toISOString();
     const priorUntil = since;
+    const since7d = past7dDate.toISOString();
+    const since30dDate = past30dDate.toISOString().slice(0, 10);
+    const untilDate = nowDate.toISOString().slice(0, 10);
 
-    // Cloudflare GraphQL query: current 24h + prior 24h for live trend computation
+    // Cloudflare GraphQL query: current 24h + prior 24h + 7d AI crawls + 30d visits
     const query = `
-      query GetLiveAICrawlTelemetry($zoneTag: String!, $since: Time!, $until: Time!, $priorSince: Time!, $priorUntil: Time!) {
+      query GetLiveAICrawlTelemetry(
+        $zoneTag: String!,
+        $since: Time!,
+        $until: Time!,
+        $priorSince: Time!,
+        $priorUntil: Time!,
+        $since7d: Time!,
+        $since30dDate: Date!,
+        $untilDate: Date!
+      ) {
         viewer {
           zones(filter: { zoneTag: $zoneTag }) {
             # Current 24-hour window
@@ -138,6 +152,38 @@ Deno.serve(async (req) => {
                 edgeResponseStatus
               }
             }
+
+            # Last 7 days of AI crawler requests
+            weeklyAi: httpRequestsAdaptiveGroups(
+              filter: {
+                datetime_geq: $since7d
+                datetime_leq: $until
+                requestSource: "eyeball"
+              }
+              limit: 10000
+            ) {
+              count
+              dimensions {
+                userAgent
+              }
+            }
+
+            # Last 30 days daily summary for monthly visits
+            monthlyDaily: httpRequests1dGroups(
+              filter: {
+                date_geq: $since30dDate
+                date_leq: $untilDate
+              }
+              limit: 35
+            ) {
+              sum {
+                requests
+                pageViews
+              }
+              uniq {
+                uniques
+              }
+            }
           }
         }
       }
@@ -157,6 +203,9 @@ Deno.serve(async (req) => {
           until,
           priorSince,
           priorUntil,
+          since7d,
+          since30dDate,
+          untilDate,
         },
       }),
     });
@@ -169,6 +218,20 @@ Deno.serve(async (req) => {
     const zoneData = cfJson?.data?.viewer?.zones?.[0];
     const currentRecords = zoneData?.current || [];
     const priorRecords = zoneData?.prior || [];
+    const weeklyAiRecords = zoneData?.weeklyAi || [];
+    const monthlyDailyRecords = zoneData?.monthlyDaily || [];
+
+    const weeklyAiCrawlsCount = weeklyAiRecords.reduce(
+      (acc: number, r: { count?: number; dimensions?: { userAgent?: string } }) =>
+        isAiBot(r.dimensions?.userAgent) ? acc + (r.count || 0) : acc,
+      0
+    );
+
+    const monthlyUniqueVisits = monthlyDailyRecords.reduce(
+      (acc: number, r: { uniq?: { uniques?: number }; sum?: { pageViews?: number } }) =>
+        acc + (r.uniq?.uniques || r.sum?.pageViews || 0),
+      0
+    );
 
     // Filter strictly for AI bots in both windows
     const currentAiRecords = currentRecords.filter((r: { dimensions?: { userAgent?: string } }) =>
@@ -311,6 +374,14 @@ Deno.serve(async (req) => {
       source: "cloudflare_graphql",
       lastUpdated: new Date().toISOString(),
       periodLabel: "Last 24 hours",
+      weeklyAiCrawls: {
+        value: formatCompactNumber(weeklyAiCrawlsCount),
+        count: weeklyAiCrawlsCount,
+      },
+      monthlyVisits: {
+        value: formatCompactNumber(monthlyUniqueVisits),
+        count: monthlyUniqueVisits,
+      },
       metrics: {
         totalRequests: {
           value: formatCompactNumber(totalAiCount),

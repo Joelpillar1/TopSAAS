@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Globe, Flame } from 'lucide-react';
+import { Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { GridPattern } from '@/components/ui/grid-pattern';
 import { playSound } from '../utils/sound';
@@ -216,46 +216,6 @@ export const HomeHero: React.FC<HomeHeroProps> = ({
             Launch Now
           </button>
         </form>
-
-        {/* Combined micro-benefits and live stats on the same line */}
-        <div className="mt-3 flex flex-wrap items-center justify-center gap-x-2.5 sm:gap-x-3 gap-y-1 text-[11px] font-semibold text-neutral-500">
-          <span className="flex items-center gap-1">
-            <span className="text-mint-600 font-bold">✓</span> AI prefill
-          </span>
-          <span className="text-neutral-300">·</span>
-          <span className="flex items-center gap-1">
-            <span className="text-mint-600 font-bold">✓</span> Takes 30 secs
-          </span>
-          <span className="text-neutral-300">·</span>
-          <span className="flex items-center gap-1">
-            <span className="text-mint-600 font-bold">✓</span> 100% Free
-          </span>
-          {dealsCount > 0 && onToggleSteals && (
-            <>
-              <span className="text-neutral-300">·</span>
-              <button
-                type="button"
-                onClick={() => {
-                  onToggleSteals();
-                  const section = document.getElementById('leaderboard-section');
-                  if (section) section.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className={`inline-flex items-center gap-1.5 text-[11px] font-semibold transition-colors cursor-pointer ${stealsOnly ? 'text-amber-700 font-bold' : 'text-neutral-600 hover:text-amber-600'
-                  }`}
-                title={stealsOnly ? 'Turn off Steals Only filter' : 'Show only tools with exclusive discounts'}
-              >
-                <Flame className={`h-3.5 w-3.5 ${stealsOnly ? 'text-amber-600 fill-amber-500/30 animate-pulse' : 'text-amber-500'}`} />
-                <span className={`font-bold font-mono-num ${stealsOnly ? 'text-amber-800' : 'text-neutral-800'}`}>{dealsCount}</span>
-                <span>{dealsCount === 1 ? 'steal' : 'steals'}</span>
-                {stealsOnly && (
-                  <span className="text-[9px] font-black text-amber-700 bg-amber-100/70 px-1 rounded">
-                    active
-                  </span>
-                )}
-              </button>
-            </>
-          )}
-        </div>
       </div>
     </section>
   );

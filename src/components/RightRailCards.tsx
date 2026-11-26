@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Trophy,
   Flame,
@@ -10,6 +10,7 @@ import { Product } from '../types';
 import { playSound } from '../utils/sound';
 import { RankMedal } from './RankMedal';
 import { VerifiedBadge } from './VerifiedBadge';
+import { BorderBeam } from './BorderBeam';
 
 export interface LastWeekTopThreeCardProps {
   products: Product[];
@@ -243,83 +244,156 @@ export interface LaunchProductRailCardProps {
  * - 24h express approval, permanent dofollow backlink, verified badge,
  * - category top-3 placement, dedicated blog review, and AI search indexing.
  */
+const OFFER_DEADLINE_KEY = 'topsaas_bf_offer_deadline_v1';
+const OFFER_DURATION_MS = 72 * 60 * 60 * 1000;
+
+function getOrCreateOfferDeadline(): number {
+  if (typeof window === 'undefined') return Date.now() + OFFER_DURATION_MS;
+  try {
+    const raw = localStorage.getItem(OFFER_DEADLINE_KEY);
+    const parsed = raw ? Number(raw) : 0;
+    if (Number.isFinite(parsed) && parsed > Date.now()) {
+      return parsed;
+    }
+    const next = Date.now() + OFFER_DURATION_MS;
+    localStorage.setItem(OFFER_DEADLINE_KEY, String(next));
+    return next;
+  } catch {
+    return Date.now() + OFFER_DURATION_MS;
+  }
+}
+
+function formatOfferCountdown(deadlineMs: number) {
+  const diff = Math.max(0, deadlineMs - Date.now());
+  const totalSeconds = Math.floor(diff / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return {
+    hours: String(hours).padStart(2, '0'),
+    minutes: String(minutes).padStart(2, '0'),
+    seconds: String(seconds).padStart(2, '0'),
+  };
+}
+
 export const LaunchProductRailCard: React.FC<LaunchProductRailCardProps> = ({
   soundEnabled,
   onOpenSubmit,
 }) => {
+  const [deadlineMs, setDeadlineMs] = useState<number>(() => getOrCreateOfferDeadline());
+  const [timeLeft, setTimeLeft] = useState(() => formatOfferCountdown(deadlineMs));
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (Date.now() >= deadlineMs) {
+        const next = getOrCreateOfferDeadline();
+        setDeadlineMs(next);
+        setTimeLeft(formatOfferCountdown(next));
+      } else {
+        setTimeLeft(formatOfferCountdown(deadlineMs));
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [deadlineMs]);
+
   return (
-    <div className="w-full rounded-2xl xl:rounded-3xl border border-neutral-200/90 bg-white p-3.5 xl:p-4 text-left shadow-2xs hover:shadow-xs transition-shadow select-none">
-      {/* ── Header ── */}
-      <div className="flex items-center gap-1.5 pb-2 border-b border-neutral-100">
-        <h3 className="text-xs xl:text-[13px] font-black tracking-tight text-neutral-900 truncate">
-          Launch your product
-        </h3>
-        <VerifiedBadge className="h-3.5 w-3.5 shrink-0" />
+    <BorderBeam
+      size="md"
+      colorVariant="colorful"
+      strength={0.9}
+      borderRadius={12}
+      className="w-full rounded-2xl xl:rounded-3xl"
+    >
+      <div className="w-full rounded-2xl xl:rounded-3xl border border-blue-200/80 bg-gradient-to-b from-blue-50/75 via-white to-white p-3.5 xl:p-4 text-left shadow-md shadow-blue-500/10 select-none">
+        {/* ── Eyebrow + Title ── */}
+        <div className="flex items-center justify-between gap-1.5">
+          <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-orange-600">
+            <span className="h-1.5 w-1.5 rounded-full bg-orange-500 animate-pulse" />
+            Black Friday · 40% Off
+          </span>
+          <span className="shrink-0 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-extrabold text-emerald-700">
+            Save $6
+          </span>
+        </div>
+
+        <div className="mt-1.5 flex items-center gap-1.5">
+          <h3 className="text-sm xl:text-[15px] font-black tracking-tight text-neutral-950 truncate">
+            Verified Launch
+          </h3>
+          <VerifiedBadge className="h-4 w-4 shrink-0" />
+        </div>
+
+        {/* ── Bold Price + Countdown Box ── */}
+        <div className="mt-2.5 rounded-2xl border border-neutral-200/90 bg-white p-2.5 shadow-2xs space-y-2">
+          <div className="flex items-baseline justify-between gap-2">
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-2xl xl:text-[26px] leading-none font-black text-neutral-950 tracking-tight font-sans">$9</span>
+              <span className="text-sm font-bold text-neutral-400 line-through font-sans">$15</span>
+            </div>
+            <span className="text-[10.5px] font-bold text-neutral-500 font-sans">One-time · Lifetime</span>
+          </div>
+
+          <div className="flex items-center justify-between gap-2 rounded-xl bg-neutral-950 px-2.5 py-1.5 text-[10.5px] text-white">
+            <span className="inline-flex items-center gap-1 font-bold uppercase tracking-wider text-neutral-400">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Ends in
+            </span>
+            <span className="font-mono-num font-black tracking-tight text-white">
+              {timeLeft.hours}h : {timeLeft.minutes}m : {timeLeft.seconds}s
+            </span>
+          </div>
+        </div>
+
+        {/* ── Top 4 Concise Features ── */}
+        <ul className="mt-3 space-y-2 text-[11.5px] text-neutral-800 font-medium">
+          <li className="flex items-center gap-2">
+            <div className="h-4 w-4 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0">
+              <Check className="h-2.5 w-2.5 stroke-[3]" />
+            </div>
+            <span><strong>Live in 24h</strong> (skip 14d queue)</span>
+          </li>
+          <li className="flex items-center gap-2">
+            <div className="h-4 w-4 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0">
+              <Check className="h-2.5 w-2.5 stroke-[3]" />
+            </div>
+            <span><strong>Permanent DoFollow</strong> backlink</span>
+          </li>
+          <li className="flex items-center gap-2">
+            <div className="h-4 w-4 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0">
+              <Check className="h-2.5 w-2.5 stroke-[3]" />
+            </div>
+            <span><strong>Pinned Top 3</strong> in category (7d)</span>
+          </li>
+          <li className="flex items-center gap-2">
+            <div className="h-4 w-4 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0">
+              <Check className="h-2.5 w-2.5 stroke-[3]" />
+            </div>
+            <span><strong>Verified Badge</strong> + /blog story</span>
+          </li>
+          <li className="flex items-center gap-2">
+            <div className="h-4 w-4 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0">
+              <Check className="h-2.5 w-2.5 stroke-[3]" />
+            </div>
+            <span><strong>AI Search Indexing</strong> (/llms.txt)</span>
+          </li>
+        </ul>
+
+        {/* ── Bold CTA Button ── */}
+        <button
+          type="button"
+          onClick={() => {
+            playSound('click', soundEnabled);
+            try {
+              localStorage.setItem('topsaas_submit_plan', 'paid_19');
+            } catch { }
+            onOpenSubmit?.();
+          }}
+          className="btn-primary w-full mt-3.5 py-2.5 px-4 text-xs font-black rounded-xl flex items-center justify-center gap-1.5 shadow-md shadow-blue-600/20 active:scale-[0.98] transition-all cursor-pointer"
+        >
+          <span>Claim 40% Off — $9</span>
+          <ArrowRight className="h-3.5 w-3.5 stroke-[2.5]" />
+        </button>
       </div>
-
-      {/* ── Subtitle informing what premium unlocks ── */}
-      <p className="text-[11px] xl:text-[11.5px] text-neutral-500 leading-snug mt-2">
-        What you get when you launch as a verified premium product:
-      </p>
-
-      {/* ── Checklist: What users get with Premium ── */}
-      <ul className="mt-2.5 space-y-2 text-[11px] xl:text-[11.5px] text-neutral-700 font-medium">
-        <li className="flex items-start gap-2">
-          <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0 mt-0.5">
-            <Check className="h-2.5 w-2.5 stroke-[3]" />
-          </div>
-          <span><strong>Live within 24 hours</strong> (skip 14-day queue)</span>
-        </li>
-        <li className="flex items-start gap-2">
-          <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0 mt-0.5">
-            <Check className="h-2.5 w-2.5 stroke-[3]" />
-          </div>
-          <span><strong>Permanent DoFollow backlink</strong> for SEO</span>
-        </li>
-        <li className="flex items-start gap-2">
-          <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0 mt-0.5">
-            <Check className="h-2.5 w-2.5 stroke-[3]" />
-          </div>
-          <span><strong>Official Verified Badge</strong> on card & profile</span>
-        </li>
-        <li className="flex items-start gap-2">
-          <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0 mt-0.5">
-            <Check className="h-2.5 w-2.5 stroke-[3]" />
-          </div>
-          <span><strong>Pinned Top 3</strong> in primary category (7 Days)</span>
-        </li>
-        <li className="flex items-start gap-2">
-          <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0 mt-0.5">
-            <Check className="h-2.5 w-2.5 stroke-[3]" />
-          </div>
-          <span><strong>Dedicated review story</strong> published on /blog</span>
-        </li>
-        <li className="flex items-start gap-2">
-          <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0 mt-0.5">
-            <Check className="h-2.5 w-2.5 stroke-[3]" />
-          </div>
-          <span>Indexed in <strong>/llms.txt</strong> for AI search</span>
-        </li>
-        <li className="flex items-start gap-2">
-          <div className="h-4 w-4 rounded-full bg-neutral-900 text-white flex items-center justify-center shrink-0 mt-0.5">
-            <Check className="h-2.5 w-2.5 stroke-[3]" />
-          </div>
-          <span>Lifetime listing — <strong>zero recurring fees</strong></span>
-        </li>
-      </ul>
-
-      {/* ── App Theme Tactile Button ── */}
-      <button
-        type="button"
-        onClick={() => {
-          playSound('click', soundEnabled);
-          onOpenSubmit?.();
-        }}
-        className="btn-primary w-full mt-3.5 py-2.5 px-4 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
-      >
-        <span>Launch Now</span>
-        <ArrowRight className="h-3.5 w-3.5" />
-      </button>
-    </div>
+    </BorderBeam>
   );
 };

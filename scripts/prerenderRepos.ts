@@ -980,7 +980,7 @@ const HOME_FAQS = [
   },
   {
     q: 'Is listing a product on TopSAAS free?',
-    a: 'Yes. A standard listing is free forever and goes through manual review in 7 to 14 days. The optional $5 Verified Launch adds a 24-hour review, a permanent dofollow backlink, a verified badge, category placement, and /llms.txt AI search inclusion.',
+    a: 'Yes. A standard listing is free forever and goes through manual review in 7 to 14 days. The optional $9 Verified Launch (40% off from $15) adds a 24-hour review, a permanent dofollow backlink, a verified badge, category placement, and /llms.txt AI search inclusion.',
   },
   {
     q: 'How are products ranked on the homepage?',
@@ -996,7 +996,7 @@ const HOME_FAQS = [
   },
   {
     q: 'How do I get my product featured?',
-    a: 'Submit the product, then choose the free listing or the $5 Verified Launch. Featured Spot and Sidebar Sponsor placements are available for additional weekly or monthly visibility.',
+    a: 'Submit the product, then choose the free listing or the $9 Verified Launch. Featured Spot and Sidebar Sponsor placements are available for additional weekly or monthly visibility.',
   },
 ];
 
@@ -1044,7 +1044,7 @@ ${BLOG_POSTS.map(
           <h2 style="${h2Style}">Frequently asked questions</h2>
           ${faqList(HOME_FAQS)}
           <h2 style="${h2Style}">List your product</h2>
-          <p style="margin:0 0 1rem">Submissions are free and take about 30 seconds. The $5 Verified Launch adds a permanent dofollow backlink, a verified badge, and a fast-track review. <a href="/submit" style="${linkStyle}">Submit your product</a> or compare <a href="/pricing" style="${linkStyle}">launch plans</a>.</p>
+          <p style="margin:0 0 1rem">Submissions are free and take about 30 seconds. The $9 Verified Launch (40% off from $15) adds a permanent dofollow backlink, a verified badge, and a fast-track review. <a href="/submit" style="${linkStyle}">Submit your product</a> or compare <a href="/pricing" style="${linkStyle}">launch plans</a>.</p>
           <p style="margin:0 0 1rem">TopSAAS is operated independently. Read our <a href="/privacy" style="${linkStyle}">privacy policy</a> and <a href="/terms" style="${linkStyle}">terms of service</a>.</p>
         </main>
 ${staticFooter}
@@ -1457,15 +1457,15 @@ const buildPricingBody = (): string => `
         </nav>
         <main>
           <h1 style="${h1Style}">Pricing and launch plans</h1>
-          <p style="margin:0 0 1rem">Two ways to list a product on TopSAAS, plus optional visibility upgrades. Submitting is always free; the Verified Launch is a one-time $5 payment, not a subscription.</p>
+          <p style="margin:0 0 1rem">Two ways to list a product on TopSAAS, plus optional visibility upgrades. Submitting is always free; the Verified Launch is a one-time $9 payment (40% off from $15), not a subscription.</p>
           <h2 style="${h2Style}">Plans</h2>
           <ul style="margin:0 0 1rem;padding-left:1.25rem">
             <li><strong>Free listing ($0 forever).</strong> Manual review in 7–14 days, standard nofollow backlink, permanent public listing.</li>
-            <li><strong>Verified Launch ($5 one-time).</strong> Review within 24 hours, permanent dofollow backlink, verified badge, category top-3 placement for 7 days, a 1,000+ word story on /blog, and /llms.txt AI search inclusion.</li>
-            <li><strong>Featured Spot ($15/week or $39/month).</strong> Pins your card at the top of the main product feed.</li>
-            <li><strong>Sidebar Sponsor ($10/week or $29/month).</strong> Places your product on the sticky side rails across the homepage and product pages.</li>
+            <li><strong>Verified Launch ($9 one-time, 40% off from $15).</strong> Review within 24 hours, permanent dofollow backlink, verified badge, category top-3 placement for 7 days, a 1,000+ word story on /blog, and /llms.txt AI search inclusion.</li>
+            <li><strong>Featured Spot ($15/week, normally $25, or $39/month, normally $65 — 40% off; 2 slots).</strong> Pins your card at the top of the main product feed.</li>
+            <li><strong>Sidebar &amp; Mobile Sponsor ($10/week, normally $17, or $29/month, normally $49 — 40% off; 5 slots).</strong> Places your product on the sticky desktop side rails and mobile hero sponsor card across every page.</li>
           </ul>
-          <p style="margin:0 0 1rem">The $5 Verified Launch is a one-time payment per product. There are no recurring fees for the listing, badge, or dofollow backlink.</p>
+          <p style="margin:0 0 1rem">The $9 Verified Launch is a one-time payment per product. There are no recurring fees for the listing, badge, or dofollow backlink.</p>
           <h2 style="${h2Style}">Pricing FAQ</h2>
           ${faqList(PRICING_FAQS)}
           <p style="margin:1.5rem 0 0">Ready to list? <a href="/submit" style="${linkStyle}">Submit your product</a>.</p>
@@ -1485,7 +1485,7 @@ const buildPricingJsonLd = (): string =>
           'Permanent verified directory listing, high-authority dofollow backlink, verified badge, top 3 category placement (7 Days), and /llms.txt AI search inclusion.',
         offers: {
           '@type': 'Offer',
-          price: '5',
+          price: '9',
           priceCurrency: 'USD',
           availability: 'https://schema.org/InStock',
           url: `${SITE_URL}/pricing`,

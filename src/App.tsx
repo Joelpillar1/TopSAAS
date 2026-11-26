@@ -8,6 +8,7 @@ import { BorderBeam } from './components/BorderBeam';
 import { HomeHero } from './components/HomeHero';
 import { HowItWorksModal } from './components/HowItWorksModal';
 import { ShareModal } from './components/ShareModal';
+import { BlackFridayModal } from './components/BlackFridayModal';
 import { Pagination } from './components/Pagination';
 import { RichFooter } from './components/RichFooter';
 import { Header, DirectoryTab } from './components/Header';
@@ -3191,6 +3192,27 @@ export default function App() {
   // every route that renders the header needs the modal mounted too. Without
   // this, "Claim spot" on routes like /profile or /trending flipped the state
   // but rendered nothing until the user navigated to a route that mounted it.
+  const [isBlackFridayModalOpen, setIsBlackFridayModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (currentRoute === '/submit' || currentRoute === '/accept' || currentRoute === '/payment-success') return;
+    try {
+      if (sessionStorage.getItem('topsaas_bf_modal_dismissed') === 'true') return;
+    } catch { }
+    const timer = setTimeout(() => {
+      setIsBlackFridayModalOpen(true);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const dismissBlackFridayModal = () => {
+    setIsBlackFridayModalOpen(false);
+    try {
+      sessionStorage.setItem('topsaas_bf_modal_dismissed', 'true');
+    } catch { }
+  };
+
   const globalModals = (
     <>
       <SignInModal
@@ -3224,151 +3246,169 @@ export default function App() {
         onClose={() => setShareProduct(null)}
         soundEnabled={soundEnabled}
       />
+      <BlackFridayModal
+        isOpen={isBlackFridayModalOpen}
+        onClose={dismissBlackFridayModal}
+        onClaimOffer={() => {
+          dismissBlackFridayModal();
+          try {
+            localStorage.setItem('topsaas_submit_plan', 'paid_19');
+          } catch { }
+          handleOpenSubmit();
+        }}
+        onSeePricing={() => {
+          dismissBlackFridayModal();
+          handleOpenPricing();
+        }}
+        soundEnabled={soundEnabled}
+      />
     </>
+  );
+
+  // Shared directory side-rail chrome (fixed left & right rails + scrollable center) used throughout the app
+  const renderDirectoryRailsChrome = (
+    page: React.ReactNode,
+    fallback?: React.ReactNode,
+    options?: { hideMobileSponsor?: boolean }
+  ) => (
+    <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between selection:bg-mint-500/20 selection:text-neutral-900 font-sans xl:h-screen xl:overflow-hidden pb-0 no-scrollbar">
+      {globalHeader}
+      <main className="mx-auto w-full max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 flex-1 pt-1 sm:pt-2 xl:min-h-0 xl:h-[calc(100vh-4.25rem)] xl:overflow-hidden pb-0 no-scrollbar">
+        <HeroSponsorRails
+          fixedRails
+          hideMobileSponsor={options?.hideMobileSponsor}
+          enabled={sponsorRailsEnabled}
+          sponsors={activeRailSponsors}
+          lastWeeksTop3={topThreeLastWeek}
+          lastWeekLabel={lastWeekInfo?.label}
+          onNavigateToDirectory={() => handleTabChange('product-directory')}
+          soundEnabled={soundEnabled}
+          isLoading={!productsLoaded}
+          onTrackClick={handleTrackClick}
+          onOpenProduct={handleOpenProduct}
+          onOpenFeaturedSpotModal={() => {
+            setFeaturedModalMode('sponsor');
+            if (!user) {
+              setIsSignInModalOpen(true);
+            } else {
+              setIsFeaturedSpotModalOpen(true);
+            }
+          }}
+          onOpenSubmit={handleOpenSubmit}
+          onSeeListing={() => {
+            if (topThreeLastWeek && topThreeLastWeek.length > 0) {
+              handleOpenProduct(topThreeLastWeek[0]);
+            } else {
+              handleTabChange('directory');
+            }
+          }}
+          onNavigateToBlog={() => {
+            setCurrentRoute('/blog');
+            try { window.history.pushState('', document.title, '/blog'); } catch { }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          onOpenPricing={handleOpenPricing}
+          footer={
+            <RichFooter
+              totalProducts={directoryProducts.length}
+              soundEnabled={soundEnabled}
+              onOpenSubmit={handleOpenSubmit}
+              onSelectCategory={setSelectedCategory}
+              onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
+              onOpenPrivacy={() => handleNavigateLegal('privacy')}
+              onOpenTerms={() => handleNavigateLegal('terms')}
+              onOpenPricing={handleOpenPricing}
+            />
+          }
+        >
+          <React.Suspense fallback={fallback ?? <SkeletonDirectoryList />}>
+            {page}
+          </React.Suspense>
+        </HeroSponsorRails>
+      </main>
+      {globalModals}
+    </div>
   );
 
   // 0. PAYMENT SUCCESS ROUTE (/payment-success)
   if (currentRoute === '/payment-success') {
-    return (
-      <>
-        {globalHeader}
-        <PaymentSuccess
-          onBackToDirectory={handleBackToLeaderboard}
-          soundEnabled={soundEnabled}
-          onActivateFeatured={(productId) => {
-            setFeaturedProductId(productId);
-          }}
-        />
-        {globalModals}
-      </>
+    return renderDirectoryRailsChrome(
+      <PaymentSuccess
+        onBackToDirectory={handleBackToLeaderboard}
+        soundEnabled={soundEnabled}
+        onActivateFeatured={(productId) => {
+          setFeaturedProductId(productId);
+        }}
+      />
     );
   }
 
   // 0.2 PRICING PAGE ROUTE (/pricing)
   if (currentRoute === '/pricing') {
-    return (
-      <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between selection:bg-mint-500/20 selection:text-neutral-900 font-sans">
-        {globalHeader}
-        <React.Suspense fallback={<div className="flex-1" />}>
-          <PricingPage
-            onOpenSubmit={(plan) => {
-              if (plan === 'free_relaunch') {
-                try {
-                  localStorage.setItem('topsaas_submit_auto_relaunch', 'true');
-                } catch { }
-              }
-              handleOpenSubmit();
-            }}
-            onOpenSponsor={(tier) => {
-              playSound('click', soundEnabled);
-              setFeaturedModalMode('sponsor');
-              if (tier) {
-                setFeaturedInitialTier(tier);
-              }
-              setIsFeaturedSpotModalOpen(true);
-            }}
-            onOpenFeaturedSpot={(tier) => {
-              playSound('click', soundEnabled);
-              setFeaturedModalMode('featured');
-              if (tier) {
-                setFeaturedInitialTier(tier);
-              }
-              setIsFeaturedSpotModalOpen(true);
-            }}
-            onGoHome={handleBackToLeaderboard}
-            soundEnabled={soundEnabled}
-          />
-        </React.Suspense>
-        <RichFooter
-          totalProducts={directoryProducts.length}
-          soundEnabled={soundEnabled}
-          onOpenSubmit={handleOpenSubmit}
-          onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
-          onSelectCategory={setSelectedCategory}
-          onOpenPrivacy={() => handleNavigateLegal('privacy')}
-          onOpenTerms={() => handleNavigateLegal('terms')}
-          onOpenPricing={handleOpenPricing}
-          className="border-t border-neutral-200 bg-neutral-100"
-        />
-
-        <SignInModal
-          isOpen={isSignInModalOpen}
-          onClose={() => setIsSignInModalOpen(false)}
-          onSignIn={handleSignIn}
-        />
-        <FeaturedSpotModal
-          isOpen={isFeaturedSpotModalOpen}
-          onClose={() => setIsFeaturedSpotModalOpen(false)}
-          products={products}
-          user={user}
-          mode={featuredModalMode}
-          featuredProductIds={featuredProductIds}
-          initialTier={featuredInitialTier}
-          soundEnabled={soundEnabled}
-          onActivateSponsor={handleActivateSponsorTrial}
-          onActivateFeatured={handleActivateFeatured}
-          onOpenSignInModal={() => {
-            setIsFeaturedSpotModalOpen(false);
-            setIsSignInModalOpen(true);
-          }}
-          onOpenSubmitModal={() => {
-            setIsFeaturedSpotModalOpen(false);
-            handleOpenSubmit();
-          }}
-        />
-        <HowItWorksModal
-          isOpen={isHowItWorksOpen}
-          onClose={() => setIsHowItWorksOpen(false)}
-          onOpenSubmit={() => {
-            setIsHowItWorksOpen(false);
-            handleOpenSubmit();
-          }}
-          soundEnabled={soundEnabled}
-        />
-      </div>
+    return renderDirectoryRailsChrome(
+      <PricingPage
+        onOpenSubmit={(plan) => {
+          if (plan === 'free_relaunch') {
+            try {
+              localStorage.setItem('topsaas_submit_auto_relaunch', 'true');
+            } catch { }
+          }
+          handleOpenSubmit();
+        }}
+        onOpenSponsor={(tier) => {
+          playSound('click', soundEnabled);
+          setFeaturedModalMode('sponsor');
+          if (tier) {
+            setFeaturedInitialTier(tier);
+          }
+          setIsFeaturedSpotModalOpen(true);
+        }}
+        onOpenFeaturedSpot={(tier) => {
+          playSound('click', soundEnabled);
+          setFeaturedModalMode('featured');
+          if (tier) {
+            setFeaturedInitialTier(tier);
+          }
+          setIsFeaturedSpotModalOpen(true);
+        }}
+        onGoHome={handleBackToLeaderboard}
+        soundEnabled={soundEnabled}
+        activeFeaturedCount={featuredProductIds.length}
+        activeSponsorCount={activeRailSponsors.length}
+      />,
+      <div className="flex-1" />
     );
   }
 
   // 0.5 PROFILE PAGE ROUTE (/profile)
   if (currentRoute === '/profile') {
     if (!authLoaded) {
-      return (
-        <>
-          {globalHeader}
-          <SkeletonProfile />
-          {globalModals}
-        </>
-      );
+      return renderDirectoryRailsChrome(<SkeletonProfile />, <SkeletonProfile />);
     }
     if (!user) {
       setIsSignInModalOpen(true);
       setCurrentRoute('/');
       return null;
     }
-    return (
-      <>
-        {globalHeader}
-        <React.Suspense fallback={<SkeletonProfile />}>
-          <ProfilePage
-            user={user}
-            allProducts={products}
-            allSubmissions={submissions}
-            allSponsors={sponsors}
-            onBack={handleBackToLeaderboard}
-            onSignOut={handleSignOut}
-            onOpenSubmit={handleOpenSubmit}
-            onOpenFeaturedSpotModal={() => {
-              setIsSaaSIdeasSponsorModalOpen(true);
-            }}
-            onDeleteProduct={handleDelistProduct}
-            onUpdateProduct={handleUpdateProduct}
-            onSelectProduct={handleOpenProduct}
-            onShareProduct={handleOpenShare}
-            soundEnabled={soundEnabled}
-          />
-        </React.Suspense>
-        {globalModals}
-      </>
+    return renderDirectoryRailsChrome(
+      <ProfilePage
+        user={user}
+        allProducts={products}
+        allSubmissions={submissions}
+        allSponsors={sponsors}
+        onBack={handleBackToLeaderboard}
+        onSignOut={handleSignOut}
+        onOpenSubmit={handleOpenSubmit}
+        onOpenFeaturedSpotModal={() => {
+          setIsSaaSIdeasSponsorModalOpen(true);
+        }}
+        onDeleteProduct={handleDelistProduct}
+        onUpdateProduct={handleUpdateProduct}
+        onSelectProduct={handleOpenProduct}
+        onShareProduct={handleOpenShare}
+        soundEnabled={soundEnabled}
+      />,
+      <SkeletonProfile />
     );
   }
 
@@ -3659,66 +3699,6 @@ export default function App() {
     );
   }
 
-  // Shared directory side-rail chrome (fixed left & right rails + scrollable center) used throughout the app
-  const renderDirectoryRailsChrome = (page: React.ReactNode, fallback?: React.ReactNode) => (
-    <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between selection:bg-mint-500/20 selection:text-neutral-900 font-sans xl:h-screen xl:overflow-hidden pb-0 no-scrollbar">
-      {globalHeader}
-      <main className="mx-auto w-full max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 flex-1 pt-1 sm:pt-2 xl:min-h-0 xl:h-[calc(100vh-4.25rem)] xl:overflow-hidden pb-0 no-scrollbar">
-        <HeroSponsorRails
-          fixedRails
-          enabled={sponsorRailsEnabled}
-          sponsors={activeRailSponsors}
-          lastWeeksTop3={topThreeLastWeek}
-          lastWeekLabel={lastWeekInfo?.label}
-          onNavigateToDirectory={() => handleTabChange('product-directory')}
-          soundEnabled={soundEnabled}
-          isLoading={!productsLoaded}
-          onTrackClick={handleTrackClick}
-          onOpenProduct={handleOpenProduct}
-          onOpenFeaturedSpotModal={() => {
-            setFeaturedModalMode('sponsor');
-            if (!user) {
-              setIsSignInModalOpen(true);
-            } else {
-              setIsFeaturedSpotModalOpen(true);
-            }
-          }}
-          onOpenSubmit={handleOpenSubmit}
-          onSeeListing={() => {
-            if (topThreeLastWeek && topThreeLastWeek.length > 0) {
-              handleOpenProduct(topThreeLastWeek[0]);
-            } else {
-              handleTabChange('directory');
-            }
-          }}
-          onNavigateToBlog={() => {
-            setCurrentRoute('/blog');
-            try { window.history.pushState('', document.title, '/blog'); } catch { }
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
-          onOpenPricing={handleOpenPricing}
-          footer={
-            <RichFooter
-              totalProducts={directoryProducts.length}
-              soundEnabled={soundEnabled}
-              onOpenSubmit={handleOpenSubmit}
-              onSelectCategory={setSelectedCategory}
-              onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
-              onOpenPrivacy={() => handleNavigateLegal('privacy')}
-              onOpenTerms={() => handleNavigateLegal('terms')}
-              onOpenPricing={handleOpenPricing}
-            />
-          }
-        >
-          <React.Suspense fallback={fallback ?? <SkeletonDirectoryList />}>
-            {page}
-          </React.Suspense>
-        </HeroSponsorRails>
-      </main>
-      {globalModals}
-    </div>
-  );
-
   // Shared persistent 3-column Ideas & Repo chrome for /repo/:id, /trending, /guides, /guides/:slug
   const renderRepoChrome = (content: React.ReactNode) => (
     <div className="min-h-screen xl:h-screen xl:overflow-hidden bg-white text-neutral-900 flex flex-col font-sans no-scrollbar">
@@ -3878,88 +3858,40 @@ export default function App() {
   // 1.25 SUBMIT / LAUNCH A PRODUCT PAGE ROUTE (/submit)
   if (currentRoute === '/submit') {
     if (!authLoaded) {
-      return (
-        <>
-          {globalHeader}
-          <div className="min-h-screen bg-white text-neutral-900 flex items-center justify-center font-sans">
-            <Loader2 className="h-6 w-6 text-neutral-400 animate-spin" />
-          </div>
-          {globalModals}
-        </>
+      return renderDirectoryRailsChrome(
+        <div className="min-h-[320px] flex items-center justify-center">
+          <Loader2 className="h-6 w-6 text-neutral-400 animate-spin" />
+        </div>,
+        undefined,
+        { hideMobileSponsor: true }
       );
     }
-    return (
-      <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between font-sans">
-        {globalHeader}
-        <React.Suspense fallback={<div className="flex-1" />}>
-          <SubmitPage
-            isSignedIn={!!user}
-            defaultCreatorName={submitterName}
-            defaultCreatorAvatar={user?.user_metadata?.avatar_url || user?.user_metadata?.picture || ''}
-            onBack={handleBackToLeaderboard}
-            onSignInRequest={() => setIsSignInModalOpen(true)}
-            onSubmit={handleConfirmSubmit}
-            onViewListing={(productId) => {
-              setCurrentRoute('product');
-              const targetProd = products.find((p) => matchesProductIdentifier(p, productId));
-              const slug = targetProd ? getProductSlug(targetProd) : productId;
-              setProductRouteId(slug || productId);
-              try {
-                window.history.pushState({}, targetProd?.name || 'Product', `/products/${encodeURIComponent(slug || productId)}`);
-              } catch { }
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-            soundEnabled={soundEnabled}
-            products={products}
-            submissions={submissions}
-            onUpvote={handleUpvote}
-            userUpvotes={userUpvotes}
-          />
-        </React.Suspense>
-        <RichFooter
-          totalProducts={directoryProducts.length}
-          soundEnabled={soundEnabled}
-          onOpenSubmit={handleOpenSubmit}
-          onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
-          onSelectCategory={setSelectedCategory}
-          onOpenPrivacy={() => {
-            setCurrentRoute('/privacy');
-            try { window.history.pushState('', document.title, '/privacy'); } catch { }
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
-          onOpenTerms={() => {
-            setCurrentRoute('/terms');
-            try { window.history.pushState('', document.title, '/terms'); } catch { }
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
-          onOpenPricing={handleOpenPricing}
-        />
-        <SignInModal
-          isOpen={isSignInModalOpen}
-          onClose={() => setIsSignInModalOpen(false)}
-          onSignIn={handleSignIn}
-        />
-        <FeaturedSpotModal
-          isOpen={isFeaturedSpotModalOpen}
-          onClose={() => setIsFeaturedSpotModalOpen(false)}
-          products={products}
-          user={user}
-          mode={featuredModalMode}
-          featuredProductIds={featuredProductIds}
-          initialTier={featuredInitialTier}
-          soundEnabled={soundEnabled}
-          onActivateSponsor={handleActivateSponsorTrial}
-          onActivateFeatured={handleActivateFeatured}
-          onOpenSignInModal={() => {
-            setIsFeaturedSpotModalOpen(false);
-            setIsSignInModalOpen(true);
-          }}
-          onOpenSubmitModal={() => {
-            setIsFeaturedSpotModalOpen(false);
-            handleOpenSubmit();
-          }}
-        />
-      </div>
+    return renderDirectoryRailsChrome(
+      <SubmitPage
+        isSignedIn={!!user}
+        defaultCreatorName={submitterName}
+        defaultCreatorAvatar={user?.user_metadata?.avatar_url || user?.user_metadata?.picture || ''}
+        onBack={handleBackToLeaderboard}
+        onSignInRequest={() => setIsSignInModalOpen(true)}
+        onSubmit={handleConfirmSubmit}
+        onViewListing={(productId) => {
+          setCurrentRoute('product');
+          const targetProd = products.find((p) => matchesProductIdentifier(p, productId));
+          const slug = targetProd ? getProductSlug(targetProd) : productId;
+          setProductRouteId(slug || productId);
+          try {
+            window.history.pushState({}, targetProd?.name || 'Product', `/products/${encodeURIComponent(slug || productId)}`);
+          } catch { }
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        soundEnabled={soundEnabled}
+        products={products}
+        submissions={submissions}
+        onUpvote={handleUpvote}
+        userUpvotes={userUpvotes}
+      />,
+      <div className="flex-1" />,
+      { hideMobileSponsor: true }
     );
   }
 
@@ -4038,63 +3970,20 @@ export default function App() {
 
   // Legal Page Route (Privacy Policy & Terms of Service)
   if (currentRoute === '/privacy' || currentRoute === '/terms') {
-    return (
-      <>
-        {globalHeader}
-        <React.Suspense fallback={<div className="min-h-screen bg-white" />}>
-          <LegalPage
-            initialDoc={currentRoute === '/terms' ? 'terms' : 'privacy'}
-            onBack={handleBackToLeaderboard}
-            onOpenSubmit={handleOpenSubmit}
-            totalProducts={directoryProducts.length}
-            soundEnabled={soundEnabled}
-            onSelectCategory={setSelectedCategory}
-            onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
-            onOpenPricing={handleOpenPricing}
-          />
-        </React.Suspense>
-        {globalModals}
-      </>
-    );
-  }
-
-  // Shared chrome (header + footer) for the standalone routes below.
-  const routeChrome = (page: React.ReactNode) => (
-    <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between selection:bg-mint-500/20 selection:text-neutral-900 font-sans pb-16 lg:pb-0">
-      {globalHeader}
-      {/* Mobile floating sticky sponsor for directory & ecosystem pages */}
-      <div className="sticky top-[60px] z-30 lg:hidden w-full px-3.5 sm:px-6 pt-2 pointer-events-none flex justify-center">
-        <div className="pointer-events-auto w-full max-w-xl">
-          <SaaSIdeasMobileSponsor
-            slots={DIRECTORY_MOBILE_SLOTS}
-            sponsors={activeRailSponsors}
-            soundEnabled={soundEnabled}
-            onTrackClick={handleTrackClick}
-            onOpenProduct={handleOpenProduct}
-            onOpenFeaturedSpotModal={() => {
-              setFeaturedModalMode('sponsor');
-              setIsFeaturedSpotModalOpen(true);
-            }}
-            isFloating
-          />
-        </div>
-      </div>
-      <React.Suspense fallback={<div className="flex-1" />}>
-        {page}
-      </React.Suspense>
-      <RichFooter
+    return renderDirectoryRailsChrome(
+      <LegalPage
+        initialDoc={currentRoute === '/terms' ? 'terms' : 'privacy'}
+        onBack={handleBackToLeaderboard}
+        onOpenSubmit={handleOpenSubmit}
         totalProducts={directoryProducts.length}
         soundEnabled={soundEnabled}
-        onOpenSubmit={handleOpenSubmit}
         onSelectCategory={setSelectedCategory}
         onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
-        onOpenPrivacy={() => handleNavigateLegal('privacy')}
-        onOpenTerms={() => handleNavigateLegal('terms')}
         onOpenPricing={handleOpenPricing}
-      />
-      {globalModals}
-    </div>
-  );
+      />,
+      <div className="min-h-screen bg-white" />
+    );
+  }
 
   // 1.7 TRENDING ROUTE (/trending)
   if (currentRoute === 'trending') {
@@ -4379,26 +4268,15 @@ export default function App() {
                 }}
               />
 
-              {/* ── Weekly launch view (horizontal): week selector ── */}
-              <WeeklyLaunchView
-                selectedWeek={selectedWeek}
-                onSelectWeek={(w) => {
-                  setSelectedWeek(w);
-                  setCurrentPage(1);
-                }}
-                launchCount={selectedWeek ? weekScopedProducts.length : undefined}
-                soundEnabled={soundEnabled}
-              />
-
               {/* ── Directory board: centered ranked list within sponsor rails ── */}
               <section
                 id="leaderboard-section"
                 className="w-full rounded-3xl border border-neutral-200/90 bg-white p-4 sm:p-6 shadow-xs mt-4"
               >
                 <div className="w-full space-y-4">
-                  {/* Header row: title + subtitle */}
-                  <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
-                    <div>
+                  {/* Header row: title + subtitle + weekly dropdown */}
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-3 pb-3 border-b border-neutral-100">
+                    <div className="min-w-0">
                       <h2 className="text-base font-extrabold tracking-tight text-neutral-950 sm:text-lg">
                         {selectedWeek
                           ? selectedWeek.isCurrent
@@ -4406,12 +4284,16 @@ export default function App() {
                             : `${selectedWeek.label} Launches`
                           : 'All-Time Leaderboard'}
                       </h2>
-                      <p className="text-xs font-medium text-neutral-500 mt-0.5">
-                        {selectedWeek
-                          ? `${formatWeekDateRange(selectedWeek, 'to')} · Ranked by engagement ${selectedWeek.isCurrent ? 'this week' : `in ${selectedWeek.label}`}`
-                          : 'Ranked by community upvotes & early adopter visits'}
-                      </p>
                     </div>
+                    <WeeklyLaunchView
+                      selectedWeek={selectedWeek}
+                      onSelectWeek={(w) => {
+                        setSelectedWeek(w);
+                        setCurrentPage(1);
+                      }}
+                      launchCount={selectedWeek ? weekScopedProducts.length : undefined}
+                      soundEnabled={soundEnabled}
+                    />
                   </div>
 
                   {/* Category bar + Steals Only toggle on the same line (right-side edge) */}

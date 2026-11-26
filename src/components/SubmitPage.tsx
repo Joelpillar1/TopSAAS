@@ -1155,7 +1155,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10 whitespace-nowrap">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-600 bg-blue-600 px-3.5 py-0.5 text-[10px] font-bold text-white shadow-sm shadow-blue-600/25">
                 <Sparkles className="h-3 w-3 fill-white/20" />
-                <span>Most Popular · $5 Fast-Track</span>
+                <span>Most Popular · $9 Fast-Track Offer</span>
               </span>
             </div>
 
@@ -1174,11 +1174,12 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
               </div>
 
               <div className="text-right shrink-0">
-                <div className="flex items-baseline gap-1 justify-end">
-                  <span className="text-2xl sm:text-3xl font-black text-neutral-950 tracking-tight font-sans">$5.00</span>
+                <div className="flex items-baseline gap-1.5 justify-end">
+                  <span className="text-sm sm:text-base font-bold text-neutral-400 line-through font-sans">$15</span>
+                  <span className="text-2xl sm:text-3xl font-black text-neutral-950 tracking-tight font-sans">$9.00</span>
                   <span className="text-[11px] font-bold text-neutral-500 font-sans">one-time</span>
                 </div>
-                <p className="text-[10px] font-bold text-blue-700">Lifetime listing</p>
+                <p className="text-[10px] font-bold text-emerald-700">Limited offer · Lifetime listing</p>
               </div>
             </div>
 
@@ -1272,7 +1273,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                   </>
                 ) : (
                   <>
-                    <span>Upgrade {launched.name} to Verified — $5</span>
+                    <span>Upgrade {launched.name} to Verified — $9</span>
                     <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                   </>
                 )}
@@ -2604,9 +2605,13 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                         Fast-track 24h approval, category top-3 spot (7 days), dofollow SEO backlink, and verified badge.
                       </p>
 
-                      <div className="flex items-baseline gap-2 my-1.5">
-                        <span className="text-3xl sm:text-4xl font-extrabold text-neutral-950 tracking-tight font-sans">$5.00</span>
+                      <div className="flex items-baseline gap-2 my-1.5 flex-wrap">
+                        <span className="text-lg sm:text-xl font-bold text-neutral-400 line-through font-sans">$15</span>
+                        <span className="text-3xl sm:text-4xl font-extrabold text-neutral-950 tracking-tight font-sans">$9.00</span>
                         <span className="text-xs font-semibold text-neutral-500 font-sans">/Product (One-time)</span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 self-center">
+                          Limited Offer
+                        </span>
                       </div>
 
                       <div className="pt-2 mb-4 space-y-2.5">
@@ -2670,7 +2675,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                       }}
                       className="btn-primary w-full rounded-2xl py-3 px-4 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
                     >
-                      <span>{submissionPlan === 'paid_19' ? 'Selected ✓' : 'Get Verified Launch — $5 →'}</span>
+                      <span>{submissionPlan === 'paid_19' ? 'Selected ✓' : 'Get Verified Launch — $9 →'}</span>
                     </button>
                   </div>
                 </div>
@@ -2792,7 +2797,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                   ) : (
                     <>
                       <span>⚡</span>
-                      <span>Launch Now - $5</span>
+                      <span>Launch Now - $9</span>
                     </>
                   )}
                 </button>
@@ -3195,7 +3200,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                     ) : (
                       <>
                         <span>🚀</span>
-                        <span>Launch Now - $5</span>
+                        <span>Launch Now - $9</span>
                       </>
                     )}
                   </button>
