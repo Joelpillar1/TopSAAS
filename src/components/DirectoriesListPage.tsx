@@ -168,17 +168,9 @@ export const DirectoriesListPage: React.FC<DirectoriesListPageProps> = ({
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-neutral-200 bg-gradient-to-b from-neutral-50 via-white to-white py-12 sm:py-16">
         <GridPattern className="opacity-35" />
-        <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <div className="relative mx-auto max-w-4xl px-4 sm:px-6 text-center">
+          <div className="flex flex-col items-center gap-6">
             <div className="max-w-2xl space-y-3">
-              <div className="inline-flex items-center gap-2 rounded-full border border-blue-200/70 bg-blue-50/40 p-1 pr-3.5 text-xs shadow-2xs">
-                <span className="rounded-full bg-blue-600 px-2.5 py-0.5 text-[11px] font-bold text-white shadow-xs">
-                  Directory
-                </span>
-                <span className="font-semibold text-neutral-800 text-[12px]">
-                  Verified 2026 Launch Index
-                </span>
-              </div>
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-neutral-950">
                 {hub ? hub.title : `${baseDirectories.length}+ Best Startup Launch Directories`}
               </h1>
@@ -187,7 +179,7 @@ export const DirectoriesListPage: React.FC<DirectoriesListPageProps> = ({
                   ? hub.description
                   : 'Curated list of verified launch directories, review platforms, and communities to submit your software for dofollow backlinks, initial traffic, and domain rating.'}
               </p>
-              <div className="flex flex-wrap items-center gap-4 pt-1 text-xs text-neutral-500">
+              <div className="flex flex-wrap items-center justify-center gap-4 pt-1 text-xs text-neutral-500">
                 <span className="flex items-center gap-1.5 font-medium">
                   <CalendarDays className="h-3.5 w-3.5 text-neutral-400" />
                   Checked {LAST_UPDATED}
@@ -200,17 +192,17 @@ export const DirectoriesListPage: React.FC<DirectoriesListPageProps> = ({
             </div>
 
             {/* Metric pill counter cards */}
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className="grid w-full max-w-xl grid-cols-2 gap-2.5 sm:grid-cols-4">
               {[
                 { label: 'Total Directories', value: stats.total, icon: Globe2 },
                 { label: 'Free to list', value: stats.freeToStart, icon: DollarSign },
                 { label: 'Dofollow', value: stats.dofollow, icon: Link2 },
                 { label: 'Median DR', value: stats.medianDr, icon: TrendingUp },
               ].map(({ label, value, icon: Icon }) => (
-                <div key={label} className="rounded-xl border border-neutral-200 bg-white px-3 py-3 text-center shadow-2xs">
+                <div key={label} className="rounded-xl border border-neutral-200 bg-white px-3.5 py-3 text-center shadow-2xs">
                   <Icon className="mx-auto h-4 w-4 text-neutral-400" />
                   <div className="mt-1 text-xl font-black font-mono-num text-neutral-950">{value}</div>
-                  <div className="text-[10px] font-bold uppercase tracking-wide text-neutral-500">{label}</div>
+                  <div className="mt-0.5 text-[10px] font-bold uppercase leading-tight tracking-wide text-neutral-500">{label}</div>
                 </div>
               ))}
             </div>

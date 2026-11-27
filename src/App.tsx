@@ -942,6 +942,29 @@ export default function App() {
     };
   }, []);
 
+  // Snap to the top of the viewport whenever the active route or detail slug changes.
+  // Using `instant` overrides <html class="scroll-smooth"> so lazy-loaded pages
+  // never stall halfway up during a smooth scroll.
+  const hasMountedRouteScrollRef = React.useRef(false);
+  useEffect(() => {
+    if (!hasMountedRouteScrollRef.current) {
+      hasMountedRouteScrollRef.current = true;
+      return;
+    }
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, [
+    currentRoute,
+    productRouteId,
+    repoRouteId,
+    openSourceSlug,
+    guideSlug,
+    blogSlug,
+    directorySlug,
+    directoryHubSlug,
+  ]);
+
   // Keep private and transactional routes out of search indexes. The matching
   // X-Robots-Tag headers in vercel.json cover crawlers that never run React.
   useEffect(() => {
@@ -2664,30 +2687,42 @@ export default function App() {
     }
   };
 
+  const isDefaultBannerId = (id: string) => id === 'default' || id.startsWith('default_banner_');
+
   const isDefaultFeatured = featuredProductId === null || featuredProductId === 'default';
   const isEmptyFeatured = featuredProductId === '' || featuredProductId === 'empty';
   const isFeaturedExpired = Boolean(featuredExpiresAt && Date.now() > featuredExpiresAt);
 
-  // Resolved list of all active (non-expired) featured products in order
-  const featuredProducts: Product[] = (() => {
+  type FeaturedFeedItem =
+    | { kind: 'product'; id: string; product: Product }
+    | { kind: 'banner'; id: string };
+
+  // Resolved list of all active (non-expired) featured items (products + default banners) in order
+  const resolvedFeaturedItems: FeaturedFeedItem[] = (() => {
     if (isEmptyFeatured || isFeaturedExpired) return [];
     const ids = featuredProductIds.length > 0
       ? featuredProductIds
       : (featuredProductId && !isDefaultFeatured ? [featuredProductId] : []);
     return ids
-      .map((id) => {
+      .map((id): FeaturedFeedItem | null => {
+        if (isDefaultBannerId(id)) {
+          return { kind: 'banner', id };
+        }
         const p = products.find((prod) => prod.id === id);
-        if (p) return p;
-        const sub = submissions.find((s) => s.id === id);
-        if (sub) return submissionToProduct(sub, 1);
-        return undefined;
+        const resolved = p || (() => {
+          const sub = submissions.find((s) => s.id === id);
+          return sub ? submissionToProduct(sub, 1) : undefined;
+        })();
+        if (!resolved) return null;
+        if (resolved.sponsorExpiresAt && Date.now() > resolved.sponsorExpiresAt) return null;
+        return { kind: 'product', id: resolved.id, product: resolved };
       })
-      .filter((p): p is Product => {
-        if (!p) return false;
-        if (p.sponsorExpiresAt && Date.now() > p.sponsorExpiresAt) return false;
-        return true;
-      });
+      .filter((item): item is FeaturedFeedItem => item !== null);
   })();
+
+  const featuredProducts: Product[] = resolvedFeaturedItems
+    .filter((item): item is { kind: 'product'; id: string; product: Product } => item.kind === 'product')
+    .map((item) => item.product);
 
   const explicitFeaturedProduct = featuredProducts[0] || null;
 
@@ -2933,6 +2968,15 @@ export default function App() {
   const feedFeaturedProducts = selectedCategory === 'All'
     ? featuredProducts
     : featuredProducts.filter((p) => {
+      const productCats = p.category ? p.category.split(',').map((c) => c.trim().toLowerCase()) : [];
+      return p.category === selectedCategory || productCats.includes(selectedCategory.toLowerCase());
+    });
+
+  const feedFeaturedItems: FeaturedFeedItem[] = selectedCategory === 'All'
+    ? resolvedFeaturedItems
+    : resolvedFeaturedItems.filter((item) => {
+      if (item.kind === 'banner') return true;
+      const p = item.product;
       const productCats = p.category ? p.category.split(',').map((c) => c.trim().toLowerCase()) : [];
       return p.category === selectedCategory || productCats.includes(selectedCategory.toLowerCase());
     });
@@ -3198,7 +3242,10 @@ export default function App() {
     if (typeof window === 'undefined') return;
     if (currentRoute === '/submit' || currentRoute === '/accept' || currentRoute === '/payment-success') return;
     try {
-      if (sessionStorage.getItem('topsaas_bf_modal_dismissed') === 'true') return;
+      const dismissedAt = Number(localStorage.getItem('topsaas_bf_modal_dismissed_at'));
+      if (Number.isFinite(dismissedAt) && dismissedAt > 0 && Date.now() - dismissedAt < 30 * 60 * 1000) {
+        return;
+      }
     } catch { }
     const timer = setTimeout(() => {
       setIsBlackFridayModalOpen(true);
@@ -3209,7 +3256,7 @@ export default function App() {
   const dismissBlackFridayModal = () => {
     setIsBlackFridayModalOpen(false);
     try {
-      sessionStorage.setItem('topsaas_bf_modal_dismissed', 'true');
+      localStorage.setItem('topsaas_bf_modal_dismissed_at', String(Date.now()));
     } catch { }
   };
 
@@ -3373,7 +3420,7 @@ export default function App() {
         }}
         onGoHome={handleBackToLeaderboard}
         soundEnabled={soundEnabled}
-        activeFeaturedCount={featuredProductIds.length}
+        activeFeaturedCount={featuredProducts.length}
         activeSponsorCount={activeRailSponsors.length}
       />,
       <div className="flex-1" />
@@ -4410,19 +4457,19 @@ export default function App() {
                     </div>
                   ) : filteredProducts.length === 0 ? (
                     <div className="space-y-3">
-                      {/* Active, not expired featured products OR default open spot keep showing even when there are no other products */}
+                      {/* Active, not expired featured products / default banners keep showing even when there are no other products */}
                       {currentPage === 1 && !isEmptyFeatured && (
                         <div className="space-y-3">
-                          {feedFeaturedProducts.length > 0 ? (
-                            feedFeaturedProducts.map((fp) => (
+                          {feedFeaturedItems.length > 0 ? (
+                            feedFeaturedItems.map((item) => (
                               <SponsorTile
-                                key={fp.id}
+                                key={item.id}
                                 soundEnabled={soundEnabled}
-                                product={fp}
+                                product={item.kind === 'product' ? item.product : null}
                                 onOpenProduct={handleOpenProduct}
                                 onTrackClick={handleTrackClick}
                                 onUpvote={handleUpvote}
-                                upvoted={isProductUpvoted(fp.id, userUpvotes)}
+                                upvoted={item.kind === 'product' ? isProductUpvoted(item.product.id, userUpvotes) : false}
                                 onOpenFeaturedSpotModal={() => {
                                   setFeaturedModalMode('featured');
                                   if (!user) {
@@ -4575,22 +4622,22 @@ export default function App() {
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {/* Featured sponsor(s) placed at Top (position 0) or default reserve spot placeholder */}
+                      {/* Featured sponsor(s) / default banner(s) placed at Top (position 0) or fallback reserve spot */}
                       {currentPage === 1 && !isEmptyFeatured && (
-                        feedFeaturedProducts.length > 0 ? (
-                          feedFeaturedProducts.filter((fp) => (featuredPositions[fp.id] !== undefined ? featuredPositions[fp.id] : featuredPosition) === 0).length > 0 && (
+                        feedFeaturedItems.length > 0 ? (
+                          feedFeaturedItems.filter((item) => (featuredPositions[item.id] !== undefined ? featuredPositions[item.id] : featuredPosition) === 0).length > 0 && (
                             <div className="space-y-3">
-                              {feedFeaturedProducts
-                                .filter((fp) => (featuredPositions[fp.id] !== undefined ? featuredPositions[fp.id] : featuredPosition) === 0)
-                                .map((fp) => (
+                              {feedFeaturedItems
+                                .filter((item) => (featuredPositions[item.id] !== undefined ? featuredPositions[item.id] : featuredPosition) === 0)
+                                .map((item) => (
                                   <SponsorTile
-                                    key={fp.id}
+                                    key={item.id}
                                     soundEnabled={soundEnabled}
-                                    product={fp}
+                                    product={item.kind === 'product' ? item.product : null}
                                     onOpenProduct={handleOpenProduct}
                                     onTrackClick={handleTrackClick}
                                     onUpvote={handleUpvote}
-                                    upvoted={isProductUpvoted(fp.id, userUpvotes)}
+                                    upvoted={item.kind === 'product' ? isProductUpvoted(item.product.id, userUpvotes) : false}
                                     onOpenFeaturedSpotModal={() => {
                                       setFeaturedModalMode('featured');
                                       if (!user) {
@@ -4628,9 +4675,9 @@ export default function App() {
                         const currentRank = startIndex + index + 1;
                         const isLastItem = index === paginatedProducts.length - 1;
 
-                        // Per-product featured items placed after this rank
-                        const featuredAfterThis = feedFeaturedProducts.filter((fp) => {
-                          const pos = featuredPositions[fp.id] !== undefined ? featuredPositions[fp.id] : featuredPosition;
+                        // Per-item featured items (products & default banners) placed after this rank
+                        const featuredAfterThis = feedFeaturedItems.filter((item) => {
+                          const pos = featuredPositions[item.id] !== undefined ? featuredPositions[item.id] : featuredPosition;
                           if (pos === currentRank) return true;
                           if (isLastItem && pos > currentRank) return true;
                           return false;
@@ -4659,15 +4706,15 @@ export default function App() {
                             />
                             {currentPage === 1 && !isEmptyFeatured && featuredAfterThis.length > 0 && (
                               <div className="pt-0.5 space-y-3">
-                                {featuredAfterThis.map((fp) => (
+                                {featuredAfterThis.map((item) => (
                                   <SponsorTile
-                                    key={fp.id}
+                                    key={item.id}
                                     soundEnabled={soundEnabled}
-                                    product={fp}
+                                    product={item.kind === 'product' ? item.product : null}
                                     onOpenProduct={handleOpenProduct}
                                     onTrackClick={handleTrackClick}
                                     onUpvote={handleUpvote}
-                                    upvoted={isProductUpvoted(fp.id, userUpvotes)}
+                                    upvoted={item.kind === 'product' ? isProductUpvoted(item.product.id, userUpvotes) : false}
                                     onOpenFeaturedSpotModal={() => {
                                       setFeaturedModalMode('featured');
                                       if (!user) {

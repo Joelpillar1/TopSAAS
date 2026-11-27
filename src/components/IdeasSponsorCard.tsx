@@ -18,7 +18,7 @@ export const IDEAS_SPONSOR_SLOTS: IdeasSponsorSlotDef[] = [
     slotNumber: 1,
     title: 'Advertise your product',
     category: 'Prime Placement',
-    description: 'Your product on a Sponsor card across the site, for 30 days.',
+    description: 'Your product on a Sponsor card across the site.',
     footerLabel: 'Sponsored',
   },
   {
@@ -26,7 +26,7 @@ export const IDEAS_SPONSOR_SLOTS: IdeasSponsorSlotDef[] = [
     slotNumber: 2,
     title: 'Advertise your product',
     category: 'Prime Placement',
-    description: 'Your product on a Sponsor card across the site, for 30 days.',
+    description: 'Your product on a Sponsor card across the site.',
     footerLabel: 'Sponsored',
   },
   {
@@ -34,7 +34,7 @@ export const IDEAS_SPONSOR_SLOTS: IdeasSponsorSlotDef[] = [
     slotNumber: 3,
     title: 'Advertise your product',
     category: 'Prime Placement',
-    description: 'Your product on a Sponsor card across the site, for 30 days.',
+    description: 'Your product on a Sponsor card across the site.',
     footerLabel: 'Sponsored',
   },
   {
@@ -42,7 +42,7 @@ export const IDEAS_SPONSOR_SLOTS: IdeasSponsorSlotDef[] = [
     slotNumber: 4,
     title: 'Advertise your product',
     category: 'Prime Placement',
-    description: 'Your product on a Sponsor card across the site, for 30 days.',
+    description: 'Your product on a Sponsor card across the site.',
     footerLabel: 'Sponsored',
   },
   {
@@ -50,7 +50,7 @@ export const IDEAS_SPONSOR_SLOTS: IdeasSponsorSlotDef[] = [
     slotNumber: 5,
     title: 'Advertise your product',
     category: 'Prime Placement',
-    description: 'Your product on a Sponsor card across the site, for 30 days.',
+    description: 'Your product on a Sponsor card across the site.',
     footerLabel: 'Sponsored',
   },
 ];

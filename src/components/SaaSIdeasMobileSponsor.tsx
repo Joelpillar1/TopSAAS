@@ -171,7 +171,7 @@ export const SaaSIdeasMobileSponsor: React.FC<SaaSIdeasMobileSponsorProps> = ({
   const displayName = currentProduct?.name || currentSlot.title || 'Advertise your product';
   const displayTagline = currentProduct
     ? (currentProduct.tagline || currentProduct.description || 'Verified developer tool')
-    : (currentSlot.description || currentSlot.subtitle || 'Your product on a Sponsor card across the site, for 30 days.');
+    : (currentSlot.description || currentSlot.subtitle || 'Your product on a Sponsor card across the site.');
   const logoSrc = currentProduct
     ? (currentProduct.logoUrl || (currentProduct.url ? getWebsiteFavicon(currentProduct.url, 48) : null))
     : null;

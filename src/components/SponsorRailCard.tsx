@@ -121,7 +121,7 @@ export const SponsorRailCard: React.FC<SponsorRailCardProps> = ({
 
   const description = isTopSaasHouse
     ? 'Get your startup discovered by early adopters and indexed by Google, Bing, AI search, and LLMs.'
-    : product?.tagline || slotDescription || 'Your product on a Sponsor card across the site, for 30 days.';
+    : product?.tagline || slotDescription || 'Your product on a Sponsor card across the site.';
 
   const ctaText = ctaLabel || (
     isTopSaasHouse

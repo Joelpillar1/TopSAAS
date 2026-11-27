@@ -87,7 +87,7 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                               The featured spot is open
                             </p>
                             <p className="text-[11px] text-neutral-500 font-medium truncate">
-                              Put your product at the top of TopSAAS for 30 days.
+                              Put your product at the top of TopSAAS.
                             </p>
                           </div>
                         </div>

@@ -90,7 +90,7 @@ export const HowItWorksModal: React.FC<HowItWorksModalProps> = ({
               <span>4. Claim the Featured Spot (Optional)</span>
             </div>
             <p className="text-neutral-600 leading-relaxed font-normal pl-6">
-              Want maximum exposure? Reserve the featured spotlight banner at the top of the directory for 30 days.
+              Want maximum exposure? Reserve the featured spotlight banner at the top of the directory.
             </p>
           </div>
         </div>

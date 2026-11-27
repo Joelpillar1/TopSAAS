@@ -76,6 +76,34 @@
       }
     },
     {
+      "src": "/directory",
+      "status": 308,
+      "headers": {
+        "Location": "/"
+      }
+    },
+    {
+      "src": "/faq",
+      "status": 308,
+      "headers": {
+        "Location": "/"
+      }
+    },
+    {
+      "src": "/login",
+      "status": 308,
+      "headers": {
+        "Location": "/profile"
+      }
+    },
+    {
+      "src": "/(?:@|profile/)?listingbott",
+      "status": 308,
+      "headers": {
+        "Location": "/products/listingbott"
+      }
+    },
+    {
       "src": "/api/verify-badge",
       "dest": "/api/verify-badge"
     },
@@ -84,8 +112,20 @@
       "dest": "/api/autofill-submission"
     },
     {
+      "src": "/api/badge",
+      "dest": "/api/badge"
+    },
+    {
+      "src": "/api/badge/(.*)",
+      "dest": "/api/badge?slug=$1"
+    },
+    {
+      "src": "/badge",
+      "dest": "/api/badge"
+    },
+    {
       "src": "/badge/(.*)",
-      "dest": "/api/badge/$1"
+      "dest": "/api/badge?slug=$1"
     },
     {
       "src": "/r",

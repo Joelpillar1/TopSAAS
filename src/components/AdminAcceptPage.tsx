@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
+import {
   ArrowLeft, ArrowUpDown, Check, X, Clock, ExternalLink, ShieldCheck, Search, Trash2, Eye, RotateCcw, Globe, Twitter, User, Calendar, CheckCircle2, XCircle, AlertCircle, Edit3, Plus, Trophy, Crown, ChevronUp, ChevronDown, Star, LayoutList, Mail, Flame, Tag, Play, Pause, Video, Copy, Image as ImageIcon, MessageSquareQuote, Target, Layers, Info, Sparkles, BadgeCheck, Megaphone, Award, LogOut, Rocket
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -370,12 +370,12 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
   const autoRelaunchCount = submissions.filter((s) => s.autoRelaunch || s.autoRelaunchPaid).length;
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  
+
   // Products management state
   const [productSearchQuery, setProductSearchQuery] = useState('');
   const [productCategoryFilter, setProductCategoryFilter] = useState<string>('All');
   const [productVerifiedFilter, setProductVerifiedFilter] = useState<'all' | 'verified' | 'unverified' | 'relaunch'>('all');
-  
+
   // Edit modal state
   const [editingSubmission, setEditingSubmission] = useState<WebsiteSubmission | null>(null);
   const [editName, setEditName] = useState('');
@@ -409,7 +409,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
       setCopiedOfferCode(true);
       playSound('click', soundEnabled);
       setTimeout(() => setCopiedOfferCode(false), 2000);
-    } catch {}
+    } catch { }
   };
 
   // Revoke confirmation modal state
@@ -463,7 +463,9 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
     return true;
   });
 
-  // Current featured products (multiple supported)
+  const isDefaultBannerId = (id: string) => id === 'default' || id.startsWith('default_banner_');
+
+  // Current featured items (multiple products + multiple default banners supported)
   const isDefaultFeatured = featuredProductId === null || featuredProductId === 'default';
   const isEmptyFeatured = featuredProductId === '' || featuredProductId === 'empty';
 
@@ -471,9 +473,25 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
     ? featuredProductIds
     : (!isDefaultFeatured && !isEmptyFeatured && featuredProductId ? [featuredProductId] : []);
 
-  const activeFeaturedProducts: Product[] = activeFeaturedIds
-    .map((id) => products.find((p) => p.id === id))
-    .filter((p): p is Product => !!p);
+  type ActiveFeaturedItem =
+    | { kind: 'product'; id: string; product: Product }
+    | { kind: 'banner'; id: string };
+
+  const activeFeaturedItems: ActiveFeaturedItem[] = activeFeaturedIds
+    .map((id): ActiveFeaturedItem | null => {
+      if (isDefaultBannerId(id)) {
+        return { kind: 'banner', id };
+      }
+      const prod = products.find((p) => p.id === id);
+      return prod ? { kind: 'product', id, product: prod } : null;
+    })
+    .filter((item): item is ActiveFeaturedItem => item !== null);
+
+  const activeFeaturedProducts: Product[] = activeFeaturedItems
+    .filter((item): item is { kind: 'product'; id: string; product: Product } => item.kind === 'product')
+    .map((item) => item.product);
+
+  const activeBannerCount = activeFeaturedItems.filter((item) => item.kind === 'banner').length;
 
   const featuredProduct = activeFeaturedProducts[0] || null;
 
@@ -529,7 +547,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
     playSound('success', soundEnabled);
     try {
       confetti({ particleCount: 40, spread: 60, origin: { y: 0.6 } });
-    } catch {}
+    } catch { }
     setIsAssigningSponsor(false);
     setSponsorAssignProduct(null);
   };
@@ -549,7 +567,16 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
         spread: 45,
         origin: { y: 0.6 },
       });
-    } catch {}
+    } catch { }
+  };
+
+  const handleAddDefaultBanner = () => {
+    const newBannerId = `default_banner_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    const nextIds = [...activeFeaturedIds, newBannerId];
+    if (onSetFeaturedProducts) {
+      onSetFeaturedProducts(nextIds, 'active');
+    }
+    playSound('success', soundEnabled);
   };
 
   const handleRemoveFeatured = (productId: string) => {
@@ -624,7 +651,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
         origin: { y: 0.6 },
         colors: ['#000000', '#22c55e', '#3b82f6', '#f59e0b'],
       });
-    } catch {}
+    } catch { }
 
     const isFuture = !isLaunched(sub);
     onAcceptSubmission(sub);
@@ -647,7 +674,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
         origin: { y: 0.6 },
         colors: ['#000000', '#22c55e', '#3b82f6', '#f59e0b'],
       });
-    } catch {}
+    } catch { }
 
     const now = Date.now();
     if (item.productRef) {
@@ -741,7 +768,6 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
         creatorName: p.creatorName,
         creatorUsername: p.creatorUsername,
         creatorAvatar: p.creatorAvatar,
-        backerName: p.creatorName || p.submittedBy || 'Creator',
         submittedBy: p.submittedBy,
         offerDiscount: p.offerDiscount,
         offerCode: p.offerCode,
@@ -879,45 +905,40 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
             <button
               type="button"
               onClick={() => { setActiveView('submissions'); playSound('click', soundEnabled); }}
-              className={`flex items-center gap-1.5 rounded-t-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer border border-b-0 whitespace-nowrap ${
-                activeView === 'submissions'
-                  ? 'bg-neutral-950 border-neutral-950 text-white shadow-2xs'
-                  : 'bg-transparent border-transparent text-neutral-500 hover:text-neutral-950 hover:bg-neutral-800/60'
-              }`}
+              className={`flex items-center gap-1.5 rounded-t-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer border border-b-0 whitespace-nowrap ${activeView === 'submissions'
+                ? 'bg-neutral-950 border-neutral-950 text-white shadow-2xs'
+                : 'bg-transparent border-transparent text-neutral-500 hover:text-neutral-950 hover:bg-neutral-800/60'
+                }`}
             >
               <Clock className="h-3.5 w-3.5 text-amber-400" />
               <span>Submissions Queue</span>
-              <span className={`ml-1 rounded-full px-1.5 py-0.2 text-[9px] font-bold ${
-                pendingCount > 0 ? 'bg-amber-400 text-black font-black animate-pulse' : 'bg-neutral-700 text-neutral-300'
-              }`}>
+              <span className={`ml-1 rounded-full px-1.5 py-0.2 text-[9px] font-bold ${pendingCount > 0 ? 'bg-amber-400 text-black font-black animate-pulse' : 'bg-neutral-700 text-neutral-300'
+                }`}>
                 {pendingCount}
               </span>
             </button>
             <button
               type="button"
               onClick={() => { setActiveView('future'); playSound('click', soundEnabled); }}
-              className={`flex items-center gap-1.5 rounded-t-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer border border-b-0 whitespace-nowrap ${
-                activeView === 'future'
-                  ? 'bg-neutral-950 border-neutral-950 text-white shadow-2xs'
-                  : 'bg-transparent border-transparent text-neutral-500 hover:text-neutral-950 hover:bg-neutral-800/60'
-              }`}
+              className={`flex items-center gap-1.5 rounded-t-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer border border-b-0 whitespace-nowrap ${activeView === 'future'
+                ? 'bg-neutral-950 border-neutral-950 text-white shadow-2xs'
+                : 'bg-transparent border-transparent text-neutral-500 hover:text-neutral-950 hover:bg-neutral-800/60'
+                }`}
             >
               <Rocket className="h-3.5 w-3.5 text-sky-400" />
               <span>Future Launches</span>
-              <span className={`ml-1 rounded-full px-1.5 py-0.2 text-[9px] font-bold ${
-                allFutureLaunches.length > 0 ? 'bg-sky-500 text-white font-black' : 'bg-neutral-700 text-neutral-300'
-              }`}>
+              <span className={`ml-1 rounded-full px-1.5 py-0.2 text-[9px] font-bold ${allFutureLaunches.length > 0 ? 'bg-sky-500 text-white font-black' : 'bg-neutral-700 text-neutral-300'
+                }`}>
                 {allFutureLaunches.length}
               </span>
             </button>
             <button
               type="button"
               onClick={() => { setActiveView('products'); playSound('click', soundEnabled); }}
-              className={`flex items-center gap-1.5 rounded-t-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer border border-b-0 whitespace-nowrap ${
-                activeView === 'products'
-                  ? 'bg-neutral-950 border-neutral-950 text-white shadow-2xs'
-                  : 'bg-transparent border-transparent text-neutral-500 hover:text-neutral-950 hover:bg-neutral-800/60'
-              }`}
+              className={`flex items-center gap-1.5 rounded-t-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer border border-b-0 whitespace-nowrap ${activeView === 'products'
+                ? 'bg-neutral-950 border-neutral-950 text-white shadow-2xs'
+                : 'bg-transparent border-transparent text-neutral-500 hover:text-neutral-950 hover:bg-neutral-800/60'
+                }`}
             >
               <LayoutList className="h-3.5 w-3.5" />
               <span>Live Products</span>
@@ -928,11 +949,10 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
             <button
               type="button"
               onClick={() => { setActiveView('featured'); playSound('click', soundEnabled); }}
-              className={`flex items-center gap-1.5 rounded-t-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer border border-b-0 whitespace-nowrap ${
-                activeView === 'featured'
-                  ? 'bg-neutral-950 border-neutral-950 text-white shadow-2xs'
-                  : 'bg-transparent border-transparent text-neutral-500 hover:text-neutral-950 hover:bg-neutral-800/60'
-              }`}
+              className={`flex items-center gap-1.5 rounded-t-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer border border-b-0 whitespace-nowrap ${activeView === 'featured'
+                ? 'bg-neutral-950 border-neutral-950 text-white shadow-2xs'
+                : 'bg-transparent border-transparent text-neutral-500 hover:text-neutral-950 hover:bg-neutral-800/60'
+                }`}
             >
               <Crown className="h-3.5 w-3.5 text-amber-500" />
               <span>Featured</span>
@@ -945,11 +965,10 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
             <button
               type="button"
               onClick={() => { setActiveView('sponsors'); playSound('click', soundEnabled); }}
-              className={`flex items-center gap-1.5 rounded-t-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer border border-b-0 whitespace-nowrap ${
-                activeView === 'sponsors'
-                  ? 'bg-neutral-950 border-neutral-950 text-white shadow-2xs'
-                  : 'bg-transparent border-transparent text-neutral-500 hover:text-neutral-950 hover:bg-neutral-800/60'
-              }`}
+              className={`flex items-center gap-1.5 rounded-t-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer border border-b-0 whitespace-nowrap ${activeView === 'sponsors'
+                ? 'bg-neutral-950 border-neutral-950 text-white shadow-2xs'
+                : 'bg-transparent border-transparent text-neutral-500 hover:text-neutral-950 hover:bg-neutral-800/60'
+                }`}
             >
               <Megaphone className="h-3.5 w-3.5 text-emerald-400" />
               <span>Sponsors &amp; Trials</span>
@@ -973,11 +992,10 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                 playSound('click', soundEnabled);
                 onToggleSponsorRails?.(!sponsorRailsEnabled);
               }}
-              className={`inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-bold transition-all cursor-pointer shadow-2xs ${
-                sponsorRailsEnabled
-                  ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
-                  : 'border-neutral-800 bg-neutral-800/80 text-neutral-400 hover:bg-neutral-700/80'
-              }`}
+              className={`inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-bold transition-all cursor-pointer shadow-2xs ${sponsorRailsEnabled
+                ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
+                : 'border-neutral-800 bg-neutral-800/80 text-neutral-400 hover:bg-neutral-700/80'
+                }`}
             >
               <span className={`h-2.5 w-2.5 rounded-full ${sponsorRailsEnabled ? 'bg-emerald-400 animate-pulse' : 'bg-neutral-500'}`} />
               <span>Side Sponsors: {sponsorRailsEnabled ? 'ON' : 'OFF'}</span>
@@ -1061,16 +1079,15 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                 <div className="text-2xl sm:text-3xl font-black text-neutral-900">{rejectedCount}</div>
                 <p className="text-[11px] text-neutral-500 mt-1">Declined listings</p>
               </div>
-              <div 
+              <div
                 onClick={() => {
                   setShowOnlyAutoRelaunch((prev) => !prev);
                   playSound('click', soundEnabled);
                 }}
-                className={`rounded-xl border p-4 shadow-2xs cursor-pointer transition-all ${
-                  showOnlyAutoRelaunch
-                    ? 'border-blue-500 bg-blue-50/70 ring-2 ring-blue-500/20'
-                    : 'border-neutral-200 bg-white hover:border-blue-300'
-                }`}
+                className={`rounded-xl border p-4 shadow-2xs cursor-pointer transition-all ${showOnlyAutoRelaunch
+                  ? 'border-blue-500 bg-blue-50/70 ring-2 ring-blue-500/20'
+                  : 'border-neutral-200 bg-white hover:border-blue-300'
+                  }`}
               >
                 <div className="flex items-center justify-between text-xs font-bold text-blue-600 mb-1">
                   <span>Auto-Relaunch Paid</span>
@@ -1107,11 +1124,10 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                   <button
                     type="button"
                     onClick={() => { setStatusFilter('under_review'); playSound('click', soundEnabled); }}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
-                      statusFilter === 'under_review' && !showOnlyAutoRelaunch
-                        ? 'bg-amber-400 text-black font-black'
-                        : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
-                    }`}
+                    className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${statusFilter === 'under_review' && !showOnlyAutoRelaunch
+                      ? 'bg-amber-400 text-black font-black'
+                      : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
+                      }`}
                   >
                     <span>Pending Approval</span>
                     <span className="rounded-full bg-black/20 px-1.5 py-0.2 text-[9px]">{pendingCount}</span>
@@ -1119,11 +1135,10 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                   <button
                     type="button"
                     onClick={() => { setStatusFilter('approved'); playSound('click', soundEnabled); }}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
-                      statusFilter === 'approved' && !showOnlyAutoRelaunch
-                        ? 'bg-emerald-500 text-black font-black'
-                        : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
-                    }`}
+                    className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${statusFilter === 'approved' && !showOnlyAutoRelaunch
+                      ? 'bg-emerald-500 text-black font-black'
+                      : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
+                      }`}
                   >
                     <span>Approved</span>
                     <span className="rounded-full bg-black/20 px-1.5 py-0.2 text-[9px]">{approvedCount}</span>
@@ -1131,11 +1146,10 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                   <button
                     type="button"
                     onClick={() => { setStatusFilter('rejected'); playSound('click', soundEnabled); }}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
-                      statusFilter === 'rejected' && !showOnlyAutoRelaunch
-                        ? 'bg-red-500 text-white font-black'
-                        : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
-                    }`}
+                    className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${statusFilter === 'rejected' && !showOnlyAutoRelaunch
+                      ? 'bg-red-500 text-white font-black'
+                      : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
+                      }`}
                   >
                     <span>Rejected</span>
                     <span className="rounded-full bg-black/20 px-1.5 py-0.2 text-[9px]">{rejectedCount}</span>
@@ -1143,11 +1157,10 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                   <button
                     type="button"
                     onClick={() => { setStatusFilter('all'); playSound('click', soundEnabled); }}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
-                      statusFilter === 'all' && !showOnlyAutoRelaunch
-                        ? 'bg-white text-black font-black'
-                        : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
-                    }`}
+                    className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${statusFilter === 'all' && !showOnlyAutoRelaunch
+                      ? 'bg-white text-black font-black'
+                      : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
+                      }`}
                   >
                     <span>All</span>
                     <span className="rounded-full bg-black/20 px-1.5 py-0.2 text-[9px]">{submissions.length}</span>
@@ -1158,11 +1171,10 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                       setShowOnlyAutoRelaunch((prev) => !prev);
                       playSound('click', soundEnabled);
                     }}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
-                      showOnlyAutoRelaunch
-                        ? 'bg-blue-600 text-white font-black shadow-xs ring-2 ring-blue-400/40'
-                        : 'bg-neutral-800 text-blue-300 hover:bg-neutral-700'
-                    }`}
+                    className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${showOnlyAutoRelaunch
+                      ? 'bg-blue-600 text-white font-black shadow-xs ring-2 ring-blue-400/40'
+                      : 'bg-neutral-800 text-blue-300 hover:bg-neutral-700'
+                      }`}
                   >
                     <Rocket className="h-3 w-3 text-blue-400" />
                     <span>Auto-Relaunch Paid</span>
@@ -1180,11 +1192,10 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                     key={cat}
                     type="button"
                     onClick={() => setSelectedCategory(cat)}
-                    className={`rounded-lg px-2.5 py-1 text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap ${
-                      selectedCategory === cat
-                        ? 'bg-mint-500 text-white'
-                        : 'bg-neutral-100 text-neutral-500 hover:text-neutral-950 hover:bg-neutral-700'
-                    }`}
+                    className={`rounded-lg px-2.5 py-1 text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap ${selectedCategory === cat
+                      ? 'bg-mint-500 text-white'
+                      : 'bg-neutral-100 text-neutral-500 hover:text-neutral-950 hover:bg-neutral-700'
+                      }`}
                   >
                     {cat}
                   </button>
@@ -1244,13 +1255,12 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                     return (
                       <div
                         key={sub.id}
-                        className={`rounded-xl border bg-white p-4 sm:p-5 transition-all space-y-3 ${
-                          isUnderReview
-                            ? 'border-amber-500/50 shadow-md shadow-amber-500/5'
-                            : isApproved
+                        className={`rounded-xl border bg-white p-4 sm:p-5 transition-all space-y-3 ${isUnderReview
+                          ? 'border-amber-500/50 shadow-md shadow-amber-500/5'
+                          : isApproved
                             ? 'border-neutral-200'
                             : 'border-red-900/40 opacity-80'
-                        }`}
+                          }`}
                       >
                         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                           {/* Left: Info */}
@@ -1283,7 +1293,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                 >
                                   {sub.name}
                                 </button>
-                                
+
                                 {/* Status Pill */}
                                 {isUnderReview && (
                                   <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[10px] font-bold text-amber-300">
@@ -1595,33 +1605,30 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                     <button
                       type="button"
                       onClick={() => setFutureStatusFilter('all')}
-                      className={`rounded-md px-2.5 py-1 text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                        futureStatusFilter === 'all'
-                          ? 'bg-neutral-950 text-white shadow-xs'
-                          : 'text-neutral-500 hover:text-neutral-950'
-                      }`}
+                      className={`rounded-md px-2.5 py-1 text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${futureStatusFilter === 'all'
+                        ? 'bg-neutral-950 text-white shadow-xs'
+                        : 'text-neutral-500 hover:text-neutral-950'
+                        }`}
                     >
                       All ({allFutureLaunches.length})
                     </button>
                     <button
                       type="button"
                       onClick={() => setFutureStatusFilter('scheduled')}
-                      className={`rounded-md px-2.5 py-1 text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                        futureStatusFilter === 'scheduled'
-                          ? 'bg-emerald-600 text-white shadow-xs'
-                          : 'text-neutral-500 hover:text-neutral-950'
-                      }`}
+                      className={`rounded-md px-2.5 py-1 text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${futureStatusFilter === 'scheduled'
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'text-neutral-500 hover:text-neutral-950'
+                        }`}
                     >
                       Approved ({allFutureLaunches.filter((x) => x.isApproved).length})
                     </button>
                     <button
                       type="button"
                       onClick={() => setFutureStatusFilter('under_review')}
-                      className={`rounded-md px-2.5 py-1 text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                        futureStatusFilter === 'under_review'
-                          ? 'bg-amber-500 text-white shadow-xs'
-                          : 'text-neutral-500 hover:text-neutral-950'
-                      }`}
+                      className={`rounded-md px-2.5 py-1 text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${futureStatusFilter === 'under_review'
+                        ? 'bg-amber-500 text-white shadow-xs'
+                        : 'text-neutral-500 hover:text-neutral-950'
+                        }`}
                     >
                       Under Review ({allFutureLaunches.filter((x) => !x.isApproved).length})
                     </button>
@@ -1650,11 +1657,10 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                     key={cat}
                     type="button"
                     onClick={() => setFutureCategoryFilter(cat)}
-                    className={`rounded-lg px-2.5 py-1 text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap ${
-                      futureCategoryFilter === cat
-                        ? 'bg-sky-600 text-white'
-                        : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
-                    }`}
+                    className={`rounded-lg px-2.5 py-1 text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap ${futureCategoryFilter === cat
+                      ? 'bg-sky-600 text-white'
+                      : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                      }`}
                   >
                     {cat}
                   </button>
@@ -1972,22 +1978,20 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                   <button
                     type="button"
                     onClick={() => setProductVerifiedFilter('all')}
-                    className={`rounded-md px-2.5 py-1 text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                      productVerifiedFilter === 'all'
-                        ? 'bg-neutral-950 text-white shadow-xs'
-                        : 'text-neutral-500 hover:text-neutral-950'
-                    }`}
+                    className={`rounded-md px-2.5 py-1 text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${productVerifiedFilter === 'all'
+                      ? 'bg-neutral-950 text-white shadow-xs'
+                      : 'text-neutral-500 hover:text-neutral-950'
+                      }`}
                   >
                     All ({products.length})
                   </button>
                   <button
                     type="button"
                     onClick={() => setProductVerifiedFilter('verified')}
-                    className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                      productVerifiedFilter === 'verified'
-                        ? 'bg-mint-500 text-white shadow-xs'
-                        : 'text-neutral-500 hover:text-neutral-950'
-                    }`}
+                    className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${productVerifiedFilter === 'verified'
+                      ? 'bg-mint-500 text-white shadow-xs'
+                      : 'text-neutral-500 hover:text-neutral-950'
+                      }`}
                   >
                     <VerifiedBadge className="h-3 w-3" />
                     <span>Verified ({products.filter((p) => p.verified).length})</span>
@@ -1995,22 +1999,20 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                   <button
                     type="button"
                     onClick={() => setProductVerifiedFilter('unverified')}
-                    className={`rounded-md px-2.5 py-1 text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                      productVerifiedFilter === 'unverified'
-                        ? 'bg-neutral-950 text-white shadow-xs'
-                        : 'text-neutral-500 hover:text-neutral-950'
-                    }`}
+                    className={`rounded-md px-2.5 py-1 text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${productVerifiedFilter === 'unverified'
+                      ? 'bg-neutral-950 text-white shadow-xs'
+                      : 'text-neutral-500 hover:text-neutral-950'
+                      }`}
                   >
                     Unverified ({products.filter((p) => !p.verified).length})
                   </button>
                   <button
                     type="button"
                     onClick={() => setProductVerifiedFilter(productVerifiedFilter === 'relaunch' ? 'all' : 'relaunch')}
-                    className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                      productVerifiedFilter === 'relaunch'
-                        ? 'bg-blue-600 text-white shadow-xs'
-                        : 'text-neutral-500 hover:text-neutral-950'
-                    }`}
+                    className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${productVerifiedFilter === 'relaunch'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'text-neutral-500 hover:text-neutral-950'
+                      }`}
                   >
                     <Rocket className="h-3 w-3" />
                     <span>Auto-Relaunch ({products.filter((p) => p.autoRelaunch || p.autoRelaunchPaid).length})</span>
@@ -2025,11 +2027,10 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                     key={cat}
                     type="button"
                     onClick={() => setProductCategoryFilter(cat)}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                      productCategoryFilter === cat
-                        ? 'bg-mint-500 text-white'
-                        : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
-                    }`}
+                    className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${productCategoryFilter === cat
+                      ? 'bg-mint-500 text-white'
+                      : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
+                      }`}
                   >
                     {cat}
                   </button>
@@ -2110,11 +2111,10 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                       type="button"
                                       onClick={() => handleMoveUp(product)}
                                       disabled={!canMoveUp}
-                                      className={`rounded p-1 text-xs transition-colors cursor-pointer ${
-                                        !canMoveUp
-                                          ? 'text-neutral-600 cursor-not-allowed'
-                                          : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'
-                                      }`}
+                                      className={`rounded p-1 text-xs transition-colors cursor-pointer ${!canMoveUp
+                                        ? 'text-neutral-600 cursor-not-allowed'
+                                        : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'
+                                        }`}
                                       title="Move Up in Rank"
                                     >
                                       <ChevronUp className="h-3.5 w-3.5" />
@@ -2123,11 +2123,10 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                       type="button"
                                       onClick={() => handleMoveDown(product)}
                                       disabled={!canMoveDown}
-                                      className={`rounded p-1 text-xs transition-colors cursor-pointer ${
-                                        !canMoveDown
-                                          ? 'text-neutral-600 cursor-not-allowed'
-                                          : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'
-                                      }`}
+                                      className={`rounded p-1 text-xs transition-colors cursor-pointer ${!canMoveDown
+                                        ? 'text-neutral-600 cursor-not-allowed'
+                                        : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'
+                                        }`}
                                       title="Move Down in Rank"
                                     >
                                       <ChevronDown className="h-3.5 w-3.5" />
@@ -2189,11 +2188,10 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                     playSound('click', soundEnabled);
                                     setActiveView('sponsors');
                                   }}
-                                  className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-xs font-bold transition-all cursor-pointer shadow-2xs ${
-                                    isPaused
-                                      ? 'border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100'
-                                      : 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100'
-                                  }`}
+                                  className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-xs font-bold transition-all cursor-pointer shadow-2xs ${isPaused
+                                    ? 'border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100'
+                                    : 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100'
+                                    }`}
                                   title={`Sponsor placements are managed in the Sponsors tab. This product has a ${linkedSponsor.status} ${linkedSponsor.tier} placement.`}
                                 >
                                   {isPaused ? (
@@ -2224,11 +2222,10 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                       handleAddFeatured(product.id);
                                     }
                                   }}
-                                  className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition-all cursor-pointer ${
-                                    isFeat
-                                      ? 'border-amber-400 bg-amber-50 text-amber-800 shadow-2xs hover:bg-amber-100 hover:border-amber-500'
-                                      : 'border-neutral-200 bg-white text-neutral-600 hover:border-amber-400 hover:text-amber-700 hover:bg-amber-50/50'
-                                  }`}
+                                  className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition-all cursor-pointer ${isFeat
+                                    ? 'border-amber-400 bg-amber-50 text-amber-800 shadow-2xs hover:bg-amber-100 hover:border-amber-500'
+                                    : 'border-neutral-200 bg-white text-neutral-600 hover:border-amber-400 hover:text-amber-700 hover:bg-amber-50/50'
+                                    }`}
                                   title={
                                     isFeat
                                       ? `"${product.name}" is #${featRank} Featured — click to remove`
@@ -2256,11 +2253,10 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                       openAssignSponsorModal(product);
                                     }
                                   }}
-                                  className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition-all cursor-pointer ${
-                                    activeSponsor
-                                      ? 'border-blue-500/50 bg-blue-50 text-blue-700 hover:bg-blue-100 shadow-2xs'
-                                      : 'border-neutral-200 bg-neutral-100 text-neutral-500 hover:border-blue-400 hover:text-blue-700 hover:bg-blue-50/60'
-                                  }`}
+                                  className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition-all cursor-pointer ${activeSponsor
+                                    ? 'border-blue-500/50 bg-blue-50 text-blue-700 hover:bg-blue-100 shadow-2xs'
+                                    : 'border-neutral-200 bg-neutral-100 text-neutral-500 hover:border-blue-400 hover:text-blue-700 hover:bg-blue-50/60'
+                                    }`}
                                   title={
                                     activeSponsor
                                       ? `"${product.name}" is Sponsored — click to end sponsor placement`
@@ -2277,11 +2273,10 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                               <button
                                 type="button"
                                 onClick={() => onToggleVerified(product.id, !product.verified)}
-                                className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition-all cursor-pointer ${
-                                  product.verified
-                                    ? 'border-mint-500/50 bg-mint-500/10 text-mint-600 hover:bg-mint-500/20 hover:border-mint-400 shadow-2xs'
-                                    : 'border-neutral-200 bg-neutral-100 text-neutral-500 hover:border-mint-500/60 hover:text-mint-700'
-                                }`}
+                                className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition-all cursor-pointer ${product.verified
+                                  ? 'border-mint-500/50 bg-mint-500/10 text-mint-600 hover:bg-mint-500/20 hover:border-mint-400 shadow-2xs'
+                                  : 'border-neutral-200 bg-neutral-100 text-neutral-500 hover:border-mint-500/60 hover:text-mint-700'
+                                  }`}
                                 title={product.verified ? `"${product.name}" is verified — click to remove verification` : `Click to verify "${product.name}"`}
                               >
                                 {product.verified ? (
@@ -2346,10 +2341,10 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                   {activeFeaturedProducts.length === 1
                     ? `1 tool featured: ${activeFeaturedProducts[0].name}`
                     : activeFeaturedProducts.length > 1
-                    ? `${activeFeaturedProducts.length} tools featured in priority order`
-                    : isEmptyFeatured
-                    ? 'Featured spotlight is completely hidden'
-                    : 'Showing default reserve spot banner'}
+                      ? `${activeFeaturedProducts.length} tools featured in priority order`
+                      : isEmptyFeatured
+                        ? 'Featured spotlight is completely hidden'
+                        : 'Showing default reserve spot banner'}
                 </p>
               </div>
 
@@ -2362,15 +2357,15 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                   {activeFeaturedProducts.length > 0
                     ? `${activeFeaturedProducts.length} Active Website${activeFeaturedProducts.length > 1 ? 's' : ''}`
                     : isEmptyFeatured
-                    ? 'Cleared / Empty'
-                    : 'Default Placeholder'}
+                      ? 'Cleared / Empty'
+                      : 'Default Placeholder'}
                 </div>
                 <p className="text-[11px] text-neutral-500 mt-1">
                   {activeFeaturedProducts.length > 0
                     ? 'Custom spotlight card(s) visible on directory'
                     : isEmptyFeatured
-                    ? 'No featured cards displayed'
-                    : 'Reserve spot card visible'}
+                      ? 'No featured cards displayed'
+                      : 'Reserve spot card visible'}
                 </p>
                 {featuredExpiresAt && activeFeaturedProducts.length > 0 && (
                   <div className="mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-200 px-2.5 py-1 text-[11px] font-bold text-amber-800">
@@ -2411,38 +2406,34 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => handleSetFeaturedMode('default')}
-                    className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition-all cursor-pointer ${
-                      isDefaultFeatured && activeFeaturedProducts.length === 0
-                        ? 'border-neutral-950 bg-neutral-950 text-white'
-                        : 'border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50'
-                    }`}
-                    title="Show default spotlight banner when no custom featured products"
+                    onClick={handleAddDefaultBanner}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-700 hover:bg-blue-100 transition-all cursor-pointer"
+                    title="Add a default open spotlight banner (can add multiple, even alongside featured products)"
                   >
-                    <span>Default Banner</span>
+                    <Plus className="h-3.5 w-3.5" />
+                    <span>Add Default Banner{activeBannerCount > 0 ? ` (${activeBannerCount})` : ''}</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => handleSetFeaturedMode('empty')}
-                    className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition-all cursor-pointer ${
-                      isEmptyFeatured
-                        ? 'border-neutral-950 bg-neutral-950 text-white'
-                        : 'border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50'
-                    }`}
+                    className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition-all cursor-pointer ${isEmptyFeatured
+                      ? 'border-neutral-950 bg-neutral-950 text-white'
+                      : 'border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50'
+                      }`}
                     title="Hide featured spotlight cards completely from directory"
                   >
                     <span>Hide (Empty)</span>
                   </button>
-                  {activeFeaturedProducts.length > 0 && (
+                  {activeFeaturedItems.length > 0 && (
                     <button
                       type="button"
                       onClick={() => {
-                        if (window.confirm('Remove all products from the featured spotlight?')) {
+                        if (window.confirm('Remove all items from the featured spotlight?')) {
                           handleSetFeaturedMode('default');
                         }
                       }}
                       className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-2.5 py-1.5 text-xs font-bold text-red-600 hover:bg-red-50 transition-all cursor-pointer"
-                      title="Clear all featured products"
+                      title="Clear all featured products and banners"
                     >
                       <Trash2 className="h-3 w-3" />
                       <span>Clear All</span>
@@ -2509,9 +2500,8 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                         return (
                           <div
                             key={p.id}
-                            className={`flex items-center justify-between gap-3 p-3 transition-colors ${
-                              isFeat ? 'bg-amber-50/50' : 'hover:bg-neutral-50 cursor-pointer'
-                            }`}
+                            className={`flex items-center justify-between gap-3 p-3 transition-colors ${isFeat ? 'bg-amber-50/50' : 'hover:bg-neutral-50 cursor-pointer'
+                              }`}
                             onClick={() => {
                               if (!isFeat) {
                                 handleAddFeatured(p.id);
@@ -2579,37 +2569,148 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
               </div>
             </div>
 
-            {/* Active Featured Products List */}
+            {/* Active Featured Items List (Products + Default Banners) */}
             <div className="rounded-xl border border-neutral-200 bg-white p-4 sm:p-5 shadow-2xs space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Crown className="h-4 w-4 text-amber-500" />
                   <h3 className="text-sm font-black text-neutral-950">
-                    Active Featured Products ({activeFeaturedProducts.length})
+                    Active Featured Spotlight ({activeFeaturedItems.length})
                   </h3>
                 </div>
-                {activeFeaturedProducts.length > 1 && (
+                {activeFeaturedItems.length > 1 && (
                   <span className="text-[11px] text-neutral-400">
                     Use arrows to reorder priority on homepage
                   </span>
                 )}
               </div>
 
-              {activeFeaturedProducts.length === 0 ? (
+              {activeFeaturedItems.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-neutral-200 p-8 text-center bg-neutral-50/50">
                   <Crown className="mx-auto h-8 w-8 text-neutral-300 mb-2" />
-                  <h4 className="text-xs font-bold text-neutral-700">No Custom Featured Products</h4>
+                  <h4 className="text-xs font-bold text-neutral-700">No Custom Featured Items</h4>
                   <p className="text-[11px] text-neutral-400 mt-1 max-w-sm mx-auto">
                     {isEmptyFeatured
                       ? 'The featured spotlight is currently set to Empty (hidden from directory).'
-                      : 'The homepage is currently displaying the default "Reserve Spot" promotional card.'}
+                      : 'The homepage is displaying 1 default "Reserve Spot" banner. Click "Add Default Banner" or search for products above to add multiple.'}
                   </p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {activeFeaturedProducts.map((p, index) => {
+                  {activeFeaturedItems.map((item, index) => {
                     const isFirst = index === 0;
-                    const isLast = index === activeFeaturedProducts.length - 1;
+                    const isLast = index === activeFeaturedItems.length - 1;
+
+                    if (item.kind === 'banner') {
+                      const curPos = featuredPositions[item.id] !== undefined ? featuredPositions[item.id] : featuredPosition;
+                      return (
+                        <div
+                          key={item.id}
+                          className="flex flex-col gap-3 rounded-xl border border-dashed border-blue-300 bg-blue-50/30 p-4 shadow-2xs transition-all hover:border-blue-400"
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
+                            <div className="flex items-center gap-3 shrink-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-2.5 py-1 text-xs font-black text-white shadow-xs">
+                                  <Crown className="h-3 w-3" />
+                                  <span>#{index + 1}</span>
+                                </span>
+
+                                <div className="flex flex-col gap-0.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleMoveFeaturedUp(index)}
+                                    disabled={isFirst}
+                                    className={`rounded p-1 text-xs transition-colors cursor-pointer ${isFirst ? 'text-neutral-300 cursor-not-allowed' : 'text-neutral-600 hover:bg-neutral-100 hover:text-black'}`}
+                                    title={isFirst ? 'Already top priority' : 'Move Up in Priority'}
+                                  >
+                                    <ChevronUp className="h-3.5 w-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleMoveFeaturedDown(index)}
+                                    disabled={isLast}
+                                    className={`rounded p-1 text-xs transition-colors cursor-pointer ${isLast ? 'text-neutral-300 cursor-not-allowed' : 'text-neutral-600 hover:bg-neutral-100 hover:text-black'}`}
+                                    title={isLast ? 'Already lowest priority' : 'Move Down in Priority'}
+                                  >
+                                    <ChevronDown className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div className="h-12 w-12 rounded-xl border border-dashed border-blue-300 bg-white shrink-0 flex items-center justify-center text-blue-600 shadow-2xs">
+                                <Plus className="h-5 w-5" />
+                              </div>
+
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <h4 className="text-sm font-black text-neutral-950 truncate">Default Open Spotlight Banner</h4>
+                                  <span className="rounded-md bg-blue-100 border border-blue-200 px-1.5 py-0.5 text-[10px] font-bold text-blue-700">
+                                    Open Spot CTA
+                                  </span>
+                                </div>
+                                <p className="text-xs text-neutral-500 truncate mt-0.5">
+                                  Shows the &ldquo;The featured spot is open · Reserve spot&rdquo; banner
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveFeatured(item.id)}
+                                className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-white px-2.5 py-1.5 text-xs font-bold text-red-600 hover:bg-red-50 hover:border-red-300 transition-all cursor-pointer"
+                                title="Remove this default banner"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                                <span>Remove</span>
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2.5 border-t border-blue-200/70">
+                            <div className="flex items-center gap-2">
+                              <span className="inline-flex items-center gap-1 text-[11px] font-black text-neutral-800">
+                                <ArrowUpDown className="h-3 w-3 text-blue-600" />
+                                <span>Listing Position:</span>
+                              </span>
+                              <span className="rounded-md bg-blue-100 border border-blue-200 px-2 py-0.5 text-[10px] font-black text-blue-900 shadow-2xs">
+                                {curPos === 0 ? 'Top (Above #1)' : `After Rank #${curPos}`}
+                              </span>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              {[
+                                { pos: 0, label: 'Top' },
+                                { pos: 1, label: 'After #1' },
+                                { pos: 2, label: 'After #2' },
+                                { pos: 3, label: 'After #3' },
+                                { pos: 4, label: 'After #4' },
+                                { pos: 5, label: 'After #5' },
+                                { pos: 10, label: 'After #10' },
+                              ].map(({ pos, label }) => {
+                                const isActive = curPos === pos;
+                                return (
+                                  <button
+                                    key={pos}
+                                    type="button"
+                                    onClick={() => onSetProductFeaturedPosition?.(item.id, pos)}
+                                    className={`px-2 py-0.5 rounded-md text-[11px] font-bold transition-all cursor-pointer border ${isActive
+                                      ? 'bg-neutral-950 border-neutral-950 text-white shadow-xs'
+                                      : 'bg-white border-neutral-200 text-neutral-700 hover:border-blue-400 hover:bg-blue-50/50'
+                                      }`}
+                                  >
+                                    {label}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    const p = item.product;
 
                     return (
                       <div
@@ -2630,9 +2731,8 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                   type="button"
                                   onClick={() => handleMoveFeaturedUp(index)}
                                   disabled={isFirst}
-                                  className={`rounded p-1 text-xs transition-colors cursor-pointer ${
-                                    isFirst ? 'text-neutral-300 cursor-not-allowed' : 'text-neutral-600 hover:bg-neutral-100 hover:text-black'
-                                  }`}
+                                  className={`rounded p-1 text-xs transition-colors cursor-pointer ${isFirst ? 'text-neutral-300 cursor-not-allowed' : 'text-neutral-600 hover:bg-neutral-100 hover:text-black'
+                                    }`}
                                   title={isFirst ? 'Already top priority' : 'Move Up in Priority'}
                                 >
                                   <ChevronUp className="h-3.5 w-3.5" />
@@ -2641,9 +2741,8 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                   type="button"
                                   onClick={() => handleMoveFeaturedDown(index)}
                                   disabled={isLast}
-                                  className={`rounded p-1 text-xs transition-colors cursor-pointer ${
-                                    isLast ? 'text-neutral-300 cursor-not-allowed' : 'text-neutral-600 hover:bg-neutral-100 hover:text-black'
-                                  }`}
+                                  className={`rounded p-1 text-xs transition-colors cursor-pointer ${isLast ? 'text-neutral-300 cursor-not-allowed' : 'text-neutral-600 hover:bg-neutral-100 hover:text-black'
+                                    }`}
                                   title={isLast ? 'Already lowest priority' : 'Move Down in Priority'}
                                 >
                                   <ChevronDown className="h-3.5 w-3.5" />
@@ -2744,11 +2843,10 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                                       key={pos}
                                       type="button"
                                       onClick={() => onSetProductFeaturedPosition?.(p.id, pos)}
-                                      className={`px-2 py-0.5 rounded-md text-[11px] font-bold transition-all cursor-pointer border ${
-                                        isActive
-                                          ? 'bg-neutral-950 border-neutral-950 text-white shadow-xs'
-                                          : 'bg-white border-neutral-200 text-neutral-700 hover:border-amber-400 hover:bg-amber-50/50'
-                                      }`}
+                                      className={`px-2 py-0.5 rounded-md text-[11px] font-bold transition-all cursor-pointer border ${isActive
+                                        ? 'bg-neutral-950 border-neutral-950 text-white shadow-xs'
+                                        : 'bg-white border-neutral-200 text-neutral-700 hover:border-amber-400 hover:bg-amber-50/50'
+                                        }`}
                                     >
                                       {label}
                                     </button>
@@ -2835,11 +2933,10 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                         playSound('click', soundEnabled);
                         onSetFeaturedPosition?.(pos);
                       }}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
-                        featuredPosition === pos
-                          ? 'bg-neutral-950 border-neutral-950 text-white shadow-xs'
-                          : 'bg-white border-neutral-200 text-neutral-700 hover:border-neutral-400 hover:bg-neutral-50'
-                      }`}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${featuredPosition === pos
+                        ? 'bg-neutral-950 border-neutral-950 text-white shadow-xs'
+                        : 'bg-white border-neutral-200 text-neutral-700 hover:border-neutral-400 hover:bg-neutral-50'
+                        }`}
                     >
                       {label}
                     </button>
@@ -3070,11 +3167,11 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
         const videoData = getVideoEmbedUrl(sub.demoVideoUrl);
 
         return (
-          <div 
+          <div
             className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md overflow-y-auto font-sans"
             onClick={() => setViewingDetailsSubmission(null)}
           >
-            <div 
+            <div
               className="relative w-full max-w-4xl max-h-[92vh] flex flex-col rounded-2xl border border-neutral-200 bg-white shadow-2xl overflow-hidden text-white animate-in fade-in zoom-in-95 duration-150"
               onClick={(e) => e.stopPropagation()}
             >
@@ -3090,7 +3187,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                   <div className="min-w-0 space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">{sub.name}</h2>
-                      
+
                       {isUnderReview && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 border border-amber-500/40 px-2.5 py-0.5 text-xs font-bold text-amber-300">
                           <Clock className="h-3.5 w-3.5" /> Pending Approval
@@ -3189,11 +3286,10 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                         <button
                           type="button"
                           onClick={() => onToggleVerified(liveProduct.id, !liveProduct.verified)}
-                          className={`inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-bold transition-all cursor-pointer ${
-                            liveProduct.verified
-                              ? 'border-mint-500/50 bg-mint-500/10 text-mint-600 hover:bg-mint-500/20 shadow-2xs'
-                              : 'border-neutral-200 bg-white text-neutral-300 hover:border-mint-500/50 hover:text-white'
-                          }`}
+                          className={`inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-bold transition-all cursor-pointer ${liveProduct.verified
+                            ? 'border-mint-500/50 bg-mint-500/10 text-mint-600 hover:bg-mint-500/20 shadow-2xs'
+                            : 'border-neutral-200 bg-white text-neutral-300 hover:border-mint-500/50 hover:text-white'
+                            }`}
                           title={liveProduct.verified ? 'Verified Startup — click to remove verification' : 'Click to mark as Verified Startup'}
                         >
                           {liveProduct.verified ? (
@@ -3688,11 +3784,10 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                       key={opt.id}
                       type="button"
                       onClick={() => setSponsorAssignTier(opt.id)}
-                      className={`rounded-xl border px-3 py-2 text-xs font-bold transition-all cursor-pointer ${
-                        sponsorAssignTier === opt.id
-                          ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-2xs'
-                          : 'border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50'
-                      }`}
+                      className={`rounded-xl border px-3 py-2 text-xs font-bold transition-all cursor-pointer ${sponsorAssignTier === opt.id
+                        ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-2xs'
+                        : 'border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50'
+                        }`}
                     >
                       {opt.label}
                     </button>
@@ -3786,11 +3881,10 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                   <button
                     type="button"
                     onClick={() => setRescheduleWeekChoice('now')}
-                    className={`w-full flex items-center justify-between p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                      rescheduleWeekChoice === 'now'
-                        ? 'border-emerald-500 bg-emerald-50/50 text-emerald-950 font-bold ring-1 ring-emerald-500'
-                        : 'border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-800'
-                    }`}
+                    className={`w-full flex items-center justify-between p-3 rounded-xl border text-left transition-all cursor-pointer ${rescheduleWeekChoice === 'now'
+                      ? 'border-emerald-500 bg-emerald-50/50 text-emerald-950 font-bold ring-1 ring-emerald-500'
+                      : 'border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-800'
+                      }`}
                   >
                     <div className="flex items-center gap-2.5">
                       <Rocket className="h-4 w-4 text-emerald-600 shrink-0" />
@@ -3811,11 +3905,10 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
                         key={w.weekNumber}
                         type="button"
                         onClick={() => setRescheduleWeekChoice(w.weekNumber)}
-                        className={`w-full flex items-center justify-between p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                          isSelected
-                            ? 'border-sky-500 bg-sky-50/50 text-sky-950 font-bold ring-1 ring-sky-500'
-                            : 'border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-800'
-                        }`}
+                        className={`w-full flex items-center justify-between p-3 rounded-xl border text-left transition-all cursor-pointer ${isSelected
+                          ? 'border-sky-500 bg-sky-50/50 text-sky-950 font-bold ring-1 ring-sky-500'
+                          : 'border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-800'
+                          }`}
                       >
                         <div className="flex items-center gap-2.5">
                           <Calendar className="h-4 w-4 text-sky-600 shrink-0" />

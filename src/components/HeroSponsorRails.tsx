@@ -13,12 +13,12 @@ import { SaaSIdeasMobileSponsor, MobileSponsorSlotDef } from './SaaSIdeasMobileS
 import { LastWeekTopThreeCard, DirectoryPromoRailCard, LaunchProductRailCard } from './RightRailCards';
 
 export const DIRECTORY_MOBILE_SLOTS: MobileSponsorSlotDef[] = [
-  { id: 'dir-1', title: 'Advertise your product', subtitle: 'Your product on a Sponsor card across the site, for 30 days.' },
-  { id: 'dir-2', title: 'Advertise your product', subtitle: 'Your product on a Sponsor card across the site, for 30 days.' },
-  { id: 'dir-3', title: 'Advertise your product', subtitle: 'Your product on a Sponsor card across the site, for 30 days.' },
-  { id: 'dir-4', title: 'Advertise your product', subtitle: 'Your product on a Sponsor card across the site, for 30 days.' },
-  { id: 'dir-5', title: 'Advertise your product', subtitle: 'Your product on a Sponsor card across the site, for 30 days.' },
-  { id: 'dir-6', title: 'Advertise your product', subtitle: 'Your product on a Sponsor card across the site, for 30 days.' },
+  { id: 'dir-1', title: 'Advertise your product', subtitle: 'Your product on a Sponsor card across the site.' },
+  { id: 'dir-2', title: 'Advertise your product', subtitle: 'Your product on a Sponsor card across the site.' },
+  { id: 'dir-3', title: 'Advertise your product', subtitle: 'Your product on a Sponsor card across the site.' },
+  { id: 'dir-4', title: 'Advertise your product', subtitle: 'Your product on a Sponsor card across the site.' },
+  { id: 'dir-5', title: 'Advertise your product', subtitle: 'Your product on a Sponsor card across the site.' },
+  { id: 'dir-6', title: 'Advertise your product', subtitle: 'Your product on a Sponsor card across the site.' },
 ];
 
 interface HeroSponsorRailsProps {
@@ -48,12 +48,12 @@ interface OpenAdCardProps {
 }
 
 const LEFT_SLOTS = [
-  { id: 'left-1', title: 'Advertise your product', subtitle: 'Your product on a Sponsor card across the site, for 30 days.', duration: 'Claim spot' },
-  { id: 'left-2', title: 'Advertise your product', subtitle: 'Your product on a Sponsor card across the site, for 30 days.', duration: 'Claim spot' },
-  { id: 'left-3', title: 'Advertise your product', subtitle: 'Your product on a Sponsor card across the site, for 30 days.', duration: 'Claim spot' },
-  { id: 'left-4', title: 'Advertise your product', subtitle: 'Your product on a Sponsor card across the site, for 30 days.', duration: 'Claim spot' },
-  { id: 'left-5', title: 'Advertise your product', subtitle: 'Your product on a Sponsor card across the site, for 30 days.', duration: 'Claim spot' },
-  { id: 'left-6', title: 'Advertise your product', subtitle: 'Your product on a Sponsor card across the site, for 30 days.', duration: 'Claim spot' },
+  { id: 'left-1', title: 'Advertise your product', subtitle: 'Your product on a Sponsor card across the site.', duration: 'Claim spot' },
+  { id: 'left-2', title: 'Advertise your product', subtitle: 'Your product on a Sponsor card across the site.', duration: 'Claim spot' },
+  { id: 'left-3', title: 'Advertise your product', subtitle: 'Your product on a Sponsor card across the site.', duration: 'Claim spot' },
+  { id: 'left-4', title: 'Advertise your product', subtitle: 'Your product on a Sponsor card across the site.', duration: 'Claim spot' },
+  { id: 'left-5', title: 'Advertise your product', subtitle: 'Your product on a Sponsor card across the site.', duration: 'Claim spot' },
+  { id: 'left-6', title: 'Advertise your product', subtitle: 'Your product on a Sponsor card across the site.', duration: 'Claim spot' },
 ];
 
 /** Skeleton loader for ad cards matching the exact dimensions and spacing */
@@ -130,15 +130,18 @@ const OpenAdCard: React.FC<OpenAdCardProps> = ({
           handleClick();
         }
       }}
-      className="group relative flex-1 min-h-0 flex w-full flex-col items-center justify-center rounded-xl xl:rounded-2xl border-2 border-dashed border-neutral-300 hover:border-neutral-400 bg-white/70 p-2 xl:p-2.5 text-center transition-all duration-200 hover:bg-neutral-50/80 cursor-pointer overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 select-none shadow-2xs"
+      className="group relative flex-1 min-h-0 flex w-full flex-col items-center justify-center rounded-xl xl:rounded-2xl border-2 border-dashed border-neutral-300 hover:border-blue-400 bg-white/70 p-2 xl:p-2.5 text-center transition-all duration-200 hover:bg-blue-50/30 cursor-pointer overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 select-none shadow-2xs"
     >
+      <span className="absolute top-1.5 left-1.5 rounded-full bg-orange-50 border border-orange-200 px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-wide text-orange-600 leading-tight shadow-xs">
+        40% OFF
+      </span>
       <div className="flex flex-col items-center justify-center space-y-0.5">
-        <Megaphone className="h-4 w-4 xl:h-4.5 xl:w-4.5 text-neutral-600 group-hover:text-neutral-900 stroke-[1.8] group-hover:scale-110 transition-transform" />
+        <Megaphone className="h-4 w-4 xl:h-4.5 xl:w-4.5 text-neutral-600 group-hover:text-blue-600 stroke-[1.8] group-hover:scale-110 transition-all" />
         <h4 className="text-[11px] xl:text-xs font-bold text-neutral-800 group-hover:text-neutral-950 tracking-tight leading-tight">
           Advertise your product
         </h4>
         <p className="text-[9.5px] xl:text-[10px] font-medium text-neutral-400 group-hover:text-neutral-600 leading-tight line-clamp-1">
-          Your product on a Sponsor card, for 30 days.
+          Your product on a Sponsor card.
         </p>
       </div>
     </div>
