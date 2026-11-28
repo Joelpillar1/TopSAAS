@@ -36,6 +36,7 @@ import { CURATED_REPOS, CuratedRepo } from '../data/curatedRepos';
 import { Product } from '../types';
 import { RepoCard, getRepoAlternativeInfo } from './RepoCard';
 import { formatStars } from '../utils/github';
+import { getDeterministicBrandColor } from '../utils/brandColor';
 import { plainCopy } from '../utils/plainCopy';
 import {
   buildRepoEditorial,
@@ -536,7 +537,7 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
     setMeta('meta[property="og:url"]', 'content', pageUrl);
     setLink('canonical', pageUrl);
     setMeta('meta[name="twitter:url"]', 'content', pageUrl);
-    setMeta('meta[property="og:type"]', 'content', 'website');
+    setMeta('meta[property="og:type"]', 'content', 'article');
     setMeta('meta[name="twitter:card"]', 'content', 'summary_large_image');
     setMeta('meta[name="twitter:title"]', 'content', title);
     setMeta('meta[name="twitter:description"]', 'content', desc);
@@ -753,22 +754,43 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
 
   return (
     <div className="w-full bg-white text-neutral-900 flex flex-col font-sans">
-      {/* Top Utility Bar */}
-      <div className="border-b border-neutral-200/80 bg-white">
-        <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3 sm:px-6">
-          <button
-            type="button"
-            onClick={() => {
-              playSound('click', soundEnabled);
-              onBack();
-            }}
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-neutral-600 hover:text-neutral-950 transition-colors cursor-pointer"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            <span>Back to SaaS Ideas</span>
-          </button>
+      {/* Main Single-Column Document Container */}
+      <main className="mx-auto w-full max-w-4xl px-4 pt-3 sm:pt-5 pb-8 sm:px-6 space-y-6 flex-1">
+        {/* Unified Breadcrumb + Action Row */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-neutral-500 flex-wrap min-w-0">
+            <a
+              href="/"
+              onClick={(e) => {
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+                e.preventDefault();
+                playSound('click', soundEnabled);
+                navigateTo('/');
+              }}
+              className="hover:text-neutral-950 transition-colors cursor-pointer"
+            >
+              Home
+            </a>
+            <span className="text-neutral-300 select-none">/</span>
+            <a
+              href="/ideas"
+              onClick={(e) => {
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+                e.preventDefault();
+                playSound('click', soundEnabled);
+                onBack();
+              }}
+              className="hover:text-neutral-950 transition-colors cursor-pointer"
+            >
+              SaaS Ideas
+            </a>
+            <span className="text-neutral-300 select-none">/</span>
+            <span className="font-bold text-neutral-900 truncate max-w-[200px] sm:max-w-[320px]">
+              {repo.name}
+            </span>
+          </nav>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
               onClick={() => copyText('page', pageUrl)}
@@ -794,10 +816,6 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
             </a>
           </div>
         </div>
-      </div>
-
-      {/* Main Single-Column Document Container */}
-      <main className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 space-y-8 flex-1">
         {/* Header Section */}
         <header className="space-y-4">
           <div className="flex items-start gap-4">
@@ -1053,67 +1071,62 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
         {/* ── Tab Content Views ── */}
 
         {/* TAB 1: OVERVIEW */}
-        <div hidden={activeTab !== 'overview'} className="space-y-8 animate-fadeIn">
+        <div hidden={activeTab !== 'overview'} className="animate-fadeIn">
+          <div className="rounded-2xl border border-neutral-200/90 bg-white p-6 sm:p-10 shadow-xs space-y-10">
             {/* The Opportunity Overview (TL;DR) */}
-            <section className="space-y-2">
+            <section className="space-y-3">
               <h2 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-950">
                 Opportunity Overview
               </h2>
-              <div className="rounded-xl border border-neutral-200/90 bg-white p-5 sm:p-6 space-y-4">
-                <p className="text-base text-neutral-800 leading-relaxed font-normal">
-                  {dossier ? dossier.summary : editorial.lead}
-                </p>
+              <p className="text-base text-neutral-800 leading-relaxed font-normal">
+                {dossier ? dossier.summary : editorial.lead}
+              </p>
 
-                {/* Highlight prompt to SaaS Ideas */}
-                {dossier && dossier.ideas.length > 0 && (
-                  <div className="pt-3 border-t border-neutral-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm">
-                    <div className="text-neutral-700">
-                      <strong>Top opportunity:</strong> {dossier.ideas[0].title} ({dossier.ideas[0].howToCharge})
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        playSound('click', soundEnabled);
-                        setActiveTab('ideas');
-                      }}
-                      className="inline-flex items-center gap-1 font-semibold text-neutral-950 hover:underline cursor-pointer shrink-0"
-                    >
-                      <span>Explore all {dossier.ideas.length} ideas</span>
-                      <ArrowRight className="h-4 w-4" />
-                    </button>
+              {/* Highlight prompt to SaaS Ideas */}
+              {dossier && dossier.ideas.length > 0 && (
+                <div className="pt-3 border-t border-neutral-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm">
+                  <div className="text-neutral-700">
+                    <strong>Top opportunity:</strong> {dossier.ideas[0].title} ({dossier.ideas[0].howToCharge})
                   </div>
-                )}
-              </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playSound('click', soundEnabled);
+                      setActiveTab('ideas');
+                    }}
+                    className="inline-flex items-center gap-1 font-semibold text-blue-600 hover:underline cursor-pointer shrink-0"
+                  >
+                    <span>Explore all {dossier.ideas.length} ideas</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
             </section>
 
-            {/* Problem & Solution Breakdown */}
-            <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="rounded-xl border border-neutral-200/90 bg-white p-5 sm:p-6 space-y-3.5">
-                <div className="flex items-center gap-2">
+            {/* Problem & Solution Breakdown (Vertical Stack, Unframed) */}
+            <section className="space-y-8 pt-6 border-t border-neutral-100">
+              <div className="space-y-3">
+                <h3 className="text-base sm:text-lg font-bold text-neutral-950 flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-rose-500 shrink-0" />
-                  <h3 className="text-sm font-semibold text-neutral-950">
-                    The Problem It Solves
-                  </h3>
-                </div>
+                  <span>The Problem It Solves</span>
+                </h3>
                 <div className="space-y-3">
                   {formatIntoParagraphs(problemItSolves).map((p, idx) => (
-                    <p key={idx} className="text-sm text-neutral-700 leading-relaxed">
+                    <p key={idx} className="text-sm sm:text-base text-neutral-700 leading-relaxed">
                       {p}
                     </p>
                   ))}
                 </div>
               </div>
 
-              <div className="rounded-xl border border-neutral-200/90 bg-white p-5 sm:p-6 space-y-3.5">
-                <div className="flex items-center gap-2">
+              <div className="space-y-3 pt-6 border-t border-neutral-100">
+                <h3 className="text-base sm:text-lg font-bold text-neutral-950 flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
-                  <h3 className="text-sm font-semibold text-neutral-950">
-                    The Solution &amp; Opportunity
-                  </h3>
-                </div>
+                  <span>The Solution &amp; Opportunity</span>
+                </h3>
                 <div className="space-y-3">
                   {formatIntoParagraphs(solution).map((p, idx) => (
-                    <p key={idx} className="text-sm text-neutral-700 leading-relaxed">
+                    <p key={idx} className="text-sm sm:text-base text-neutral-700 leading-relaxed">
                       {p}
                     </p>
                   ))}
@@ -1121,106 +1134,95 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
               </div>
             </section>
 
-            {/* Who It's For Personas */}
-            <section className="space-y-3">
+            {/* Who It's For Personas (Vertical List, Unframed) */}
+            <section className="space-y-3 pt-6 border-t border-neutral-100">
               <h2 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-950">
                 Who It's For
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <ul className="space-y-2.5">
                 {whoItsForList.map((persona, i) => (
-                  <div
-                    key={i}
-                    className="flex items-start gap-2.5 p-4 rounded-xl border border-neutral-200/80 bg-neutral-50/50"
-                  >
-                    <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 shrink-0 mt-2" />
-                    <span className="text-sm font-medium text-neutral-800 leading-relaxed">
-                      {persona}
-                    </span>
-                  </div>
+                  <li key={i} className="flex items-start gap-2.5 text-sm sm:text-base text-neutral-700 leading-relaxed">
+                    <span className="h-2 w-2 rounded-full bg-blue-600 mt-2 shrink-0 ring-4 ring-blue-50" />
+                    <span>{persona}</span>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </section>
 
-            {/* Core Features */}
+            {/* Core Features (Vertical List, Unframed) */}
             {featuresList.length > 0 && (
-              <section className="space-y-3">
+              <section className="space-y-4 pt-6 border-t border-neutral-100">
                 <h2 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-950">
                   Core Platform Features
                 </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <ul className="space-y-4">
                   {featuresList.map((feat, i) => (
-                    <div
-                      key={i}
-                      className="rounded-xl border border-neutral-200/90 bg-white p-5 space-y-2"
-                    >
-                      <h3 className="text-sm font-semibold text-neutral-950 flex items-center gap-2">
-                        <span className="font-mono text-xs text-neutral-400">
+                    <li key={i} className="space-y-1">
+                      <h3 className="text-sm sm:text-base font-bold text-neutral-950 flex items-baseline gap-2">
+                        <span className="font-mono text-xs font-bold text-blue-600">
                           {String(i + 1).padStart(2, '0')}.
                         </span>
                         <span>{feat.title}</span>
                       </h3>
-                      <p className="text-sm text-neutral-600 leading-relaxed">
+                      <p className="text-sm text-neutral-600 leading-relaxed pl-6">
                         {feat.description}
                       </p>
-                    </div>
+                    </li>
                   ))}
-                </div>
+                </ul>
               </section>
             )}
 
-            {/* Founder Fit Evaluation */}
+            {/* Founder Fit Evaluation (Vertical Stack, Unframed) */}
             {dossier && (
-              <section className="space-y-3">
+              <section className="space-y-6 pt-6 border-t border-neutral-100">
                 <h2 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-950">
                   Founder Fit Evaluation
                 </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Good fit if */}
-                  <div className="rounded-xl border border-neutral-200/90 bg-white p-5 space-y-3">
-                    <div className="flex items-center gap-1.5 text-sm font-semibold text-emerald-800">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-                      <span>Good fit if</span>
-                    </div>
-                    <ul className="space-y-2.5">
-                      {dossier.goodFitIf.map((item, i) => (
-                        <li key={i} className="flex items-start gap-2.5 text-sm text-neutral-700 leading-relaxed">
-                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0 mt-2" />
-                          <span>{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
 
-                  {/* Skip if */}
-                  <div className="rounded-xl border border-neutral-200/90 bg-white p-5 space-y-3">
-                    <div className="flex items-center gap-1.5 text-sm font-semibold text-neutral-800">
-                      <XCircle className="h-4 w-4 text-neutral-500 shrink-0" />
-                      <span>Skip if</span>
-                    </div>
-                    <ul className="space-y-2.5">
-                      {dossier.skipIf.map((item, i) => (
-                        <li key={i} className="flex items-start gap-2.5 text-sm text-neutral-700 leading-relaxed">
-                          <span className="h-1.5 w-1.5 rounded-full bg-neutral-400 shrink-0 mt-2" />
-                          <span>{item}</span>
-                        </li>
-                      ))}
-                    </ul>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-1.5 text-sm font-bold text-emerald-800">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                    <span>Good fit if</span>
                   </div>
+                  <ul className="space-y-2.5">
+                    {dossier.goodFitIf.map((item, i) => (
+                      <li key={i} className="flex items-start gap-2.5 text-sm text-neutral-700 leading-relaxed">
+                        <span className="h-2 w-2 rounded-full bg-blue-600 mt-2 shrink-0 ring-4 ring-blue-50" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="space-y-3 pt-4 border-t border-neutral-100">
+                  <div className="flex items-center gap-1.5 text-sm font-bold text-neutral-800">
+                    <XCircle className="h-4 w-4 text-neutral-500 shrink-0" />
+                    <span>Skip if</span>
+                  </div>
+                  <ul className="space-y-2.5">
+                    {dossier.skipIf.map((item, i) => (
+                      <li key={i} className="flex items-start gap-2.5 text-sm text-neutral-700 leading-relaxed">
+                        <span className="h-2 w-2 rounded-full bg-neutral-400 mt-2 shrink-0" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               </section>
             )}
 
             {/* Developer Quick Start */}
-            <section className="space-y-3">
+            <section className="space-y-3 pt-6 border-t border-neutral-100">
               <div className="flex items-baseline justify-between">
                 <h2 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-950">
                   Quick Start
                 </h2>
-                <span className="text-sm text-neutral-500">README instructions</span>
+                <span className="text-xs sm:text-sm text-neutral-500">README instructions</span>
               </div>
 
-              <div className="rounded-xl border border-neutral-200/90 bg-neutral-100/80 p-4 sm:p-5 text-xs font-mono space-y-2.5">
-                <div className="flex items-center justify-between gap-3 bg-white p-3 rounded-lg border border-neutral-200/80 shadow-xs">
+              <div className="space-y-2.5 text-xs font-mono">
+                <div className="flex items-center justify-between gap-3 bg-neutral-50 p-3 rounded-lg border border-neutral-200/80">
                   <code className="truncate text-neutral-800 font-mono font-medium">
                     {dossier?.quickStart.clone || `git clone ${repo.html_url}.git`}
                   </code>
@@ -1232,19 +1234,19 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
                         dossier?.quickStart.clone || `git clone ${repo.html_url}.git`
                       )
                     }
-                    className="text-xs font-sans font-medium text-neutral-500 hover:text-neutral-950 transition-colors cursor-pointer shrink-0 px-2 py-0.5 rounded hover:bg-neutral-100"
+                    className="text-xs font-sans font-medium text-neutral-500 hover:text-neutral-950 transition-colors cursor-pointer shrink-0 px-2 py-0.5 rounded hover:bg-neutral-200/60"
                   >
                     {copiedKey === 'cmd-clone' ? 'Copied' : 'Copy'}
                   </button>
                 </div>
 
                 {dossier?.quickStart.install && (
-                  <div className="flex items-center justify-between gap-3 bg-white p-3 rounded-lg border border-neutral-200/80 shadow-xs">
+                  <div className="flex items-center justify-between gap-3 bg-neutral-50 p-3 rounded-lg border border-neutral-200/80">
                     <code className="truncate text-neutral-800 font-mono font-medium">{dossier.quickStart.install}</code>
                     <button
                       type="button"
                       onClick={() => copyText('cmd-install', dossier.quickStart.install || '')}
-                      className="text-xs font-sans font-medium text-neutral-500 hover:text-neutral-950 transition-colors cursor-pointer shrink-0 px-2 py-0.5 rounded hover:bg-neutral-100"
+                      className="text-xs font-sans font-medium text-neutral-500 hover:text-neutral-950 transition-colors cursor-pointer shrink-0 px-2 py-0.5 rounded hover:bg-neutral-200/60"
                     >
                       {copiedKey === 'cmd-install' ? 'Copied' : 'Copy'}
                     </button>
@@ -1252,12 +1254,12 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
                 )}
 
                 {dossier?.quickStart.run && (
-                  <div className="flex items-center justify-between gap-3 bg-white p-3 rounded-lg border border-neutral-200/80 shadow-xs">
+                  <div className="flex items-center justify-between gap-3 bg-neutral-50 p-3 rounded-lg border border-neutral-200/80">
                     <code className="truncate text-neutral-800 font-mono font-medium">{dossier.quickStart.run}</code>
                     <button
                       type="button"
                       onClick={() => copyText('cmd-run', dossier.quickStart.run || '')}
-                      className="text-xs font-sans font-medium text-neutral-500 hover:text-neutral-950 transition-colors cursor-pointer shrink-0 px-2 py-0.5 rounded hover:bg-neutral-100"
+                      className="text-xs font-sans font-medium text-neutral-500 hover:text-neutral-950 transition-colors cursor-pointer shrink-0 px-2 py-0.5 rounded hover:bg-neutral-200/60"
                     >
                       {copiedKey === 'cmd-run' ? 'Copied' : 'Copy'}
                     </button>
@@ -1272,6 +1274,7 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
               </div>
             </section>
           </div>
+        </div>
 
         {/* TAB 2: SAAS IDEAS */}
         {dossier && (
@@ -1325,19 +1328,24 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
                 const ideaKey = idea.id || String(idx);
                 const isExpanded = !!expandedIdeas[ideaKey];
                 const blueprint = getIdeaBlueprint(repo.full_name, ideaKey, idea);
+                const ideaTintColor = getDeterministicBrandColor(idea.title || repo.name);
 
                 return (
                   <div
                     key={ideaKey}
-                    className="rounded-2xl border border-neutral-200/90 bg-neutral-100/70 hover:border-neutral-300 transition-all overflow-hidden shadow-xs"
+                    className="rounded-2xl border border-neutral-200/90 bg-white p-1 hover:border-neutral-300 transition-all shadow-2xs"
                   >
+                    <div
+                      className="rounded-xl overflow-hidden border border-black/[0.04]"
+                      style={{ backgroundColor: `color-mix(in srgb, ${ideaTintColor} 7%, white)` }}
+                    >
                     {/* Clickable Card Header */}
                     <div
                       onClick={() => {
                         playSound('click', soundEnabled);
                         toggleIdea(ideaKey);
                       }}
-                      className="p-5 sm:p-6 cursor-pointer select-none transition-colors hover:bg-neutral-100/90 flex flex-col gap-3.5"
+                      className="p-5 sm:p-6 cursor-pointer select-none transition-colors hover:bg-black/[0.02] flex flex-col gap-3.5"
                     >
                       <div className="flex items-start gap-3">
                         <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white border border-neutral-200 text-xs font-mono font-bold text-neutral-800 shadow-xs shrink-0 mt-0.5">
@@ -1556,6 +1564,7 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
                         </div>
                       </div>
                     )}
+                    </div>
                   </div>
                 );
               })}
@@ -1568,8 +1577,9 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
         )}
 
         {/* TAB 3: LICENSE */}
-        <div hidden={activeTab !== 'license'} className="space-y-6 animate-fadeIn">
-            <div className="flex items-baseline justify-between border-b border-neutral-100 pb-2">
+        <div hidden={activeTab !== 'license'} className="animate-fadeIn">
+          <div className="rounded-2xl border border-neutral-200/90 bg-white p-6 sm:p-10 shadow-xs space-y-8">
+            <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-neutral-100 pb-4">
               <div>
                 <h2 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-950">
                   Commercial License &amp; SaaS Rights
@@ -1583,115 +1593,111 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
               </span>
             </div>
 
-            {/* Consolidated License Container with Light Grey Background */}
-            <div className="rounded-2xl border border-neutral-200/90 bg-neutral-50/80 p-6 sm:p-7 space-y-6">
-              {/* Header Status & Plain Explanation */}
-              <div className="space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center gap-2.5">
-                    <span className={`h-2.5 w-2.5 rounded-full ${safety.colorClasses.dotBg}`} />
-                    <span className="text-base font-semibold text-neutral-950">
-                      {safety.badgeLabel}
-                    </span>
-                    <span className="text-xs text-neutral-500 font-mono">
-                      ({safety.spdxId})
-                    </span>
-                  </div>
-
-                  <span className="text-xs font-medium text-neutral-700 bg-white px-2.5 py-1 rounded-md border border-neutral-200/80">
-                    {!hasRecognizedLicense
-                      ? 'No recognized license'
-                      : safety.tier === 'safe'
-                      ? 'Permissive License'
-                      : safety.tier === 'conditional'
-                      ? 'Conditions apply'
-                      : 'Source-available / Restricted'}
+            {/* Header Status & Plain Explanation */}
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <span className={`h-2.5 w-2.5 rounded-full ${safety.colorClasses.dotBg}`} />
+                  <span className="text-base font-semibold text-neutral-950">
+                    {safety.badgeLabel}
+                  </span>
+                  <span className="text-xs text-neutral-500 font-mono">
+                    ({safety.spdxId})
                   </span>
                 </div>
 
-                <div>
-                  <div className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider mb-1">
-                    Commercial Rights &amp; Freedom
-                  </div>
-                  <p className="text-sm text-neutral-800 leading-relaxed font-normal">
-                    {dossier?.licenseMeaning || safety.plainExplanation}
-                  </p>
-                </div>
+                <span className="text-xs font-medium text-neutral-700 bg-neutral-50 px-2.5 py-1 rounded-md border border-neutral-200/80">
+                  {!hasRecognizedLicense
+                    ? 'No recognized license'
+                    : safety.tier === 'safe'
+                    ? 'Permissive License'
+                    : safety.tier === 'conditional'
+                    ? 'Conditions apply'
+                    : 'Source-available / Restricted'}
+                </span>
               </div>
 
-              {/* Founder Commercial Rights Matrix */}
-              <div className="space-y-3 pt-2">
-                <h3 className="text-sm font-semibold text-neutral-950 tracking-tight">
-                  Founder Commercial Rights
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  {commercialRights.map((right) => {
-                    const RightIcon = right.icon;
-                    const state = rightStateStyles[right.state];
-                    const StateIcon = state.icon;
-                    return (
-                      <div key={right.title} className="rounded-xl border border-neutral-200/80 bg-white p-4 space-y-1.5">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 text-sm font-semibold text-neutral-950">
-                            <RightIcon className="h-4 w-4 text-neutral-600 shrink-0" />
-                            <span>{right.title}</span>
-                          </div>
-                          <span className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide ${state.className}`}>
-                            <StateIcon className="h-3 w-3 shrink-0" />
-                            {state.label}
-                          </span>
-                        </div>
-                        <p className="text-sm text-neutral-600 leading-relaxed">
-                          {right.body}
-                        </p>
-                      </div>
-                    );
-                  })}
-
-                  <div className="rounded-xl border border-neutral-200/80 bg-white p-4 space-y-1.5">
-                    <div className="flex items-center gap-2 text-sm font-semibold text-neutral-950">
-                      <Scale className="h-4 w-4 text-neutral-600 shrink-0" />
-                      <span>Trademark Boundaries</span>
-                    </div>
-                    <p className="text-sm text-neutral-600 leading-relaxed">
-                      The software license covers the source code, but not project trademarks. Choose an original brand name rather than selling as official &quot;{repo.name}&quot;.
-                    </p>
-                  </div>
+              <div>
+                <div className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider mb-1">
+                  Commercial Rights &amp; Freedom
                 </div>
+                <p className="text-sm sm:text-base text-neutral-800 leading-relaxed font-normal">
+                  {dossier?.licenseMeaning || safety.plainExplanation}
+                </p>
               </div>
-
-              {/* Commercial Diligence & Strategy Notes */}
-              {((dossier?.caveats && dossier.caveats.length > 0) || dossier?.licenseWarning) && (
-                <div className="space-y-3 pt-2">
-                  <h3 className="text-sm font-semibold text-neutral-950 tracking-tight">
-                    Commercial Diligence &amp; Strategy Notes
-                  </h3>
-                  <div className="rounded-xl border border-neutral-200/80 bg-white p-5 space-y-3">
-                    {dossier?.caveats && dossier.caveats.length > 0 && (
-                      <ul className="space-y-2 text-sm text-neutral-700 leading-relaxed">
-                        {dossier.caveats.map((c, idx) => (
-                          <li key={idx} className="flex items-start gap-2.5">
-                            <span className="h-1.5 w-1.5 rounded-full bg-neutral-500 shrink-0 mt-2" />
-                            <span>{c}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-
-                    {dossier?.licenseWarning && (
-                      <p className="text-sm text-neutral-600 leading-relaxed pt-2 border-t border-neutral-100">
-                        {dossier.licenseWarning}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <p className="text-xs text-neutral-400 pt-2 border-t border-neutral-200/70">
-                Disclaimer: TopSAAS provides independent editorial analysis and does not offer legal advice. Always review the full license terms with legal counsel before building a business.
-              </p>
             </div>
+
+            {/* Founder Commercial Rights (Vertical List, Unframed) */}
+            <div className="space-y-4 pt-6 border-t border-neutral-100">
+              <h3 className="text-base sm:text-lg font-bold text-neutral-950 tracking-tight">
+                Founder Commercial Rights
+              </h3>
+              <ul className="space-y-4">
+                {commercialRights.map((right) => {
+                  const RightIcon = right.icon;
+                  const state = rightStateStyles[right.state];
+                  const StateIcon = state.icon;
+                  return (
+                    <li key={right.title} className="space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 text-sm font-bold text-neutral-950">
+                          <RightIcon className="h-4 w-4 text-blue-600 shrink-0" />
+                          <span>{right.title}</span>
+                        </div>
+                        <span className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide ${state.className}`}>
+                          <StateIcon className="h-3 w-3 shrink-0" />
+                          {state.label}
+                        </span>
+                      </div>
+                      <p className="text-sm text-neutral-600 leading-relaxed pl-6">
+                        {right.body}
+                      </p>
+                    </li>
+                  );
+                })}
+
+                <li className="space-y-1">
+                  <div className="flex items-center gap-2 text-sm font-bold text-neutral-950">
+                    <Scale className="h-4 w-4 text-blue-600 shrink-0" />
+                    <span>Trademark Boundaries</span>
+                  </div>
+                  <p className="text-sm text-neutral-600 leading-relaxed pl-6">
+                    The software license covers the source code, but not project trademarks. Choose an original brand name rather than selling as official &quot;{repo.name}&quot;.
+                  </p>
+                </li>
+              </ul>
+            </div>
+
+            {/* Commercial Diligence & Strategy Notes (Vertical List, Unframed) */}
+            {((dossier?.caveats && dossier.caveats.length > 0) || dossier?.licenseWarning) && (
+              <div className="space-y-3 pt-6 border-t border-neutral-100">
+                <h3 className="text-base sm:text-lg font-bold text-neutral-950 tracking-tight">
+                  Commercial Diligence &amp; Strategy Notes
+                </h3>
+                {dossier?.caveats && dossier.caveats.length > 0 && (
+                  <ul className="space-y-2.5 text-sm text-neutral-700 leading-relaxed">
+                    {dossier.caveats.map((c, idx) => (
+                      <li key={idx} className="flex items-start gap-2.5">
+                        <span className="h-2 w-2 rounded-full bg-blue-600 mt-2 shrink-0 ring-4 ring-blue-50" />
+                        <span>{c}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                {dossier?.licenseWarning && (
+                  <p className="text-sm text-neutral-600 leading-relaxed pt-2">
+                    {dossier.licenseWarning}
+                  </p>
+                )}
+              </div>
+            )}
+
+            <p className="text-xs text-neutral-400 pt-4 border-t border-neutral-100">
+              Disclaimer: TopSAAS provides independent editorial analysis and does not offer legal advice. Always review the full license terms with legal counsel before building a business.
+            </p>
           </div>
+        </div>
 
         {/* TAB 4: TECH STACK */}
         <div hidden={activeTab !== 'tech'} className="space-y-6 animate-fadeIn">
@@ -1796,77 +1802,67 @@ export const RepoDetailPage: React.FC<RepoDetailPageProps> = ({
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {commercialAlternativesList.map((alt) => (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {commercialAlternativesList.map((alt) => {
+                    const tintColor = getDeterministicBrandColor(alt.name || alt.domain);
+                    return (
                     <div
                       key={alt.name}
-                      className="group rounded-xl border border-neutral-200/90 bg-neutral-100/80 hover:bg-neutral-100 transition-all p-5 sm:p-6 space-y-4 flex flex-col justify-between shadow-xs"
+                      className="rounded-2xl border border-neutral-200/90 bg-white p-1 shadow-2xs hover:border-neutral-300 transition-colors flex flex-col"
                     >
-                      <div className="space-y-3">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-xl border border-neutral-200 bg-white flex items-center justify-center overflow-hidden shrink-0">
-                              {alt.domain ? (
-                                <img
-                                  src={getWebsiteFavicon(alt.domain, 32)}
-                                  alt={alt.name}
-                                  className="h-5 w-5 object-contain"
-                                  onError={(e) => {
-                                    (e.target as HTMLElement).style.display = 'none';
-                                  }}
-                                />
-                              ) : (
-                                <Server className="h-5 w-5 text-neutral-400" />
-                              )}
-                            </div>
-                            <div className="min-w-0">
-                              <h3 className="text-base font-semibold text-neutral-950 tracking-tight">
-                                {alt.name}
-                              </h3>
-                              {alt.domain && (
-                                <a
-                                  href={alt.domain.startsWith('http://') || alt.domain.startsWith('https://') ? alt.domain : `https://${alt.domain}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1.5 text-xs text-neutral-500 hover:text-neutral-950 font-mono break-all mt-0.5 transition-colors group/link hover:underline"
-                                  title={`Visit ${alt.name} (${alt.domain})`}
-                                >
-                                  <Link2 className="h-3 w-3 shrink-0 text-neutral-400 group-hover/link:text-neutral-900 transition-colors" />
-                                  <span>{alt.domain}</span>
-                                </a>
-                              )}
-                            </div>
-                          </div>
-
-                          <span className="text-xs font-semibold text-neutral-600 bg-white border border-neutral-200 px-2.5 py-0.5 rounded shrink-0">
-                            Replaced
-                          </span>
+                      <div
+                        className="flex-1 rounded-xl p-4 sm:p-5 flex flex-col justify-between gap-4 border border-black/[0.04]"
+                        style={{ backgroundColor: `color-mix(in srgb, ${tintColor} 8%, white)` }}
+                      >
+                        <div className="space-y-2">
+                          <h3 className="text-base font-bold text-neutral-950 tracking-tight">
+                            {alt.name}
+                          </h3>
+                          <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed line-clamp-3">
+                            {alt.description}
+                          </p>
                         </div>
 
-                        <p className="text-sm text-neutral-700 leading-relaxed">
-                          {alt.description}
-                        </p>
-                      </div>
-
-                      <div className="space-y-3 pt-3 border-t border-neutral-200/80">
-                        {alt.pricing && (
-                          <div className="flex flex-col sm:flex-row sm:items-baseline justify-between text-xs gap-1 sm:gap-4">
-                            <span className="text-neutral-500 font-medium shrink-0">Pricing benchmark:</span>
-                            <span className="font-semibold text-neutral-950 font-mono-num text-xs sm:text-right break-words">
-                              {alt.pricing}
-                            </span>
+                        <div className="space-y-2.5 pt-3 border-t border-black/[0.06]">
+                          <div className="flex items-center gap-2 min-w-0">
+                            {alt.domain ? (
+                              <a
+                                href={alt.domain.startsWith('http://') || alt.domain.startsWith('https://') ? alt.domain : `https://${alt.domain}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 text-xs text-neutral-600 hover:text-neutral-950 truncate"
+                                title={`Visit ${alt.name}`}
+                              >
+                                <span className="h-5 w-5 rounded border border-neutral-200/80 bg-white flex items-center justify-center overflow-hidden shrink-0 shadow-2xs">
+                                  <img
+                                    src={getWebsiteFavicon(alt.domain, 32)}
+                                    alt={alt.name}
+                                    className="h-3.5 w-3.5 object-contain"
+                                    onError={(e) => {
+                                      (e.target as HTMLElement).style.display = 'none';
+                                    }}
+                                  />
+                                </span>
+                                <span className="truncate font-medium">{alt.domain}</span>
+                              </a>
+                            ) : (
+                              <span className="text-xs text-neutral-500">Commercial SaaS</span>
+                            )}
                           </div>
-                        )}
 
-                        {alt.whyReplace && (
-                          <div className="rounded-lg bg-white p-3 text-xs text-neutral-700 leading-relaxed border border-neutral-200/80">
-                            <strong className="text-neutral-900 font-semibold">Drawback:</strong>{' '}
-                            {alt.whyReplace}
-                          </div>
-                        )}
+                          {alt.pricing && (
+                            <div className="space-y-0.5 text-xs">
+                              <div className="text-neutral-500 font-medium">Pricing benchmark:</div>
+                              <div className="font-semibold text-emerald-700 leading-snug">
+                                {alt.pricing}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 <p className="text-xs text-neutral-500 leading-relaxed pt-1">

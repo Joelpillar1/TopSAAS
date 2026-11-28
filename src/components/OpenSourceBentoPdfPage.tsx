@@ -203,53 +203,40 @@ export const OpenSourceBentoPdfPage: React.FC<OpenSourceBentoPdfPageProps> = ({
 
   return (
     <article className="min-h-screen bg-neutral-50/50 text-neutral-900 font-sans pb-24 selection:bg-neutral-200 selection:text-neutral-900">
-      {/* ── Sub-Nav / Breadcrumb Header ── */}
-      <nav className="relative z-10 border-b border-neutral-200/80 bg-white">
-        <div className="mx-auto flex h-14 max-w-4xl items-center justify-between px-4 sm:px-6 gap-2">
-          {/* Left: Back button & Breadcrumb */}
-          <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
-            <button
-              type="button"
-              onClick={() => {
-                playSound('click', soundEnabled);
-                onBack();
-              }}
-              className="inline-flex items-center gap-1 sm:gap-1.5 rounded-lg border border-neutral-200 bg-white px-2 sm:px-2.5 py-1.5 text-xs font-medium text-neutral-700 shadow-2xs hover:bg-neutral-50 hover:text-neutral-950 transition-all cursor-pointer shrink-0 whitespace-nowrap active:scale-95"
-            >
-              <ArrowLeft className="h-3.5 w-3.5 shrink-0" />
-              <span className="hidden sm:inline">Back to SaaS Ideas</span>
-              <span className="sm:hidden">Back</span>
-            </button>
-            <span className="text-neutral-300 shrink-0 hidden sm:inline">/</span>
-            <a
-              href="/"
-              onClick={(e) => {
-                e.preventDefault();
-                playSound('click', soundEnabled);
-                navigateTo('/');
-              }}
-              className="text-xs font-medium text-neutral-500 hover:text-neutral-900 transition-colors hidden sm:inline shrink-0"
-            >
-              Directory
-            </a>
-            <span className="text-neutral-300 shrink-0 hidden md:inline">/</span>
-            <a
-              href="/ideas"
-              onClick={(e) => {
-                e.preventDefault();
-                playSound('click', soundEnabled);
-                navigateTo('/ideas');
-              }}
-              className="text-xs font-medium text-neutral-500 hover:text-neutral-900 transition-colors hidden md:inline shrink-0"
-            >
-              SaaS Ideas
-            </a>
-            <span className="text-neutral-300 shrink-0 hidden md:inline">/</span>
-            <span className="text-xs font-semibold text-neutral-900 truncate">BentoPDF</span>
-          </div>
+      {/* ── Unified Breadcrumb + Action Row ── */}
+      <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3 px-4 pt-4 sm:pt-6 sm:px-6">
+        <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-neutral-500 flex-wrap min-w-0">
+          <a
+            href="/"
+            onClick={(e) => {
+              if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+              e.preventDefault();
+              playSound('click', soundEnabled);
+              navigateTo('/');
+            }}
+            className="hover:text-neutral-950 transition-colors cursor-pointer"
+          >
+            Home
+          </a>
+          <span className="text-neutral-300 select-none">/</span>
+          <a
+            href="/ideas"
+            onClick={(e) => {
+              if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+              e.preventDefault();
+              playSound('click', soundEnabled);
+              onBack();
+            }}
+            className="hover:text-neutral-950 transition-colors cursor-pointer"
+          >
+            SaaS Ideas
+          </a>
+          <span className="text-neutral-300 select-none">/</span>
+          <span className="font-bold text-neutral-900 truncate">BentoPDF</span>
+        </nav>
 
-          {/* Right: GitHub, Docker & Live Instance */}
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        {/* Right: GitHub, Docker & Live Instance */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <a
               href={BENTO_PDF_META.githubUrl}
               target="_blank"
@@ -284,8 +271,7 @@ export const OpenSourceBentoPdfPage: React.FC<OpenSourceBentoPdfPageProps> = ({
               <ExternalLink className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
             </a>
           </div>
-        </div>
-      </nav>
+      </div>
 
       {/* ── Main Content Container (no inner sidebar; outer sponsor rails sit outside) ── */}
       <div className="mx-auto max-w-4xl px-4 sm:px-6 pt-6 sm:pt-8 space-y-6">

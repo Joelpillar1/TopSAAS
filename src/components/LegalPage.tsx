@@ -78,28 +78,25 @@ export const LegalPage: React.FC<LegalPageProps> = ({
   return (
     <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between selection:bg-mint-500 selection:text-white font-sans">
       <main className="mx-auto w-full max-w-4xl px-4 sm:px-6 py-6 sm:py-8 flex-1 space-y-6">
-        {/* Breadcrumb / Back Bar */}
-        <div className="flex items-center justify-between">
-          <button
-            type="button"
-            onClick={() => {
+        {/* Unified Breadcrumb Navigation */}
+        <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-neutral-500 flex-wrap">
+          <a
+            href="/"
+            onClick={(e) => {
+              if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+              e.preventDefault();
               playSound('click', soundEnabled);
               onBack();
             }}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-1.5 text-xs font-bold text-neutral-700 hover:border-mint-500/60 hover:text-mint-700 hover:bg-mint-50/30 transition-all cursor-pointer shadow-2xs"
+            className="hover:text-neutral-950 transition-colors cursor-pointer"
           >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            <span>Back to Home</span>
-          </button>
-
-          <div className="flex items-center gap-1.5 text-[11px] text-neutral-400 font-medium">
-            <span>Legal</span>
-            <ChevronRight className="h-3 w-3 text-neutral-600" />
-            <span className="text-neutral-900 font-bold">
-              {activeDoc === 'privacy' ? 'Privacy Policy' : 'Terms of Service'}
-            </span>
-          </div>
-        </div>
+            Home
+          </a>
+          <span className="text-neutral-300 select-none">/</span>
+          <span className="font-bold text-neutral-900">
+            {activeDoc === 'privacy' ? 'Privacy Policy' : 'Terms of Service'}
+          </span>
+        </nav>
 
         {/* Page Hero & Tab Switcher */}
         <div className="rounded-2xl border border-neutral-200 bg-white p-5 sm:p-7 shadow-xs space-y-5">

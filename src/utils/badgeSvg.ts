@@ -155,7 +155,7 @@ export function generateBadgeDataUrl(product: Product, options: BadgeOptions = {
  * Get canonical public product URL on TopSAAS
  */
 export function getProductTopSaasUrl(product: Product, baseOrigin?: string): string {
-  const origin = baseOrigin || (typeof window !== 'undefined' ? window.location.origin : 'https://topsaas.space');
+  const origin = baseOrigin || (typeof window !== 'undefined' ? window.location.origin : 'https://www.topsaas.space');
   const slug = getProductSlug(product);
   return `${origin}/products/${encodeURIComponent(slug)}?ref=badge`;
 }
@@ -171,7 +171,7 @@ export function generateBadgeSnippet(
   baseOrigin?: string
 ): string {
   const productUrl = getProductTopSaasUrl(product, baseOrigin);
-  const origin = baseOrigin || (typeof window !== 'undefined' ? window.location.origin : 'https://topsaas.space');
+  const origin = baseOrigin || (typeof window !== 'undefined' ? window.location.origin : 'https://www.topsaas.space');
   const badgeImageUrl = `${origin}/Share%20Badge/TopSAAS%20Type%201%20-%20blue.png`;
   const altText = `${product.name} - Featured on TopSAAS`;
 

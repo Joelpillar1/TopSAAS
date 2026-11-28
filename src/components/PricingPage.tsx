@@ -183,7 +183,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({
       })()}
 
       {/* ══════════════════════════════════════════════════════════
-          1. LAUNCH PLANS (Starter Free vs $5 Verified Launch)
+          1. LAUNCH PLANS (Starter Free vs $9 Verified Launch)
          ══════════════════════════════════════════════════════════ */}
       <div className="w-full rounded-3xl border border-neutral-200/80 bg-white p-6 sm:p-10 shadow-sm relative">
         {/* Header */}
@@ -430,7 +430,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({
                     <th className="p-3.5 text-left font-semibold w-1/2">Feature</th>
                     <th className="p-3.5 text-center font-semibold">Starter</th>
                     <th className="p-3.5 text-center font-semibold text-mint-700 bg-mint-500/5 border-l border-neutral-200">
-                      Verified ($5)
+                      Verified ($9)
                     </th>
                   </tr>
                 </thead>

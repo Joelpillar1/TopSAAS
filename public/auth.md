@@ -6,4 +6,4 @@
 - **Submissions & Moderation**: Requires Supabase OAuth (Google / Magic Link) with Row Level Security (RLS) enforcement.
 - **Admin Moderation**: Enforced by server-side claims and Supabase security roles.
 
-For API access questions or automated agent crawling, refer to `https://topsaas.com/ai.txt`.
+For API access questions or automated agent crawling, refer to `https://www.topsaas.space/ai.txt`.

@@ -252,7 +252,7 @@ export const SponsorTrackerTab: React.FC<SponsorTrackerTabProps> = ({
         subject: `Your product is now featured on TopSAAS (Sponsor Spotlight)`,
         body: `Hi ${founderName},
 
-Just wanted to let you know that ${productName} has been spotlighted on our top sponsor rail on TopSAAS (https://topsaas.space).
+Just wanted to let you know that ${productName} has been spotlighted on our top sponsor rail on TopSAAS (https://www.topsaas.space).
 
 Your sponsor placement is active starting today! You can monitor direct incoming visitors in your analytics via referral source topsaas.space or tag: utm_source=topsaas.
 
@@ -262,7 +262,7 @@ Feel free to reply if you need any adjustments to your listing or demo!
 
 Best,
 TopSAAS Team
-https://topsaas.space`,
+https://www.topsaas.space`,
       };
     }
 
@@ -279,13 +279,13 @@ Your current placement wraps up in ${daysLeft > 0 ? `${daysLeft} days` : '48 hou
 👉 3-Month Sponsor Spot: $69 (Save 20%)
 👉 1-Year Partner Spot: $199 (Save 42%)
 
-Lock it in here: https://topsaas.space/pricing
+Lock it in here: https://www.topsaas.space/pricing
 
 Would you like to keep your placement active for another month?
 
 Best,
 TopSAAS Team
-https://topsaas.space`,
+https://www.topsaas.space`,
       };
     }
 
@@ -297,13 +297,13 @@ Your sponsor spotlight for ${productName} ends today, and the slot is queued to 
 
 If you'd like to extend your featured spot and keep the steady builder traffic coming in, you can lock it in here before the slot rotates:
 
-👉 Extend Sponsor Spot ($29/mo): https://topsaas.space/pricing
+👉 Extend Sponsor Spot ($29/mo): https://www.topsaas.space/pricing
 
 Either way, your standard directory listing remains live on TopSAAS forever. Thank you for building something awesome!
 
 Best,
 TopSAAS Team
-https://topsaas.space`,
+https://www.topsaas.space`,
     };
   };
 

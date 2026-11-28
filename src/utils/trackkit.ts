@@ -82,7 +82,7 @@ export function appendTrackkitParams(checkoutUrl: string): string {
     const { ml_visitor_id, ml_session_id } = getTrackkitAttribution();
     if (!ml_visitor_id && !ml_session_id) return checkoutUrl;
 
-    const url = new URL(checkoutUrl, typeof window !== 'undefined' ? window.location.origin : 'https://topsaas.space');
+    const url = new URL(checkoutUrl, typeof window !== 'undefined' ? window.location.origin : 'https://www.topsaas.space');
 
     if (ml_visitor_id) {
       url.searchParams.set('metadata[ml_visitor_id]', ml_visitor_id);

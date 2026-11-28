@@ -131,19 +131,39 @@ export const GuideDetailPage: React.FC<GuideDetailPageProps> = ({
   }
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-3.5 sm:px-6 pt-6 pb-16 space-y-6">
-      {/* Back */}
-      <button
-        type="button"
-        onClick={() => {
-          playSound('click', soundEnabled);
-          navigateTo('/guides');
-        }}
-        className="inline-flex items-center gap-1.5 text-xs font-bold text-neutral-500 hover:text-neutral-950 transition-colors cursor-pointer"
-      >
-        <ArrowLeft className="h-3.5 w-3.5" />
-        All build guides
-      </button>
+    <div className="mx-auto w-full max-w-4xl px-3.5 sm:px-6 pt-3 sm:pt-5 pb-16 space-y-6">
+      {/* Unified Breadcrumb Navigation */}
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-neutral-500 flex-wrap">
+        <a
+          href="/"
+          onClick={(e) => {
+            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+            e.preventDefault();
+            playSound('click', soundEnabled);
+            navigateTo('/');
+          }}
+          className="hover:text-neutral-950 transition-colors cursor-pointer"
+        >
+          Home
+        </a>
+        <span className="text-neutral-300 select-none">/</span>
+        <a
+          href="/guides"
+          onClick={(e) => {
+            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+            e.preventDefault();
+            playSound('click', soundEnabled);
+            navigateTo('/guides');
+          }}
+          className="hover:text-neutral-950 transition-colors cursor-pointer"
+        >
+          Build Guides
+        </a>
+        <span className="text-neutral-300 select-none">/</span>
+        <span className="font-bold text-neutral-900 truncate max-w-[200px] sm:max-w-[360px]">
+          {guide.title}
+        </span>
+      </nav>
 
       {/* Header */}
       <header className="space-y-3">

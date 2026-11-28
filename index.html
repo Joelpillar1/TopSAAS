@@ -3,9 +3,17 @@
 
 <head>
   <script>
-    // Runs before first paint: marks the document as JS-capable so the
-    // prerendered body stays hidden while remaining real markup for crawlers.
-    document.documentElement.classList.add('js');
+    // Runs before first paint: marks the document as JS-capable for human visitors,
+    // but keeps prerendered SEO markup visible for search engine crawlers (Googlebot, Bingbot, etc.)
+    // which execute JS and would otherwise treat display:none as hidden/empty content.
+    try {
+      var isBot = /googlebot|google-inspectiontool|bingbot|yandex|baiduspider|duckduckbot|slurp|twitterbot|facebookexternalhit|linkedinbot|embedly|quora link preview|pinterest|slackbot|redditbot|applebot|bytespider|gptbot|claudebot|perplexitybot/i.test(navigator.userAgent || '');
+      if (!isBot) {
+        document.documentElement.classList.add('js');
+      }
+    } catch (e) {
+      document.documentElement.classList.add('js');
+    }
   </script>
   <style>
     html.js #seo-prerender {
@@ -68,7 +76,7 @@
     })();
   </script>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
   <title>TopSAAS — The Curated Directory of Modern SaaS & AI Tools</title>
   <meta name="description"

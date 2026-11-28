@@ -1149,7 +1149,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
             </p>
           </div>
 
-          {/* ── 2. The Premium $5 Verified Launch Upsell Card ── */}
+          {/* ── 2. The Premium $9 Verified Launch Upsell Card ── */}
           <div className="relative rounded-3xl border border-blue-600 bg-gradient-to-b from-blue-50/60 via-slate-50/40 to-white p-5 sm:p-6 shadow-xl shadow-blue-500/10 ring-2 ring-blue-600">
             {/* Overlapping Top Badge */}
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10 whitespace-nowrap">
@@ -2568,7 +2568,7 @@ export const SubmitPage: React.FC<SubmitPageProps> = ({
                     </button>
                   </div>
 
-                  {/* Option 2: Verified Launch ($5 / Product · One-time) with Overlapping Tag */}
+                  {/* Option 2: Verified Launch ($9 / Product · One-time) with Overlapping Tag */}
                   <div
                     onClick={() => {
                       playSound('click', soundEnabled);

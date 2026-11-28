@@ -14,9 +14,7 @@ interface BlackFridayModalProps {
 export const SALE_END_TIMESTAMP = Date.UTC(2026, 10, 30, 23, 59, 59);
 
 export function getOfferDeadline(): number {
-  return SALE_END_TIMESTAMP > Date.now()
-    ? SALE_END_TIMESTAMP
-    : Date.now() + 48 * 60 * 60 * 1000;
+  return SALE_END_TIMESTAMP;
 }
 
 export function getRemainingTime(targetMs: number) {

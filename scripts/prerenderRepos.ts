@@ -435,7 +435,7 @@ const buildRepoJsonLd = (repo: CuratedRepo): string => {
 };
 
 const buildIdeasBody = (): string => {
-  const total = directoryRepos.length;
+  const total = uniqueRepos.length;
   const categories = (() => {
     const grouped = new Map<RepoCategory, CuratedRepo[]>();
     for (const repo of directoryRepos) {
@@ -609,9 +609,12 @@ interface PageHead {
   description: string;
   canonical: string;
   body: string;
+  ogType?: 'website' | 'article' | 'product';
   jsonLd?: string;
   /** id attribute for the JSON-LD script so applyPageSeo can replace it */
   jsonLdId?: string;
+  /** override the template og:image / twitter:image */
+  ogImage?: string;
   /** override the template robots directive (e.g. noindex on the 404 page) */
   robots?: string;
   /** drop the template JSON-LD instead of keeping it */
@@ -625,39 +628,57 @@ const renderPage = (template: string, page: PageHead): string => {
   const description = escapeHtml(page.description);
   let html = template;
 
-  html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${title}</title>`);
+  // Use [\s\S]*? to match across newlines because index.html wraps meta tag
+  // attributes across multiple lines (e.g. name="..." on one line, content="..." on the next).
+  html = html.replace(/<title>[\s\S]*?<\/title>/i, `<title>${title}</title>`);
   html = html.replace(
-    /<meta name="description" content="[^"]*"\s*\/?>/,
+    /<meta\s+name="description"[\s\S]*?\/>/i,
     `<meta name="description" content="${description}" />`
   );
   html = html.replace(
-    /<link rel="canonical" href="[^"]*"\s*\/?>/,
+    /<link\s+rel="canonical"[\s\S]*?\/>/i,
     `<link rel="canonical" href="${page.canonical}" />`
   );
   html = html.replace(
-    /<meta property="og:url" content="[^"]*"\s*\/?>/,
+    /<meta\s+property="og:url"[\s\S]*?\/>/i,
     `<meta property="og:url" content="${page.canonical}" />`
   );
+  const ogType = page.ogType || 'website';
   html = html.replace(
-    /<meta property="og:title" content="[^"]*"\s*\/?>/,
+    /<meta\s+property="og:type"[\s\S]*?\/>/i,
+    `<meta property="og:type" content="${ogType}" />`
+  );
+  html = html.replace(
+    /<meta\s+property="og:title"[\s\S]*?\/>/i,
     `<meta property="og:title" content="${title}" />`
   );
   html = html.replace(
-    /<meta property="og:description" content="[^"]*"\s*\/?>/,
+    /<meta\s+property="og:description"[\s\S]*?\/>/i,
     `<meta property="og:description" content="${description}" />`
   );
   html = html.replace(
-    /<meta name="twitter:url" content="[^"]*"\s*\/?>/,
+    /<meta\s+name="twitter:url"[\s\S]*?\/>/i,
     `<meta name="twitter:url" content="${page.canonical}" />`
   );
   html = html.replace(
-    /<meta name="twitter:title" content="[^"]*"\s*\/?>/,
+    /<meta\s+name="twitter:title"[\s\S]*?\/>/i,
     `<meta name="twitter:title" content="${title}" />`
   );
   html = html.replace(
-    /<meta name="twitter:description" content="[^"]*"\s*\/?>/,
+    /<meta\s+name="twitter:description"[\s\S]*?\/>/i,
     `<meta name="twitter:description" content="${description}" />`
   );
+  if (page.ogImage) {
+    const img = escapeHtml(page.ogImage);
+    html = html.replace(
+      /<meta\s+property="og:image"[\s\S]*?\/>/i,
+      `<meta property="og:image" content="${img}" />`
+    );
+    html = html.replace(
+      /<meta\s+name="twitter:image"[\s\S]*?\/>/i,
+      `<meta name="twitter:image" content="${img}" />`
+    );
+  }
 
   if (page.robots) {
     html = html.replace(
@@ -1827,15 +1848,19 @@ const buildBlogBody = (): string => `
           <span>Blog</span>
         </nav>
         <main>
-          <h1 style="${h1Style}">TopSAAS Blog</h1>
-          <p style="margin:0 0 1rem">Actionable guides, launch checklists, high-DR directory strategies, and open-source stacks for bootstrapped SaaS founders and indie hackers.</p>
-          <h2 style="${h2Style}">Latest articles</h2>
-          <ul style="margin:0 0 1rem;padding-left:1.25rem">
+          <h1 style="${h1Style}">SaaS Launch Playbooks, High-DR Backlinks & Growth Tactics</h1>
+          <p style="margin:0 0 1.5rem;color:#525252">Actionable, data-backed playbooks for solo founders and engineering teams: launch mechanics, verified directory distribution, open-source boilerplates, and scaling to $10k+ MRR.</p>
+          <hr style="border:0;border-top:1px solid #e5e5e5;margin:1.5rem 0 2rem" />
+          <div style="display:flex;flex-direction:column;gap:2rem">
 ${BLOG_POSTS.map(
   (post) =>
-    `            <li><a href="/blog/${escapeHtml(post.slug)}" style="${linkStyle}">${escapeHtml(post.title)}</a>: ${escapeHtml(post.tagline)} (${escapeHtml(post.category)}, ${escapeHtml(post.readTime)})</li>`
+    `            <article style="border-bottom:1px solid #e5e5e5;padding-bottom:2rem">
+              <div style="${mutedStyle}font-size:0.8125rem;margin-bottom:0.375rem">${escapeHtml(post.publishedAt)} · ${escapeHtml(post.readTime)}</div>
+              <h2 style="margin:0 0 0.5rem;font-size:1.375rem;line-height:1.3"><a href="/blog/${escapeHtml(post.slug)}" style="${linkStyle}">${escapeHtml(post.title)}</a></h2>
+              <p style="margin:0;color:#525252;line-height:1.5">${escapeHtml(post.tagline)}</p>
+            </article>`
 ).join('\n')}
-          </ul>
+          </div>
         </main>
 ${staticFooter}
       </div>
@@ -1883,12 +1908,17 @@ const buildBlogPostBody = (post: BlogPost): string => `
         <main>
           <h1 style="${h1Style}">${escapeHtml(post.title)}</h1>
           <p style="font-size:1.0625rem;font-weight:500;margin:0 0 1rem">${escapeHtml(post.tagline)}</p>
-          <p style="${mutedStyle}margin:0 0 1.5rem">${escapeHtml(post.author.name)} · ${escapeHtml(post.publishedAt)} · ${escapeHtml(post.readTime)} · ${escapeHtml(post.category)}</p>
-          <p style="margin:0 0 1.5rem;padding:1rem;background:#f0fdf4;border-left:3px solid #10b981"><strong>Quick answer:</strong> ${escapeHtml(post.directAnswer)}</p>
-          <h2 style="${h2Style}">Key takeaways</h2>
-          <ul style="margin:0 0 1rem;padding-left:1.25rem">
-${post.keyTakeaways.map((item) => `            <li>${escapeHtml(item)}</li>`).join('\n')}
-          </ul>
+          <div style="${mutedStyle}margin:0 0 1.5rem">
+            <div style="font-weight:700;color:#0a0a0a;margin-bottom:0.25rem;display:flex;align-items:center;gap:0.35rem">By ${escapeHtml(post.author.name)} <svg viewBox="0 0 24 24" width="16" height="16" style="color:#2563eb;flex-shrink:0" aria-label="Verified author"><path fill="currentColor" d="M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.26 2.52-.8 3.91c-1.31.67-2.2 1.91-2.2 3.34s.89 2.67 2.2 3.34c-.46 1.39-.21 2.9.8 3.91s2.52 1.26 3.91.81c.67 1.31 1.91 2.19 3.34 2.19s2.68-.88 3.34-2.19c1.39.45 2.9.2 3.91-.81s1.27-2.52.81-3.91c1.31-.67 2.19-1.91 2.19-3.34zm-11.71 4.2L6.8 12.46l1.41-1.42 2.26 2.26 4.8-5.23 1.47 1.36-6.2 6.77z"/></svg></div>
+            <div>${escapeHtml(post.publishedAt)} · ${escapeHtml(post.readTime)}</div>
+          </div>
+          ${post.coverImage ? `<div style="margin:1.5rem 0;border-radius:1rem;overflow:hidden;border:1px solid #e5e5e5"><img src="${escapeHtml(post.coverImage)}" alt="${escapeHtml(post.title)}" style="width:100%;height:auto;display:block" /></div>` : ''}
+          <div style="border:1px solid #e5e5e5;border-radius:1rem;padding:2rem;background:#ffffff;margin-top:1.5rem">
+            <p style="margin:0 0 1.5rem"><strong>Quick answer:</strong> ${escapeHtml(post.directAnswer)}</p>
+            <h2 style="${h2Style}">Key takeaways</h2>
+            <ul style="margin:0 0 1.5rem;padding-left:1.25rem">
+${post.keyTakeaways.map((item) => `            <li style="margin-bottom:0.5rem">${escapeHtml(item)}</li>`).join('\n')}
+            </ul>
 ${post.intro.map((paragraph) => `<p style="margin:0 0 1rem">${formatInlineMarkdown(paragraph)}</p>`).join('\n')}
 ${post.sections
   .map(
@@ -1904,11 +1934,12 @@ ${section.table ? `<table style="border-collapse:collapse;margin:0 0 1rem;width:
 ${section.checklist ? `<ul style="margin:0 0 1rem;padding-left:1.25rem">${section.checklist.map((item) => `<li>${formatInlineMarkdown(item)}</li>`).join('')}</ul>` : ''}
 ${section.proTip ? `<p style="margin:0 0 1rem"><strong>Pro tip:</strong> ${formatInlineMarkdown(section.proTip)}</p>` : ''}
 ${section.codeSnippet ? `<pre style="background:#f5f5f5;padding:.75rem;overflow-x:auto;margin:0 0 1rem"><code>${escapeHtml(section.codeSnippet.code)}</code></pre>` : ''}
-${section.quote ? `<blockquote style="margin:0 0 1rem;border-left:3px solid #d4d4d4;padding-left:1rem"><p style="margin:0">${escapeHtml(section.quote.text)}</p><footer style="${mutedStyle}">${escapeHtml(section.quote.author)}</footer></blockquote>` : ''}`
+${section.quote ? `<blockquote style="margin:0 0 1rem;border-left:3px solid #1a2580;padding-left:1rem"><p style="margin:0">${escapeHtml(section.quote.text)}</p><footer style="${mutedStyle}">${escapeHtml(section.quote.author)}</footer></blockquote>` : ''}`
   )
   .join('\n')}
-          <h2 style="${h2Style}">FAQ</h2>
-          ${faqList(post.faq)}
+            <h2 style="${h2Style}">FAQ</h2>
+            ${faqList(post.faq)}
+          </div>
           <h2 style="${h2Style}">Keep reading</h2>
           <ul style="margin:0 0 1rem;padding-left:1.25rem">
 ${post.relatedInternalLinks.map((link) => `            <li><a href="${escapeHtml(link.href)}" style="${linkStyle}">${escapeHtml(link.label)}</a></li>`).join('\n')}
@@ -1927,12 +1958,16 @@ const buildBlogPostJsonLd = (post: BlogPost): string =>
         '@type': ['Article', 'BlogPosting'],
         headline: post.title,
         description: post.tagline,
+        ...(post.coverImage ? { image: `${SITE_URL}${post.coverImage}` } : {}),
         url: `${SITE_URL}/blog/${post.slug}`,
         datePublished: post.publishedAt,
         dateModified: post.updatedAt,
         articleSection: post.category,
         keywords: post.tags.join(', '),
-        author: { '@type': 'Person', name: post.author.name },
+        author: {
+          '@type': 'Person',
+          name: post.author.name,
+        },
         publisher: {
           '@type': 'Organization',
           name: 'TopSAAS',
@@ -1972,6 +2007,7 @@ export function repoPrerenderPlugin(): Plugin {
             title: repoSeoTitle(repo),
             description: repoSeoDescription(repo),
             canonical: repoCanonicalUrl(repo.full_name),
+            ogType: 'article',
             body: buildRepoBody(repo),
             jsonLd: buildRepoJsonLd(repo),
             jsonLdId: 'repo-jsonld',
@@ -1979,8 +2015,8 @@ export function repoPrerenderPlugin(): Plugin {
         );
       }
 
-      const total = directoryRepos.length.toLocaleString('en-US');
-      const ideasCopy = ideasSeo(directoryRepos.length);
+      const total = uniqueRepos.length.toLocaleString('en-US');
+      const ideasCopy = ideasSeo(uniqueRepos.length);
       writePage(
         distDir,
         ['ideas'],
@@ -2002,8 +2038,8 @@ export function repoPrerenderPlugin(): Plugin {
               {
                 '@type': 'ItemList',
                 name: 'Open-source SaaS starter projects',
-                numberOfItems: directoryRepos.length,
-                itemListElement: directoryRepos.slice(0, 100).map((repo, index) => ({
+                numberOfItems: uniqueRepos.length,
+                itemListElement: uniqueRepos.slice(0, 100).map((repo, index) => ({
                   '@type': 'ListItem',
                   position: index + 1,
                   name: repo.name,
@@ -2074,6 +2110,7 @@ export function repoPrerenderPlugin(): Plugin {
           title: seo.title,
           description: seo.description,
           canonical: seo.canonical,
+          ogType: 'product',
           body: buildProductBody(product, products),
           jsonLd: buildProductJsonLd(product),
           jsonLdId: `product-jsonld-${product.id}`,
@@ -2128,6 +2165,7 @@ export function repoPrerenderPlugin(): Plugin {
             title: seo.title,
             description: seo.description,
             canonical: seo.canonical,
+            ogType: 'article',
             body: buildGuideBody(guide),
             jsonLd: buildGuideJsonLd(guide),
             jsonLdId: 'guide-jsonld',
@@ -2230,6 +2268,8 @@ export function repoPrerenderPlugin(): Plugin {
             title: seo.title,
             description: seo.description,
             canonical: seo.canonical,
+            ogType: 'article',
+            ogImage: post.coverImage ? `${SITE_URL}${post.coverImage}` : undefined,
             body: buildBlogPostBody(post),
             jsonLd: buildBlogPostJsonLd(post),
             jsonLdId: `blogpost-${post.slug}-jsonld`,
@@ -2244,7 +2284,7 @@ export function repoPrerenderPlugin(): Plugin {
         renderPage(template, {
           title: 'BentoPDF: Codebase Architecture & 51 Client-Side WASM Tools Reference | TopSAAS',
           description:
-            'Comprehensive technical breakdown of BentoPDF. Explore 51 client-side WebAssembly PDF tools running in browser RAM with zero server uploads, plus SaaS commercial blueprints.',
+            'Technical breakdown of BentoPDF: 51 client-side WebAssembly PDF tools running in browser RAM with zero server uploads, plus SaaS commercial blueprints.',
           canonical: `${SITE_URL}/opensource/bentopdf`,
           body: buildOpenSourceBentoPdfBody(),
           jsonLd: buildOpenSourceBentoPdfJsonLd(),
@@ -2368,7 +2408,7 @@ ${staticFooter}
         renderPage(template, {
           title: 'SaaS Directory & Open Source Idea Categories | TopSAAS',
           description:
-            'Explore 28 SaaS product directory categories and 23 open-source SaaS idea categories on TopSAAS. Jump directly to curated tools, verified launches, and clonable starter codebases.',
+            'Browse 28 SaaS product categories and 23 open-source SaaS idea categories on TopSAAS. Discover curated tools, verified launches, and starter codebases.',
           canonical: `${SITE_URL}/categories`,
           body: categoriesBody,
           jsonLd: categoriesJsonLd,
@@ -2417,9 +2457,6 @@ ${staticFooter}
         { loc: `${SITE_URL}/categories`, changefreq: 'weekly', priority: '0.9' },
         { loc: `${SITE_URL}/ideas`, changefreq: 'daily', priority: '0.9' },
         { loc: `${SITE_URL}/trending`, changefreq: 'daily', priority: '0.9' },
-        { loc: `${SITE_URL}/product-directory`, changefreq: 'weekly', priority: '0.9' },
-        { loc: `${SITE_URL}/guides`, changefreq: 'weekly', priority: '0.8' },
-        { loc: `${SITE_URL}/blog`, changefreq: 'weekly', priority: '0.8' },
         { loc: `${SITE_URL}/mrr-calculator`, changefreq: 'monthly', priority: '0.7' },
         { loc: `${SITE_URL}/opensource/bentopdf`, changefreq: 'weekly', priority: '0.9' },
         { loc: `${SITE_URL}/submit`, changefreq: 'monthly', priority: '0.7' },

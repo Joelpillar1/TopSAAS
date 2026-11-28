@@ -521,13 +521,13 @@ export const MrrCalculatorPage: React.FC<MrrCalculatorPageProps> = ({ soundEnabl
       {/* Calculator */}
       <section id="calculator" aria-labelledby="mrr-inputs-heading" className="mt-8 scroll-mt-24">
         <div className="grid items-stretch gap-4 lg:grid-cols-2">
-          <div className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-xs sm:p-6">
+          <div className="rounded-2xl border border-blue-700 bg-gradient-to-br from-[#2563eb] to-[#1d4ed8] text-white p-4 shadow-sm sm:p-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <h2 id="mrr-inputs-heading" className="text-sm font-black text-neutral-950">
+                <h2 id="mrr-inputs-heading" className="text-sm font-black text-white">
                   Your numbers
                 </h2>
-                <p className="mt-0.5 max-w-md text-[11px] font-medium text-neutral-500">
+                <p className="mt-0.5 max-w-md text-[11px] font-medium text-blue-100">
                   Use your blended monthly average across every plan.
                 </p>
               </div>
@@ -540,7 +540,7 @@ export const MrrCalculatorPage: React.FC<MrrCalculatorPageProps> = ({ soundEnabl
                   id="mrr-currency"
                   value={currency}
                   onChange={(e) => setConfig((prev) => ({ ...prev, currency: e.target.value }))}
-                  className="rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-neutral-700 outline-none transition-colors focus:border-mint-500 focus:ring-2 focus:ring-mint-500/15"
+                  className="rounded-lg border border-white/25 bg-white px-2.5 py-1.5 text-[11px] font-bold text-neutral-800 outline-none transition-colors focus:border-white focus:ring-2 focus:ring-white/30"
                 >
                   {CURRENCIES.map((option) => (
                     <option key={option.code} value={option.code}>
@@ -551,7 +551,7 @@ export const MrrCalculatorPage: React.FC<MrrCalculatorPageProps> = ({ soundEnabl
                 <button
                   type="button"
                   onClick={clearValues}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-neutral-600 transition-colors hover:border-neutral-400 hover:text-neutral-950 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-white/25 bg-white/15 px-2.5 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-white/25 cursor-pointer"
                 >
                   <RotateCcw className="h-3 w-3" />
                   Clear
@@ -561,10 +561,10 @@ export const MrrCalculatorPage: React.FC<MrrCalculatorPageProps> = ({ soundEnabl
 
             <div className="mt-5 space-y-5">
               <div>
-                <label htmlFor="mrr-avg" className="block text-sm font-bold text-neutral-900">
+                <label htmlFor="mrr-avg" className="block text-sm font-bold text-white">
                   Average MRR per customer
                 </label>
-                <p className="mt-0.5 text-[11px] font-medium text-neutral-500">
+                <p className="mt-0.5 text-[11px] font-medium text-blue-100">
                   How much recurring revenue do you get from a customer in a month, on average?
                 </p>
                 <div className="relative mt-2">
@@ -583,16 +583,16 @@ export const MrrCalculatorPage: React.FC<MrrCalculatorPageProps> = ({ soundEnabl
                       }
                     }}
                     placeholder="99"
-                    className={`${inputClass} pl-9`}
+                    className={`${inputClass} pl-9 border-white/20 bg-white text-neutral-950 focus:border-white focus:ring-white/30`}
                   />
                 </div>
               </div>
 
               <div>
-                <label htmlFor="mrr-customers" className="block text-sm font-bold text-neutral-900">
+                <label htmlFor="mrr-customers" className="block text-sm font-bold text-white">
                   Number of customers
                 </label>
-                <p className="mt-0.5 text-[11px] font-medium text-neutral-500">
+                <p className="mt-0.5 text-[11px] font-medium text-blue-100">
                   How many active paying customers do you have right now?
                 </p>
                 <input
@@ -607,12 +607,12 @@ export const MrrCalculatorPage: React.FC<MrrCalculatorPageProps> = ({ soundEnabl
                     }
                   }}
                   placeholder="20"
-                  className={`${inputClass} mt-2`}
+                  className={`${inputClass} mt-2 border-white/20 bg-white text-neutral-950 focus:border-white focus:ring-white/30`}
                 />
               </div>
             </div>
 
-            <p className="mt-4 text-[11px] font-medium leading-relaxed text-neutral-500">
+            <p className="mt-4 text-[11px] font-medium leading-relaxed text-blue-100/90">
               Only recurring subscription revenue counts. For annual plans, use the yearly price
               divided by 12, and exclude one-time fees, trials, and free users.
             </p>

@@ -2415,7 +2415,7 @@ export default function App() {
     if (created) {
       setSponsors((prev) => {
         const exists = prev.some((s) => s.id === created.id);
-        return exists ? prev.map((s) => (s.id === created.id ? created : s)) : [created, ...prev];
+        return exists ? prev.map((s) => (s.id === created.id ? created : s)) : [...prev, created];
       });
     }
   };
@@ -2426,7 +2426,7 @@ export default function App() {
     if (created) {
       setSponsors((prev) => {
         const exists = prev.some((s) => s.id === created.id);
-        return exists ? prev.map((s) => (s.id === created.id ? created : s)) : [created, ...prev];
+        return exists ? prev.map((s) => (s.id === created.id ? created : s)) : [...prev, created];
       });
       if (created.contactEmail && created.status === 'active') {
         const durationDays = Math.max(1, Math.round((created.expiresAt - created.startedAt) / 86400000));
@@ -3220,6 +3220,12 @@ export default function App() {
 
   const globalHeader = (
     <div className="sticky top-0 z-40 w-full">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-neutral-950 focus:px-4 focus:py-2 focus:text-xs focus:font-bold focus:text-white focus:shadow-xl focus:ring-2 focus:ring-mint-500"
+      >
+        Skip to main content
+      </a>
       <Header
         onGoHome={handleBackToLeaderboard}
         onOpenSubmit={handleTopNavSubmit}
@@ -3320,7 +3326,7 @@ export default function App() {
   ) => (
     <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between selection:bg-mint-500/20 selection:text-neutral-900 font-sans xl:h-screen xl:overflow-hidden pb-0 no-scrollbar">
       {globalHeader}
-      <main className="mx-auto w-full max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 flex-1 pt-1 sm:pt-2 xl:min-h-0 xl:h-[calc(100vh-4.25rem)] xl:overflow-hidden pb-0 no-scrollbar">
+      <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 flex-1 pt-1 sm:pt-2 xl:min-h-0 xl:h-[calc(100vh-4.25rem)] xl:overflow-hidden pb-0 no-scrollbar focus:outline-hidden">
         <HeroSponsorRails
           fixedRails
           hideMobileSponsor={options?.hideMobileSponsor}
@@ -3546,7 +3552,7 @@ export default function App() {
         return (
           <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between font-sans xl:h-screen xl:overflow-hidden pb-0 no-scrollbar">
             {globalHeader}
-            <main className="mx-auto w-full max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 flex-1 pt-1 sm:pt-2 pb-6 xl:min-h-0 xl:h-[calc(100vh-4.25rem)] xl:overflow-hidden xl:pb-0 no-scrollbar">
+            <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 flex-1 pt-1 sm:pt-2 pb-6 xl:min-h-0 xl:h-[calc(100vh-4.25rem)] xl:overflow-hidden xl:pb-0 no-scrollbar focus:outline-hidden">
               <HeroSponsorRails
                 fixedRails
                 enabled={sponsorRailsEnabled}
@@ -3573,7 +3579,7 @@ export default function App() {
       return (
         <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between font-sans xl:h-screen xl:overflow-hidden pb-0 no-scrollbar">
           {globalHeader}
-          <main className="mx-auto w-full max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 flex-1 pt-1 sm:pt-2 pb-6 xl:min-h-0 xl:h-[calc(100vh-4.25rem)] xl:overflow-hidden xl:pb-0 no-scrollbar">
+          <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 flex-1 pt-1 sm:pt-2 pb-6 xl:min-h-0 xl:h-[calc(100vh-4.25rem)] xl:overflow-hidden xl:pb-0 no-scrollbar focus:outline-hidden">
             <HeroSponsorRails
               fixedRails
               enabled={sponsorRailsEnabled}
@@ -3640,7 +3646,7 @@ export default function App() {
     return (
       <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between font-sans xl:h-screen xl:overflow-hidden pb-0 no-scrollbar">
         {globalHeader}
-        <main className="mx-auto w-full max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 flex-1 pt-1 sm:pt-2 pb-6 xl:min-h-0 xl:h-[calc(100vh-4.25rem)] xl:overflow-hidden xl:pb-0 no-scrollbar">
+        <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 flex-1 pt-1 sm:pt-2 pb-6 xl:min-h-0 xl:h-[calc(100vh-4.25rem)] xl:overflow-hidden xl:pb-0 no-scrollbar focus:outline-hidden">
           <HeroSponsorRails
             fixedRails
             enabled={sponsorRailsEnabled}
@@ -4151,7 +4157,7 @@ export default function App() {
     <div className="min-h-screen bg-white text-neutral-900 flex flex-col justify-between selection:bg-mint-500/20 selection:text-neutral-900 font-sans xl:h-screen xl:overflow-hidden pb-16 lg:pb-0 xl:pb-0 no-scrollbar">
       {globalHeader}
       {/* Main Content Area */}
-      <main className="mx-auto w-full max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 flex-1 pt-1 sm:pt-2 pb-16 xl:min-h-0 xl:h-[calc(100vh-4.25rem)] xl:overflow-hidden xl:pb-0 no-scrollbar">
+      <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-7xl 2xl:max-w-[1600px] px-4 sm:px-6 flex-1 pt-1 sm:pt-2 pb-16 xl:min-h-0 xl:h-[calc(100vh-4.25rem)] xl:overflow-hidden xl:pb-0 no-scrollbar focus:outline-hidden">
 
         {activeTab === 'saas-ideas' ? (
           <HeroSponsorRails

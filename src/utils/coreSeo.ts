@@ -25,7 +25,7 @@ const copy = (title: string, description: string, canonical: string): SeoCopy =>
 
 export const homeSeo = (): SeoCopy =>
   copy(
-    'TopSAAS — The Curated Directory of Modern SaaS & AI Tools',
+    'TopSAAS - Curated Directory of Modern SaaS & AI Tools',
     'Discover modern SaaS products and AI tools on a community-ranked directory. Verified launches, weekly spotlights, and open-source starters.',
     `${SITE_URL}/`
   );
@@ -88,23 +88,37 @@ export const productSeo = (product: Product): SeoCopy => {
   )
     .slice(0, 160)
     .trim();
-  return copy(
-    tagline ? `${product.name} — ${tagline} | TopSAAS` : `${product.name} — Modern SaaS & AI Tool | TopSAAS`,
-    description,
-    `${SITE_URL}/products/${getProductSlug(product)}`
-  );
+
+  const brand = ' | TopSAAS';
+  const maxLen = 60;
+  let title = `${product.name}${brand}`;
+  const budget = maxLen - title.length;
+  if (budget >= 10 && tagline) {
+    const trimmed = tagline.slice(0, budget - 3).replace(/\s+\S*$/, '').trim();
+    if (trimmed) {
+      title = `${product.name} - ${trimmed}${brand}`;
+    }
+  } else if (budget >= 18 && !tagline) {
+    title = `${product.name} - SaaS Tool${brand}`;
+  }
+  if (title.length > maxLen) {
+    const labelBudget = Math.max(10, maxLen - brand.length);
+    title = `${product.name.slice(0, labelBudget).trim()}${brand}`;
+  }
+
+  return copy(title, description, `${SITE_URL}/products/${getProductSlug(product)}`);
 };
 
 export const blogSeo = (): SeoCopy =>
   copy(
-    'TopSAAS Blog: SaaS Launch Guides and SEO Tactics',
-    'Actionable guides, launch checklists, high-DR directory strategies, and open-source stacks for bootstrapped SaaS founders and indie hackers.',
+    'SaaS Launch Playbooks, High-DR Backlinks & Growth Tactics | TopSAAS',
+    'Actionable, data-backed playbooks for solo founders and engineering teams: launch mechanics, verified directory distribution, open-source boilerplates, and scaling to $10k+ MRR.',
     `${SITE_URL}/blog`
   );
 
 export const blogPostSeo = (post: BlogPost): SeoCopy =>
   copy(
-    `${post.title} | TopSAAS Blog`,
+    post.seoTitle || `${post.title} | TopSAAS Blog`,
     post.tagline.slice(0, 158),
     `${SITE_URL}/blog/${post.slug}`
   );

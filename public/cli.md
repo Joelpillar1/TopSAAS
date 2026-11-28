@@ -6,20 +6,20 @@ Fetch SaaS product rankings and catalog data directly via standard terminal comm
 
 ### 1. Fetch LLM Text Guide
 ```bash
-curl -s https://topsaas.com/llms.txt
+curl -s https://www.topsaas.space/llms.txt
 ```
 
 ### 2. Fetch Markdown Directory
 ```bash
-curl -s https://topsaas.com/catalog.md
+curl -s https://www.topsaas.space/catalog.md
 ```
 
 ### 3. Fetch JSON Directory
 ```bash
-curl -s https://topsaas.com/products.json | jq '.[] | {rank, name, category, upvotes}'
+curl -s https://www.topsaas.space/products.json | jq '.[] | {rank, name, category, upvotes}'
 ```
 
 ### 4. Search Products with JQ
 ```bash
-curl -s https://topsaas.com/products.json | jq '.[] | select(.category=="AI Tools")'
+curl -s https://www.topsaas.space/products.json | jq '.[] | select(.category=="AI Tools")'
 ```

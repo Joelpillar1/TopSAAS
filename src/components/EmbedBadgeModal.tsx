@@ -28,7 +28,7 @@ export const BADGE_OPTIONS: {
     label: 'Type 1 · Blue',
     sublabel: 'Electric blue brand gradient',
     src: '/Share%20Badge/TopSAAS%20Type%201%20-%20blue.png',
-    fullUrl: 'https://topsaas.space/Share%20Badge/TopSAAS%20Type%201%20-%20blue.png',
+    fullUrl: 'https://www.topsaas.space/Share%20Badge/TopSAAS%20Type%201%20-%20blue.png',
     bg: 'bg-[#1a2580]',
     previewBg: 'bg-[#0f154c]',
   },
@@ -37,7 +37,7 @@ export const BADGE_OPTIONS: {
     label: 'Type 1 · Light',
     sublabel: 'Clean light badge for dark sites',
     src: '/Share%20Badge/TopSAAS%20Type%201%20-%20light.png',
-    fullUrl: 'https://topsaas.space/Share%20Badge/TopSAAS%20Type%201%20-%20light.png',
+    fullUrl: 'https://www.topsaas.space/Share%20Badge/TopSAAS%20Type%201%20-%20light.png',
     bg: 'bg-white',
     previewBg: 'bg-neutral-100',
   },
@@ -46,7 +46,7 @@ export const BADGE_OPTIONS: {
     label: 'Type 2 · Blue',
     sublabel: 'Compact blue pill badge',
     src: '/Share%20Badge/TopSAAS%20Type%202%20-%20blue.png',
-    fullUrl: 'https://topsaas.space/Share%20Badge/TopSAAS%20Type%202%20-%20blue.png',
+    fullUrl: 'https://www.topsaas.space/Share%20Badge/TopSAAS%20Type%202%20-%20blue.png',
     bg: 'bg-[#1a2580]',
     previewBg: 'bg-[#0f154c]',
   },
@@ -55,7 +55,7 @@ export const BADGE_OPTIONS: {
     label: 'Type 2 · Light',
     sublabel: 'Compact clean light badge',
     src: '/Share%20Badge/TopSAAS%20Type%202%20-%20light.png',
-    fullUrl: 'https://topsaas.space/Share%20Badge/TopSAAS%20Type%202%20-%20light.png',
+    fullUrl: 'https://www.topsaas.space/Share%20Badge/TopSAAS%20Type%202%20-%20light.png',
     bg: 'bg-white',
     previewBg: 'bg-neutral-100',
   },
@@ -75,7 +75,7 @@ export const EmbedBadgeModal: React.FC<EmbedBadgeModalProps> = ({
 
   const selectedBadge = BADGE_OPTIONS.find((b) => b.id === selectedVariant) || BADGE_OPTIONS[0];
   const slug = getProductSlug(product);
-  const productListingUrl = `https://topsaas.space/products/${encodeURIComponent(slug)}?ref=badge`;
+  const productListingUrl = `https://www.topsaas.space/products/${encodeURIComponent(slug)}?ref=badge`;
   const badgeAltText = `Featured on TopSAAS`;
 
   const snippet = (() => {

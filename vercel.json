@@ -4,11 +4,17 @@
   "outputDirectory": "dist",
   "installCommand": "npm install",
   "trailingSlash": false,
+  "cleanUrls": true,
   "routes": [
     {
       "src": "/(.*)",
       "headers": {
-        "X-Content-Type-Options": "nosniff"
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "SAMEORIGIN",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "Permissions-Policy": "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+        "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
+        "Content-Security-Policy": "frame-ancestors 'self';"
       },
       "continue": true
     },
@@ -73,6 +79,41 @@
       "status": 308,
       "headers": {
         "Location": "/product-directory/$1"
+      }
+    },
+    {
+      "src": "/product-directory/12tools",
+      "status": 308,
+      "headers": {
+        "Location": "/product-directory/twelve-tools"
+      }
+    },
+    {
+      "src": "/product-directory/peerlist-launchpad",
+      "status": 308,
+      "headers": {
+        "Location": "/product-directory/peerlist"
+      }
+    },
+    {
+      "src": "/product-directory/deeplaunch-io",
+      "status": 308,
+      "headers": {
+        "Location": "/product-directory/deeplaunch"
+      }
+    },
+    {
+      "src": "/product-directory/acidtools-com",
+      "status": 308,
+      "headers": {
+        "Location": "/product-directory/acid-tools"
+      }
+    },
+    {
+      "src": "/index\\.html",
+      "status": 308,
+      "headers": {
+        "Location": "/"
       }
     },
     {

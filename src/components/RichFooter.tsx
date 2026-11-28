@@ -93,7 +93,7 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                   className="transition-opacity hover:opacity-85 inline-flex items-center shrink-0"
                 >
                   <img
-                    src="https://topsaas.space/Share%20Badge/TopSAAS%20Type%202%20-%20light.png"
+                    src="https://www.topsaas.space/Share%20Badge/TopSAAS%20Type%202%20-%20light.png"
                     alt="Featured on TopSAAS"
                     width={624}
                     height={153}
@@ -451,7 +451,7 @@ export const RichFooter: React.FC<RichFooterProps> = ({
                   className="transition-opacity hover:opacity-85 inline-flex items-center shrink-0"
                 >
                   <img
-                    src="https://topsaas.space/Share%20Badge/TopSAAS%20Type%202%20-%20light.png"
+                    src="https://www.topsaas.space/Share%20Badge/TopSAAS%20Type%202%20-%20light.png"
                     alt="Featured on TopSAAS"
                     width={624}
                     height={153}

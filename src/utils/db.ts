@@ -1349,17 +1349,21 @@ export async function setSponsorOrder(ids: string[]): Promise<void> {
   }
 }
 
-/** Sort sponsors by custom order array (unlisted sponsors preserve their original order after ordered ones) */
-export function sortSponsorsByOrder<T extends { id: string }>(list: T[], orderIds: string[]): T[] {
-  if (!orderIds || orderIds.length === 0) return list;
-  const orderMap = new Map(orderIds.map((id, idx) => [id, idx]));
+/** Sort sponsors by custom order array (unlisted sponsors follow in first-come-first-served chronological order) */
+export function sortSponsorsByOrder<T extends { id: string; createdAt?: number; startedAt?: number }>(
+  list: T[],
+  orderIds: string[]
+): T[] {
+  const orderMap = new Map((orderIds || []).map((id, idx) => [id, idx]));
   return [...list].sort((a, b) => {
     const idxA = orderMap.get(a.id);
     const idxB = orderMap.get(b.id);
     if (idxA !== undefined && idxB !== undefined) return idxA - idxB;
     if (idxA !== undefined) return -1;
     if (idxB !== undefined) return 1;
-    return 0;
+    const timeA = a.createdAt ?? a.startedAt ?? 0;
+    const timeB = b.createdAt ?? b.startedAt ?? 0;
+    return timeA - timeB;
   });
 }
 
@@ -2152,7 +2156,7 @@ export function isLiveSponsor(sponsor: Sponsor | null | undefined, now = Date.no
   return sponsor.status === 'active' && sponsor.expiresAt > now;
 }
 
-/** Load every sponsor row, newest first. */
+/** Load every sponsor row, oldest first (first-come, first-served). */
 export async function loadSponsors(forceFresh = false): Promise<Sponsor[]> {
   if (!forceFresh) {
     const cached = getCached<Sponsor[]>('sponsors_list', CACHE_TTL.SPONSORS);
@@ -2163,7 +2167,7 @@ export async function loadSponsors(forceFresh = false): Promise<Sponsor[]> {
     const { data, error } = await supabase
       .from('sponsors')
       .select(SPONSOR_COLUMNS)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: true });
     if (error || !data) {
       return getCached<Sponsor[]>('sponsors_list', Infinity) || [];
     }

@@ -7,7 +7,10 @@ Allow-Citation: yes
 Allow-Summarization: yes
 Allow-Embedding: yes
 Allow-RAG: yes
-Allow-Training: yes
+Allow-Training: no
+Disallow: /accept
+Disallow: /accept/
+Disallow: /r/
 
 # Explicit permissions for major AI engines
 User-Agent: GPTBot

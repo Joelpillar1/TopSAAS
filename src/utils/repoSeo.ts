@@ -267,11 +267,11 @@ export const buildRepoEditorial = (
       },
       ...(repo.language
         ? [
-            {
-              title: `${repo.language} codebase`,
-              body: `the bulk of the project is ${repo.language}, so contributors can plug in without a stack switch`,
-            },
-          ]
+          {
+            title: `${repo.language} codebase`,
+            body: `the bulk of the project is ${repo.language}, so contributors can plug in without a stack switch`,
+          },
+        ]
         : []),
       {
         title: 'In the TopSAAS catalog',
@@ -340,16 +340,18 @@ export const repoSeoTitle = (repoOrName: CuratedRepo | string, category?: string
     const brand = ' | TopSAAS';
     const label = repoOrName;
     const desc = tidyTail(plainCopy(description || '').replace(/[.!?]+$/, ''));
-    if (!desc) return `${label}${brand}`;
-    const budget = Math.max(24, 60 - label.length - 2 - brand.length);
+    if (!desc) return `${label.length + brand.length <= 60 ? label : clip(label, 60 - brand.length)}${brand}`;
+    const budget = 60 - label.length - 2 - brand.length;
+    if (budget < 10) return `${label.length + brand.length <= 60 ? label : clip(label, 60 - brand.length)}${brand}`;
     return `${label}: ${clip(desc, budget)}${brand}`;
   }
   const repo = repoOrName;
   const brand = ' | TopSAAS';
   const label = duplicateNames.has(repo.name) ? repo.full_name : repo.name;
   const desc = tidyTail(plainCopy(repo.description || '').replace(/[.!?]+$/, ''));
-  if (!desc) return `${label}${brand}`;
-  const budget = Math.max(24, 60 - label.length - 2 - brand.length);
+  if (!desc) return `${label.length + brand.length <= 60 ? label : clip(label, 60 - brand.length)}${brand}`;
+  const budget = 60 - label.length - 2 - brand.length;
+  if (budget < 10) return `${label.length + brand.length <= 60 ? label : clip(label, 60 - brand.length)}${brand}`;
   return `${label}: ${clip(desc, budget)}${brand}`;
 };
 
