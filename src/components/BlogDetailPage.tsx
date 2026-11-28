@@ -74,7 +74,7 @@ const renderFormattedText = (text: string): React.ReactNode => {
     } else if (match[4]) {
       parts.push(
         <strong key={match.index} className="font-bold text-neutral-900">
-          {match[4]}
+          {renderFormattedText(match[4])}
         </strong>
       );
     }
@@ -405,7 +405,7 @@ export const BlogDetailPage: React.FC<BlogDetailPageProps> = ({
                 Direct Answer & Core Definition (TL;DR)
               </h2>
               <p className="direct-answer-text text-sm sm:text-base text-neutral-800 font-medium leading-relaxed">
-                {post.directAnswer}
+                {renderFormattedText(post.directAnswer)}
               </p>
             </div>
           )}
@@ -420,12 +420,12 @@ export const BlogDetailPage: React.FC<BlogDetailPageProps> = ({
                 {post.keyTakeaways.map((point, idx) => (
                   <li
                     key={idx}
-                    className="flex items-start gap-2.5 text-xs sm:text-sm text-neutral-700"
+                    className="flex items-start gap-2.5 text-sm sm:text-base text-neutral-700"
                   >
                     <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600 border border-blue-200 font-bold text-xs mt-0.5">
                       ✓
                     </span>
-                    <span className="leading-relaxed">{point}</span>
+                    <span className="leading-relaxed">{renderFormattedText(point)}</span>
                   </li>
                 ))}
               </ul>
@@ -517,7 +517,7 @@ export const BlogDetailPage: React.FC<BlogDetailPageProps> = ({
                       <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-900 mb-0.5">
                         {section.statCallout.label}
                       </h4>
-                      <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed">
+                      <p className="text-sm sm:text-base text-neutral-600 leading-relaxed">
                         {section.statCallout.context}
                       </p>
                     </div>
@@ -575,7 +575,7 @@ export const BlogDetailPage: React.FC<BlogDetailPageProps> = ({
                       {section.checklist.map((item, cIndex) => (
                         <li
                           key={cIndex}
-                          className="flex items-start gap-2.5 text-xs sm:text-sm text-neutral-700"
+                          className="flex items-start gap-2.5 text-sm sm:text-base text-neutral-700"
                         >
                           <span className="h-2 w-2 rounded-full bg-blue-600 mt-2 shrink-0 ring-4 ring-blue-50" />
                           <span className="leading-relaxed">{renderFormattedText(item)}</span>
@@ -591,7 +591,7 @@ export const BlogDetailPage: React.FC<BlogDetailPageProps> = ({
                     <h4 className="text-xs font-bold text-neutral-900 uppercase tracking-wider mb-1">
                       Pro Tip
                     </h4>
-                    <p className="text-xs sm:text-sm text-neutral-700 leading-relaxed">
+                    <p className="text-sm sm:text-base text-neutral-700 leading-relaxed">
                       {renderFormattedText(section.proTip)}
                     </p>
                   </div>
@@ -698,7 +698,7 @@ export const BlogDetailPage: React.FC<BlogDetailPageProps> = ({
                     className="rounded-xl border border-neutral-200 bg-neutral-50/50 p-5 space-y-2"
                   >
                     <h4 className="text-sm font-bold text-neutral-900">{item.q}</h4>
-                    <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed font-normal">
+                    <p className="text-sm sm:text-base text-neutral-600 leading-relaxed font-normal">
                       {renderFormattedText(item.a)}
                     </p>
                   </div>

@@ -768,6 +768,7 @@ export const AdminAcceptPage: React.FC<AdminAcceptPageProps> = ({
         creatorName: p.creatorName,
         creatorUsername: p.creatorUsername,
         creatorAvatar: p.creatorAvatar,
+        backerName: p.creatorName || 'Creator',
         submittedBy: p.submittedBy,
         offerDiscount: p.offerDiscount,
         offerCode: p.offerCode,
